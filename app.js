@@ -84,6 +84,13 @@ function initCalendar() {
             center: 'title',
             right: 'dayGridMonth,timeGridWeek,timeGridDay'
         },
+        buttonText: {
+            today: 'Hoy',
+            month: 'Mes',
+            week: 'Semana',
+            day: 'Día',
+            list: 'Lista'
+        },
         slotMinTime: '06:00:00',
         slotMaxTime: '23:00:00',
         allDaySlot: false,
