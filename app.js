@@ -476,22 +476,22 @@ function validateAndFixSupabaseUrl(rawUrl) {
 
 function validateKey(rawKey) {
     const key = rawKey.trim();
-    // Secret key - never use in browser
+    // Clave secreta - nunca usar en el navegador
     if (key.startsWith('sb_secret_') || key.startsWith('sb_live_')) {
         return { valid: false,
-            message: `❌ Pegaste la SECRET KEY. Esta clave NUNCA debe usarse en un navegador.\n\n✅ Ve a Settings → API Keys → pestaña "Legacy anon, service_role API keys" y copia la clave "anon | public" (empieza con eyJ...)` };
+            message: `❌ Pegaste la CLAVE SECRETA. Esta clave NUNCA debe usarse en un navegador.\n\n✅ Ve a Configuración → Claves API → pestaña "Legacy anon" y copia la clave "anon | public" (empieza con eyJ...)` };
     }
-    // New publishable key - valid but needs RLS
+    // Nueva clave publishable - válida pero requiere RLS
     if (key.startsWith('sb_publishable_')) {
         return { valid: true, isPublishable: true, message: null };
     }
-    // Legacy JWT key
+    // Clave JWT heredada (Legacy)
     if (key.startsWith('eyJ')) {
         return { valid: true, isPublishable: false, message: null };
     }
-    // Unknown format
+    // Formato desconocido
     return { valid: false, suggestion: null,
-        message: `❌ La clave no parece correcta.\n\nDebe empezar con "eyJ..." (Legacy anon key).\nVe a Settings → API Keys → pestaña "Legacy anon, service_role API keys".` };
+        message: `❌ La clave no parece correcta.\n\nDebe empezar con "eyJ..." (Clave anon heredada).\nVe a Configuración → Claves API → pestaña "Legacy anon".` };
 }
 
 async function checkSupabaseReachable(url) {

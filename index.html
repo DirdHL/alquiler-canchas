@@ -235,20 +235,20 @@
 
                 <form id="formSettings">
                     <div class="form-group">
-                        <label for="supabaseUrl">Supabase Project URL</label>
+                        <label for="supabaseUrl">URL del Proyecto en Supabase</label>
                         <div class="input-wrapper">
                             <i data-lucide="link-2"></i>
                             <input type="url" id="supabaseUrl" placeholder="https://xxxxxx.supabase.co" required>
                         </div>
                     </div>
                     <div class="form-group">
-                        <label for="supabaseKey">Supabase Publishable Key <span style="font-size:0.78em;color:#f87171;font-weight:500">(NO uses la Secret key)</span></label>
+                        <label for="supabaseKey">Clave Anon de Supabase <span style="font-size:0.78em;color:#f87171;font-weight:500">(NO uses la clave secreta)</span></label>
                         <div class="input-wrapper">
                             <i data-lucide="key-round"></i>
                             <input type="password" id="supabaseKey"
-                                placeholder="sb_publishable_... o eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." required>
+                                placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." required>
                         </div>
-                        <small style="color:#94a3b8;margin-top:4px;display:block">Ve a <strong>Settings → API Keys</strong> y copia la <strong>Publishable key</strong> (empieza con <code>sb_publishable_</code>)</small>
+                        <small style="color:#94a3b8;margin-top:4px;display:block">Ve a <strong>Configuración → Claves API</strong> y copia la clave <strong>anon | public</strong> de la pestaña <strong>Legacy</strong></small>
                     </div>
 
                     <div class="settings-actions">
@@ -262,9 +262,9 @@
                     <h4><i data-lucide="terminal"></i> Pasos para Crear la Tabla en Supabase</h4>
                     <ol>
                         <li>Entra a tu panel de <a href="https://supabase.com" target="_blank">Supabase</a> y crea un proyecto gratuito.</li>
-                        <li>Ve a <strong>Settings → API Keys</strong> y copia la <strong>Publishable key</strong> (empieza con <code>sb_publishable_</code>). <span style="color:#f87171">⚠️ NO uses la Secret key.</span></li>
-                        <li>Ve a <strong>SQL Editor</strong> en el menú lateral izquierdo.</li>
-                        <li>Haz clic en <strong>New query</strong>, pega el siguiente SQL y presiona <strong>Run</strong>:</li>
+                        <li>Ve a <strong>Configuración → Claves API</strong> y copia la clave <strong>anon | public</strong> de la pestaña <strong>Legacy</strong>. <span style="color:#f87171">⚠️ NO copies la clave secreta (service_role).</span></li>
+                        <li>Ve al <strong>Editor SQL</strong> en el menú lateral izquierdo.</li>
+                        <li>Haz clic en <strong>Nueva consulta</strong>, pega el siguiente SQL y presiona <strong>Ejecutar</strong>:</li>
                     </ol>
                     <div class="code-box">
                         <pre id="sqlCode">
