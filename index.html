@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sport Victoria - Sistema de Alquiler de Canchas</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- FullCalendar CSS & JS -->
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/locales/es.global.min.js"></script>
+    <!-- Supabase JS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo-area">
+                <i data-lucide="calendar-range" class="logo-icon"></i>
+                <h2>Sport<span>Victoria</span></h2>
+            </div>
+
+            <div class="status-indicator-card">
+                <div class="status-header">
+                    <span class="status-dot disconnected" id="statusDot"></span>
+                    <span class="status-text" id="statusText">Modo Sin Conexión (Local)</span>
+                </div>
+                <p class="status-desc" id="statusDesc">Las reservas se guardan en tu navegador. Configura Supabase para
+                    compartirlas.</p>
+                <button class="btn btn-secondary btn-sm" id="btnOpenSettings">
+                    <i data-lucide="database"></i> Configurar Base de Datos
+                </button>
+            </div>
+
+            <nav class="nav-filters">
+                <h3>Filtrar por Cancha</h3>
+                <div class="filter-group">
+                    <label class="filter-item">
+                        <input type="checkbox" id="filterCanchaGrande" checked>
+                        <span class="custom-checkbox color-grande"></span>
+                        Cancha Grande
+                    </label>
+                    <label class="filter-item">
+                        <input type="checkbox" id="filterCanchaPequena" checked>
+                        <span class="custom-checkbox color-pequena"></span>
+                        Cancha Pequeña
+                    </label>
+                </div>
+
+                <h3>Filtrar por Deporte</h3>
+                <div class="filter-group">
+                    <label class="filter-item">
+                        <input type="checkbox" id="filterFutbol" checked>
+                        <span class="custom-checkbox"></span>
+                        <i data-lucide="trophy" class="inline-icon"></i> Fútbol
+                    </label>
+                    <label class="filter-item">
+                        <input type="checkbox" id="filterVoley" checked>
+                        <span class="custom-checkbox"></span>
+                        <i data-lucide="volleyball" class="inline-icon"></i> Vóley
+                    </label>
+                </div>
+            </nav>
+
+            <div class="stats-card">
+                <h3>Resumen de Hoy</h3>
+                <div class="stat-item">
+                    <span class="stat-label">Reservas Totales</span>
+                    <span class="stat-value" id="statTodayReservations">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Cancha Grande</span>
+                    <span class="stat-value" id="statCanchaGrande">0 h</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Cancha Pequeña</span>
+                    <span class="stat-value" id="statCanchaPequena">0 h</span>
+                </div>
+            </div>
+
+            <footer class="sidebar-footer">
+                <p>CanchaPro &copy; 2026</p>
+                <p class="footer-note">Desarrollado para trabajo en equipo</p>
+            </footer>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="app-header">
+                <div class="header-title">
+                    <h1>Calendario de Reservas</h1>
+                    <p>Gestiona, programa y actualiza los alquileres de tus canchas en tiempo real.</p>
+                </div>
+                <button class="btn btn-primary" id="btnNewReservation">
+                    <i data-lucide="plus"></i> Nueva Reserva
+                </button>
+            </header>
+
+            <!-- Calendar Container -->
+            <div class="calendar-card">
+                <div id="calendar"></div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Booking Modal -->
+    <div class="modal-backdrop" id="modalBooking">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 id="modalTitle">Nueva Reserva</h3>
+                <button class="btn-close" id="btnCloseBooking"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="formBooking">
+                    <input type="hidden" id="bookingId">
+
+                    <div class="form-group">
+                        <label for="bookingName">Nombre del Cliente *</label>
+                        <div class="input-wrapper">
+                            <i data-lucide="user"></i>
+                            <input type="text" id="bookingName" required placeholder="Ej. Juan Pérez">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="bookingDni">DNI / Documento *</label>
+                            <div class="input-wrapper">
+                                <i data-lucide="credit-card"></i>
+                                <input type="text" id="bookingDni" required placeholder="Ej. 72635481">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="bookingPhone">Teléfono / Celular</label>
+                            <div class="input-wrapper">
+                                <i data-lucide="phone"></i>
+                                <input type="tel" id="bookingPhone" placeholder="Ej. 987654321">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="bookingCourt">Cancha *</label>
+                            <div class="input-wrapper">
+                                <i data-lucide="layout-grid"></i>
+                                <select id="bookingCourt" required>
+                                    <option value="Grande">Cancha Grande</option>
+                                    <option value="Pequeña">Cancha Pequeña</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="bookingSport">Deporte *</label>
+                            <div class="input-wrapper">
+                                <i data-lucide="award"></i>
+                                <select id="bookingSport" required>
+                                    <option value="Fútbol">Fútbol</option>
+                                    <option value="Vóley">Vóley</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="bookingDate">Fecha *</label>
+                        <div class="input-wrapper">
+                            <i data-lucide="calendar"></i>
+                            <input type="date" id="bookingDate" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="bookingStartTime">Hora Inicio *</label>
+                            <div class="input-wrapper">
+                                <i data-lucide="clock"></i>
+                                <input type="time" id="bookingStartTime" required min="06:00" max="23:00">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="bookingEndTime">Hora Fin *</label>
+                            <div class="input-wrapper">
+                                <i data-lucide="clock"></i>
+                                <input type="time" id="bookingEndTime" required min="07:00" max="24:00">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="bookingNotes">Notas / Observaciones</label>
+                        <div class="input-wrapper textarea-wrapper">
+                            <i data-lucide="align-left"></i>
+                            <textarea id="bookingNotes" placeholder="Detalles de pago, equipamiento prestado, etc."
+                                rows="2"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="form-error" id="bookingError"></div>
+
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-danger btn-delete hidden" id="btnDeleteBooking">
+                            <i data-lucide="trash-2"></i> Eliminar
+                        </button>
+                        <div class="right-actions">
+                            <button type="button" class="btn btn-secondary" id="btnCancelBooking">Cancelar</button>
+                            <button type="submit" class="btn btn-primary" id="btnSaveBooking">Guardar Reserva</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal-backdrop" id="modalSettings">
+        <div class="modal-card modal-lg">
+            <div class="modal-header">
+                <h3>Configuración de Supabase (Base de Datos en la Nube)</h3>
+                <button class="btn-close" id="btnCloseSettings"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <p class="settings-intro">Al conectar Supabase, tus reservas se guardarán en la nube. Esto permitirá que
+                    tus compañeras vean y modifiquen las reservas en tiempo real desde sus propias computadoras o
+                    celulares.</p>
+
+                <form id="formSettings">
+                    <div class="form-group">
+                        <label for="supabaseUrl">Supabase Project URL</label>
+                        <div class="input-wrapper">
+                            <i data-lucide="link-2"></i>
+                            <input type="url" id="supabaseUrl" placeholder="https://xxxxxx.supabase.co" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="supabaseKey">Supabase Publishable Key <span style="font-size:0.78em;color:#f87171;font-weight:500">(NO uses la Secret key)</span></label>
+                        <div class="input-wrapper">
+                            <i data-lucide="key-round"></i>
+                            <input type="password" id="supabaseKey"
+                                placeholder="sb_publishable_... o eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." required>
+                        </div>
+                        <small style="color:#94a3b8;margin-top:4px;display:block">Ve a <strong>Settings → API Keys</strong> y copia la <strong>Publishable key</strong> (empieza con <code>sb_publishable_</code>)</small>
+                    </div>
+
+                    <div class="settings-actions">
+                        <button type="button" class="btn btn-secondary" id="btnTestSupabase">Probar Conexión</button>
+                        <button type="submit" class="btn btn-primary">Guardar Credenciales</button>
+                    </div>
+                    <div class="settings-feedback" id="settingsFeedback"></div>
+                </form>
+
+                <div class="sql-instructions">
+                    <h4><i data-lucide="terminal"></i> Pasos para Crear la Tabla en Supabase</h4>
+                    <ol>
+                        <li>Entra a tu panel de <a href="https://supabase.com" target="_blank">Supabase</a> y crea un proyecto gratuito.</li>
+                        <li>Ve a <strong>Settings → API Keys</strong> y copia la <strong>Publishable key</strong> (empieza con <code>sb_publishable_</code>). <span style="color:#f87171">⚠️ NO uses la Secret key.</span></li>
+                        <li>Ve a <strong>SQL Editor</strong> en el menú lateral izquierdo.</li>
+                        <li>Haz clic en <strong>New query</strong>, pega el siguiente SQL y presiona <strong>Run</strong>:</li>
+                    </ol>
+                    <div class="code-box">
+                        <pre id="sqlCode">
+CREATE TABLE IF NOT EXISTS reservas (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  name TEXT NOT NULL,
+  dni TEXT NOT NULL,
+  phone TEXT,
+  court TEXT NOT NULL,
+  sport TEXT NOT NULL,
+  date DATE NOT NULL,
+  start_time TIME NOT NULL,
+  end_time TIME NOT NULL,
+  notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Habilitar Row Level Security (necesario para Publishable key)
+ALTER TABLE reservas ENABLE ROW LEVEL SECURITY;
+
+-- Permitir acceso publico (leer, insertar, actualizar, eliminar)
+CREATE POLICY "Acceso publico" ON reservas FOR ALL USING (true) WITH CHECK (true);
+
+-- Habilitar acceso en tiempo real
+ALTER PUBLICATION supabase_realtime ADD TABLE reservas;
+                        </pre>
+                        <button class="btn btn-secondary btn-sm btn-copy" id="btnCopySql">
+                            <i data-lucide="copy"></i> Copiar SQL
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom JS -->
+    <script src="app.js"></script>
+</body>
+
+</html>
