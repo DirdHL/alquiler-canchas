@@ -1223,6 +1223,11 @@ body.no-scroll {
     .activity-text {
         font-size: 12px;
     }
+
+    /* Shorter slots on mobile for better scrollability and day overview */
+    .fc .fc-timegrid-slot {
+        height: 44px !important;
+    }
 }
 
 @media (max-width: 500px) {
@@ -1300,6 +1305,16 @@ body.no-scroll {
     .fc-event {
         font-size: 10px !important;
         padding: 2px 4px !important;
+    }
+
+    /* Narrower and smaller time labels on the left axis to save screen width */
+    .fc .fc-timegrid-slot-label {
+        font-size: 10px !important;
+    }
+
+    .fc .fc-timegrid-axis-cushion {
+        font-size: 10px !important;
+        padding: 4px 2px !important;
     }
 }
 
