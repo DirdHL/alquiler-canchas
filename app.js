@@ -75,7 +75,7 @@ const statCanchaPequena = document.getElementById('statCanchaPequena');
 document.addEventListener('DOMContentLoaded', () => {
     // 1. Initialize Lucide Icons
     lucide.createIcons();
-    
+
     // 2. Initialize Operator Identity
     checkOperatorIdentity();
 
@@ -90,7 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 6. Update stats initially
     updateStats();
-    
+
     // 7. Load activity history
     fetchAndRenderHistory();
 });
@@ -98,7 +98,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // Initialize FullCalendar
 function initCalendar() {
     const calendarEl = document.getElementById('calendar');
-    
+
     calendar = new FullCalendar.Calendar(calendarEl, {
         initialView: window.innerWidth < 768 ? 'timeGridDay' : 'timeGridWeek',
         locale: 'es',
@@ -126,26 +126,26 @@ function initCalendar() {
         selectMirror: true,
         editable: false,
         height: 'auto',
-        
+
         // Fetch Events Dynamically
-        events: function(fetchInfo, successCallback, failureCallback) {
+        events: function (fetchInfo, successCallback, failureCallback) {
             fetchBookings().then(bookings => {
                 allEvents = bookings;
                 updateStats();
-                
+
                 // Apply UI filters
                 const filtered = filterEvents(bookings);
-                
+
                 // Convert to FullCalendar event format
                 const fcEvents = filtered.map(b => ({
                     id: b.id,
                     title: `${b.name} (${b.sport})`,
                     start: `${b.date}T${b.start_time}`,
                     end: `${b.date}T${b.end_time}`,
-                    className: b.court === 'Grande' ? 'event-cancha-grande' : 'event-cancha-pequena',
+                    className: `${b.court === 'Grande' ? 'event-cancha-grande' : 'event-cancha-pequena'} ${b.sport === 'Fútbol' ? 'event-sport-futbol' : 'event-sport-voley'}`,
                     extendedProps: b // Keep original data
                 }));
-                
+
                 successCallback(fcEvents);
             }).catch(err => {
                 console.error("Error cargando reservas:", err);
@@ -154,10 +154,10 @@ function initCalendar() {
         },
 
         // Click and drag to create event
-        select: function(selectionInfo) {
+        select: function (selectionInfo) {
             const startDateObj = new Date(selectionInfo.startStr);
             const endDateObj = new Date(selectionInfo.endStr);
-            
+
             // Format to local date & times
             const dateStr = selectionInfo.startStr.split('T')[0];
             const startTimeStr = formatTime(startDateObj);
@@ -171,7 +171,7 @@ function initCalendar() {
         },
 
         // Click event to view/edit
-        eventClick: function(info) {
+        eventClick: function (info) {
             const bookingData = info.event.extendedProps;
             openBookingModal(bookingData);
         }
@@ -217,7 +217,7 @@ function setupEventListeners() {
     btnCloseSettings.addEventListener('click', () => closeModal(modalSettings));
     btnTestSupabase.addEventListener('click', testSupabaseConnection);
     formSettings.addEventListener('submit', handleSaveSettings);
-    
+
     // Copy SQL script to clipboard
     btnCopySql.addEventListener('click', () => {
         const sqlText = document.getElementById('sqlCode').innerText;
@@ -280,10 +280,10 @@ function setupEventListeners() {
 function openBookingModal(booking = null, defaults = null) {
     formBooking.reset();
     bookingError.style.display = 'none';
-    
+
     // Close mobile drawer if open
     closeSidebarDrawer();
-    
+
     if (booking) {
         // Edit Mode
         modalTitle.textContent = 'Editar Reserva';
@@ -295,7 +295,7 @@ function openBookingModal(booking = null, defaults = null) {
         bookingStartTimeInput.value = booking.start_time;
         bookingEndTimeInput.value = booking.end_time;
         bookingNotesInput.value = booking.notes || '';
-        
+
         btnDeleteBooking.classList.remove('hidden');
     } else {
         // New Mode
@@ -354,7 +354,7 @@ function closeModal(modal) {
 function updateBodyScroll() {
     const isAnyModalActive = document.querySelectorAll('.modal-backdrop.active').length > 0;
     const isSidebarActive = sidebar && sidebar.classList.contains('open');
-    
+
     if (isAnyModalActive || isSidebarActive) {
         document.body.classList.add('no-scroll');
     } else {
@@ -397,10 +397,10 @@ function saveLocalBookings(bookings) {
 // Filter bookings based on UI checkboxes
 function filterEvents(bookings) {
     return bookings.filter(b => {
-        const courtMatch = (b.court === 'Grande' && filterCanchaGrande.checked) || 
-                           (b.court === 'Pequeña' && filterCanchaPequena.checked);
-        const sportMatch = (b.sport === 'Fútbol' && filterFutbol.checked) || 
-                           (b.sport === 'Vóley' && filterVoley.checked);
+        const courtMatch = (b.court === 'Grande' && filterCanchaGrande.checked) ||
+            (b.court === 'Pequeña' && filterCanchaPequena.checked);
+        const sportMatch = (b.sport === 'Fútbol' && filterFutbol.checked) ||
+            (b.sport === 'Vóley' && filterVoley.checked);
         return courtMatch && sportMatch;
     });
 }
@@ -487,7 +487,7 @@ async function handleSaveBooking(e) {
                 // Insertar nuevo
                 query = supabaseClient.from('reservas').insert([bookingData]);
             }
-            
+
             const { error } = await query;
             if (error) throw error;
         } else {
@@ -513,7 +513,7 @@ async function handleSaveBooking(e) {
         closeBookingModal();
         if (calendar) calendar.refetchEvents();
         updateStats();
-        
+
     } catch (err) {
         console.error("Error al guardar reserva:", err);
         showBookingError("Error de base de datos: " + err.message);
@@ -576,12 +576,16 @@ function validateAndFixSupabaseUrl(rawUrl) {
     if (dashboardMatch) {
         const projectId = dashboardMatch[1];
         const correctedUrl = `https://${projectId}.supabase.co`;
-        return { valid: false, suggestion: correctedUrl,
-            message: `❌ Pegaste la URL del panel de Supabase.\nLa URL correcta es: ${correctedUrl}` };
+        return {
+            valid: false, suggestion: correctedUrl,
+            message: `❌ Pegaste la URL del panel de Supabase.\nLa URL correcta es: ${correctedUrl}`
+        };
     }
     if (!url.includes('.supabase.co')) {
-        return { valid: false, suggestion: null,
-            message: `❌ La URL debe tener el formato:\nhttps://XXXXXXXXXXXXXXXX.supabase.co` };
+        return {
+            valid: false, suggestion: null,
+            message: `❌ La URL debe tener el formato:\nhttps://XXXXXXXXXXXXXXXX.supabase.co`
+        };
     }
     return { valid: true, message: null, suggestion: null };
 }
@@ -590,8 +594,10 @@ function validateKey(rawKey) {
     const key = rawKey.trim();
     // Clave secreta - nunca usar en el navegador
     if (key.startsWith('sb_secret_') || key.startsWith('sb_live_')) {
-        return { valid: false,
-            message: `❌ Pegaste la CLAVE SECRETA. Esta clave NUNCA debe usarse en un navegador.\n\n✅ Ve a Configuración → Claves API → pestaña "Legacy anon" y copia la clave "anon | public" (empieza con eyJ...)` };
+        return {
+            valid: false,
+            message: `❌ Pegaste la CLAVE SECRETA. Esta clave NUNCA debe usarse en un navegador.\n\n✅ Ve a Configuración → Claves API → pestaña "Legacy anon" y copia la clave "anon | public" (empieza con eyJ...)`
+        };
     }
     // Nueva clave publishable - válida pero requiere RLS
     if (key.startsWith('sb_publishable_')) {
@@ -602,15 +608,17 @@ function validateKey(rawKey) {
         return { valid: true, isPublishable: false, message: null };
     }
     // Formato desconocido
-    return { valid: false, suggestion: null,
-        message: `❌ La clave no parece correcta.\n\nDebe empezar con "eyJ..." (Clave anon heredada).\nVe a Configuración → Claves API → pestaña "Legacy anon".` };
+    return {
+        valid: false, suggestion: null,
+        message: `❌ La clave no parece correcta.\n\nDebe empezar con "eyJ..." (Clave anon heredada).\nVe a Configuración → Claves API → pestaña "Legacy anon".`
+    };
 }
 
 async function checkSupabaseReachable(url) {
     try {
         const res = await fetch(`${url}/rest/v1/`, { method: 'HEAD' });
         return true; // Any response means reachable
-    } catch(e) {
+    } catch (e) {
         return false;
     }
 }
@@ -623,11 +631,11 @@ function loadDatabaseSettings() {
     if (url && key) {
         supabaseUrlInput.value = url;
         supabaseKeyInput.value = key;
-        
+
         try {
             supabaseClient = supabase.createClient(url, key);
             dbMode = 'supabase';
-            
+
             // Validate connection
             testSupabaseSilent();
         } catch (e) {
@@ -648,7 +656,7 @@ function updateDatabaseStatusUI(connected, errorMsg = null) {
         statusDot.className = 'status-dot connected';
         statusText.textContent = 'Conectado a la Nube (Supabase)';
         statusDesc.textContent = 'Las reservas están sincronizadas con la nube y compartidas en tiempo real.';
-        
+
         btnOpenSettings.className = 'btn btn-secondary btn-sm';
         btnOpenSettings.innerHTML = '<i data-lucide="database"></i> Configuración de Base de Datos';
     } else {
@@ -660,7 +668,7 @@ function updateDatabaseStatusUI(connected, errorMsg = null) {
             statusText.textContent = 'Modo Sin Conexión (Local)';
             statusDesc.textContent = 'Accede con el link y la contraseña para poder compartir la informacion con los demas asesores';
         }
-        
+
         btnOpenSettings.className = 'btn btn-attention btn-sm';
         btnOpenSettings.innerHTML = '<i data-lucide="database"></i> Ingresa aquí para ver la info';
     }
@@ -673,13 +681,13 @@ async function testSupabaseSilent() {
     try {
         const { data, error } = await supabaseClient.from('reservas').select('id').limit(1);
         if (error) throw error;
-        
+
         // Success
         updateDatabaseStatusUI(true);
-        
+
         // Listen to real-time events to update calendar immediately when others make changes!
         setupRealtimeSubscription();
-        
+
         if (calendar) calendar.refetchEvents();
     } catch (err) {
         console.warn("Supabase no está listo o la tabla no existe:", err.message);
@@ -691,12 +699,12 @@ async function testSupabaseSilent() {
 let realtimeChannel = null;
 function setupRealtimeSubscription() {
     if (!supabaseClient) return;
-    
+
     // Clean old channel if active
     if (realtimeChannel) {
         supabaseClient.removeChannel(realtimeChannel);
     }
-    
+
     realtimeChannel = supabaseClient.channel('realtime_db')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'reservas' }, () => {
             // Refetch calendar dynamically on any database change
@@ -744,10 +752,10 @@ async function handleSaveSettings(e) {
 
     try {
         const tempClient = supabase.createClient(url, key);
-        
+
         // Test query
         const { data, error } = await tempClient.from('reservas').select('id').limit(1);
-        
+
         if (error) {
             throw new Error(`Conexión correcta pero error en la tabla: ${error.message}`);
         }
@@ -755,18 +763,18 @@ async function handleSaveSettings(e) {
         // Connection works! Save to storage
         localStorage.setItem('canchapro_supabase_url', url);
         localStorage.setItem('canchapro_supabase_key', key);
-        
+
         supabaseClient = tempClient;
         dbMode = 'supabase';
-        
+
         // Sync indicator UI
         updateDatabaseStatusUI(true);
-        
+
         setupRealtimeSubscription();
-        
+
         settingsFeedback.className = 'settings-feedback success';
         settingsFeedback.textContent = '¡Conexión guardada y establecida con éxito!';
-        
+
         setTimeout(() => {
             closeModal(modalSettings);
             if (calendar) calendar.refetchEvents();
@@ -842,27 +850,27 @@ function showSettingsError(msg) {
 // Update Dashboard Statistics Card
 function updateStats() {
     const todayStr = new Date().toISOString().split('T')[0];
-    
+
     // Filter events belonging to today
     const todayEvents = allEvents.filter(e => e.date === todayStr);
-    
+
     statTodayReservations.textContent = todayEvents.length;
-    
+
     let hoursGrande = 0;
     let hoursPequena = 0;
-    
+
     todayEvents.forEach(e => {
         const start = parseTimeToMinutes(e.start_time);
         const end = parseTimeToMinutes(e.end_time);
         const diffHours = (end - start) / 60;
-        
+
         if (e.court === 'Grande') {
             hoursGrande += diffHours;
         } else if (e.court === 'Pequeña') {
             hoursPequena += diffHours;
         }
     });
-    
+
     statCanchaGrande.textContent = `${hoursGrande.toFixed(1)} h`;
     statCanchaPequena.textContent = `${hoursPequena.toFixed(1)} h`;
 }
@@ -963,7 +971,7 @@ async function fetchAndRenderHistory() {
                 .limit(10);
             if (error) throw error;
             entries = data || [];
-            
+
             if (btnClearHistoryLocal) btnClearHistoryLocal.style.display = 'none';
         } catch (e) {
             console.warn("Fallo al obtener historial de Supabase, usando local:", e);
@@ -1015,23 +1023,23 @@ async function fetchAndRenderHistory() {
 
 function escapeHTML(str) {
     if (!str) return '';
-    return str.replace(/[&<>'"]/g, 
+    return str.replace(/[&<>'"]/g,
         tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
     );
 }
 
 function formatTimeAgo(date) {
     const seconds = Math.floor((new Date() - date) / 1000);
-    
+
     if (seconds < 0) return 'Ahora mismo';
     if (seconds < 60) return `Hace ${seconds} seg`;
-    
+
     const minutes = Math.floor(seconds / 60);
     if (minutes < 60) return `Hace ${minutes} min`;
-    
+
     const hours = Math.floor(minutes / 60);
     if (hours < 24) return `Hace ${hours} h`;
-    
+
     return date.toLocaleString('es-ES', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' });
 }
 
