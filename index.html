@@ -189,6 +189,25 @@
                         </div>
                     </div>
 
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>¿Pelota? *</label>
+                            <div class="toggle-group" id="pelotaToggle">
+                                <button type="button" class="btn-toggle active-no" data-value="false">No</button>
+                                <button type="button" class="btn-toggle" data-value="true">Sí</button>
+                            </div>
+                            <input type="hidden" id="bookingPelota" value="false">
+                        </div>
+                        <div class="form-group">
+                            <label>¿Chaleco? *</label>
+                            <div class="toggle-group" id="chalecoToggle">
+                                <button type="button" class="btn-toggle active-no" data-value="false">No</button>
+                                <button type="button" class="btn-toggle" data-value="true">Sí</button>
+                            </div>
+                            <input type="hidden" id="bookingChaleco" value="false">
+                        </div>
+                    </div>
+
                     <div class="form-group">
                         <label for="bookingDate">Fecha *</label>
                         <div class="input-wrapper">
@@ -303,8 +322,14 @@ CREATE TABLE IF NOT EXISTS reservas (
   start_time TIME NOT NULL,
   end_time TIME NOT NULL,
   notes TEXT,
+  pelota BOOLEAN DEFAULT false,
+  chaleco BOOLEAN DEFAULT false,
   created_at TIMESTAMPTZ DEFAULT now()
 );
+
+-- Si ya tienes la tabla creada, ejecuta esto para agregar Pelota y Chaleco:
+-- ALTER TABLE reservas ADD COLUMN IF NOT EXISTS pelota BOOLEAN DEFAULT false;
+-- ALTER TABLE reservas ADD COLUMN IF NOT EXISTS chaleco BOOLEAN DEFAULT false;
 
 ALTER TABLE reservas ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Acceso publico" ON reservas FOR ALL USING (true) WITH CHECK (true);

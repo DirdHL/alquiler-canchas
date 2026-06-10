@@ -719,6 +719,47 @@ body.no-scroll {
     gap: 16px;
 }
 
+/* Custom Toggle Buttons for Pelota / Chaleco */
+.toggle-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    background: rgba(15, 23, 42, 0.4);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    padding: 3px;
+    gap: 4px;
+}
+
+.btn-toggle {
+    background: transparent;
+    border: none;
+    padding: 8px 12px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-muted);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: var(--transition-smooth);
+    text-align: center;
+    user-select: none;
+}
+
+.btn-toggle:hover {
+    color: var(--text-secondary);
+}
+
+.btn-toggle.active-si {
+    background: var(--primary);
+    color: white;
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+.btn-toggle.active-no {
+    background: var(--danger);
+    color: white;
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+}
+
 .form-group label {
     font-size: 13px;
     font-weight: 500;

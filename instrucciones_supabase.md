@@ -39,8 +39,15 @@ CREATE TABLE IF NOT EXISTS reservas (
   start_time TIME NOT NULL,  -- Hora de inicio
   end_time TIME NOT NULL,    -- Hora de fin
   notes TEXT,                -- Notas adicionales (opcional)
+  pelota BOOLEAN DEFAULT false, -- Indica si incluye pelota
+  chaleco BOOLEAN DEFAULT false, -- Indica si incluye chaleco
   created_at TIMESTAMPTZ DEFAULT now()  -- Fecha/hora en que se registró
 );
+
+-- 💡 NOTA: Si ya tienes la tabla "reservas" creada en Supabase, no es necesario borrarla.
+-- Simplemente ejecuta este código adicional para agregar las nuevas columnas de Pelota y Chaleco:
+-- ALTER TABLE reservas ADD COLUMN IF NOT EXISTS pelota BOOLEAN DEFAULT false;
+-- ALTER TABLE reservas ADD COLUMN IF NOT EXISTS chaleco BOOLEAN DEFAULT false;
 
 -- ✅ PARTE 2: Activar la "seguridad por filas" (Row Level Security)
 -- Esto es obligatorio en el nuevo Supabase para que la página web

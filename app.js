@@ -29,6 +29,8 @@ const bookingDateInput = document.getElementById('bookingDate');
 const bookingStartTimeInput = document.getElementById('bookingStartTime');
 const bookingEndTimeInput = document.getElementById('bookingEndTime');
 const bookingNotesInput = document.getElementById('bookingNotes');
+const bookingPelotaInput = document.getElementById('bookingPelota');
+const bookingChalecoInput = document.getElementById('bookingChaleco');
 const bookingError = document.getElementById('bookingError');
 
 const btnNewReservation = document.getElementById('btnNewReservation');
@@ -139,7 +141,7 @@ function initCalendar() {
                 // Convert to FullCalendar event format
                 const fcEvents = filtered.map(b => ({
                     id: b.id,
-                    title: `${b.name} (${b.sport})`,
+                    title: `${b.name} (${b.sport})${b.pelota === true || b.pelota === 'true' ? (b.sport === 'Vóley' ? ' 🏐' : ' ⚽') : ''}${b.chaleco === true || b.chaleco === 'true' ? ' 🎽' : ''}`,
                     start: `${b.date}T${b.start_time}`,
                     end: `${b.date}T${b.end_time}`,
                     className: `${b.court === 'Grande' ? 'event-cancha-grande' : 'event-cancha-pequena'} ${b.sport === 'Fútbol' ? 'event-sport-futbol' : 'event-sport-voley'}`,
@@ -304,6 +306,44 @@ function setupEventListeners() {
             }
         });
     }
+
+    // Toggle buttons event listeners
+    setupToggleListeners('pelota');
+    setupToggleListeners('chaleco');
+}
+
+// Helper to set toggle button active states and hidden input value
+function setToggleValue(type, value) {
+    const input = document.getElementById(`booking${type.charAt(0).toUpperCase() + type.slice(1)}`);
+    if (!input) return;
+    input.value = value ? 'true' : 'false';
+    
+    const toggleGroup = document.getElementById(`${type}Toggle`);
+    if (!toggleGroup) return;
+    
+    const buttons = toggleGroup.querySelectorAll('.btn-toggle');
+    buttons.forEach(btn => {
+        const btnVal = btn.getAttribute('data-value') === 'true';
+        if (btnVal === value) {
+            btn.classList.add(value ? 'active-si' : 'active-no');
+        } else {
+            btn.classList.remove('active-si', 'active-no');
+        }
+    });
+}
+
+// Helper to set up event listeners for custom toggles
+function setupToggleListeners(type) {
+    const toggleGroup = document.getElementById(`${type}Toggle`);
+    if (!toggleGroup) return;
+    
+    const buttons = toggleGroup.querySelectorAll('.btn-toggle');
+    buttons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const val = btn.getAttribute('data-value') === 'true';
+            setToggleValue(type, val);
+        });
+    });
 }
 
 // Open Booking Modal (Null = New, Object = Edit)
@@ -326,12 +366,22 @@ function openBookingModal(booking = null, defaults = null) {
         bookingEndTimeInput.value = booking.end_time;
         bookingNotesInput.value = booking.notes || '';
 
+        // Set pelota and chaleco state
+        const pelotaVal = booking.pelota === true || booking.pelota === 'true';
+        const chalecoVal = booking.chaleco === true || booking.chaleco === 'true';
+        setToggleValue('pelota', pelotaVal);
+        setToggleValue('chaleco', chalecoVal);
+
         btnDeleteBooking.classList.remove('hidden');
     } else {
         // New Mode
         modalTitle.textContent = 'Nueva Reserva';
         bookingIdInput.value = '';
         btnDeleteBooking.classList.add('hidden');
+
+        // Reset toggles to default false
+        setToggleValue('pelota', false);
+        setToggleValue('chaleco', false);
 
         // Apply defaults if clicked on calendar
         if (defaults) {
@@ -494,6 +544,8 @@ async function handleSaveBooking(e) {
     const startTime = bookingStartTimeInput.value;
     const endTime = bookingEndTimeInput.value;
     const notes = bookingNotesInput.value.trim();
+    const pelota = bookingPelotaInput.value === 'true';
+    const chaleco = bookingChalecoInput.value === 'true';
 
     // 1. Validation for empty inputs
     if (!name || !date || !startTime || !endTime) {
@@ -516,7 +568,9 @@ async function handleSaveBooking(e) {
         date,
         start_time: startTime,
         end_time: endTime,
-        notes
+        notes,
+        pelota,
+        chaleco
     };
 
     try {
@@ -549,7 +603,7 @@ async function handleSaveBooking(e) {
         // Add history entry!
         const isUpdate = !!bookingIdInput.value;
         const logAction = isUpdate ? 'editar' : 'crear';
-        const logDetails = `${isUpdate ? 'modificó la' : 'creó una'} reserva para ${name} (${court} - ${sport}) el ${date} de ${startTime} a ${endTime}`;
+        const logDetails = `${isUpdate ? 'modificó la' : 'creó una'} reserva para ${name} (${court} - ${sport}${pelota ? ' + Pelota' : ''}${chaleco ? ' + Chaleco' : ''}) el ${date} de ${startTime} a ${endTime}`;
         await addHistoryEntry(logAction, logDetails);
 
         // Refresh Calendar UI & Close modal
