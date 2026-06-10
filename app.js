@@ -799,17 +799,36 @@ function handleCopyReservation() {
     }
 
     const timeText = `${startTime} - ${endTime}`;
+    const sportVal = bookingSportInput.value;
     const pelotaVal = bookingPelotaInput.value === 'true';
-    const pelotaText = pelotaVal ? 'Si' : 'No';
     const chalecoVal = bookingChalecoInput.value === 'true';
-    const chalecoText = chalecoVal ? 'Si' : 'No';
 
-    const message = `RESERVA DE CANCHA LOS PINOS
+    // Show ball emoji only if pelota is Yes
+    const pelotaBallEmoji = sportVal === 'Vóley' ? '🏐' : '⚽';
+    const pelotaText = pelotaVal ? `Si ${pelotaBallEmoji}` : 'No';
+
+    // Show vest emoji only if chalecos is Yes
+    const chalecoText = chalecoVal ? 'Si 🎽' : 'No';
+
+    // Choose clock/sun/moon emoji based on booking start hour
+    const startHour = parseInt(startTime.split(':')[0]);
+    let timeEmoji = '⏰';
+    if (!isNaN(startHour)) {
+        if (startHour < 12) {
+            timeEmoji = '☀️'; // Morning
+        } else if (startHour < 18) {
+            timeEmoji = '🌤️'; // Afternoon
+        } else {
+            timeEmoji = '🌙'; // Night
+        }
+    }
+
+    const message = `📌 RESERVA DE CANCHA LOS PINOS
 
 Nombre del cliente: ${clientName}
 Cancha (Chica o Grande): ${courtText}
 Fecha: ${dateText}
-Hora: ${timeText}
+${timeEmoji} Hora: ${timeText}
 Pelota: ${pelotaText}
 Chalecos: ${chalecoText}
 Asesora: ${advisorText}
