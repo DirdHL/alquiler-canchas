@@ -552,7 +552,27 @@ body.no-scroll {
     --fc-page-bg-color: transparent;
     --fc-neutral-bg-color: rgba(255, 255, 255, 0.02);
     --fc-today-bg-color: rgba(16, 185, 129, 0.06);
+    --fc-now-indicator-color: #ef4444;
     font-family: var(--font-sans);
+}
+
+/* Custom glowing styling for FullCalendar Now Indicator */
+.fc .fc-timegrid-now-indicator-line {
+    border-color: #ef4444 !important;
+    border-width: 2.5px !important;
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.85) !important;
+}
+
+.fc .fc-timegrid-now-indicator-arrow {
+    border-top-color: #ef4444 !important;
+    border-bottom-color: #ef4444 !important;
+    border-width: 6px !important;
+}
+
+/* Make today's column header look very prominent */
+.fc .fc-col-header-cell.fc-day-today {
+    background: rgba(16, 185, 129, 0.12) !important;
+    border-bottom: 2px solid var(--primary) !important;
 }
 
 .fc .fc-toolbar {

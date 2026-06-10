@@ -129,6 +129,7 @@ function initCalendar() {
         selectMirror: true,
         editable: false,
         height: 'auto',
+        nowIndicator: true,
 
         // Fetch Events Dynamically
         events: function (fetchInfo, successCallback, failureCallback) {
