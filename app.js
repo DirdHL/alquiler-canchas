@@ -46,6 +46,20 @@ const settingsFeedback = document.getElementById('settingsFeedback');
 const btnTestSupabase = document.getElementById('btnTestSupabase');
 const btnCopySql = document.getElementById('btnCopySql');
 
+// Onboarding and User Profile DOM Elements
+const modalUserOnboarding = document.getElementById('modalUserOnboarding');
+const formUserOnboarding = document.getElementById('formUserOnboarding');
+const onboardingNameInput = document.getElementById('onboardingName');
+const displayUserName = document.getElementById('displayUserName');
+const btnEditUser = document.getElementById('btnEditUser');
+
+// Activity Log DOM Elements
+const modalHistory = document.getElementById('modalHistory');
+const btnOpenHistory = document.getElementById('btnOpenHistory');
+const btnCloseHistory = document.getElementById('btnCloseHistory');
+const activityList = document.getElementById('activityList');
+const btnClearHistoryLocal = document.getElementById('btnClearHistoryLocal');
+
 // Filters
 const filterCanchaGrande = document.getElementById('filterCanchaGrande');
 const filterCanchaPequena = document.getElementById('filterCanchaPequena');
@@ -62,17 +76,23 @@ document.addEventListener('DOMContentLoaded', () => {
     // 1. Initialize Lucide Icons
     lucide.createIcons();
     
-    // 2. Load Supabase config from LocalStorage if exists
+    // 2. Initialize Operator Identity
+    checkOperatorIdentity();
+
+    // 3. Load Supabase config from LocalStorage if exists
     loadDatabaseSettings();
 
-    // 3. Initialize Calendar
+    // 4. Initialize Calendar
     initCalendar();
 
-    // 4. Set up Event Listeners
+    // 5. Set up Event Listeners
     setupEventListeners();
 
-    // 5. Update stats initially
+    // 6. Update stats initially
     updateStats();
+    
+    // 7. Load activity history
+    fetchAndRenderHistory();
 });
 
 // Initialize FullCalendar
@@ -229,6 +249,31 @@ function setupEventListeners() {
             calendar.changeView(newView);
         }
     });
+
+    // Operator Identity Actions
+    if (formUserOnboarding) {
+        formUserOnboarding.addEventListener('submit', handleSaveOnboardingName);
+    }
+    if (btnEditUser) {
+        btnEditUser.addEventListener('click', openOperatorEditModal);
+    }
+
+    // Activity Log Actions
+    if (btnOpenHistory) {
+        btnOpenHistory.addEventListener('click', () => {
+            closeSidebarDrawer();
+            openModal(modalHistory);
+            fetchAndRenderHistory();
+        });
+    }
+    if (btnCloseHistory) {
+        btnCloseHistory.addEventListener('click', () => {
+            closeModal(modalHistory);
+        });
+    }
+    if (btnClearHistoryLocal) {
+        btnClearHistoryLocal.addEventListener('click', clearHistoryLocal);
+    }
 }
 
 // Open Booking Modal (Null = New, Object = Edit)
@@ -441,6 +486,12 @@ async function handleSaveBooking(e) {
             saveLocalBookings(localList);
         }
 
+        // Add history entry!
+        const isUpdate = !!bookingIdInput.value;
+        const logAction = isUpdate ? 'editar' : 'crear';
+        const logDetails = `${isUpdate ? 'modificó la' : 'creó una'} reserva para ${name} (${court} - ${sport}) el ${date} de ${startTime} a ${endTime}`;
+        await addHistoryEntry(logAction, logDetails);
+
         // Refresh Calendar UI & Close modal
         closeBookingModal();
         if (calendar) calendar.refetchEvents();
@@ -461,6 +512,13 @@ async function handleDeleteBooking() {
         return;
     }
 
+    const name = bookingNameInput.value.trim();
+    const court = bookingCourtInput.value;
+    const sport = bookingSportInput.value;
+    const date = bookingDateInput.value;
+    const startTime = bookingStartTimeInput.value;
+    const endTime = bookingEndTimeInput.value;
+
     try {
         if (dbMode === 'supabase' && supabaseClient) {
             const { error } = await supabaseClient.from('reservas').delete().eq('id', id);
@@ -470,6 +528,10 @@ async function handleDeleteBooking() {
             localList = localList.filter(b => b.id !== id);
             saveLocalBookings(localList);
         }
+
+        // Add history entry!
+        const logDetails = `eliminó la reserva de ${name} (${court} - ${sport}) del ${date} de ${startTime} a ${endTime}`;
+        await addHistoryEntry('eliminar', logDetails);
 
         closeBookingModal();
         if (calendar) calendar.refetchEvents();
@@ -618,10 +680,15 @@ function setupRealtimeSubscription() {
         supabaseClient.removeChannel(realtimeChannel);
     }
     
-    realtimeChannel = supabaseClient.channel('realtime_reservas')
+    realtimeChannel = supabaseClient.channel('realtime_db')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'reservas' }, () => {
             // Refetch calendar dynamically on any database change
             if (calendar) calendar.refetchEvents();
+            fetchAndRenderHistory();
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'historial' }, () => {
+            // Refetch history dynamically on any database change
+            fetchAndRenderHistory();
         })
         .subscribe();
 }
@@ -781,4 +848,179 @@ function updateStats() {
     
     statCanchaGrande.textContent = `${hoursGrande.toFixed(1)} h`;
     statCanchaPequena.textContent = `${hoursPequena.toFixed(1)} h`;
+}
+
+// ==========================================
+// Operator Identity & Audit History Logic
+// ==========================================
+
+function checkOperatorIdentity() {
+    const name = localStorage.getItem('canchapro_user_name');
+    if (name) {
+        displayUserName.textContent = name;
+    } else {
+        displayUserName.textContent = 'Invitado';
+        openModal(modalUserOnboarding);
+    }
+}
+
+async function handleSaveOnboardingName(e) {
+    e.preventDefault();
+    const rawName = onboardingNameInput.value.trim();
+    if (!rawName) return;
+
+    // Clean duplicate spaces and capitalize each word (e.g. "juan carlos" -> "Juan Carlos" or "admin 1" -> "Admin 1")
+    const formattedName = rawName
+        .split(/\s+/)
+        .map(word => {
+            if (!word) return '';
+            return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+        })
+        .filter(word => word.length > 0)
+        .join(' ');
+
+    if (!formattedName) return;
+
+    const oldName = localStorage.getItem('canchapro_user_name');
+    if (oldName && oldName !== formattedName) {
+        await addHistoryEntry('editar', `cambió su nombre a ${formattedName}`);
+    }
+
+    localStorage.setItem('canchapro_user_name', formattedName);
+    displayUserName.textContent = formattedName;
+    closeModal(modalUserOnboarding);
+
+    // Refresh history logs to update display name
+    fetchAndRenderHistory();
+}
+
+function openOperatorEditModal() {
+    const currentName = localStorage.getItem('canchapro_user_name') || '';
+    onboardingNameInput.value = currentName;
+    openModal(modalUserOnboarding);
+}
+
+async function addHistoryEntry(action, details) {
+    const userName = localStorage.getItem('canchapro_user_name') || 'Invitado';
+    const entry = {
+        action,
+        user_name: userName,
+        details,
+        created_at: new Date().toISOString()
+    };
+
+    if (dbMode === 'supabase' && supabaseClient) {
+        try {
+            const { error } = await supabaseClient.from('historial').insert([entry]);
+            if (error) throw error;
+        } catch (e) {
+            console.error("Fallo al guardar log en Supabase, guardando localmente:", e);
+            saveHistoryEntryLocal(entry);
+        }
+    } else {
+        saveHistoryEntryLocal(entry);
+    }
+}
+
+function saveHistoryEntryLocal(entry) {
+    let history = getHistoryLocal();
+    history.unshift(entry);
+    if (history.length > 50) history = history.slice(0, 50);
+    localStorage.setItem('canchapro_historial', JSON.stringify(history));
+    fetchAndRenderHistory();
+}
+
+function getHistoryLocal() {
+    const data = localStorage.getItem('canchapro_historial');
+    return data ? JSON.parse(data) : [];
+}
+
+async function fetchAndRenderHistory() {
+    let entries = [];
+    if (dbMode === 'supabase' && supabaseClient) {
+        try {
+            const { data, error } = await supabaseClient
+                .from('historial')
+                .select('*')
+                .order('created_at', { ascending: false })
+                .limit(10);
+            if (error) throw error;
+            entries = data || [];
+            
+            if (btnClearHistoryLocal) btnClearHistoryLocal.style.display = 'none';
+        } catch (e) {
+            console.warn("Fallo al obtener historial de Supabase, usando local:", e);
+            entries = getHistoryLocal().slice(0, 10);
+            if (btnClearHistoryLocal) btnClearHistoryLocal.style.display = 'inline-block';
+        }
+    } else {
+        entries = getHistoryLocal().slice(0, 10);
+        if (btnClearHistoryLocal && entries.length > 0) {
+            btnClearHistoryLocal.style.display = 'inline-block';
+        } else if (btnClearHistoryLocal) {
+            btnClearHistoryLocal.style.display = 'none';
+        }
+    }
+
+    if (!activityList) return;
+
+    if (entries.length === 0) {
+        activityList.innerHTML = '<p class="no-activity">No hay actividad registrada.</p>';
+        return;
+    }
+
+    activityList.innerHTML = entries.map(entry => {
+        const timeAgo = formatTimeAgo(new Date(entry.created_at));
+        let actionClass = 'crear';
+        let actionWord = 'creó';
+
+        if (entry.action === 'editar') {
+            actionClass = 'editar';
+            actionWord = 'modificó';
+        } else if (entry.action === 'eliminar') {
+            actionClass = 'eliminar';
+            actionWord = 'eliminó';
+        }
+
+        return `
+            <div class="activity-item">
+                <div class="activity-indicator ${actionClass}"></div>
+                <div class="activity-content">
+                    <span class="activity-text">
+                        <span class="user-highlight">${escapeHTML(entry.user_name)}</span> ${escapeHTML(entry.details)}
+                    </span>
+                    <span class="activity-time">${timeAgo}</span>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function escapeHTML(str) {
+    if (!str) return '';
+    return str.replace(/[&<>'"]/g, 
+        tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+    );
+}
+
+function formatTimeAgo(date) {
+    const seconds = Math.floor((new Date() - date) / 1000);
+    
+    if (seconds < 0) return 'Ahora mismo';
+    if (seconds < 60) return `Hace ${seconds} seg`;
+    
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `Hace ${minutes} min`;
+    
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `Hace ${hours} h`;
+    
+    return date.toLocaleString('es-ES', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' });
+}
+
+function clearHistoryLocal() {
+    if (confirm("¿Estás seguro de que deseas limpiar el historial local? Esto no afectará la base de datos Supabase.")) {
+        localStorage.removeItem('canchapro_historial');
+        fetchAndRenderHistory();
+    }
 }

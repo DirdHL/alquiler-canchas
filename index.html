@@ -77,6 +77,11 @@
                         <i data-lucide="volleyball" class="inline-icon"></i> Vóley
                     </label>
                 </div>
+
+                <h3>Opciones</h3>
+                <button class="btn btn-secondary btn-sm btn-sidebar-action" id="btnOpenHistory">
+                    <i data-lucide="history"></i> Historial de Cambios
+                </button>
             </nav>
 
             <div class="stats-card">
@@ -93,6 +98,22 @@
                     <span class="stat-label">Cancha Pequeña</span>
                     <span class="stat-value" id="statCanchaPequena">0 h</span>
                 </div>
+            </div>
+
+            <!-- User Profile Card -->
+            <div class="user-profile-card">
+                <div class="user-info">
+                    <div class="user-avatar">
+                        <i data-lucide="user"></i>
+                    </div>
+                    <div class="user-details">
+                        <span class="user-label">Operador Activo</span>
+                        <span class="user-name" id="displayUserName">Invitado</span>
+                    </div>
+                </div>
+                <button class="btn-edit-user" id="btnEditUser" title="Cambiar Nombre">
+                    <i data-lucide="pencil"></i>
+                </button>
             </div>
 
             <footer class="sidebar-footer">
@@ -272,6 +293,7 @@
                     </ol>
                     <div class="code-box">
                         <pre id="sqlCode">
+-- 1. Tabla de reservas
 CREATE TABLE IF NOT EXISTS reservas (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   name TEXT NOT NULL,
@@ -284,20 +306,75 @@ CREATE TABLE IF NOT EXISTS reservas (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- Habilitar Row Level Security (necesario para Publishable key)
 ALTER TABLE reservas ENABLE ROW LEVEL SECURITY;
-
--- Permitir acceso publico (leer, insertar, actualizar, eliminar)
 CREATE POLICY "Acceso publico" ON reservas FOR ALL USING (true) WITH CHECK (true);
 
--- Habilitar acceso en tiempo real
-ALTER PUBLICATION supabase_realtime ADD TABLE reservas;
+-- 2. Tabla de historial (Log de auditoria)
+CREATE TABLE IF NOT EXISTS historial (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  action TEXT NOT NULL,         -- 'crear', 'editar', 'eliminar'
+  user_name TEXT NOT NULL,      -- Nombre de quien modifico
+  details TEXT NOT NULL,        -- Descripcion de la accion
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE historial ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Acceso publico" ON historial FOR ALL USING (true) WITH CHECK (true);
+
+-- Habilitar acceso en tiempo real para ambas tablas
+ALTER PUBLICATION supabase_realtime ADD TABLE reservas, historial;
                         </pre>
                         <button class="btn btn-secondary btn-sm btn-copy" id="btnCopySql">
                             <i data-lucide="copy"></i> Copiar SQL
                         </button>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- History Modal -->
+    <div class="modal-backdrop" id="modalHistory">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 style="display: flex; align-items: center; gap: 8px;">
+                    <i data-lucide="history" style="color: var(--primary);"></i> Historial de Actividad
+                </h3>
+                <button class="btn-close" id="btnCloseHistory"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body" style="padding-top: 16px;">
+                <div style="display: flex; justify-content: flex-end; margin-bottom: 16px;">
+                    <button class="btn btn-secondary btn-sm" id="btnClearHistoryLocal" style="display: none">
+                        <i data-lucide="trash-2"></i> Limpiar Historial Local
+                    </button>
+                </div>
+                <div class="activity-list" id="activityList">
+                    <p class="no-activity">No hay actividad registrada.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Onboarding Modal -->
+    <div class="modal-backdrop" id="modalUserOnboarding">
+        <div class="modal-card modal-sm" style="max-width: 380px;">
+            <div class="modal-header">
+                <h3>Identificación de Operador</h3>
+            </div>
+            <div class="modal-body">
+                <p class="settings-intro" style="margin-bottom: 16px;">Ingresa tu nombre o alias para registrar el historial de cambios en el sistema.</p>
+                <form id="formUserOnboarding">
+                    <div class="form-group">
+                        <label for="onboardingName">Nombre / Alias *</label>
+                        <div class="input-wrapper">
+                            <i data-lucide="user"></i>
+                            <input type="text" id="onboardingName" required placeholder="Ej. Juan Pérez o Admin 1" maxlength="25">
+                        </div>
+                    </div>
+                    <div class="modal-actions" style="margin-top: 16px;">
+                        <button type="submit" class="btn btn-primary" style="width: 100%">Continuar</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
