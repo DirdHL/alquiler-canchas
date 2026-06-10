@@ -803,12 +803,13 @@ function handleCopyReservation() {
     const pelotaVal = bookingPelotaInput.value === 'true';
     const chalecoVal = bookingChalecoInput.value === 'true';
 
-    // Show ball emoji only if pelota is Yes
+    // Set dynamic sport name and matching ball emoji
+    const sportName = sportVal === 'Vóley' ? 'Voley' : 'Fútbol';
     const pelotaBallEmoji = sportVal === 'Vóley' ? '🏐' : '⚽';
     const pelotaText = pelotaVal ? `Si ${pelotaBallEmoji}` : 'No';
 
     // Show vest emoji only if chalecos is Yes
-    const chalecoText = chalecoVal ? 'Si 🎽' : 'No';
+    const chalecoText = chalecoVal ? `Si 🎽` : 'No';
 
     // Choose clock/sun/moon emoji based on booking start hour
     const startHour = parseInt(startTime.split(':')[0]);
@@ -826,15 +827,15 @@ function handleCopyReservation() {
     const message = `📌 RESERVA DE CANCHA LOS PINOS
 
 Nombre del cliente: ${clientName}
-Cancha (Chica o Grande): ${courtText}
+Cancha: ${courtText}
 Fecha: ${dateText}
-${timeEmoji} Hora: ${timeText}
-Pelota: ${pelotaText}
+Hora: ${timeText} ${timeEmoji}
+Pelota de ${sportName}: ${pelotaText}
 Chalecos: ${chalecoText}
-Asesora: ${advisorText}
+Asesor: ${advisorText}
 
-*No se acepta reprogramación de fecha ni de hora
-*No se acepta devolución de dinero`;
+⛔ No se acepta reprogramación de fecha ni de hora
+⛔ No se acepta devolución de dinero`;
 
     // Copy to clipboard
     navigator.clipboard.writeText(message).then(() => {
