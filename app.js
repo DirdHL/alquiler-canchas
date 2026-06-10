@@ -527,15 +527,42 @@ function loadDatabaseSettings() {
 }
 
 // Test Connection silently at startup
+function updateDatabaseStatusUI(connected, errorMsg = null) {
+    const btnOpenSettings = document.getElementById('btnOpenSettings');
+    if (!btnOpenSettings) return;
+
+    if (connected) {
+        statusDot.className = 'status-dot connected';
+        statusText.textContent = 'Conectado a la Nube (Supabase)';
+        statusDesc.textContent = 'Las reservas están sincronizadas con la nube y compartidas en tiempo real.';
+        
+        btnOpenSettings.className = 'btn btn-secondary btn-sm';
+        btnOpenSettings.innerHTML = '<i data-lucide="database"></i> Configuración de Base de Datos';
+    } else {
+        statusDot.className = 'status-dot disconnected';
+        if (errorMsg) {
+            statusText.textContent = 'Error de Conexión (Supabase)';
+            statusDesc.textContent = errorMsg;
+        } else {
+            statusText.textContent = 'Modo Sin Conexión (Local)';
+            statusDesc.textContent = 'Las reservas se guardan localmente en tu navegador. Configura la base de datos para compartirlas y ver la info.';
+        }
+        
+        btnOpenSettings.className = 'btn btn-attention btn-sm';
+        btnOpenSettings.innerHTML = '<i data-lucide="database"></i> Ingresa aquí para ver la info';
+    }
+    if (window.lucide) {
+        lucide.createIcons();
+    }
+}
+
 async function testSupabaseSilent() {
     try {
         const { data, error } = await supabaseClient.from('reservas').select('id').limit(1);
         if (error) throw error;
         
         // Success
-        statusDot.className = 'status-dot connected';
-        statusText.textContent = 'Conectado a la Nube (Supabase)';
-        statusDesc.textContent = 'Las reservas están sincronizadas con la nube y compartidas en tiempo real.';
+        updateDatabaseStatusUI(true);
         
         // Listen to real-time events to update calendar immediately when others make changes!
         setupRealtimeSubscription();
@@ -543,9 +570,7 @@ async function testSupabaseSilent() {
         if (calendar) calendar.refetchEvents();
     } catch (err) {
         console.warn("Supabase no está listo o la tabla no existe:", err.message);
-        statusDot.className = 'status-dot disconnected';
-        statusText.textContent = 'Error de Conexión (Supabase)';
-        statusDesc.textContent = 'Configurado, pero no pudimos conectar a la tabla "reservas". ¿Ejecutaste el SQL?';
+        updateDatabaseStatusUI(false, 'Configurado, pero no pudimos conectar a la tabla "reservas". ¿Ejecutaste el SQL?');
     }
 }
 
@@ -570,9 +595,7 @@ function setupRealtimeSubscription() {
 function setLocalMode() {
     dbMode = 'local';
     supabaseClient = null;
-    statusDot.className = 'status-dot disconnected';
-    statusText.textContent = 'Modo Sin Conexión (Local)';
-    statusDesc.textContent = 'Las reservas se guardan localmente en tu navegador. Configura Supabase para compartirlas.';
+    updateDatabaseStatusUI(false);
 }
 
 // Handle saving database settings form
@@ -619,9 +642,7 @@ async function handleSaveSettings(e) {
         dbMode = 'supabase';
         
         // Sync indicator UI
-        statusDot.className = 'status-dot connected';
-        statusText.textContent = 'Conectado a la Nube (Supabase)';
-        statusDesc.textContent = 'Las reservas están sincronizadas con la nube y compartidas en tiempo real.';
+        updateDatabaseStatusUI(true);
         
         setupRealtimeSubscription();
         
