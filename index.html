@@ -22,11 +22,19 @@
 
 <body>
     <div class="app-container">
+        <!-- Sidebar Backdrop for Mobile -->
+        <div class="sidebar-backdrop-overlay" id="sidebarBackdrop"></div>
+
         <!-- Sidebar -->
-        <aside class="sidebar">
+        <aside class="sidebar" id="sidebar">
             <div class="logo-area">
-                <i data-lucide="calendar-range" class="logo-icon"></i>
-                <h2>Sport<span>Victoria</span></h2>
+                <div class="logo-title">
+                    <i data-lucide="calendar-range" class="logo-icon"></i>
+                    <h2>Sport<span>Victoria</span></h2>
+                </div>
+                <button class="btn-close-sidebar" id="btnCloseSidebar">
+                    <i data-lucide="x"></i>
+                </button>
             </div>
 
             <div class="status-indicator-card">
@@ -34,7 +42,7 @@
                     <span class="status-dot disconnected" id="statusDot"></span>
                     <span class="status-text" id="statusText">Modo Sin Conexión (Local)</span>
                 </div>
-                <p class="status-desc" id="statusDesc">Las reservas se guardan en tu navegador. Configura Supabase para
+                <p class="status-desc" id="statusDesc">Las reservas se guardan en tu navegador . Configura Supabase para
                     compartirlas.</p>
                 <button class="btn btn-secondary btn-sm" id="btnOpenSettings">
                     <i data-lucide="database"></i> Ingresa para acceder a la base de datos
@@ -96,12 +104,17 @@
         <!-- Main Content -->
         <main class="main-content">
             <header class="app-header">
-                <div class="header-title">
-                    <h1>Calendario de Reservas</h1>
-                    <p>Gestiona, programa y actualiza los alquileres de tus canchas en tiempo real.</p>
+                <div class="header-left">
+                    <button class="btn btn-secondary btn-menu" id="btnToggleSidebar">
+                        <i data-lucide="menu"></i>
+                    </button>
+                    <div class="header-title">
+                        <h1>Calendario de Reservas</h1>
+                        <p>Gestiona, programa y actualiza los alquileres de tus canchas en tiempo real.</p>
+                    </div>
                 </div>
                 <button class="btn btn-primary" id="btnNewReservation">
-                    <i data-lucide="plus"></i> Nueva Reserva
+                    <i data-lucide="plus"></i> <span class="btn-text">Nueva Reserva</span>
                 </button>
             </header>
 

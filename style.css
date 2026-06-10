@@ -70,7 +70,82 @@ body {
 .logo-area {
     display: flex;
     align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.logo-title {
+    display: flex;
+    align-items: center;
     gap: 12px;
+}
+
+.btn-close-sidebar {
+    display: none;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 50%;
+    transition: var(--transition-smooth);
+}
+
+.btn-close-sidebar:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-primary);
+}
+
+.btn-close-sidebar svg {
+    width: 20px;
+    height: 20px;
+}
+
+.btn.btn-menu {
+    display: none;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    cursor: pointer;
+    padding: 10px;
+    border-radius: var(--radius-md);
+    transition: var(--transition-smooth);
+}
+
+.btn.btn-menu:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.btn.btn-menu svg {
+    width: 20px;
+    height: 20px;
+    display: block;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+/* Sidebar backdrop overlay for mobile */
+.sidebar-backdrop-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(4px);
+    z-index: 99;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+.sidebar-backdrop-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
 }
 
 .logo-icon {
@@ -784,14 +859,187 @@ body {
     }
     
     .sidebar {
-        border-right: none;
-        border-bottom: 1px solid var(--border-color);
-        height: auto;
-        padding: 20px;
+        position: fixed;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        width: 280px;
+        background: #0f172a; /* Solid background for overlay */
+        border-right: 1px solid var(--border-color);
+        box-shadow: 10px 0 30px rgba(0, 0, 0, 0.5);
+        transform: translateX(-100%);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: 100;
+        padding: 24px;
+        height: 100vh;
+        overflow-y: auto;
+    }
+    
+    .sidebar.open {
+        transform: translateX(0);
+    }
+    
+    .btn-close-sidebar {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .btn.btn-menu {
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
     
     .main-content {
-        padding: 20px;
+        padding: 24px 20px;
         height: auto;
+    }
+}
+
+@media (max-width: 768px) {
+    /* Floating Action Button (FAB) for Nueva Reserva */
+    #btnNewReservation {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        padding: 0;
+        z-index: 90;
+        box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    #btnNewReservation .btn-text {
+        display: none;
+    }
+    
+    #btnNewReservation svg {
+        width: 24px;
+        height: 24px;
+        margin: 0;
+    }
+    
+    /* Minimize main content margins */
+    .main-content {
+        padding: 16px 12px;
+    }
+    
+    .calendar-card {
+        padding: 12px;
+        border-radius: var(--radius-md);
+        min-height: 450px;
+    }
+    
+    .app-header {
+        gap: 12px;
+    }
+    
+    .header-title h1 {
+        font-size: 22px;
+    }
+    
+    .header-title p {
+        font-size: 12px;
+    }
+}
+
+@media (max-width: 500px) {
+    /* Modals & Forms scaling */
+    .modal-card {
+        width: calc(100% - 24px);
+        margin: 12px;
+    }
+    
+    .modal-body {
+        padding: 16px;
+    }
+    
+    .form-row {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+    
+    .form-group {
+        margin-bottom: 12px;
+    }
+    
+    .modal-actions {
+        flex-direction: column;
+        gap: 12px;
+        align-items: stretch;
+    }
+    
+    .right-actions {
+        width: 100%;
+        flex-direction: column;
+        gap: 8px;
+        margin-left: 0;
+    }
+    
+    .right-actions .btn, .btn-delete {
+        width: 100%;
+    }
+    
+    /* FullCalendar custom mobile layout */
+    .fc .fc-toolbar {
+        flex-direction: column;
+        gap: 10px;
+        align-items: center;
+    }
+    
+    .fc .fc-toolbar-title {
+        font-size: 15px !important;
+        text-align: center;
+    }
+    
+    .fc .fc-button {
+        padding: 5px 8px !important;
+        font-size: 11px !important;
+    }
+    
+    .fc-header-toolbar .fc-toolbar-chunk {
+        display: flex;
+        justify-content: center;
+        width: 100%;
+    }
+    
+    .fc th {
+        font-size: 11px;
+        padding: 6px 0 !important;
+    }
+    
+    .fc .fc-daygrid-day-number {
+        font-size: 11px;
+        padding: 4px !important;
+    }
+    
+    .fc-event {
+        font-size: 10px !important;
+        padding: 2px 4px !important;
+    }
+}
+
+@media (max-width: 360px) {
+    /* Adjust input wrapper padding to maximize input space */
+    .input-wrapper input,
+    .input-wrapper select,
+    .input-wrapper textarea {
+        padding-left: 36px;
+        font-size: 13px;
+    }
+    
+    .input-wrapper svg {
+        left: 10px;
+        width: 16px;
+        height: 16px;
+    }
+    
+    .header-title h1 {
+        font-size: 20px;
     }
 }

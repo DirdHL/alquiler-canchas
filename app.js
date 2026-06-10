@@ -9,6 +9,11 @@ let calendar = null;
 let allEvents = []; // Cache for local/downloaded events
 
 // DOM Elements
+const sidebar = document.getElementById('sidebar');
+const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+const btnToggleSidebar = document.getElementById('btnToggleSidebar');
+const btnCloseSidebar = document.getElementById('btnCloseSidebar');
+
 const statusDot = document.getElementById('statusDot');
 const statusText = document.getElementById('statusText');
 const statusDesc = document.getElementById('statusDesc');
@@ -164,6 +169,17 @@ function formatTime(date) {
 
 // Event Listeners Setup
 function setupEventListeners() {
+    // Mobile Sidebar Drawer Actions
+    if (btnToggleSidebar) {
+        btnToggleSidebar.addEventListener('click', openSidebarDrawer);
+    }
+    if (btnCloseSidebar) {
+        btnCloseSidebar.addEventListener('click', closeSidebarDrawer);
+    }
+    if (sidebarBackdrop) {
+        sidebarBackdrop.addEventListener('click', closeSidebarDrawer);
+    }
+
     // Booking Form Modals
     btnNewReservation.addEventListener('click', () => openBookingModal());
     btnCloseBooking.addEventListener('click', closeBookingModal);
@@ -173,6 +189,7 @@ function setupEventListeners() {
 
     // Settings Modal
     btnOpenSettings.addEventListener('click', () => {
+        closeSidebarDrawer();
         openModal(modalSettings);
         settingsFeedback.className = 'settings-feedback';
         settingsFeedback.textContent = '';
@@ -203,6 +220,9 @@ function setupEventListeners() {
 
     // Responsive views adjust
     window.addEventListener('resize', () => {
+        if (window.innerWidth >= 900) {
+            closeSidebarDrawer();
+        }
         if (!calendar) return;
         const newView = window.innerWidth < 768 ? 'timeGridDay' : 'timeGridWeek';
         if (calendar.view.type !== newView) {
@@ -215,6 +235,9 @@ function setupEventListeners() {
 function openBookingModal(booking = null, defaults = null) {
     formBooking.reset();
     bookingError.style.display = 'none';
+    
+    // Close mobile drawer if open
+    closeSidebarDrawer();
     
     if (booking) {
         // Edit Mode
@@ -255,6 +278,17 @@ function openBookingModal(booking = null, defaults = null) {
 
 function closeBookingModal() {
     closeModal(modalBooking);
+}
+
+// Mobile sidebar controls
+function openSidebarDrawer() {
+    if (sidebar) sidebar.classList.add('open');
+    if (sidebarBackdrop) sidebarBackdrop.classList.add('active');
+}
+
+function closeSidebarDrawer() {
+    if (sidebar) sidebar.classList.remove('open');
+    if (sidebarBackdrop) sidebarBackdrop.classList.remove('active');
 }
 
 // Modal helper controls
