@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sport Victoria - Sistema de Alquiler de Canchas</title>
+    <title>Sport Victoria (Los Pinos) - Sistema de Alquiler de Canchas</title>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -30,7 +30,7 @@
             <div class="logo-area">
                 <div class="logo-title">
                     <i data-lucide="calendar-range" class="logo-icon"></i>
-                    <h2>Sport<span>Victoria</span></h2>
+                    <h2>Sport<span>Victoria (Los Pinos)</span></h2>
                 </div>
                 <button class="btn-close-sidebar" id="btnCloseSidebar">
                     <i data-lucide="x"></i>
@@ -42,7 +42,8 @@
                     <span class="status-dot disconnected" id="statusDot"></span>
                     <span class="status-text" id="statusText">Modo Sin Conexión (Local)</span>
                 </div>
-                <p class="status-desc" id="statusDesc">Accede con el link y la contraseña para poder compartir la informacion con los demas asesores</p>
+                <p class="status-desc" id="statusDesc">Accede con el link y la contraseña para poder compartir la
+                    informacion con los demas asesores</p>
                 <button class="btn btn-secondary btn-sm" id="btnOpenSettings">
                     <i data-lucide="database"></i> Ingresa para acceder a la base de datos
                 </button>
@@ -361,13 +362,15 @@ ALTER PUBLICATION supabase_realtime ADD TABLE reservas, historial;
                 <h3>Identificación de Operador</h3>
             </div>
             <div class="modal-body">
-                <p class="settings-intro" style="margin-bottom: 16px;">Ingresa tu nombre o alias para registrar el historial de cambios en el sistema.</p>
+                <p class="settings-intro" style="margin-bottom: 16px;">Ingresa tu nombre o alias para registrar el
+                    historial de cambios en el sistema.</p>
                 <form id="formUserOnboarding">
                     <div class="form-group">
                         <label for="onboardingName">Nombre / Alias *</label>
                         <div class="input-wrapper">
                             <i data-lucide="user"></i>
-                            <input type="text" id="onboardingName" required placeholder="Ej. Juan Pérez o Admin 1" maxlength="25">
+                            <input type="text" id="onboardingName" required placeholder="Ej. Juan Pérez o Admin 1"
+                                maxlength="25">
                         </div>
                     </div>
                     <div class="modal-actions" style="margin-top: 16px;">
