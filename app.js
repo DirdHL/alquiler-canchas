@@ -707,7 +707,10 @@ async function handleSaveBooking(e) {
         // Add history entry!
         const isUpdate = !!bookingIdInput.value;
         const logAction = isUpdate ? 'editar' : 'crear';
-        const logDetails = `${isUpdate ? 'modificó la' : 'creó una'} reserva para ${name} (${court} - ${sport}${pelota ? ' + Pelota' : ''}${chaleco ? ' + Chaleco' : ''}) el ${date} de ${startTime} a ${endTime}`;
+        const formattedDate = formatDateDDMMYYYY(date);
+        const formattedStart = formatTimeHHMM(startTime);
+        const formattedEnd = formatTimeHHMM(endTime);
+        const logDetails = `${isUpdate ? 'modificó la' : 'creó una'} reserva para ${name} (${court} - ${sport}${pelota ? ' + Pelota' : ''}${chaleco ? ' + Chaleco' : ''}) el ${formattedDate} de ${formattedStart} a ${formattedEnd}`;
         await addHistoryEntry(logAction, logDetails);
 
         // Refresh Calendar UI & Close modal
@@ -748,7 +751,10 @@ async function handleDeleteBooking() {
         }
 
         // Add history entry!
-        const logDetails = `eliminó la reserva de ${name} (${court} - ${sport}) del ${date} de ${startTime} a ${endTime}`;
+        const formattedDate = formatDateDDMMYYYY(date);
+        const formattedStart = formatTimeHHMM(startTime);
+        const formattedEnd = formatTimeHHMM(endTime);
+        const logDetails = `eliminó la reserva de ${name} (${court} - ${sport}) del ${formattedDate} de ${formattedStart} a ${formattedEnd}`;
         await addHistoryEntry('eliminar', logDetails);
 
         closeBookingModal();
@@ -1398,4 +1404,25 @@ function clearHistoryLocal() {
         localStorage.removeItem('canchapro_historial');
         fetchAndRenderHistory();
     }
+}
+
+// Utility to normalize times to HH:MM format (removing seconds if any)
+function formatTimeHHMM(timeStr) {
+    if (!timeStr) return '';
+    const parts = timeStr.split(':');
+    if (parts.length >= 2) {
+        return `${parts[0]}:${parts[1]}`;
+    }
+    return timeStr;
+}
+
+// Utility to normalize dates to DD/MM/YYYY format
+function formatDateDDMMYYYY(dateStr) {
+    if (dateStr && dateStr.includes('-')) {
+        const parts = dateStr.split('-');
+        if (parts.length === 3) {
+            return `${parts[2]}/${parts[1]}/${parts[0]}`;
+        }
+    }
+    return dateStr;
 }
