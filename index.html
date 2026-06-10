@@ -184,7 +184,8 @@
                         <label for="bookingNotes">Asesor / Notas *</label>
                         <div class="input-wrapper textarea-wrapper">
                             <i data-lucide="user-check"></i>
-                            <textarea id="bookingNotes" placeholder="Nombre del asesor y observaciones..." rows="2" required></textarea>
+                            <textarea id="bookingNotes" placeholder="Nombre del asesor y observaciones..." rows="2"
+                                required></textarea>
                         </div>
                     </div>
 
@@ -212,26 +213,28 @@
                 <button class="btn-close" id="btnCloseSettings"><i data-lucide="x"></i></button>
             </div>
             <div class="modal-body">
-                <p class="settings-intro">Al conectar Supabase, tus reservas se guardarán en la nube. Esto permitirá que
-                    tus compañeras vean y modifiquen las reservas en tiempo real desde sus propias computadoras o
-                    celulares.</p>
+                <p class="settings-intro">Ingresa la el link de la base de datos y la contraseña, para acceder al
+                    calendario de reservas.</p>
 
                 <form id="formSettings">
                     <div class="form-group">
-                        <label for="supabaseUrl">URL del Proyecto en Supabase</label>
+                        <label for="supabaseUrl">URL DE LA BASE DE DATOS</label>
                         <div class="input-wrapper">
                             <i data-lucide="link-2"></i>
                             <input type="url" id="supabaseUrl" placeholder="https://xxxxxx.supabase.co" required>
                         </div>
                     </div>
                     <div class="form-group">
-                        <label for="supabaseKey">Clave Anon de Supabase <span style="font-size:0.78em;color:#f87171;font-weight:500">(NO uses la clave secreta)</span></label>
+                        <label for="supabaseKey">Clave Anon de Supabase <span
+                                style="font-size:0.78em;color:#f87171;font-weight:500">(Pidele al
+                                administrador)</span></label>
                         <div class="input-wrapper">
                             <i data-lucide="key-round"></i>
                             <input type="password" id="supabaseKey"
                                 placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." required>
                         </div>
-                        <small style="color:#94a3b8;margin-top:4px;display:block">Ve a <strong>Configuración → Claves API</strong> y copia la clave <strong>anon | public</strong> de la pestaña <strong>Legacy</strong></small>
+                        <small style="color:#94a3b8;margin-top:4px;display:block">Haz clic en <strong>Probar
+                                Conexión</strong> y luego en <strong>Guardar Credenciales</strong>.</small>
                     </div>
 
                     <div class="settings-actions">
@@ -242,12 +245,17 @@
                 </form>
 
                 <div class="sql-instructions">
-                    <h4><i data-lucide="terminal"></i> Pasos para Crear la Tabla en Supabase</h4>
+                    <h4><i data-lucide="terminal"></i> Pasos para Crear la Tabla en Supabase (ignora esto xD)</h4>
                     <ol>
-                        <li>Entra a tu panel de <a href="https://supabase.com" target="_blank">Supabase</a> y crea un proyecto gratuito.</li>
-                        <li>Ve a <strong>Configuración → Claves API</strong> y copia la clave <strong>anon | public</strong> de la pestaña <strong>Legacy</strong>. <span style="color:#f87171">⚠️ NO copies la clave secreta (service_role).</span></li>
+                        <li>Entra a tu panel de <a href="https://supabase.com" target="_blank">base</a> y crea un tabla.
+                        </li>
+                        <li>Ve a <strong>Configuración → Claves API</strong> y copia la clave <strong>anon |
+                                public</strong> de la pestaña <strong>Legacy</strong>. <span style="color:#f87171">⚠️ NO
+                                copies la clave secreta (service_role).</span></li>
                         <li>Ve al <strong>Editor SQL</strong> en el menú lateral izquierdo.</li>
-                        <li>Haz clic en <strong>Nueva consulta</strong>, pega el siguiente SQL y presiona <strong>Ejecutar</strong>:</li>
+                        <li>Haz clic en <strong>Nueva consulta</strong>, pega el siguiente SQL y presiona
+                            <strong>Ejecutar - By Rogger Dird</strong>:
+                        </li>
                     </ol>
                     <div class="code-box">
                         <pre id="sqlCode">
