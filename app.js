@@ -1000,29 +1000,46 @@ function saveHistoryEntryLocal(entry) {
 
 function getHistoryLocal() {
     const data = localStorage.getItem('canchapro_historial');
-    return data ? JSON.parse(data) : [];
+    if (!data) return [];
+    try {
+        const history = JSON.parse(data);
+        const threeDaysAgo = Date.now() - (3 * 24 * 60 * 60 * 1000);
+        return history.filter(e => new Date(e.created_at).getTime() > threeDaysAgo);
+    } catch (e) {
+        return [];
+    }
 }
 
 async function fetchAndRenderHistory() {
     let entries = [];
+    const threeDaysAgoISO = new Date(Date.now() - (3 * 24 * 60 * 60 * 1000)).toISOString();
+
     if (dbMode === 'supabase' && supabaseClient) {
         try {
+            // Prune database logs older than 3 days
+            await supabaseClient
+                .from('historial')
+                .delete()
+                .lt('created_at', threeDaysAgoISO);
+
+            // Fetch remaining active logs for the last 3 days
             const { data, error } = await supabaseClient
                 .from('historial')
                 .select('*')
-                .order('created_at', { ascending: false })
-                .limit(10);
+                .gt('created_at', threeDaysAgoISO)
+                .order('created_at', { ascending: false });
+                
             if (error) throw error;
             entries = data || [];
 
             if (btnClearHistoryLocal) btnClearHistoryLocal.style.display = 'none';
         } catch (e) {
             console.warn("Fallo al obtener historial de Supabase, usando local:", e);
-            entries = getHistoryLocal().slice(0, 10);
+            entries = getHistoryLocal();
             if (btnClearHistoryLocal) btnClearHistoryLocal.style.display = 'inline-block';
         }
     } else {
-        entries = getHistoryLocal().slice(0, 10);
+        entries = getHistoryLocal();
         if (btnClearHistoryLocal && entries.length > 0) {
             btnClearHistoryLocal.style.display = 'inline-block';
         } else if (btnClearHistoryLocal) {
