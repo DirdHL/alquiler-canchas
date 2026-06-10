@@ -35,7 +35,6 @@ const bookingError = document.getElementById('bookingError');
 
 const btnNewReservation = document.getElementById('btnNewReservation');
 const btnCloseBooking = document.getElementById('btnCloseBooking');
-const btnCancelBooking = document.getElementById('btnCancelBooking');
 const btnDeleteBooking = document.getElementById('btnDeleteBooking');
 const btnCopyReservation = document.getElementById('btnCopyReservation');
 
@@ -207,7 +206,6 @@ function setupEventListeners() {
     // Booking Form Modals
     btnNewReservation.addEventListener('click', () => openBookingModal());
     btnCloseBooking.addEventListener('click', closeBookingModal);
-    btnCancelBooking.addEventListener('click', closeBookingModal);
     btnDeleteBooking.addEventListener('click', handleDeleteBooking);
     if (btnCopyReservation) {
         btnCopyReservation.addEventListener('click', handleCopyReservation);
