@@ -234,11 +234,19 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="bookingNotes">Asesor / Notas *</label>
-                        <div class="input-wrapper textarea-wrapper">
+                        <label for="bookingNotes">Asesor *</label>
+                        <div class="input-wrapper">
                             <i data-lucide="user-check"></i>
-                            <textarea id="bookingNotes" placeholder="Nombre del asesor y observaciones..." rows="2"
-                                required></textarea>
+                            <select id="bookingNotes" required>
+                                <!-- Se llenará dinámicamente -->
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group hidden" id="customAsesorGroup">
+                        <label for="bookingNotesCustom">Escribe el Nombre del Asesor *</label>
+                        <div class="input-wrapper">
+                            <i data-lucide="pencil"></i>
+                            <input type="text" id="bookingNotesCustom" placeholder="Nombre del nuevo asesor...">
                         </div>
                     </div>
 

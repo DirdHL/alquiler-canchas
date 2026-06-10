@@ -310,6 +310,25 @@ function setupEventListeners() {
     // Toggle buttons event listeners
     setupToggleListeners('pelota');
     setupToggleListeners('chaleco');
+
+    // Asesor select dropdown change listener
+    const selectAsesor = document.getElementById('bookingNotes');
+    const customGroup = document.getElementById('customAsesorGroup');
+    const customInput = document.getElementById('bookingNotesCustom');
+    
+    if (selectAsesor && customGroup && customInput) {
+        selectAsesor.addEventListener('change', () => {
+            if (selectAsesor.value === 'Otro...') {
+                customGroup.classList.remove('hidden');
+                customInput.value = '';
+                customInput.required = true;
+                customInput.focus();
+            } else {
+                customGroup.classList.add('hidden');
+                customInput.required = false;
+            }
+        });
+    }
 }
 
 // Helper to set toggle button active states and hidden input value
@@ -346,6 +365,75 @@ function setupToggleListeners(type) {
     });
 }
 
+// Helper to populate the dropdown of advisors with unique previous entries
+function populateAsesoresDropdown(selectedValue = '') {
+    const select = document.getElementById('bookingNotes');
+    if (!select) return;
+    
+    // Clear dropdown
+    select.innerHTML = '';
+    
+    // Collect unique advisor names
+    const advisors = new Set();
+    
+    // Add current user
+    const currentUser = localStorage.getItem('canchapro_user_name');
+    if (currentUser) {
+        advisors.add(currentUser);
+    }
+    
+    // Add unique notes (advisor) from all events
+    allEvents.forEach(e => {
+        if (e.notes && e.notes.trim() && e.notes !== 'Otro...') {
+            advisors.add(e.notes.trim());
+        }
+    });
+    
+    // Add options to select
+    advisors.forEach(advisor => {
+        const option = document.createElement('option');
+        option.value = advisor;
+        option.textContent = advisor;
+        select.appendChild(option);
+    });
+    
+    // Add "Otro..." option to allow typing a new name
+    const optionOtro = document.createElement('option');
+    optionOtro.value = 'Otro...';
+    optionOtro.textContent = 'Otro... (Escribir nombre)';
+    select.appendChild(optionOtro);
+    
+    const customGroup = document.getElementById('customAsesorGroup');
+    const customInput = document.getElementById('bookingNotesCustom');
+    
+    if (selectedValue && !advisors.has(selectedValue) && selectedValue !== 'Otro...') {
+        // If the saved value is not in our set, it means it's a custom value
+        const optionCustom = document.createElement('option');
+        optionCustom.value = selectedValue;
+        optionCustom.textContent = selectedValue;
+        select.insertBefore(optionCustom, optionOtro);
+        select.value = selectedValue;
+        customGroup.classList.add('hidden');
+        customInput.required = false;
+    } else if (selectedValue) {
+        select.value = selectedValue;
+        if (selectedValue === 'Otro...') {
+            customGroup.classList.remove('hidden');
+            customInput.required = true;
+        } else {
+            customGroup.classList.add('hidden');
+            customInput.required = false;
+        }
+    } else {
+        // Default to current user
+        if (currentUser && advisors.has(currentUser)) {
+            select.value = currentUser;
+        }
+        customGroup.classList.add('hidden');
+        customInput.required = false;
+    }
+}
+
 // Open Booking Modal (Null = New, Object = Edit)
 function openBookingModal(booking = null, defaults = null) {
     formBooking.reset();
@@ -364,7 +452,9 @@ function openBookingModal(booking = null, defaults = null) {
         bookingDateInput.value = booking.date;
         bookingStartTimeInput.value = booking.start_time;
         bookingEndTimeInput.value = booking.end_time;
-        bookingNotesInput.value = booking.notes || '';
+
+        // Populate and select correct advisor
+        populateAsesoresDropdown(booking.notes || '');
 
         // Set pelota and chaleco state
         const pelotaVal = booking.pelota === true || booking.pelota === 'true';
@@ -408,6 +498,10 @@ function openBookingModal(booking = null, defaults = null) {
             bookingStartTimeInput.value = '14:00';
             bookingEndTimeInput.value = '15:00';
         }
+
+        // Populate and default advisor to active operator
+        const activeUser = localStorage.getItem('canchapro_user_name') || '';
+        populateAsesoresDropdown(activeUser);
     }
 
     openModal(modalBooking);
@@ -543,7 +637,12 @@ async function handleSaveBooking(e) {
     const date = bookingDateInput.value;
     const startTime = bookingStartTimeInput.value;
     const endTime = bookingEndTimeInput.value;
-    const notes = bookingNotesInput.value.trim();
+    let notes = bookingNotesInput.value;
+    if (notes === 'Otro...') {
+        notes = document.getElementById('bookingNotesCustom').value.trim();
+    } else {
+        notes = notes.trim();
+    }
     const pelota = bookingPelotaInput.value === 'true';
     const chaleco = bookingChalecoInput.value === 'true';
 
