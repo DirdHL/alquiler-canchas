@@ -37,6 +37,7 @@ const btnNewReservation = document.getElementById('btnNewReservation');
 const btnCloseBooking = document.getElementById('btnCloseBooking');
 const btnCancelBooking = document.getElementById('btnCancelBooking');
 const btnDeleteBooking = document.getElementById('btnDeleteBooking');
+const btnCopyReservation = document.getElementById('btnCopyReservation');
 
 const modalSettings = document.getElementById('modalSettings');
 const btnOpenSettings = document.getElementById('btnOpenSettings');
@@ -207,6 +208,9 @@ function setupEventListeners() {
     btnCloseBooking.addEventListener('click', closeBookingModal);
     btnCancelBooking.addEventListener('click', closeBookingModal);
     btnDeleteBooking.addEventListener('click', handleDeleteBooking);
+    if (btnCopyReservation) {
+        btnCopyReservation.addEventListener('click', handleCopyReservation);
+    }
     formBooking.addEventListener('submit', handleSaveBooking);
 
     // Settings Modal
@@ -759,6 +763,76 @@ async function handleDeleteBooking() {
 function showBookingError(msg) {
     bookingError.textContent = msg;
     bookingError.style.display = 'block';
+}
+
+// Format and copy the reservation details to the clipboard
+function handleCopyReservation() {
+    const clientName = bookingNameInput.value.trim();
+    const courtRaw = bookingCourtInput.value;
+    const courtText = (courtRaw === 'Pequeña' || courtRaw === 'Chica') ? 'Chica' : 'Grande';
+    let dateText = bookingDateInput.value;
+    const startTime = bookingStartTimeInput.value;
+    const endTime = bookingEndTimeInput.value;
+
+    let advisorText = bookingNotesInput.value;
+    if (advisorText === 'Otro...') {
+        advisorText = document.getElementById('bookingNotesCustom').value.trim();
+    } else {
+        advisorText = advisorText ? advisorText.trim() : '';
+    }
+
+    // Validate if everything is filled
+    if (!clientName || !courtRaw || !dateText || !startTime || !endTime || !advisorText) {
+        showBookingError("Por favor completa todos los campos obligatorios (*) antes de copiar la reserva.");
+        return;
+    }
+
+    // Clear any previous error
+    bookingError.style.display = 'none';
+
+    // Format date from YYYY-MM-DD to DD/MM/YYYY
+    if (dateText && dateText.includes('-')) {
+        const parts = dateText.split('-');
+        if (parts.length === 3) {
+            dateText = `${parts[2]}/${parts[1]}/${parts[0]}`;
+        }
+    }
+
+    const timeText = `${startTime} - ${endTime}`;
+    const pelotaVal = bookingPelotaInput.value === 'true';
+    const pelotaText = pelotaVal ? 'Si' : 'No';
+    const chalecoVal = bookingChalecoInput.value === 'true';
+    const chalecoText = chalecoVal ? 'Si' : 'No';
+
+    const message = `RESERVA DE CANCHA LOS PINOS
+
+Nombre del cliente: ${clientName}
+Cancha (Chica o Grande): ${courtText}
+Fecha: ${dateText}
+Hora: ${timeText}
+Pelota: ${pelotaText}
+Chalecos: ${chalecoText}
+Asesora: ${advisorText}
+
+*No se acepta reprogramación de fecha ni de hora
+*No se acepta devolución de dinero`;
+
+    // Copy to clipboard
+    navigator.clipboard.writeText(message).then(() => {
+        // Change button style/content temporarily to show success
+        const originalHtml = btnCopyReservation.innerHTML;
+        btnCopyReservation.innerHTML = '<i data-lucide="check"></i> ¡Copiado!';
+        btnCopyReservation.style.backgroundColor = '#16a34a'; // green-600
+        if (window.lucide) lucide.createIcons();
+
+        setTimeout(() => {
+            btnCopyReservation.innerHTML = originalHtml;
+            btnCopyReservation.style.backgroundColor = ''; // Reverts to CSS
+            if (window.lucide) lucide.createIcons();
+        }, 2000);
+    }).catch(err => {
+        console.error('No se pudo copiar el texto: ', err);
+    });
 }
 
 // ==========================================

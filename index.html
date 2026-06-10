@@ -253,9 +253,14 @@
                     <div class="form-error" id="bookingError"></div>
 
                     <div class="modal-actions">
-                        <button type="button" class="btn btn-danger btn-delete hidden" id="btnDeleteBooking">
-                            <i data-lucide="trash-2"></i> Eliminar
-                        </button>
+                        <div class="left-actions">
+                            <button type="button" class="btn btn-danger btn-delete hidden" id="btnDeleteBooking">
+                                <i data-lucide="trash-2"></i> Eliminar
+                            </button>
+                            <button type="button" class="btn btn-copy-reservation" id="btnCopyReservation">
+                                <i data-lucide="copy"></i> Copiar Reserva
+                            </button>
+                        </div>
                         <div class="right-actions">
                             <button type="button" class="btn btn-secondary" id="btnCancelBooking">Cancelar</button>
                             <button type="submit" class="btn btn-primary" id="btnSaveBooking">Guardar Reserva</button>

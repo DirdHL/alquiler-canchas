@@ -477,6 +477,18 @@ body.no-scroll {
     background: var(--danger-hover);
 }
 
+.btn-copy-reservation {
+    background: #25d366;
+    color: white;
+    box-shadow: 0 4px 14px rgba(37, 211, 102, 0.25);
+}
+
+.btn-copy-reservation:hover {
+    background: #20ba5a;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(37, 211, 102, 0.35);
+}
+
 .btn-attention {
     background: linear-gradient(135deg, #f59e0b, #d97706);
     color: white !important;
@@ -825,6 +837,11 @@ body.no-scroll {
     justify-content: space-between;
     align-items: center;
     margin-top: 24px;
+}
+
+.left-actions {
+    display: flex;
+    gap: 12px;
 }
 
 .right-actions {
