@@ -329,20 +329,37 @@ function closeBookingModal() {
 function openSidebarDrawer() {
     if (sidebar) sidebar.classList.add('open');
     if (sidebarBackdrop) sidebarBackdrop.classList.add('active');
+    updateBodyScroll();
 }
 
 function closeSidebarDrawer() {
     if (sidebar) sidebar.classList.remove('open');
     if (sidebarBackdrop) sidebarBackdrop.classList.remove('active');
+    updateBodyScroll();
 }
 
 // Modal helper controls
 function openModal(modal) {
     modal.classList.add('active');
+    updateBodyScroll();
 }
 
+// Close helper controls
 function closeModal(modal) {
     modal.classList.remove('active');
+    updateBodyScroll();
+}
+
+// Manage body scrolling to prevent scroll chain issues on mobile when overlays are active
+function updateBodyScroll() {
+    const isAnyModalActive = document.querySelectorAll('.modal-backdrop.active').length > 0;
+    const isSidebarActive = sidebar && sidebar.classList.contains('open');
+    
+    if (isAnyModalActive || isSidebarActive) {
+        document.body.classList.add('no-scroll');
+    } else {
+        document.body.classList.remove('no-scroll');
+    }
 }
 
 // Fetch bookings from either LocalStorage or Supabase
@@ -641,7 +658,7 @@ function updateDatabaseStatusUI(connected, errorMsg = null) {
             statusDesc.textContent = errorMsg;
         } else {
             statusText.textContent = 'Modo Sin Conexión (Local)';
-            statusDesc.textContent = 'Las reservas se guardan localmente en tu navegador. Configura la base de datos para compartirlas y ver la info.';
+            statusDesc.textContent = 'Accede con el link y la contraseña para poder compartir la informacion con los demas asesores';
         }
         
         btnOpenSettings.className = 'btn btn-attention btn-sm';

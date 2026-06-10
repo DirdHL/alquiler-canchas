@@ -48,6 +48,10 @@ body {
     overflow-x: hidden;
 }
 
+body.no-scroll {
+    overflow: hidden !important;
+}
+
 /* App Container Layout */
 .app-container {
     display: grid;
