@@ -37,6 +37,7 @@ const btnNewReservation = document.getElementById('btnNewReservation');
 const btnCloseBooking = document.getElementById('btnCloseBooking');
 const btnDeleteBooking = document.getElementById('btnDeleteBooking');
 const btnCopyReservation = document.getElementById('btnCopyReservation');
+const bookingDniInput = document.getElementById('bookingDni');
 
 const modalSettings = document.getElementById('modalSettings');
 const btnOpenSettings = document.getElementById('btnOpenSettings');
@@ -285,10 +286,10 @@ function setupEventListeners() {
         bookingStartTimeInput.addEventListener('change', () => {
             const startTime = bookingStartTimeInput.value;
             if (!startTime) return;
-            
+
             const startMins = parseTimeToMinutes(startTime);
             const endTime = bookingEndTimeInput.value;
-            
+
             if (endTime) {
                 const endMins = parseTimeToMinutes(endTime);
                 if (endMins - startMins < 60) {
@@ -318,7 +319,7 @@ function setupEventListeners() {
     const selectAsesor = document.getElementById('bookingNotes');
     const customGroup = document.getElementById('customAsesorGroup');
     const customInput = document.getElementById('bookingNotesCustom');
-    
+
     if (selectAsesor && customGroup && customInput) {
         selectAsesor.addEventListener('change', () => {
             if (selectAsesor.value === 'Otro...') {
@@ -339,10 +340,10 @@ function setToggleValue(type, value) {
     const input = document.getElementById(`booking${type.charAt(0).toUpperCase() + type.slice(1)}`);
     if (!input) return;
     input.value = value ? 'true' : 'false';
-    
+
     const toggleGroup = document.getElementById(`${type}Toggle`);
     if (!toggleGroup) return;
-    
+
     const buttons = toggleGroup.querySelectorAll('.btn-toggle');
     buttons.forEach(btn => {
         const btnVal = btn.getAttribute('data-value') === 'true';
@@ -358,7 +359,7 @@ function setToggleValue(type, value) {
 function setupToggleListeners(type) {
     const toggleGroup = document.getElementById(`${type}Toggle`);
     if (!toggleGroup) return;
-    
+
     const buttons = toggleGroup.querySelectorAll('.btn-toggle');
     buttons.forEach(btn => {
         btn.addEventListener('click', () => {
@@ -372,26 +373,26 @@ function setupToggleListeners(type) {
 function populateAsesoresDropdown(selectedValue = '') {
     const select = document.getElementById('bookingNotes');
     if (!select) return;
-    
+
     // Clear dropdown
     select.innerHTML = '';
-    
+
     // Collect unique advisor names
     const advisors = new Set();
-    
+
     // Add current user
     const currentUser = localStorage.getItem('canchapro_user_name');
     if (currentUser) {
         advisors.add(currentUser);
     }
-    
+
     // Add unique notes (advisor) from all events
     allEvents.forEach(e => {
         if (e.notes && e.notes.trim() && e.notes !== 'Otro...') {
             advisors.add(e.notes.trim());
         }
     });
-    
+
     // Add options to select
     advisors.forEach(advisor => {
         const option = document.createElement('option');
@@ -399,16 +400,16 @@ function populateAsesoresDropdown(selectedValue = '') {
         option.textContent = advisor;
         select.appendChild(option);
     });
-    
+
     // Add "Otro..." option to allow typing a new name
     const optionOtro = document.createElement('option');
     optionOtro.value = 'Otro...';
     optionOtro.textContent = 'Otro... (Escribir nombre)';
     select.appendChild(optionOtro);
-    
+
     const customGroup = document.getElementById('customAsesorGroup');
     const customInput = document.getElementById('bookingNotesCustom');
-    
+
     if (selectedValue && !advisors.has(selectedValue) && selectedValue !== 'Otro...') {
         // If the saved value is not in our set, it means it's a custom value
         const optionCustom = document.createElement('option');
@@ -450,6 +451,7 @@ function openBookingModal(booking = null, defaults = null) {
         modalTitle.textContent = 'Editar Reserva';
         bookingIdInput.value = booking.id;
         bookingNameInput.value = booking.name;
+        if (bookingDniInput) bookingDniInput.value = booking.dni || '';
         bookingCourtInput.value = booking.court;
         bookingSportInput.value = booking.sport;
         bookingDateInput.value = booking.date;
@@ -480,7 +482,7 @@ function openBookingModal(booking = null, defaults = null) {
         if (defaults) {
             bookingDateInput.value = defaults.date;
             bookingStartTimeInput.value = defaults.start_time;
-            
+
             // Ensure end time is at least 1 hour after start time
             const startMins = parseTimeToMinutes(defaults.start_time);
             const endMins = parseTimeToMinutes(defaults.end_time);
@@ -635,6 +637,7 @@ async function handleSaveBooking(e) {
 
     const id = bookingIdInput.value || crypto.randomUUID();
     const name = bookingNameInput.value.trim();
+    const dni = bookingDniInput ? bookingDniInput.value.trim() : '';
     const court = bookingCourtInput.value;
     const sport = bookingSportInput.value;
     const date = bookingDateInput.value;
@@ -650,7 +653,7 @@ async function handleSaveBooking(e) {
     const chaleco = bookingChalecoInput.value === 'true';
 
     // 1. Validation for empty inputs
-    if (!name || !date || !startTime || !endTime) {
+    if (!name || !dni || !date || !startTime || !endTime) {
         showBookingError("Por favor completa todos los campos requeridos.");
         return;
     }
@@ -665,6 +668,7 @@ async function handleSaveBooking(e) {
     const bookingData = {
         id,
         name,
+        dni,
         court,
         sport,
         date,
@@ -773,6 +777,7 @@ function showBookingError(msg) {
 // Format and copy the reservation details to the clipboard
 function handleCopyReservation() {
     const clientName = bookingNameInput.value.trim();
+    const dniText = bookingDniInput ? bookingDniInput.value.trim() : '';
     const courtRaw = bookingCourtInput.value;
     const courtText = (courtRaw === 'Pequeña' || courtRaw === 'Chica') ? 'Chica' : 'Grande';
     let dateText = bookingDateInput.value;
@@ -787,7 +792,7 @@ function handleCopyReservation() {
     }
 
     // Validate if everything is filled
-    if (!clientName || !courtRaw || !dateText || !startTime || !endTime || !advisorText) {
+    if (!clientName || !dniText || !courtRaw || !dateText || !startTime || !endTime || !advisorText) {
         showBookingError("Por favor completa todos los campos obligatorios (*) antes de copiar la reserva.");
         return;
     }
@@ -808,8 +813,7 @@ function handleCopyReservation() {
     const pelotaVal = bookingPelotaInput.value === 'true';
     const chalecoVal = bookingChalecoInput.value === 'true';
 
-    // Set dynamic sport name and matching ball emoji
-    const sportName = sportVal === 'Vóley' ? 'Voley' : 'Fútbol';
+    // Show ball emoji only if pelota is Yes
     const pelotaBallEmoji = sportVal === 'Vóley' ? '🏐' : '⚽';
     const pelotaText = pelotaVal ? `Si ${pelotaBallEmoji}` : 'No';
 
@@ -829,18 +833,20 @@ function handleCopyReservation() {
         }
     }
 
-    const message = `📌 RESERVA DE CANCHA LOS PINOS
+    const message = `*RESERVA DE CANCHA LOS PINOS*
 
 Nombre del cliente: ${clientName}
-Cancha: ${courtText}
+DNI: ${dniText}
+Cancha (Chica o Grande): ${courtText}
 Fecha: ${dateText}
 Hora: ${timeText} ${timeEmoji}
-Pelota de ${sportName}: ${pelotaText}
+Pelota: ${pelotaText}
 Chalecos: ${chalecoText}
-Asesor: ${advisorText}
+Medio: 
+Asesor(a): ${advisorText}
 
-⛔ No se acepta reprogramación de fecha ni de hora
-⛔ No se acepta devolución de dinero`;
+*No se acepta reprogramación de fecha ni de hora*
+*No se acepta devolución de dinero*`;
 
     // Copy to clipboard
     navigator.clipboard.writeText(message).then(() => {
@@ -1284,7 +1290,7 @@ async function fetchAndRenderHistory() {
                 .select('*')
                 .gt('created_at', threeDaysAgoISO)
                 .order('created_at', { ascending: false });
-                
+
             if (error) throw error;
             entries = data || [];
 
@@ -1353,23 +1359,23 @@ async function fetchAndRenderHistory() {
 function getDayGroupLabel(dateStr) {
     const today = new Date();
     const target = new Date(dateStr);
-    
+
     // Compare dates ignoring time
     const todayDate = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
     const targetDate = new Date(target.getFullYear(), target.getMonth(), target.getDate()).getTime();
-    
+
     const diffDays = Math.round((todayDate - targetDate) / (1000 * 60 * 60 * 24));
-    
+
     if (diffDays === 0) {
         return "Hoy";
     } else if (diffDays === 1) {
         return "Ayer";
     } else {
         // Format date: e.g. "Lunes, 8 de Junio"
-        let label = target.toLocaleDateString('es-ES', { 
-            weekday: 'long', 
-            day: 'numeric', 
-            month: 'long' 
+        let label = target.toLocaleDateString('es-ES', {
+            weekday: 'long',
+            day: 'numeric',
+            month: 'long'
         });
         return label.charAt(0).toUpperCase() + label.slice(1);
     }
