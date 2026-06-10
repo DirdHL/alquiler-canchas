@@ -1338,3 +1338,20 @@ body.no-scroll {
         font-size: 20px;
     }
 }
+
+/* Activity Log Day Grouping Header */
+.activity-day-group {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--primary);
+    margin: 18px 0 8px 0;
+    padding-bottom: 4px;
+    border-bottom: 1px dashed rgba(255, 255, 255, 0.08);
+    display: block;
+}
+
+.activity-day-group:first-child {
+    margin-top: 0;
+}

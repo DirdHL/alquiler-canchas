@@ -950,13 +950,17 @@ async function handleSaveOnboardingName(e) {
     if (!formattedName) return;
 
     const oldName = localStorage.getItem('canchapro_user_name');
-    if (oldName && oldName !== formattedName) {
-        await addHistoryEntry('editar', `cambió su nombre a ${formattedName}`);
-    }
 
+    // Save to localStorage immediately so that addHistoryEntry uses the correct operator name
     localStorage.setItem('canchapro_user_name', formattedName);
     displayUserName.textContent = formattedName;
     closeModal(modalUserOnboarding);
+
+    if (oldName && oldName !== formattedName) {
+        await addHistoryEntry('editar', `cambió su nombre (antes: ${oldName})`);
+    } else if (!oldName) {
+        await addHistoryEntry('crear', `ingresó al sistema`);
+    }
 
     // Refresh history logs to update display name
     fetchAndRenderHistory();
@@ -1054,31 +1058,69 @@ async function fetchAndRenderHistory() {
         return;
     }
 
-    activityList.innerHTML = entries.map(entry => {
-        const timeAgo = formatTimeAgo(new Date(entry.created_at));
-        let actionClass = 'crear';
-        let actionWord = 'creó';
-
-        if (entry.action === 'editar') {
-            actionClass = 'editar';
-            actionWord = 'modificó';
-        } else if (entry.action === 'eliminar') {
-            actionClass = 'eliminar';
-            actionWord = 'eliminó';
+    // Group entries by day
+    const groups = {};
+    entries.forEach(entry => {
+        const label = getDayGroupLabel(entry.created_at);
+        if (!groups[label]) {
+            groups[label] = [];
         }
+        groups[label].push(entry);
+    });
 
-        return `
-            <div class="activity-item">
-                <div class="activity-indicator ${actionClass}"></div>
-                <div class="activity-content">
-                    <span class="activity-text">
-                        <span class="user-highlight">${escapeHTML(entry.user_name)}</span> ${escapeHTML(entry.details)}
-                    </span>
-                    <span class="activity-time">${timeAgo}</span>
+    let html = '';
+    for (const [dayLabel, groupEntries] of Object.entries(groups)) {
+        html += `<div class="activity-day-group">${dayLabel}</div>`;
+        html += groupEntries.map(entry => {
+            const timeAgo = formatTimeAgo(new Date(entry.created_at));
+            let actionClass = 'crear';
+
+            if (entry.action === 'editar') {
+                actionClass = 'editar';
+            } else if (entry.action === 'eliminar') {
+                actionClass = 'eliminar';
+            }
+
+            return `
+                <div class="activity-item">
+                    <div class="activity-indicator ${actionClass}"></div>
+                    <div class="activity-content">
+                        <span class="activity-text">
+                            <span class="user-highlight">${escapeHTML(entry.user_name)}</span> ${escapeHTML(entry.details)}
+                        </span>
+                        <span class="activity-time">${timeAgo}</span>
+                    </div>
                 </div>
-            </div>
-        `;
-    }).join('');
+            `;
+        }).join('');
+    }
+
+    activityList.innerHTML = html;
+}
+
+function getDayGroupLabel(dateStr) {
+    const today = new Date();
+    const target = new Date(dateStr);
+    
+    // Compare dates ignoring time
+    const todayDate = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+    const targetDate = new Date(target.getFullYear(), target.getMonth(), target.getDate()).getTime();
+    
+    const diffDays = Math.round((todayDate - targetDate) / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) {
+        return "Hoy";
+    } else if (diffDays === 1) {
+        return "Ayer";
+    } else {
+        // Format date: e.g. "Lunes, 8 de Junio"
+        let label = target.toLocaleDateString('es-ES', { 
+            weekday: 'long', 
+            day: 'numeric', 
+            month: 'long' 
+        });
+        return label.charAt(0).toUpperCase() + label.slice(1);
+    }
 }
 
 function escapeHTML(str) {
