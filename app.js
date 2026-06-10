@@ -274,6 +274,36 @@ function setupEventListeners() {
     if (btnClearHistoryLocal) {
         btnClearHistoryLocal.addEventListener('click', clearHistoryLocal);
     }
+
+    // Auto-adjust end time when start time changes to be at least 1 hour later
+    if (bookingStartTimeInput && bookingEndTimeInput) {
+        bookingStartTimeInput.addEventListener('change', () => {
+            const startTime = bookingStartTimeInput.value;
+            if (!startTime) return;
+            
+            const startMins = parseTimeToMinutes(startTime);
+            const endTime = bookingEndTimeInput.value;
+            
+            if (endTime) {
+                const endMins = parseTimeToMinutes(endTime);
+                if (endMins - startMins < 60) {
+                    const newEndMins = startMins + 60;
+                    const newEndHour = Math.floor(newEndMins / 60);
+                    const newEndMin = newEndMins % 60;
+                    const formattedHour = String(newEndHour).padStart(2, '0');
+                    const formattedMin = String(newEndMin).padStart(2, '0');
+                    bookingEndTimeInput.value = `${formattedHour}:${formattedMin}`;
+                }
+            } else {
+                const newEndMins = startMins + 60;
+                const newEndHour = Math.floor(newEndMins / 60);
+                const newEndMin = newEndMins % 60;
+                const formattedHour = String(newEndHour).padStart(2, '0');
+                const formattedMin = String(newEndMin).padStart(2, '0');
+                bookingEndTimeInput.value = `${formattedHour}:${formattedMin}`;
+            }
+        });
+    }
 }
 
 // Open Booking Modal (Null = New, Object = Edit)
@@ -307,7 +337,20 @@ function openBookingModal(booking = null, defaults = null) {
         if (defaults) {
             bookingDateInput.value = defaults.date;
             bookingStartTimeInput.value = defaults.start_time;
-            bookingEndTimeInput.value = defaults.end_time;
+            
+            // Ensure end time is at least 1 hour after start time
+            const startMins = parseTimeToMinutes(defaults.start_time);
+            const endMins = parseTimeToMinutes(defaults.end_time);
+            if (endMins - startMins < 60) {
+                const newEndMins = startMins + 60;
+                const newEndHour = Math.floor(newEndMins / 60);
+                const newEndMin = newEndMins % 60;
+                const formattedHour = String(newEndHour).padStart(2, '0');
+                const formattedMin = String(newEndMin).padStart(2, '0');
+                bookingEndTimeInput.value = `${formattedHour}:${formattedMin}`;
+            } else {
+                bookingEndTimeInput.value = defaults.end_time;
+            }
         } else {
             // Standard defaults
             const today = new Date().toISOString().split('T')[0];
