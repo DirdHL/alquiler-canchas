@@ -33,8 +33,6 @@ Una vez que tu proyecto se haya creado, debes estructurar la base de datos para 
 CREATE TABLE IF NOT EXISTS reservas (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,  -- Número único por reserva
   name TEXT NOT NULL,        -- Nombre del cliente
-  dni TEXT NOT NULL,         -- DNI del cliente
-  phone TEXT,                -- Teléfono (opcional)
   court TEXT NOT NULL,       -- Cancha: "Grande" o "Pequeña"
   sport TEXT NOT NULL,       -- Deporte: "Fútbol" o "Vóley"
   date DATE NOT NULL,        -- Fecha de la reserva

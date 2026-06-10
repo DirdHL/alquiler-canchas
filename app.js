@@ -18,8 +18,6 @@ const formBooking = document.getElementById('formBooking');
 const modalTitle = document.getElementById('modalTitle');
 const bookingIdInput = document.getElementById('bookingId');
 const bookingNameInput = document.getElementById('bookingName');
-const bookingDniInput = document.getElementById('bookingDni');
-const bookingPhoneInput = document.getElementById('bookingPhone');
 const bookingCourtInput = document.getElementById('bookingCourt');
 const bookingSportInput = document.getElementById('bookingSport');
 const bookingDateInput = document.getElementById('bookingDate');
@@ -223,8 +221,6 @@ function openBookingModal(booking = null, defaults = null) {
         modalTitle.textContent = 'Editar Reserva';
         bookingIdInput.value = booking.id;
         bookingNameInput.value = booking.name;
-        bookingDniInput.value = booking.dni;
-        bookingPhoneInput.value = booking.phone || '';
         bookingCourtInput.value = booking.court;
         bookingSportInput.value = booking.sport;
         bookingDateInput.value = booking.date;
@@ -353,8 +349,6 @@ async function handleSaveBooking(e) {
 
     const id = bookingIdInput.value || crypto.randomUUID();
     const name = bookingNameInput.value.trim();
-    const dni = bookingDniInput.value.trim();
-    const phone = bookingPhoneInput.value.trim();
     const court = bookingCourtInput.value;
     const sport = bookingSportInput.value;
     const date = bookingDateInput.value;
@@ -363,7 +357,7 @@ async function handleSaveBooking(e) {
     const notes = bookingNotesInput.value.trim();
 
     // 1. Validation for empty inputs
-    if (!name || !dni || !date || !startTime || !endTime) {
+    if (!name || !date || !startTime || !endTime) {
         showBookingError("Por favor completa todos los campos requeridos.");
         return;
     }
@@ -378,8 +372,6 @@ async function handleSaveBooking(e) {
     const bookingData = {
         id,
         name,
-        dni,
-        phone,
         court,
         sport,
         date,

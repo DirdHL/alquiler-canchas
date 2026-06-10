@@ -254,8 +254,6 @@
 CREATE TABLE IF NOT EXISTS reservas (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   name TEXT NOT NULL,
-  dni TEXT NOT NULL,
-  phone TEXT,
   court TEXT NOT NULL,
   sport TEXT NOT NULL,
   date DATE NOT NULL,
