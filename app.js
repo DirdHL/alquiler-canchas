@@ -38,6 +38,9 @@ const btnCloseBooking = document.getElementById('btnCloseBooking');
 const btnDeleteBooking = document.getElementById('btnDeleteBooking');
 const btnCopyReservation = document.getElementById('btnCopyReservation');
 const bookingDniInput = document.getElementById('bookingDni');
+const bookingSourceInput = document.getElementById('bookingSource');
+const customSourceGroup = document.getElementById('customSourceGroup');
+const bookingSourceCustomInput = document.getElementById('bookingSourceCustom');
 
 const modalSettings = document.getElementById('modalSettings');
 const btnOpenSettings = document.getElementById('btnOpenSettings');
@@ -333,6 +336,21 @@ function setupEventListeners() {
             }
         });
     }
+
+    // Medio select dropdown change listener
+    if (bookingSourceInput && customSourceGroup && bookingSourceCustomInput) {
+        bookingSourceInput.addEventListener('change', () => {
+            if (bookingSourceInput.value === 'Otro...') {
+                customSourceGroup.classList.remove('hidden');
+                bookingSourceCustomInput.value = '';
+                bookingSourceCustomInput.required = true;
+                bookingSourceCustomInput.focus();
+            } else {
+                customSourceGroup.classList.add('hidden');
+                bookingSourceCustomInput.required = false;
+            }
+        });
+    }
 }
 
 // Helper to set toggle button active states and hidden input value
@@ -468,11 +486,34 @@ function openBookingModal(booking = null, defaults = null) {
         setToggleValue('chaleco', chalecoVal);
 
         btnDeleteBooking.classList.remove('hidden');
+
+        // Populate and select correct Medio
+        if (bookingSourceInput && customSourceGroup && bookingSourceCustomInput) {
+            const savedMedio = booking.medio || 'Facebook';
+            const standardMedios = ['Facebook', 'TikTok', 'Instagram', 'WhatsApp'];
+            if (standardMedios.includes(savedMedio)) {
+                bookingSourceInput.value = savedMedio;
+                customSourceGroup.classList.add('hidden');
+                bookingSourceCustomInput.required = false;
+            } else {
+                bookingSourceInput.value = 'Otro...';
+                customSourceGroup.classList.remove('hidden');
+                bookingSourceCustomInput.value = savedMedio;
+                bookingSourceCustomInput.required = true;
+            }
+        }
     } else {
         // New Mode
         modalTitle.textContent = 'Nueva Reserva';
         bookingIdInput.value = '';
         btnDeleteBooking.classList.add('hidden');
+
+        // Reset Medio to default Facebook
+        if (bookingSourceInput && customSourceGroup && bookingSourceCustomInput) {
+            bookingSourceInput.value = 'Facebook';
+            customSourceGroup.classList.add('hidden');
+            bookingSourceCustomInput.required = false;
+        }
 
         // Reset toggles to default false
         setToggleValue('pelota', false);
@@ -649,11 +690,17 @@ async function handleSaveBooking(e) {
     } else {
         notes = notes.trim();
     }
+    let medio = bookingSourceInput ? bookingSourceInput.value : '';
+    if (medio === 'Otro...') {
+        medio = bookingSourceCustomInput ? bookingSourceCustomInput.value.trim() : '';
+    } else {
+        medio = medio ? medio.trim() : '';
+    }
     const pelota = bookingPelotaInput.value === 'true';
     const chaleco = bookingChalecoInput.value === 'true';
 
     // 1. Validation for empty inputs
-    if (!name || !dni || !date || !startTime || !endTime) {
+    if (!name || !dni || !date || !startTime || !endTime || !medio) {
         showBookingError("Por favor completa todos los campos requeridos.");
         return;
     }
@@ -676,7 +723,8 @@ async function handleSaveBooking(e) {
         end_time: endTime,
         notes,
         pelota,
-        chaleco
+        chaleco,
+        medio
     };
 
     try {
@@ -791,8 +839,15 @@ function handleCopyReservation() {
         advisorText = advisorText ? advisorText.trim() : '';
     }
 
+    let medioText = bookingSourceInput ? bookingSourceInput.value : '';
+    if (medioText === 'Otro...') {
+        medioText = bookingSourceCustomInput ? bookingSourceCustomInput.value.trim() : '';
+    } else {
+        medioText = medioText ? medioText.trim() : '';
+    }
+
     // Validate if everything is filled
-    if (!clientName || !dniText || !courtRaw || !dateText || !startTime || !endTime || !advisorText) {
+    if (!clientName || !dniText || !courtRaw || !dateText || !startTime || !endTime || !advisorText || !medioText) {
         showBookingError("Por favor completa todos los campos obligatorios (*) antes de copiar la reserva.");
         return;
     }
@@ -842,7 +897,7 @@ Fecha: ${dateText}
 Hora: ${timeText} ${timeEmoji}
 Pelota: ${pelotaText}
 Chalecos: ${chalecoText}
-Medio: 
+Medio: ${medioText}
 Asesor(a): ${advisorText}
 
 *No se acepta reprogramación de fecha ni de hora*

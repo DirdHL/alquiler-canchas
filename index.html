@@ -242,6 +242,27 @@
                     </div>
 
                     <div class="form-group">
+                        <label for="bookingSource">Medio *</label>
+                        <div class="input-wrapper">
+                            <i data-lucide="share-2"></i>
+                            <select id="bookingSource" required>
+                                <option value="Facebook">Facebook</option>
+                                <option value="TikTok">TikTok</option>
+                                <option value="Instagram">Instagram</option>
+                                <option value="WhatsApp">WhatsApp</option>
+                                <option value="Otro...">Otro...</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group hidden" id="customSourceGroup">
+                        <label for="bookingSourceCustom">Escribe el Nombre del Medio *</label>
+                        <div class="input-wrapper">
+                            <i data-lucide="pencil"></i>
+                            <input type="text" id="bookingSourceCustom" placeholder="Nombre del nuevo medio...">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
                         <label for="bookingNotes">Asesor *</label>
                         <div class="input-wrapper">
                             <i data-lucide="user-check"></i>
@@ -336,6 +357,8 @@
 CREATE TABLE IF NOT EXISTS reservas (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   name TEXT NOT NULL,
+  dni TEXT,
+  medio TEXT,
   court TEXT NOT NULL,
   sport TEXT NOT NULL,
   date DATE NOT NULL,
@@ -347,7 +370,9 @@ CREATE TABLE IF NOT EXISTS reservas (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- Si ya tienes la tabla creada, ejecuta esto para agregar Pelota y Chaleco:
+-- Si ya tienes la tabla creada, ejecuta esto para agregar DNI, Medio, Pelota y Chaleco:
+-- ALTER TABLE reservas ADD COLUMN IF NOT EXISTS dni TEXT;
+-- ALTER TABLE reservas ADD COLUMN IF NOT EXISTS medio TEXT;
 -- ALTER TABLE reservas ADD COLUMN IF NOT EXISTS pelota BOOLEAN DEFAULT false;
 -- ALTER TABLE reservas ADD COLUMN IF NOT EXISTS chaleco BOOLEAN DEFAULT false;
 
