@@ -67,6 +67,10 @@ body.no-scroll {
 
 /* Sidebar Styles */
 .sidebar {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
     background: rgba(15, 23, 42, 0.8);
     border-right: 1px solid var(--border-color);
     padding: 30px 24px;
@@ -385,8 +389,7 @@ body.no-scroll {
     display: flex;
     flex-direction: column;
     gap: 30px;
-    overflow-y: auto;
-    height: 100vh;
+    min-height: 100vh;
 }
 
 .app-header {
