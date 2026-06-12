@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sport Victoria (Los Pinos) - Sistema de Alquiler de Canchas</title>
+    <title>Polideportivo Huaral-Huando - Sistema de Alquiler de Canchas</title>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -18,6 +18,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- Custom CSS -->
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="polideportivo.css">
 </head>
 
 <body>
@@ -29,8 +30,8 @@
         <aside class="sidebar" id="sidebar">
             <div class="logo-area">
                 <div class="logo-title">
-                    <i data-lucide="calendar-range" class="logo-icon"></i>
-                    <h2>Sport<span>Victoria</span><span class="logo-subtitle">Los Pinos</span></h2>
+                    <i data-lucide="calendar-range" class="logo-icon" style="color: #10b981;"></i>
+                    <h2>Poli<span>Deportivo</span><span class="logo-subtitle">Huaral-Huando</span></h2>
                 </div>
                 <button class="btn-close-sidebar" id="btnCloseSidebar">
                     <i data-lucide="x"></i>
@@ -51,7 +52,9 @@
 
             <nav class="nav-filters">
                 <h3>Filtrar por Cancha</h3>
-                <div class="filter-group">
+
+                <div class="filter-section-title">Fútbol</div>
+                <div class="filter-sub-list">
                     <label class="filter-item">
                         <input type="checkbox" id="filterCanchaGrande" checked>
                         <span class="custom-checkbox color-grande"></span>
@@ -61,6 +64,15 @@
                         <input type="checkbox" id="filterCanchaPequena" checked>
                         <span class="custom-checkbox color-pequena"></span>
                         Cancha Pequeña
+                    </label>
+                </div>
+
+                <div class="filter-section-title">Vóley</div>
+                <div class="filter-sub-list">
+                    <label class="filter-item">
+                        <input type="checkbox" id="filterCanchaVoley" checked>
+                        <span class="custom-checkbox color-voley"></span>
+                        Cancha de Vóley
                     </label>
                 </div>
 
@@ -79,13 +91,15 @@
                 </div>
 
                 <h3>Opciones</h3>
-                <button class="btn btn-secondary btn-sm btn-sidebar-action" id="btnOpenHistory" style="margin-bottom: 8px;">
+                <button class="btn btn-secondary btn-sm btn-sidebar-action" id="btnOpenHistory"
+                    style="margin-bottom: 8px;">
                     <i data-lucide="history"></i> Historial de Cambios
                 </button>
 
                 <h3>Otras Sedes</h3>
-                <a href="polideportivo.html" class="btn btn-secondary btn-sm btn-sidebar-action" style="background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.3); color: #10b981; text-decoration: none; display: flex; align-items: center; gap: 8px;">
-                    <i data-lucide="building" style="width: 16px; height: 16px;"></i> Polideportivo Huaral-Huando
+                <a href="index.html" class="btn btn-secondary btn-sm btn-sidebar-action"
+                    style="background: rgba(139, 92, 246, 0.1); border-color: rgba(139, 92, 246, 0.3); color: #a78bfa; text-decoration: none; display: flex; align-items: center; gap: 8px;">
+                    <i data-lucide="building" style="width: 16px; height: 16px;"></i> Sport Victoria (Los Pinos)
                 </a>
             </nav>
 
@@ -96,12 +110,16 @@
                     <span class="stat-value" id="statTodayReservations">0</span>
                 </div>
                 <div class="stat-item">
-                    <span class="stat-label">Cancha Grande</span>
-                    <span class="stat-value" id="statCanchaGrande">0 h</span>
+                    <span class="stat-label">Fútbol Grande</span>
+                    <span class="stat-value" id="statFutbolGrande">0 h</span>
                 </div>
                 <div class="stat-item">
-                    <span class="stat-label">Cancha Pequeña</span>
-                    <span class="stat-value" id="statCanchaPequena">0 h</span>
+                    <span class="stat-label">Fútbol Chico</span>
+                    <span class="stat-value" id="statFutbolChico">0 h</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Vóley</span>
+                    <span class="stat-value" id="statVoley">0 h</span>
                 </div>
             </div>
 
@@ -122,7 +140,7 @@
             </div>
 
             <footer class="sidebar-footer">
-                <p>Sport Victorias &copy; 2026</p>
+                <p>Polideportivo &copy; 2026</p>
                 <p class="footer-note">Desarrollado por Rogger Dird Huaicama Lacerna</p>
             </footer>
         </aside>
@@ -185,8 +203,9 @@
                             <div class="input-wrapper">
                                 <i data-lucide="layout-grid"></i>
                                 <select id="bookingCourt" required>
-                                    <option value="Grande">Cancha Grande</option>
-                                    <option value="Pequeña">Cancha Pequeña</option>
+                                    <option value="Cancha Grande">Cancha Grande</option>
+                                    <option value="Cancha Pequeña">Cancha Pequeña</option>
+                                    <option value="Cancha de Vóley">Cancha de Vóley</option>
                                 </select>
                             </div>
                         </div>
@@ -308,12 +327,12 @@
     <div class="modal-backdrop" id="modalSettings">
         <div class="modal-card modal-lg">
             <div class="modal-header">
-                <h3>Configuración de Supabase (Base de Datos en la Nube)</h3>
+                <h3>Configuración de Supabase (Base de Datos en la Nube - Polideportivo)</h3>
                 <button class="btn-close" id="btnCloseSettings"><i data-lucide="x"></i></button>
             </div>
             <div class="modal-body">
-                <p class="settings-intro">Ingresa la el link de la base de datos y la contraseña, para acceder al
-                    calendario de reservas.</p>
+                <p class="settings-intro">Ingresa la el link de la base de datos y la contraseña para acceder al
+                    calendario de reservas del Polideportivo.</p>
 
                 <form id="formSettings">
                     <div class="form-group">
@@ -413,7 +432,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE reservas, historial;
         <div class="modal-card">
             <div class="modal-header">
                 <h3 style="display: flex; align-items: center; gap: 8px;">
-                    <i data-lucide="history" style="color: var(--primary);"></i> Historial de Actividad
+                    <i data-lucide="history" style="color: #10b981;"></i> Historial de Actividad
                 </h3>
                 <button class="btn-close" id="btnCloseHistory"><i data-lucide="x"></i></button>
             </div>
@@ -457,7 +476,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE reservas, historial;
     </div>
 
     <!-- Custom JS -->
-    <script src="app.js"></script>
+    <script src="polideportivo.js"></script>
 </body>
 
 </html>

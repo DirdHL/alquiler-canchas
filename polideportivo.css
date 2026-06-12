@@ -1,0 +1,83 @@
+/* ==========================================
+   Polideportivo Huaral-Huando Stylesheet Overrides
+   Theme: Vibrant Emerald / Forest Green
+   ========================================== */
+
+body {
+    background: radial-gradient(circle at 50% 0%, #064e3b 0%, #022c22 40%, #0b131a 100%) !important;
+}
+
+.sidebar {
+    background: rgba(6, 78, 59, 0.45) !important;
+    border-right: 1px solid rgba(16, 185, 129, 0.2) !important;
+}
+
+.main-content {
+    background: radial-gradient(circle at 50% 0%, #022c22 0%, #090d16 80%) !important;
+}
+
+.stats-card,
+.status-indicator-card {
+    border-color: rgba(16, 185, 129, 0.25) !important;
+    background: rgba(6, 78, 59, 0.2) !important;
+}
+
+.btn-primary {
+    background: #10b981 !important;
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3) !important;
+}
+
+.btn-primary:hover {
+    background: #059669 !important;
+}
+
+.badge-complex {
+    color: #34d399 !important;
+    background: rgba(16, 185, 129, 0.15) !important;
+    border-color: rgba(16, 185, 129, 0.35) !important;
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.15) !important;
+}
+
+.calendar-card {
+    background: rgba(6, 78, 59, 0.08) !important;
+    border: 1px solid rgba(16, 185, 129, 0.2) !important;
+}
+
+.fc {
+    --fc-today-bg-color: rgba(16, 185, 129, 0.12) !important;
+    --fc-border-color: rgba(16, 185, 129, 0.18) !important;
+}
+
+.fc .fc-col-header-cell.fc-day-today {
+    background: rgba(16, 185, 129, 0.2) !important;
+    border-bottom: 2px solid #10b981 !important;
+}
+
+.fc-event {
+    box-shadow: 0 2px 6px rgba(16, 185, 129, 0.2) !important;
+}
+
+/* Event classes for Vóley */
+.event-cancha-voley {
+    background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+    color: white !important;
+}
+
+/* Dynamic Filter Titles & Subgroups */
+.filter-section-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    font-weight: 700;
+    margin-top: 14px;
+    margin-bottom: 6px;
+    padding-left: 2px;
+}
+
+.filter-sub-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 6px;
+}

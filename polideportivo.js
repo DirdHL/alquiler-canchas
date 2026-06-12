@@ -1,5 +1,5 @@
 // ==========================================
-// CanchaPro JavaScript App Logic
+// CanchaPro JavaScript App Logic - Polideportivo
 // ==========================================
 
 // State Management
@@ -66,23 +66,25 @@ const btnCloseHistory = document.getElementById('btnCloseHistory');
 const activityList = document.getElementById('activityList');
 const btnClearHistoryLocal = document.getElementById('btnClearHistoryLocal');
 
-// Filters
+// Filters - simplified groups
 const filterCanchaGrande = document.getElementById('filterCanchaGrande');
 const filterCanchaPequena = document.getElementById('filterCanchaPequena');
+const filterCanchaVoley = document.getElementById('filterCanchaVoley');
 const filterFutbol = document.getElementById('filterFutbol');
 const filterVoley = document.getElementById('filterVoley');
 
 // Stats
 const statTodayReservations = document.getElementById('statTodayReservations');
-const statCanchaGrande = document.getElementById('statCanchaGrande');
-const statCanchaPequena = document.getElementById('statCanchaPequena');
+const statFutbolGrande = document.getElementById('statFutbolGrande');
+const statFutbolChico = document.getElementById('statFutbolChico');
+const statVoley = document.getElementById('statVoley');
 
 // Initialize Application
 document.addEventListener('DOMContentLoaded', () => {
     // 1. Initialize Lucide Icons
     lucide.createIcons();
 
-    // 2. Initialize Operator Identity
+    // 2. Initialize Operator Identity (canchapro_user_name is shared)
     checkOperatorIdentity();
 
     // 3. Load Supabase config from LocalStorage if exists
@@ -144,14 +146,22 @@ function initCalendar() {
                 const filtered = filterEvents(bookings);
 
                 // Convert to FullCalendar event format
-                const fcEvents = filtered.map(b => ({
-                    id: b.id,
-                    title: `${b.name} (${b.sport})${b.pelota === true || b.pelota === 'true' ? (b.sport === 'Vóley' ? ' 🏐' : ' ⚽') : ''}${b.chaleco === true || b.chaleco === 'true' ? ' 🎽' : ''}`,
-                    start: `${b.date}T${b.start_time}`,
-                    end: `${b.date}T${b.end_time}`,
-                    className: `${b.court === 'Grande' ? 'event-cancha-grande' : 'event-cancha-pequena'} ${b.sport === 'Fútbol' ? 'event-sport-futbol' : 'event-sport-voley'}`,
-                    extendedProps: b // Keep original data
-                }));
+                const fcEvents = filtered.map(b => {
+                    let courtClass = 'event-cancha-grande';
+                    if (b.court === 'Cancha Pequeña') {
+                        courtClass = 'event-cancha-pequena';
+                    } else if (b.court === 'Cancha de Vóley') {
+                        courtClass = 'event-cancha-voley';
+                    }
+                    return {
+                        id: b.id,
+                        title: `${b.name} (${b.court})${b.pelota === true || b.pelota === 'true' ? (b.sport === 'Vóley' ? ' 🏐' : ' ⚽') : ''}${b.chaleco === true || b.chaleco === 'true' ? ' 🎽' : ''}`,
+                        start: `${b.date}T${b.start_time}`,
+                        end: `${b.date}T${b.end_time}`,
+                        className: `${courtClass} ${b.sport === 'Fútbol' ? 'event-sport-futbol' : 'event-sport-voley'}`,
+                        extendedProps: b // Keep original data
+                    };
+                });
 
                 successCallback(fcEvents);
             }).catch(err => {
@@ -240,12 +250,22 @@ function setupEventListeners() {
         });
     });
 
-    // Checkbox Filters
-    [filterCanchaGrande, filterCanchaPequena, filterFutbol, filterVoley].forEach(checkbox => {
-        checkbox.addEventListener('change', () => {
-            if (calendar) calendar.refetchEvents();
-        });
+    // Checkbox Filters - Bind simplified court checkboxes + sport checkboxes
+    [
+        filterCanchaGrande, filterCanchaPequena, filterCanchaVoley,
+        filterFutbol, filterVoley
+    ].forEach(checkbox => {
+        if (checkbox) {
+            checkbox.addEventListener('change', () => {
+                if (calendar) calendar.refetchEvents();
+            });
+        }
     });
+
+    // Court select dependency rule
+    if (bookingCourtInput) {
+        bookingCourtInput.addEventListener('change', handleCourtSportDependency);
+    }
 
     // Responsive views adjust
     window.addEventListener('resize', () => {
@@ -350,6 +370,18 @@ function setupEventListeners() {
                 bookingSourceCustomInput.required = false;
             }
         });
+    }
+}
+
+// Automatic lock/fill of sport based on court choice
+function handleCourtSportDependency() {
+    const court = bookingCourtInput.value;
+    if (court.includes('Vóley')) {
+        bookingSportInput.value = 'Vóley';
+        bookingSportInput.disabled = true;
+    } else {
+        bookingSportInput.value = 'Fútbol';
+        bookingSportInput.disabled = true;
     }
 }
 
@@ -550,6 +582,9 @@ function openBookingModal(booking = null, defaults = null) {
         populateAsesoresDropdown(activeUser);
     }
 
+    // Call the dependency rule to disable/select sport based on the current court value
+    handleCourtSportDependency();
+
     openModal(modalBooking);
     lucide.createIcons(); // Refresh modal icons
 }
@@ -559,6 +594,7 @@ function closeBookingModal() {
 }
 
 // Mobile sidebar controls
+// Using a separate declaration from global app.js elements
 function openSidebarDrawer() {
     if (sidebar) sidebar.classList.add('open');
     if (sidebarBackdrop) sidebarBackdrop.classList.add('active');
@@ -616,29 +652,33 @@ async function fetchBookings() {
         bookings = getLocalBookings();
     }
 
-    // Filter to only include Los Pinos courts to prevent data contamination from other complexes
-    const losPinosCourts = ['Grande', 'Pequeña'];
-    return bookings.filter(b => losPinosCourts.includes(b.court));
+    // Filter to only include Polideportivo courts to prevent data contamination from other complexes
+    const polideportivoCourts = ['Cancha Grande', 'Cancha Pequeña', 'Cancha de Vóley'];
+    return bookings.filter(b => polideportivoCourts.includes(b.court));
 }
 
-// Local Storage Helper: Get
+// Local Storage Helper: Get (Polideportivo isolated namespace)
 function getLocalBookings() {
-    const data = localStorage.getItem('canchapro_reservas');
+    const data = localStorage.getItem('canchapro_reservas_poli');
     return data ? JSON.parse(data) : [];
 }
 
-// Local Storage Helper: Save
+// Local Storage Helper: Save (Polideportivo isolated namespace)
 function saveLocalBookings(bookings) {
-    localStorage.setItem('canchapro_reservas', JSON.stringify(bookings));
+    localStorage.setItem('canchapro_reservas_poli', JSON.stringify(bookings));
 }
 
 // Filter bookings based on UI checkboxes
 function filterEvents(bookings) {
     return bookings.filter(b => {
-        const courtMatch = (b.court === 'Grande' && filterCanchaGrande.checked) ||
-            (b.court === 'Pequeña' && filterCanchaPequena.checked);
+        let courtMatch = false;
+        if (b.court === 'Cancha Grande' && filterCanchaGrande.checked) courtMatch = true;
+        else if (b.court === 'Cancha Pequeña' && filterCanchaPequena.checked) courtMatch = true;
+        else if (b.court === 'Cancha de Vóley' && filterCanchaVoley.checked) courtMatch = true;
+
         const sportMatch = (b.sport === 'Fútbol' && filterFutbol.checked) ||
             (b.sport === 'Vóley' && filterVoley.checked);
+
         return courtMatch && sportMatch;
     });
 }
@@ -664,7 +704,7 @@ function checkOverlaps(id, court, date, startTime, endTime) {
 
             // Overlap check formula: (StartA < EndB) AND (EndA > StartB)
             if (newStart < existEnd && newEnd > existStart) {
-                return `Conflicto de horario: La ${court === 'Grande' ? 'Cancha Grande' : 'Cancha Pequeña'} ya está reservada por ${event.name} en este horario (${event.start_time} - ${event.end_time}).`;
+                return `Conflicto de horario: La cancha ${court} ya está reservada por ${event.name} en este horario (${event.start_time} - ${event.end_time}).`;
             }
         }
     }
@@ -827,12 +867,11 @@ function showBookingError(msg) {
     bookingError.style.display = 'block';
 }
 
-// Format and copy the reservation details to the clipboard
+// Format and copy the reservation details to the clipboard (Polideportivo specialized)
 function handleCopyReservation() {
     const clientName = bookingNameInput.value.trim();
     const dniText = bookingDniInput ? bookingDniInput.value.trim() : '';
-    const courtRaw = bookingCourtInput.value;
-    const courtText = (courtRaw === 'Pequeña' || courtRaw === 'Chica') ? 'Chica' : 'Grande';
+    const courtText = bookingCourtInput.value; // Keeps exact court string e.g. "Fútbol Grande 1" or "Vóley 2"
     let dateText = bookingDateInput.value;
     const startTime = bookingStartTimeInput.value;
     const endTime = bookingEndTimeInput.value;
@@ -852,13 +891,21 @@ function handleCopyReservation() {
     }
 
     // Validate if everything is filled
-    if (!clientName || !dniText || !courtRaw || !dateText || !startTime || !endTime || !advisorText || !medioText) {
+    if (!clientName || !dniText || !courtText || !dateText || !startTime || !endTime || !advisorText || !medioText) {
         showBookingError("Por favor completa todos los campos obligatorios (*) antes de copiar la reserva.");
         return;
     }
 
     // Clear any previous error
     bookingError.style.display = 'none';
+
+    // Format court name for WhatsApp copy
+    let courtFormatted = courtText;
+    if (courtText === 'Cancha Grande') {
+        courtFormatted = 'Cancha Grande de Fútbol';
+    } else if (courtText === 'Cancha Pequeña') {
+        courtFormatted = 'Cancha Pequeña de Fútbol';
+    }
 
     // Format date from YYYY-MM-DD to DD/MM/YYYY
     if (dateText && dateText.includes('-')) {
@@ -893,11 +940,11 @@ function handleCopyReservation() {
         }
     }
 
-    const message = `*RESERVA DE CANCHA LOS PINOS*
+    const message = `*RESERVA DE POLIDEPORTIVO HUARAL-HUANDO*
 
 Nombre del cliente: ${clientName}
 DNI: ${dniText}
-Cancha (Chica o Grande): ${courtText}
+Cancha: ${courtFormatted}
 Fecha: ${dateText}
 Hora: ${timeText} ${timeEmoji}
 Pelota: ${pelotaText}
@@ -984,10 +1031,10 @@ async function checkSupabaseReachable(url) {
     }
 }
 
-// Load Supabase settings and attempt initialization
+// Load Supabase settings and attempt initialization (Polideportivo isolated namespace)
 function loadDatabaseSettings() {
-    const url = localStorage.getItem('canchapro_supabase_url');
-    const key = localStorage.getItem('canchapro_supabase_key');
+    const url = localStorage.getItem('canchapro_supabase_url_poli');
+    const key = localStorage.getItem('canchapro_supabase_key_poli');
 
     if (url && key) {
         supabaseUrlInput.value = url;
@@ -1016,7 +1063,7 @@ function updateDatabaseStatusUI(connected, errorMsg = null) {
     if (connected) {
         statusDot.className = 'status-dot connected';
         statusText.textContent = 'Conectado a la Nube (Supabase)';
-        statusDesc.textContent = 'Las reservas están sincronizadas con la nube y compartidas en tiempo real.';
+        statusDesc.textContent = 'Las reservas están sincronizadas con la nube del Polideportivo y compartidas en tiempo real.';
 
         btnOpenSettings.className = 'btn btn-secondary btn-sm';
         btnOpenSettings.innerHTML = '<i data-lucide="database"></i> Configuración de Base de Datos';
@@ -1066,7 +1113,7 @@ function setupRealtimeSubscription() {
         supabaseClient.removeChannel(realtimeChannel);
     }
 
-    realtimeChannel = supabaseClient.channel('realtime_db')
+    realtimeChannel = supabaseClient.channel('realtime_db_poli')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'reservas' }, () => {
             // Refetch calendar dynamically on any database change
             if (calendar) calendar.refetchEvents();
@@ -1085,7 +1132,7 @@ function setLocalMode() {
     updateDatabaseStatusUI(false);
 }
 
-// Handle saving database settings form
+// Handle saving database settings form (Polideportivo isolated namespace)
 async function handleSaveSettings(e) {
     e.preventDefault();
     settingsFeedback.className = 'settings-feedback';
@@ -1122,8 +1169,8 @@ async function handleSaveSettings(e) {
         }
 
         // Connection works! Save to storage
-        localStorage.setItem('canchapro_supabase_url', url);
-        localStorage.setItem('canchapro_supabase_key', key);
+        localStorage.setItem('canchapro_supabase_url_poli', url);
+        localStorage.setItem('canchapro_supabase_key_poli', key);
 
         supabaseClient = tempClient;
         dbMode = 'supabase';
@@ -1208,7 +1255,7 @@ function showSettingsError(msg) {
     settingsFeedback.textContent = msg;
 }
 
-// Update Dashboard Statistics Card
+// Update Dashboard Statistics Card (Polideportivo specialized)
 function updateStats() {
     const todayStr = new Date().toISOString().split('T')[0];
 
@@ -1217,23 +1264,27 @@ function updateStats() {
 
     statTodayReservations.textContent = todayEvents.length;
 
-    let hoursGrande = 0;
-    let hoursPequena = 0;
+    let hoursFutbolGrande = 0;
+    let hoursFutbolChico = 0;
+    let hoursVoley = 0;
 
     todayEvents.forEach(e => {
         const start = parseTimeToMinutes(e.start_time);
         const end = parseTimeToMinutes(e.end_time);
         const diffHours = (end - start) / 60;
 
-        if (e.court === 'Grande') {
-            hoursGrande += diffHours;
-        } else if (e.court === 'Pequeña') {
-            hoursPequena += diffHours;
+        if (e.court === 'Cancha Grande') {
+            hoursFutbolGrande += diffHours;
+        } else if (e.court === 'Cancha Pequeña') {
+            hoursFutbolChico += diffHours;
+        } else if (e.court === 'Cancha de Vóley') {
+            hoursVoley += diffHours;
         }
     });
 
-    statCanchaGrande.textContent = `${hoursGrande.toFixed(1)} h`;
-    statCanchaPequena.textContent = `${hoursPequena.toFixed(1)} h`;
+    if (statFutbolGrande) statFutbolGrande.textContent = `${hoursFutbolGrande.toFixed(1)} h`;
+    if (statFutbolChico) statFutbolChico.textContent = `${hoursFutbolChico.toFixed(1)} h`;
+    if (statVoley) statVoley.textContent = `${hoursVoley.toFixed(1)} h`;
 }
 
 // ==========================================
@@ -1255,7 +1306,7 @@ async function handleSaveOnboardingName(e) {
     const rawName = onboardingNameInput.value.trim();
     if (!rawName) return;
 
-    // Clean duplicate spaces and capitalize each word (e.g. "juan carlos" -> "Juan Carlos" or "admin 1" -> "Admin 1")
+    // Clean duplicate spaces and capitalize each word
     const formattedName = rawName
         .split(/\s+/)
         .map(word => {
@@ -1312,16 +1363,18 @@ async function addHistoryEntry(action, details) {
     }
 }
 
+// Polideportivo isolated namespace
 function saveHistoryEntryLocal(entry) {
     let history = getHistoryLocal();
     history.unshift(entry);
     if (history.length > 50) history = history.slice(0, 50);
-    localStorage.setItem('canchapro_historial', JSON.stringify(history));
+    localStorage.setItem('canchapro_historial_poli', JSON.stringify(history));
     fetchAndRenderHistory();
 }
 
+// Polideportivo isolated namespace
 function getHistoryLocal() {
-    const data = localStorage.getItem('canchapro_historial');
+    const data = localStorage.getItem('canchapro_historial_poli');
     if (!data) return [];
     try {
         const history = JSON.parse(data);
@@ -1354,11 +1407,10 @@ async function fetchAndRenderHistory() {
             if (error) throw error;
             entries = data || [];
             
-            // Filter out entries that belong to Polideportivo complex
-            const polideportivoCourts = ['Cancha Grande', 'Cancha Pequeña', 'Cancha de Vóley'];
+            // Filter out entries that belong to Los Pinos complex
             entries = entries.filter(e => {
                 const d = e.details || '';
-                return !polideportivoCourts.some(court => d.includes(`(${court} -`));
+                return !d.includes('(Grande -') && !d.includes('(Pequeña -');
             });
 
             if (btnClearHistoryLocal) btnClearHistoryLocal.style.display = 'none';
@@ -1470,9 +1522,10 @@ function formatTimeAgo(date) {
     return date.toLocaleString('es-ES', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' });
 }
 
+// Polideportivo isolated namespace
 function clearHistoryLocal() {
     if (confirm("¿Estás seguro de que deseas limpiar el historial local? Esto no afectará la base de datos Supabase.")) {
-        localStorage.removeItem('canchapro_historial');
+        localStorage.removeItem('canchapro_historial_poli');
         fetchAndRenderHistory();
     }
 }
