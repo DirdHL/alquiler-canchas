@@ -683,7 +683,7 @@ function filterEvents(bookings) {
     });
 }
 
-// Check overlapping bookings
+// Check overlapping bookings taking physical court capacity into account
 function checkOverlaps(id, court, date, startTime, endTime) {
     // Convert new time to comparable numbers (minutes of day)
     const newStart = parseTimeToMinutes(startTime);
@@ -693,7 +693,20 @@ function checkOverlaps(id, court, date, startTime, endTime) {
         return "La hora de inicio debe ser anterior a la hora de fin.";
     }
 
-    // Check conflicts on the same date and same court
+    // Determine the physical capacity of this type of court
+    let capacity = 1;
+    if (court === 'Cancha Grande') {
+        capacity = 3;
+    } else if (court === 'Cancha Pequeña') {
+        capacity = 4;
+    } else if (court === 'Cancha de Vóley') {
+        capacity = 4;
+    }
+
+    // Count overlapping bookings for the same court category and date
+    let overlapCount = 0;
+    const overlappingDetails = [];
+
     for (const event of allEvents) {
         // Skip current event if editing
         if (event.id === id) continue;
@@ -704,11 +717,19 @@ function checkOverlaps(id, court, date, startTime, endTime) {
 
             // Overlap check formula: (StartA < EndB) AND (EndA > StartB)
             if (newStart < existEnd && newEnd > existStart) {
-                return `Conflicto de horario: La cancha ${court} ya está reservada por ${event.name} en este horario (${event.start_time} - ${event.end_time}).`;
+                overlapCount++;
+                overlappingDetails.push(`${event.name} (${event.start_time} - ${event.end_time})`);
             }
         }
     }
-    return null; // No conflict
+
+    // Block only if we have exceeded the physical capacity of courts
+    if (overlapCount >= capacity) {
+        return `Conflicto de horario: Las ${capacity} canchas del tipo "${court}" ya están reservadas en este horario por:\n` + 
+               overlappingDetails.join(', ');
+    }
+
+    return null; // No conflict, capacity is not exceeded!
 }
 
 function parseTimeToMinutes(timeStr) {
