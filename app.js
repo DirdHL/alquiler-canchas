@@ -133,12 +133,16 @@ function initCalendar() {
         editable: false,
         height: 'auto',
         nowIndicator: true,
+        datesSet: function() {
+            updateDailySummary();
+        },
 
         // Fetch Events Dynamically
         events: function (fetchInfo, successCallback, failureCallback) {
             fetchBookings().then(bookings => {
                 allEvents = bookings;
                 updateStats();
+                updateDailySummary();
 
                 // Apply UI filters
                 const filtered = filterEvents(bookings);
@@ -1235,6 +1239,77 @@ function updateStats() {
     statCanchaGrande.textContent = `${hoursGrande.toFixed(1)} h`;
     statCanchaPequena.textContent = `${hoursPequena.toFixed(1)} h`;
 }
+
+// Render a summary list of all bookings for the currently selected day in the calendar
+function updateDailySummary() {
+    if (!calendar) return;
+
+    const currentDate = calendar.getDate();
+    // format as YYYY-MM-DD in local time
+    const year = currentDate.getFullYear();
+    const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+    const day = String(currentDate.getDate()).padStart(2, '0');
+    const dateStr = `${year}-${month}-${day}`;
+
+    // Update label text e.g. "Lunes, 8 de Junio de 2026"
+    const labelOptions = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+    const formattedLabel = currentDate.toLocaleDateString('es-ES', labelOptions);
+    const summaryDateLabel = document.getElementById('summaryDateLabel');
+    if (summaryDateLabel) {
+        summaryDateLabel.textContent = formattedLabel.charAt(0).toUpperCase() + formattedLabel.slice(1);
+    }
+
+    const summaryListContainer = document.getElementById('dailySummaryList');
+    if (!summaryListContainer) return;
+
+    // Filter events for this day
+    const dayEvents = allEvents.filter(e => e.date === dateStr);
+
+    // Sort by start time
+    dayEvents.sort((a, b) => a.start_time.localeCompare(b.start_time));
+
+    if (dayEvents.length === 0) {
+        summaryListContainer.innerHTML = '<p class="no-activity" style="width: 100%;">No hay reservas programadas para este día.</p>';
+        return;
+    }
+
+    let html = '';
+    dayEvents.forEach(e => {
+        let badgeClass = 'court-badge-grande';
+        if (e.court === 'Pequeña') badgeClass = 'court-badge-pequena';
+
+        const pelotaVal = e.pelota === true || e.pelota === 'true';
+        const chalecoVal = e.chaleco === true || e.chaleco === 'true';
+
+        html += `
+            <div class="summary-item-card" onclick="openEditFromSummary('${e.id}')" style="cursor: pointer;">
+                <div class="summary-item-header">
+                    <span class="summary-item-time">${formatTimeHHMM(e.start_time)} - ${formatTimeHHMM(e.end_time)}</span>
+                    <span class="summary-item-court ${badgeClass}">Cancha ${e.court}</span>
+                </div>
+                <div class="summary-item-client">${escapeHTML(e.name)}</div>
+                <div class="summary-item-details">
+                    <span class="summary-detail-tag">DNI: ${escapeHTML(e.dni)}</span>
+                    <span class="summary-detail-tag"><i data-lucide="user"></i> ${escapeHTML(e.notes || 'Sin asesor')}</span>
+                    <span class="summary-detail-tag"><i data-lucide="share-2"></i> ${escapeHTML(e.medio || 'Otro')}</span>
+                    ${pelotaVal ? `<span class="summary-detail-tag" style="color:#34d399;">⚽ Pelota</span>` : ''}
+                    ${chalecoVal ? `<span class="summary-detail-tag" style="color:#34d399;">🎽 Chaleco</span>` : ''}
+                </div>
+            </div>
+        `;
+    });
+
+    summaryListContainer.innerHTML = html;
+    if (window.lucide) lucide.createIcons();
+}
+
+// Global function to trigger modal edit directly from summary click
+window.openEditFromSummary = function(id) {
+    const booking = allEvents.find(e => e.id === id);
+    if (booking) {
+        openBookingModal(booking);
+    }
+};
 
 // ==========================================
 // Operator Identity & Audit History Logic

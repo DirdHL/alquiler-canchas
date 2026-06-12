@@ -81,3 +81,90 @@ body {
     gap: 8px;
     margin-bottom: 6px;
 }
+
+/* ==========================================
+   Daily Summary List & Cards
+   ========================================== */
+.summary-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+    margin-top: 10px;
+}
+
+.summary-item-card {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transition: var(--transition-smooth);
+}
+
+.summary-item-card:hover {
+    background: rgba(16, 185, 129, 0.04);
+    border-color: rgba(16, 185, 129, 0.3);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.1);
+}
+
+.summary-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.summary-item-time {
+    font-size: 13px;
+    font-weight: 700;
+    color: #10b981;
+}
+
+.summary-item-court {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 100px;
+}
+
+.court-badge-grande {
+    background: rgba(99, 102, 241, 0.15) !important;
+    color: #818cf8 !important;
+    border: 1px solid rgba(99, 102, 241, 0.3) !important;
+}
+
+.court-badge-pequena {
+    background: rgba(236, 72, 153, 0.15) !important;
+    color: #f472b6 !important;
+    border: 1px solid rgba(236, 72, 153, 0.3) !important;
+}
+
+.court-badge-voley {
+    background: rgba(245, 158, 11, 0.15) !important;
+    color: #fbbf24 !important;
+    border: 1px solid rgba(245, 158, 11, 0.3) !important;
+}
+
+.summary-item-client {
+    font-size: 15px;
+    font-weight: 600;
+    color: #f8fafc;
+}
+
+.summary-item-details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.summary-detail-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
