@@ -1970,6 +1970,16 @@ function updateStatsDashboard() {
             today: { count: 0, income: 0 },
             week: { count: 0, income: 0 },
             month: { count: 0, income: 0 }
+        },
+        Yape: {
+            today: { count: 0, income: 0 },
+            week: { count: 0, income: 0 },
+            month: { count: 0, income: 0 }
+        },
+        Efectivo: {
+            today: { count: 0, income: 0 },
+            week: { count: 0, income: 0 },
+            month: { count: 0, income: 0 }
         }
     };
 
@@ -1979,6 +1989,15 @@ function updateStatsDashboard() {
         metrics.Total.today.count++;
         metrics.Total.today.income += inc.total;
         metrics.Extras.today.income += inc.pelotaIncome + inc.chalecoIncome;
+
+        const payType = e.tipo_pago || 'Efectivo';
+        if (payType === 'Yape') {
+            metrics.Yape.today.count++;
+            metrics.Yape.today.income += inc.total;
+        } else {
+            metrics.Efectivo.today.count++;
+            metrics.Efectivo.today.income += inc.total;
+        }
 
         if (e.court === 'Grande') {
             metrics.Grande.today.count++;
@@ -1998,6 +2017,15 @@ function updateStatsDashboard() {
         metrics.Total.week.income += inc.total;
         metrics.Extras.week.income += inc.pelotaIncome + inc.chalecoIncome;
 
+        const payType = e.tipo_pago || 'Efectivo';
+        if (payType === 'Yape') {
+            metrics.Yape.week.count++;
+            metrics.Yape.week.income += inc.total;
+        } else {
+            metrics.Efectivo.week.count++;
+            metrics.Efectivo.week.income += inc.total;
+        }
+
         if (e.court === 'Grande') {
             metrics.Grande.week.count++;
             metrics.Grande.week.hours += inc.durationHours;
@@ -2015,6 +2043,15 @@ function updateStatsDashboard() {
         metrics.Total.month.count++;
         metrics.Total.month.income += inc.total;
         metrics.Extras.month.income += inc.pelotaIncome + inc.chalecoIncome;
+
+        const payType = e.tipo_pago || 'Efectivo';
+        if (payType === 'Yape') {
+            metrics.Yape.month.count++;
+            metrics.Yape.month.income += inc.total;
+        } else {
+            metrics.Efectivo.month.count++;
+            metrics.Efectivo.month.income += inc.total;
+        }
 
         if (e.court === 'Grande') {
             metrics.Grande.month.count++;
@@ -2110,7 +2147,150 @@ function updateStatsDashboard() {
                     <span style="font-size: 11px; color: var(--text-secondary);">${metrics.Total.month.count} res.</span>
                 </td>
             </tr>
+            <tr style="border-top: 2px solid var(--border-color); background: rgba(255, 255, 255, 0.01);">
+                <td colspan="4" style="padding: 8px 16px; font-weight: 600; color: var(--text-secondary); font-size: 12px; text-transform: uppercase;">
+                    Resumen por Tipo de Pago
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <strong style="color: #60a5fa;">Yape</strong><br>
+                    <span style="font-size: 11px; color: var(--text-muted);">Pagos digitales</span>
+                </td>
+                <td style="text-align: right;">
+                    <strong>S/. ${metrics.Yape.today.income.toFixed(2)}</strong><br>
+                    <span style="font-size: 11px; color: var(--text-muted);">${metrics.Yape.today.count} res.</span>
+                </td>
+                <td style="text-align: right;">
+                    <strong>S/. ${metrics.Yape.week.income.toFixed(2)}</strong><br>
+                    <span style="font-size: 11px; color: var(--text-muted);">${metrics.Yape.week.count} res.</span>
+                </td>
+                <td style="text-align: right;">
+                    <strong>S/. ${metrics.Yape.month.income.toFixed(2)}</strong><br>
+                    <span style="font-size: 11px; color: var(--text-muted);">${metrics.Yape.month.count} res.</span>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <strong style="color: #fbbf24;">Efectivo</strong><br>
+                    <span style="font-size: 11px; color: var(--text-muted);">Dinero físico</span>
+                </td>
+                <td style="text-align: right;">
+                    <strong>S/. ${metrics.Efectivo.today.income.toFixed(2)}</strong><br>
+                    <span style="font-size: 11px; color: var(--text-muted);">${metrics.Efectivo.today.count} res.</span>
+                </td>
+                <td style="text-align: right;">
+                    <strong>S/. ${metrics.Efectivo.week.income.toFixed(2)}</strong><br>
+                    <span style="font-size: 11px; color: var(--text-muted);">${metrics.Efectivo.week.count} res.</span>
+                </td>
+                <td style="text-align: right;">
+                    <strong>S/. ${metrics.Efectivo.month.income.toFixed(2)}</strong><br>
+                    <span style="font-size: 11px; color: var(--text-muted);">${metrics.Efectivo.month.count} res.</span>
+                </td>
+            </tr>
         `;
+    }
+
+    // Calculate advisor statistics
+    const activeAdvisors = new Set();
+    const getAdvisorName = (notes) => {
+        if (!notes || !notes.trim()) return 'Sin Asesor';
+        return notes.trim();
+    };
+
+    todayEvents.forEach(e => activeAdvisors.add(getAdvisorName(e.notes)));
+    weekEvents.forEach(e => activeAdvisors.add(getAdvisorName(e.notes)));
+    monthEvents.forEach(e => activeAdvisors.add(getAdvisorName(e.notes)));
+
+    const advisorMetrics = {};
+    activeAdvisors.forEach(adv => {
+        advisorMetrics[adv] = {
+            today: { count: 0, income: 0 },
+            week: { count: 0, income: 0 },
+            month: { count: 0, income: 0 }
+        };
+    });
+
+    todayEvents.forEach(e => {
+        const adv = getAdvisorName(e.notes);
+        const inc = getEventIncome(e);
+        if (advisorMetrics[adv]) {
+            advisorMetrics[adv].today.count++;
+            advisorMetrics[adv].today.income += inc.total;
+        }
+    });
+
+    weekEvents.forEach(e => {
+        const adv = getAdvisorName(e.notes);
+        const inc = getEventIncome(e);
+        if (advisorMetrics[adv]) {
+            advisorMetrics[adv].week.count++;
+            advisorMetrics[adv].week.income += inc.total;
+        }
+    });
+
+    monthEvents.forEach(e => {
+        const adv = getAdvisorName(e.notes);
+        const inc = getEventIncome(e);
+        if (advisorMetrics[adv]) {
+            advisorMetrics[adv].month.count++;
+            advisorMetrics[adv].month.income += inc.total;
+        }
+    });
+
+    const sortedAdvisors = Array.from(activeAdvisors).map(adv => ({
+        name: adv,
+        ...advisorMetrics[adv]
+    }));
+
+    sortedAdvisors.sort((a, b) => {
+        if (b.month.income !== a.month.income) {
+            return b.month.income - a.month.income;
+        }
+        if (b.month.count !== a.month.count) {
+            return b.month.count - a.month.count;
+        }
+        return b.week.income - a.week.income;
+    });
+
+    const asesoresTbody = document.getElementById('statsAsesoresTableBody');
+    if (asesoresTbody) {
+        if (sortedAdvisors.length === 0) {
+            asesoresTbody.innerHTML = `
+                <tr>
+                    <td colspan="4" style="text-align: center; padding: 24px; color: var(--text-muted);">
+                        No hay reservas registradas con asesores en este período.
+                    </td>
+                </tr>
+            `;
+        } else {
+            asesoresTbody.innerHTML = sortedAdvisors.map(adv => {
+                const isSinAsesor = adv.name === 'Sin Asesor';
+                const nameStyle = isSinAsesor ? 'color: var(--text-muted); font-style: italic;' : 'color: var(--text-primary); font-weight: 500;';
+                const todayCountLabel = adv.today.count === 1 ? '1 cancha' : `${adv.today.count} canchas`;
+                const weekCountLabel = adv.week.count === 1 ? '1 cancha' : `${adv.week.count} canchas`;
+                const monthCountLabel = adv.month.count === 1 ? '1 cancha' : `${adv.month.count} canchas`;
+                return `
+                    <tr>
+                        <td style="padding: 12px 16px;">
+                            <span style="${nameStyle}">${escapeHTML(adv.name)}</span>
+                        </td>
+                        <td style="padding: 12px 16px; text-align: right;">
+                            <strong>S/. ${adv.today.income.toFixed(2)}</strong><br>
+                            <span style="font-size: 11px; color: var(--text-muted);">${todayCountLabel}</span>
+                        </td>
+                        <td style="padding: 12px 16px; text-align: right;">
+                            <strong>S/. ${adv.week.income.toFixed(2)}</strong><br>
+                            <span style="font-size: 11px; color: var(--text-muted);">${weekCountLabel}</span>
+                        </td>
+                        <td style="padding: 12px 16px; text-align: right;">
+                            <strong>S/. ${adv.month.income.toFixed(2)}</strong><br>
+                            <span style="font-size: 11px; color: var(--text-muted);">${monthCountLabel}</span>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
     }
 }
 
