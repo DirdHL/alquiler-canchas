@@ -7,6 +7,7 @@ let dbMode = 'local'; // 'local' or 'supabase'
 let supabaseClient = null;
 let calendar = null;
 let allEvents = []; // Cache for local/downloaded events
+let statsCountdownInterval = null;
 
 // DOM Elements
 const sidebar = document.getElementById('sidebar');
@@ -388,7 +389,13 @@ function setupEventListeners() {
         btnOpenStats.addEventListener('click', handleOpenStatsClick);
     }
     if (btnCloseStatsAuth) {
-        btnCloseStatsAuth.addEventListener('click', () => closeModal(modalStatsAuth));
+        btnCloseStatsAuth.addEventListener('click', () => {
+            if (statsCountdownInterval) {
+                clearInterval(statsCountdownInterval);
+                statsCountdownInterval = null;
+            }
+            closeModal(modalStatsAuth);
+        });
     }
     if (formStatsAuth) {
         formStatsAuth.addEventListener('submit', handleStatsAuthSubmit);
@@ -1737,6 +1744,10 @@ function handleOpenStatsClick() {
     if (isUnlocked) {
         openStatsDashboard();
     } else {
+        if (statsCountdownInterval) {
+            clearInterval(statsCountdownInterval);
+            statsCountdownInterval = null;
+        }
         statsPasswordInput.value = '';
         statsAuthError.style.display = 'none';
         openModal(modalStatsAuth);
@@ -1747,14 +1758,34 @@ function handleOpenStatsClick() {
 function handleStatsAuthSubmit(e) {
     e.preventDefault();
     const pwd = statsPasswordInput.value;
+    
+    if (statsCountdownInterval) {
+        clearInterval(statsCountdownInterval);
+        statsCountdownInterval = null;
+    }
+    
     if (pwd === 'Reservasupabase') {
         localStorage.setItem('canchapro_stats_unlocked', 'true');
         closeModal(modalStatsAuth);
         openStatsDashboard();
     } else {
-        statsAuthError.textContent = 'Contraseña incorrecta. Intente de nuevo.';
+        let seconds = 20;
+        statsAuthError.textContent = `Contraseña incorrecta, ingrese la clave correcta o su computadora explotará en ${seconds} segundos`;
         statsAuthError.style.display = 'block';
         statsPasswordInput.focus();
+        
+        statsCountdownInterval = setInterval(() => {
+            seconds--;
+            if (seconds > 0) {
+                statsAuthError.textContent = `Contraseña incorrecta, ingrese la clave correcta o su computadora explotará en ${seconds} segundos`;
+            } else if (seconds === 0) {
+                statsAuthError.textContent = `Contraseña incorrecta, ingrese la clave correcta o su computadora explotará en 0 segundos`;
+            } else {
+                clearInterval(statsCountdownInterval);
+                statsCountdownInterval = null;
+                statsAuthError.textContent = 'naaa mentira xD';
+            }
+        }, 1000);
     }
 }
 
