@@ -107,6 +107,16 @@
                 </div>
             </div>
 
+            <div class="stats-card">
+                <h3 style="display: flex; align-items: center; gap: 6px; margin-bottom: 8px;">
+                    <i data-lucide="line-chart" style="width: 16px; height: 16px; color: var(--primary);"></i>
+                    Reportes
+                </h3>
+                <button class="btn btn-secondary btn-sm btn-sidebar-action" id="btnOpenStats" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; border-color: rgba(16, 185, 129, 0.3); color: #10b981; margin: 0;">
+                    <i data-lucide="lock" style="width: 14px; height: 14px;"></i> Ver Estadísticas
+                </button>
+            </div>
+
             <!-- User Profile Card -->
             <div class="user-profile-card">
                 <div class="user-info">
@@ -467,6 +477,118 @@ ALTER PUBLICATION supabase_realtime ADD TABLE reservas, historial;
                         <button type="submit" class="btn btn-primary" style="width: 100%">Continuar</button>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Password Modal (Restricted Access) -->
+    <div class="modal-backdrop" id="modalStatsAuth">
+        <div class="modal-card modal-sm" style="max-width: 380px;">
+            <div class="modal-header">
+                <h3 style="display: flex; align-items: center; gap: 8px; margin: 0;">
+                    <i data-lucide="lock" style="color: var(--danger);"></i> Acceso Restringido
+                </h3>
+                <button class="btn-close" id="btnCloseStatsAuth"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <p class="settings-intro" style="margin-bottom: 16px; font-size: 13px; color: var(--text-secondary);">Ingrese la contraseña de administrador para ver las estadísticas de ventas y ganancias.</p>
+                <form id="formStatsAuth">
+                    <div class="form-group">
+                        <label for="statsPassword">Contraseña *</label>
+                        <div class="input-wrapper">
+                            <i data-lucide="key-round"></i>
+                            <input type="password" id="statsPassword" required placeholder="••••••••">
+                        </div>
+                    </div>
+                    <div class="form-error" id="statsAuthError" style="display: none; color: var(--danger); margin-bottom: 12px; font-size: 13px;"></div>
+                    <div class="modal-actions" style="margin-top: 16px;">
+                        <button type="submit" class="btn btn-primary" style="width: 100%">Desbloquear</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Dashboard Modal -->
+    <div class="modal-backdrop" id="modalStats">
+        <div class="modal-card modal-lg" style="max-width: 800px;">
+            <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; padding: 20px 24px;">
+                <h3 style="display: flex; align-items: center; gap: 8px; margin: 0;">
+                    <i data-lucide="line-chart" style="color: var(--primary);"></i> Estadísticas y Finanzas
+                </h3>
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <button class="btn btn-secondary btn-sm" id="btnLockStats" title="Bloquear Acceso" style="gap: 4px; padding: 4px 8px; font-size: 11px;">
+                        <i data-lucide="log-out" style="width: 12px; height: 12px;"></i> Bloquear
+                    </button>
+                    <button class="btn-close" id="btnCloseStatsModal" style="margin: 0;"><i data-lucide="x"></i></button>
+                </div>
+            </div>
+            <div class="modal-body" style="padding: 24px;">
+                <!-- Tabs navigation -->
+                <div class="stats-tabs" style="display: flex; gap: 12px; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+                    <button class="tab-btn active" data-tab="tab-report" style="background: none; border: none; color: var(--primary); font-weight: 600; cursor: pointer; padding: 6px 12px; display: flex; align-items: center; gap: 6px; border-bottom: 2px solid var(--primary); font-size: 14px;">
+                        <i data-lucide="presentation" style="width: 16px; height: 16px;"></i> Reporte de Ventas
+                    </button>
+                    <button class="tab-btn" data-tab="tab-rates" style="background: none; border: none; color: var(--text-secondary); font-weight: 500; cursor: pointer; padding: 6px 12px; display: flex; align-items: center; gap: 6px; font-size: 14px;">
+                        <i data-lucide="badge-dollar-sign" style="width: 16px; height: 16px;"></i> Tarifas de Canchas
+                    </button>
+                </div>
+
+                <!-- Tab: Report -->
+                <div class="tab-content active" id="tab-report">
+                    <!-- Earnings Overview Grid -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
+                        <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px;">
+                            <span style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Ganancia Hoy</span>
+                            <div id="statsIncomeToday" style="font-size: 24px; font-weight: 700; color: #34d399; margin-top: 6px;">S/. 0.00</div>
+                            <span id="statsCountToday" style="font-size: 12px; color: var(--text-secondary);">0 reservas</span>
+                        </div>
+                        <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px;">
+                            <span style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Ganancia de la Semana</span>
+                            <div id="statsIncomeWeek" style="font-size: 24px; font-weight: 700; color: #34d399; margin-top: 6px;">S/. 0.00</div>
+                            <span id="statsCountWeek" style="font-size: 12px; color: var(--text-secondary);">0 reservas</span>
+                        </div>
+                        <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px;">
+                            <span style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Ganancia del Mes</span>
+                            <div id="statsIncomeMonth" style="font-size: 24px; font-weight: 700; color: #34d399; margin-top: 6px;">S/. 0.00</div>
+                            <span id="statsCountMonth" style="font-size: 12px; color: var(--text-secondary);">0 reservas</span>
+                        </div>
+                    </div>
+
+                    <!-- Breakdown Table -->
+                    <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: var(--radius-md); overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 14px;">
+                            <thead>
+                                <tr style="border-bottom: 1px solid var(--border-color); background: rgba(255, 255, 255, 0.03);">
+                                    <th style="padding: 12px 16px; color: var(--text-secondary); font-weight: 600;">Detalle / Cancha</th>
+                                    <th style="padding: 12px 16px; color: var(--text-secondary); font-weight: 600; text-align: right;">Hoy</th>
+                                    <th style="padding: 12px 16px; color: var(--text-secondary); font-weight: 600; text-align: right;">Semana</th>
+                                    <th style="padding: 12px 16px; color: var(--text-secondary); font-weight: 600; text-align: right;">Mes</th>
+                                </tr>
+                            </thead>
+                            <tbody id="statsBreakdownTableBody">
+                                <!-- Dynamic rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Tab: Rates Settings -->
+                <div class="tab-content" id="tab-rates" style="display: none;">
+                    <form id="formStatsRates">
+                        <div class="form-row" id="ratesFormRow" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+                            <!-- Filled dynamically depending on complex -->
+                        </div>
+                        <div style="display: flex; gap: 12px; margin-top: 18px; background: rgba(255, 255, 255, 0.02); padding: 12px; border: 1px dashed var(--border-color); border-radius: var(--radius-sm); align-items: flex-start;">
+                            <i data-lucide="info" style="color: var(--primary); flex-shrink: 0; margin-top: 2px; width: 16px; height: 16px;"></i>
+                            <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.4; margin: 0;">Las tarifas se guardan de forma local en este navegador y se aplican para calcular las ganancias. Los datos de reservas en sí (horas y equipamiento) siguen leyéndose de la base de datos principal.</p>
+                        </div>
+                        <div class="settings-actions" style="margin-top: 20px; display: flex; justify-content: flex-end;">
+                            <button type="submit" class="btn btn-primary">Guardar Tarifas</button>
+                        </div>
+                        <div id="statsRatesFeedback" style="margin-top: 12px; font-size: 14px; text-align: center; border-radius: var(--radius-sm); padding: 8px; display: none;"></div>
+                    </form>
+                </div>
             </div>
         </div>
     </div>

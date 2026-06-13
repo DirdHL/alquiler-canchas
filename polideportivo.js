@@ -79,6 +79,25 @@ const statFutbolGrande = document.getElementById('statFutbolGrande');
 const statFutbolChico = document.getElementById('statFutbolChico');
 const statVoley = document.getElementById('statVoley');
 
+// Stats Modal DOM Elements
+const btnOpenStats = document.getElementById('btnOpenStats');
+const modalStatsAuth = document.getElementById('modalStatsAuth');
+const btnCloseStatsAuth = document.getElementById('btnCloseStatsAuth');
+const formStatsAuth = document.getElementById('formStatsAuth');
+const statsPasswordInput = document.getElementById('statsPassword');
+const statsAuthError = document.getElementById('statsAuthError');
+
+const modalStats = document.getElementById('modalStats');
+const btnCloseStatsModal = document.getElementById('btnCloseStatsModal');
+const btnLockStats = document.getElementById('btnLockStats');
+const tabButtons = document.querySelectorAll('.stats-tabs .tab-btn');
+const tabContents = document.querySelectorAll('#modalStats .tab-content');
+
+const ratesFormRow = document.getElementById('ratesFormRow');
+const formStatsRates = document.getElementById('formStatsRates');
+const statsRatesFeedback = document.getElementById('statsRatesFeedback');
+
+
 // Initialize Application
 document.addEventListener('DOMContentLoaded', () => {
     // 1. Initialize Lucide Icons
@@ -380,6 +399,42 @@ function setupEventListeners() {
                 bookingSourceCustomInput.required = false;
             }
         });
+    }
+
+    // Stats Dashboard Actions
+    if (btnOpenStats) {
+        btnOpenStats.addEventListener('click', handleOpenStatsClick);
+    }
+    if (btnCloseStatsAuth) {
+        btnCloseStatsAuth.addEventListener('click', () => closeModal(modalStatsAuth));
+    }
+    if (formStatsAuth) {
+        formStatsAuth.addEventListener('submit', handleStatsAuthSubmit);
+    }
+    if (btnCloseStatsModal) {
+        btnCloseStatsModal.addEventListener('click', () => closeModal(modalStats));
+    }
+    if (btnLockStats) {
+        btnLockStats.addEventListener('click', handleLockStatsClick);
+    }
+    tabButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const tabId = btn.getAttribute('data-tab');
+            tabButtons.forEach(b => b.classList.remove('active'));
+            tabContents.forEach(c => {
+                c.classList.remove('active');
+                c.style.display = 'none';
+            });
+            btn.classList.add('active');
+            const targetContent = document.getElementById(tabId);
+            if (targetContent) {
+                targetContent.classList.add('active');
+                targetContent.style.display = 'block';
+            }
+        });
+    });
+    if (formStatsRates) {
+        formStatsRates.addEventListener('submit', handleStatsRatesSave);
     }
 }
 
@@ -1339,6 +1394,11 @@ function updateStats() {
     if (statFutbolGrande) statFutbolGrande.textContent = `${hoursFutbolGrande.toFixed(1)} h`;
     if (statFutbolChico) statFutbolChico.textContent = `${hoursFutbolChico.toFixed(1)} h`;
     if (statVoley) statVoley.textContent = `${hoursVoley.toFixed(1)} h`;
+
+    // Refresh statistics dashboard if it's active
+    if (modalStats && modalStats.classList.contains('active')) {
+        updateStatsDashboard();
+    }
 }
 
 // Render a summary list of all bookings for the currently selected day in the calendar
@@ -1740,3 +1800,391 @@ function getDurationInMinutes(startTime, endTime) {
     }
     return endMins - startMins;
 }
+
+// ==========================================
+// Statistics & Earnings Logic (Polideportivo)
+// ==========================================
+function handleOpenStatsClick() {
+    closeSidebarDrawer();
+    const isUnlocked = localStorage.getItem('canchapro_stats_unlocked') === 'true';
+    if (isUnlocked) {
+        openStatsDashboard();
+    } else {
+        statsPasswordInput.value = '';
+        statsAuthError.style.display = 'none';
+        openModal(modalStatsAuth);
+        setTimeout(() => statsPasswordInput.focus(), 100);
+    }
+}
+
+function handleStatsAuthSubmit(e) {
+    e.preventDefault();
+    const pwd = statsPasswordInput.value;
+    if (pwd === 'Reservasupabase') {
+        localStorage.setItem('canchapro_stats_unlocked', 'true');
+        closeModal(modalStatsAuth);
+        openStatsDashboard();
+    } else {
+        statsAuthError.textContent = 'Contraseña incorrecta. Intente de nuevo.';
+        statsAuthError.style.display = 'block';
+        statsPasswordInput.focus();
+    }
+}
+
+function handleLockStatsClick() {
+    localStorage.removeItem('canchapro_stats_unlocked');
+    closeModal(modalStats);
+}
+
+function openStatsDashboard() {
+    // Reset tabs
+    tabButtons.forEach(b => b.classList.remove('active'));
+    tabContents.forEach(c => {
+        c.classList.remove('active');
+        c.style.display = 'none';
+    });
+    
+    // Set to first tab (report)
+    const reportTabBtn = document.querySelector('[data-tab="tab-report"]');
+    if (reportTabBtn) reportTabBtn.classList.add('active');
+    const reportTabContent = document.getElementById('tab-report');
+    if (reportTabContent) {
+        reportTabContent.classList.add('active');
+        reportTabContent.style.display = 'block';
+    }
+    
+    // Build rates inputs dynamically
+    buildRatesForm();
+    
+    // Calculate and render stats
+    updateStatsDashboard();
+    
+    // Open modal
+    openModal(modalStats);
+}
+
+function buildRatesForm() {
+    if (!ratesFormRow) return;
+    ratesFormRow.innerHTML = `
+        <div class="form-group">
+            <label for="rateGrande">Hora Cancha Grande (S/.) *</label>
+            <div class="input-wrapper">
+                <i data-lucide="dollar-sign"></i>
+                <input type="number" id="rateGrande" required min="0" step="0.5" value="${localStorage.getItem('canchapro_rate_grande_poli') || '30'}">
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="ratePequena">Hora Cancha Pequeña (S/.) *</label>
+            <div class="input-wrapper">
+                <i data-lucide="dollar-sign"></i>
+                <input type="number" id="ratePequena" required min="0" step="0.5" value="${localStorage.getItem('canchapro_rate_pequena_poli') || '30'}">
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="rateVoley">Hora Cancha de Vóley (S/.) *</label>
+            <div class="input-wrapper">
+                <i data-lucide="dollar-sign"></i>
+                <input type="number" id="rateVoley" required min="0" step="0.5" value="${localStorage.getItem('canchapro_rate_voley_poli') || '30'}">
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="ratePelota">Alquiler de Pelota (S/.) *</label>
+            <div class="input-wrapper">
+                <i data-lucide="dollar-sign"></i>
+                <input type="number" id="ratePelota" required min="0" step="0.5" value="${localStorage.getItem('canchapro_rate_pelota_poli') || '5'}">
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="rateChaleco">Alquiler de Chalecos (S/.) *</label>
+            <div class="input-wrapper">
+                <i data-lucide="dollar-sign"></i>
+                <input type="number" id="rateChaleco" required min="0" step="0.5" value="${localStorage.getItem('canchapro_rate_chaleco_poli') || '5'}">
+            </div>
+        </div>
+    `;
+    if (window.lucide) lucide.createIcons();
+}
+
+function handleStatsRatesSave(e) {
+    e.preventDefault();
+    const rGrande = document.getElementById('rateGrande').value;
+    const rPequena = document.getElementById('ratePequena').value;
+    const rVoley = document.getElementById('rateVoley').value;
+    const rPelota = document.getElementById('ratePelota').value;
+    const rChaleco = document.getElementById('rateChaleco').value;
+    
+    localStorage.setItem('canchapro_rate_grande_poli', rGrande);
+    localStorage.setItem('canchapro_rate_pequena_poli', rPequena);
+    localStorage.setItem('canchapro_rate_voley_poli', rVoley);
+    localStorage.setItem('canchapro_rate_pelota_poli', rPelota);
+    localStorage.setItem('canchapro_rate_chaleco_poli', rChaleco);
+    
+    statsRatesFeedback.className = 'settings-feedback success';
+    statsRatesFeedback.textContent = '¡Tarifas guardadas y aplicadas con éxito! ✅';
+    statsRatesFeedback.style.display = 'block';
+    
+    // Recalculate dashboard immediately
+    updateStatsDashboard();
+    
+    setTimeout(() => {
+        statsRatesFeedback.style.display = 'none';
+    }, 2000);
+}
+
+function isSameBusinessWeek(eventDateStr, currentBusinessDateStr) {
+    const eventDate = new Date(eventDateStr + 'T12:00:00');
+    const currentDate = new Date(currentBusinessDateStr + 'T12:00:00');
+    
+    const currentDay = currentDate.getDay();
+    const diffToMonday = currentDay === 0 ? -6 : 1 - currentDay; // Monday is 1
+    const monday = new Date(currentDate);
+    monday.setDate(currentDate.getDate() + diffToMonday);
+    monday.setHours(0,0,0,0);
+    
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    sunday.setHours(23,59,59,999);
+    
+    return eventDate >= monday && eventDate <= sunday;
+}
+
+function getEventIncome(e) {
+    let courtRate = 0;
+    if (e.court === 'Cancha Grande') {
+        courtRate = parseFloat(localStorage.getItem('canchapro_rate_grande_poli') || '30');
+    } else if (e.court === 'Cancha Pequeña') {
+        courtRate = parseFloat(localStorage.getItem('canchapro_rate_pequena_poli') || '30');
+    } else if (e.court === 'Cancha de Vóley') {
+        courtRate = parseFloat(localStorage.getItem('canchapro_rate_voley_poli') || '30');
+    }
+    
+    const pelotaRate = parseFloat(localStorage.getItem('canchapro_rate_pelota_poli') || '5');
+    const chalecoRate = parseFloat(localStorage.getItem('canchapro_rate_chaleco_poli') || '5');
+    
+    let start = parseTimeToMinutes(e.start_time);
+    let end = parseTimeToMinutes(e.end_time);
+    if (end <= start) {
+        end += 1440;
+    }
+    const durationHours = (end - start) / 60;
+    
+    const courtIncome = durationHours * courtRate;
+    const pelotaIncome = (e.pelota === true || e.pelota === 'true') ? pelotaRate : 0;
+    const chalecoIncome = (e.chaleco === true || e.chaleco === 'true') ? chalecoRate : 0;
+    
+    return {
+        durationHours,
+        courtIncome,
+        pelotaIncome,
+        chalecoIncome,
+        total: courtIncome + pelotaIncome + chalecoIncome
+    };
+}
+
+function updateStatsDashboard() {
+    const todayStr = getCurrentBusinessDate();
+    const currentMonthPrefix = todayStr.substring(0, 7);
+    
+    const todayEvents = allEvents.filter(e => getBusinessDate(e.date, e.start_time) === todayStr);
+    const weekEvents = allEvents.filter(e => isSameBusinessWeek(getBusinessDate(e.date, e.start_time), todayStr));
+    const monthEvents = allEvents.filter(e => getBusinessDate(e.date, e.start_time).startsWith(currentMonthPrefix));
+    
+    const metrics = {
+        Grande: {
+            today: { count: 0, hours: 0, income: 0 },
+            week: { count: 0, hours: 0, income: 0 },
+            month: { count: 0, hours: 0, income: 0 }
+        },
+        Pequena: {
+            today: { count: 0, hours: 0, income: 0 },
+            week: { count: 0, hours: 0, income: 0 },
+            month: { count: 0, hours: 0, income: 0 }
+        },
+        Voley: {
+            today: { count: 0, hours: 0, income: 0 },
+            week: { count: 0, hours: 0, income: 0 },
+            month: { count: 0, hours: 0, income: 0 }
+        },
+        Extras: {
+            today: { income: 0 },
+            week: { income: 0 },
+            month: { income: 0 }
+        },
+        Total: {
+            today: { count: 0, income: 0 },
+            week: { count: 0, income: 0 },
+            month: { count: 0, income: 0 }
+        }
+    };
+    
+    // Today metrics
+    todayEvents.forEach(e => {
+        const inc = getEventIncome(e);
+        metrics.Total.today.count++;
+        metrics.Total.today.income += inc.total;
+        metrics.Extras.today.income += inc.pelotaIncome + inc.chalecoIncome;
+        
+        if (e.court === 'Cancha Grande') {
+            metrics.Grande.today.count++;
+            metrics.Grande.today.hours += inc.durationHours;
+            metrics.Grande.today.income += inc.courtIncome;
+        } else if (e.court === 'Cancha Pequeña') {
+            metrics.Pequena.today.count++;
+            metrics.Pequena.today.hours += inc.durationHours;
+            metrics.Pequena.today.income += inc.courtIncome;
+        } else if (e.court === 'Cancha de Vóley') {
+            metrics.Voley.today.count++;
+            metrics.Voley.today.hours += inc.durationHours;
+            metrics.Voley.today.income += inc.courtIncome;
+        }
+    });
+    
+    // Week metrics
+    weekEvents.forEach(e => {
+        const inc = getEventIncome(e);
+        metrics.Total.week.count++;
+        metrics.Total.week.income += inc.total;
+        metrics.Extras.week.income += inc.pelotaIncome + inc.chalecoIncome;
+        
+        if (e.court === 'Cancha Grande') {
+            metrics.Grande.week.count++;
+            metrics.Grande.week.hours += inc.durationHours;
+            metrics.Grande.week.income += inc.courtIncome;
+        } else if (e.court === 'Cancha Pequeña') {
+            metrics.Pequena.week.count++;
+            metrics.Pequena.week.hours += inc.durationHours;
+            metrics.Pequena.week.income += inc.courtIncome;
+        } else if (e.court === 'Cancha de Vóley') {
+            metrics.Voley.week.count++;
+            metrics.Voley.week.hours += inc.durationHours;
+            metrics.Voley.week.income += inc.courtIncome;
+        }
+    });
+    
+    // Month metrics
+    monthEvents.forEach(e => {
+        const inc = getEventIncome(e);
+        metrics.Total.month.count++;
+        metrics.Total.month.income += inc.total;
+        metrics.Extras.month.income += inc.pelotaIncome + inc.chalecoIncome;
+        
+        if (e.court === 'Cancha Grande') {
+            metrics.Grande.month.count++;
+            metrics.Grande.month.hours += inc.durationHours;
+            metrics.Grande.month.income += inc.courtIncome;
+        } else if (e.court === 'Cancha Pequeña') {
+            metrics.Pequena.month.count++;
+            metrics.Pequena.month.hours += inc.durationHours;
+            metrics.Pequena.month.income += inc.courtIncome;
+        } else if (e.court === 'Cancha de Vóley') {
+            metrics.Voley.month.count++;
+            metrics.Voley.month.hours += inc.durationHours;
+            metrics.Voley.month.income += inc.courtIncome;
+        }
+    });
+    
+    // Update dashboard labels
+    document.getElementById('statsIncomeToday').textContent = `S/. ${metrics.Total.today.income.toFixed(2)}`;
+    document.getElementById('statsCountToday').textContent = `${metrics.Total.today.count} reservas`;
+    
+    document.getElementById('statsIncomeWeek').textContent = `S/. ${metrics.Total.week.income.toFixed(2)}`;
+    document.getElementById('statsCountWeek').textContent = `${metrics.Total.week.count} reservas`;
+    
+    document.getElementById('statsIncomeMonth').textContent = `S/. ${metrics.Total.month.income.toFixed(2)}`;
+    document.getElementById('statsCountMonth').textContent = `${metrics.Total.month.count} reservas`;
+    
+    // Render breakdown table rows
+    const tbody = document.getElementById('statsBreakdownTableBody');
+    if (tbody) {
+        tbody.innerHTML = `
+            <tr>
+                <td>
+                    <strong style="color: var(--text-primary);">Fútbol Grande</strong><br>
+                    <span style="font-size: 11px; color: var(--text-muted);">Alquileres / Horas</span>
+                </td>
+                <td style="text-align: right;">
+                    <strong>S/. ${metrics.Grande.today.income.toFixed(2)}</strong><br>
+                    <span style="font-size: 11px; color: var(--text-muted);">${metrics.Grande.today.count} res. / ${metrics.Grande.today.hours.toFixed(1)}h</span>
+                </td>
+                <td style="text-align: right;">
+                    <strong>S/. ${metrics.Grande.week.income.toFixed(2)}</strong><br>
+                    <span style="font-size: 11px; color: var(--text-muted);">${metrics.Grande.week.count} res. / ${metrics.Grande.week.hours.toFixed(1)}h</span>
+                </td>
+                <td style="text-align: right;">
+                    <strong>S/. ${metrics.Grande.month.income.toFixed(2)}</strong><br>
+                    <span style="font-size: 11px; color: var(--text-muted);">${metrics.Grande.month.count} res. / ${metrics.Grande.month.hours.toFixed(1)}h</span>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <strong style="color: var(--text-primary);">Fútbol Chico</strong><br>
+                    <span style="font-size: 11px; color: var(--text-muted);">Alquileres / Horas</span>
+                </td>
+                <td style="text-align: right;">
+                    <strong>S/. ${metrics.Pequena.today.income.toFixed(2)}</strong><br>
+                    <span style="font-size: 11px; color: var(--text-muted);">${metrics.Pequena.today.count} res. / ${metrics.Pequena.today.hours.toFixed(1)}h</span>
+                </td>
+                <td style="text-align: right;">
+                    <strong>S/. ${metrics.Pequena.week.income.toFixed(2)}</strong><br>
+                    <span style="font-size: 11px; color: var(--text-muted);">${metrics.Pequena.week.count} res. / ${metrics.Pequena.week.hours.toFixed(1)}h</span>
+                </td>
+                <td style="text-align: right;">
+                    <strong>S/. ${metrics.Pequena.month.income.toFixed(2)}</strong><br>
+                    <span style="font-size: 11px; color: var(--text-muted);">${metrics.Pequena.month.count} res. / ${metrics.Pequena.month.hours.toFixed(1)}h</span>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <strong style="color: var(--text-primary);">Cancha Vóley</strong><br>
+                    <span style="font-size: 11px; color: var(--text-muted);">Alquileres / Horas</span>
+                </td>
+                <td style="text-align: right;">
+                    <strong>S/. ${metrics.Voley.today.income.toFixed(2)}</strong><br>
+                    <span style="font-size: 11px; color: var(--text-muted);">${metrics.Voley.today.count} res. / ${metrics.Voley.today.hours.toFixed(1)}h</span>
+                </td>
+                <td style="text-align: right;">
+                    <strong>S/. ${metrics.Voley.week.income.toFixed(2)}</strong><br>
+                    <span style="font-size: 11px; color: var(--text-muted);">${metrics.Voley.week.count} res. / ${metrics.Voley.week.hours.toFixed(1)}h</span>
+                </td>
+                <td style="text-align: right;">
+                    <strong>S/. ${metrics.Voley.month.income.toFixed(2)}</strong><br>
+                    <span style="font-size: 11px; color: var(--text-muted);">${metrics.Voley.month.count} res. / ${metrics.Voley.month.hours.toFixed(1)}h</span>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <strong style="color: var(--text-primary);">Extras (Pelota + Chaleco)</strong><br>
+                    <span style="font-size: 11px; color: var(--text-muted);">Servicios adicionales</span>
+                </td>
+                <td style="text-align: right;">
+                    <strong>S/. ${metrics.Extras.today.income.toFixed(2)}</strong>
+                </td>
+                <td style="text-align: right;">
+                    <strong>S/. ${metrics.Extras.week.income.toFixed(2)}</strong>
+                </td>
+                <td style="text-align: right;">
+                    <strong>S/. ${metrics.Extras.month.income.toFixed(2)}</strong>
+                </td>
+            </tr>
+            <tr style="background: rgba(16, 185, 129, 0.08); font-weight: 600; border-top: 1px solid var(--primary);">
+                <td>
+                    <strong style="color: var(--primary);">Total General</strong><br>
+                    <span style="font-size: 11px; color: var(--primary); opacity: 0.8;">Ventas Totales</span>
+                </td>
+                <td style="text-align: right; color: #34d399;">
+                    <strong>S/. ${metrics.Total.today.income.toFixed(2)}</strong><br>
+                    <span style="font-size: 11px; color: var(--text-secondary);">${metrics.Total.today.count} res.</span>
+                </td>
+                <td style="text-align: right; color: #34d399;">
+                    <strong>S/. ${metrics.Total.week.income.toFixed(2)}</strong><br>
+                    <span style="font-size: 11px; color: var(--text-secondary);">${metrics.Total.week.count} res.</span>
+                </td>
+                <td style="text-align: right; color: #34d399;">
+                    <strong>S/. ${metrics.Total.month.income.toFixed(2)}</strong><br>
+                    <span style="font-size: 11px; color: var(--text-secondary);">${metrics.Total.month.count} res.</span>
+                </td>
+            </tr>
+        `;
+    }
+}
+
