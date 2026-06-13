@@ -444,6 +444,18 @@ function setupEventListeners() {
     if (formStatsRates) {
         formStatsRates.addEventListener('submit', handleStatsRatesSave);
     }
+
+    // Make date and time inputs show their picker when clicking anywhere on them
+    const dateAndTimeInputs = document.querySelectorAll('input[type="date"], input[type="time"]');
+    dateAndTimeInputs.forEach(input => {
+        input.addEventListener('click', function () {
+            try {
+                this.showPicker();
+            } catch (e) {
+                console.error("showPicker no está soportado en este navegador:", e);
+            }
+        });
+    });
 }
 
 // Automatic lock/fill of sport based on court choice
@@ -1846,20 +1858,24 @@ function handleStatsAuthSubmit(e) {
     e.preventDefault();
     const pwd = statsPasswordInput.value;
 
-    if (statsCountdownInterval) {
-        clearInterval(statsCountdownInterval);
-        statsCountdownInterval = null;
-    }
-
     if (pwd === 'Reservasupabase') {
+        if (statsCountdownInterval) {
+            clearInterval(statsCountdownInterval);
+            statsCountdownInterval = null;
+        }
         localStorage.setItem('canchapro_stats_unlocked', 'true');
         closeModal(modalStatsAuth);
         openStatsDashboard();
     } else {
+        statsPasswordInput.focus();
+        if (statsCountdownInterval) {
+            // Already running! Do not reset the countdown.
+            return;
+        }
+
         let seconds = 15;
         statsAuthError.textContent = `🚨 ¡ADVERTENCIA! Contraseña incorrecta. Su computadora explotará en ${seconds} segundos... Ingresa la contraseña correcta o sal de la ventana`;
         statsAuthError.style.display = 'block';
-        statsPasswordInput.focus();
 
         statsCountdownInterval = setInterval(() => {
             seconds--;

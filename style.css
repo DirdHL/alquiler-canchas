@@ -838,6 +838,54 @@ body.no-scroll {
     background: rgba(15, 23, 42, 0.8);
 }
 
+.input-wrapper input[type="date"],
+.input-wrapper input[type="time"] {
+    cursor: pointer;
+    border-color: rgba(16, 185, 129, 0.35);
+    background: rgba(16, 185, 129, 0.05);
+    transition: var(--transition-smooth);
+}
+
+.input-wrapper input[type="date"]:hover,
+.input-wrapper input[type="time"]:hover {
+    border-color: rgba(16, 185, 129, 0.6);
+    background: rgba(16, 185, 129, 0.09);
+}
+
+.input-wrapper input[type="date"]:focus,
+.input-wrapper input[type="time"]:focus {
+    border-color: var(--primary);
+    background: rgba(16, 185, 129, 0.14);
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25);
+}
+
+/* Color the left SVG icons for date/time fields permanently in emerald green with a soft glow */
+.input-wrapper:has(input[type="date"]) svg,
+.input-wrapper:has(input[type="time"]) svg {
+    color: var(--primary) !important;
+    opacity: 0.95;
+    filter: drop-shadow(0 0 4px rgba(16, 185, 129, 0.3));
+}
+
+/* Custom styling for native date and time picker indicators */
+.input-wrapper input[type="date"]::-webkit-calendar-picker-indicator,
+.input-wrapper input[type="time"]::-webkit-calendar-picker-indicator {
+    filter: invert(0.9) sepia(100%) saturate(500%) hue-rotate(110deg) brightness(1.2);
+    cursor: pointer;
+    opacity: 0.75;
+    padding: 6px;
+    border-radius: 4px;
+    transition: var(--transition-smooth);
+    transform: scale(1.1);
+}
+
+.input-wrapper input[type="date"]::-webkit-calendar-picker-indicator:hover,
+.input-wrapper input[type="time"]::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
+    background: rgba(16, 185, 129, 0.25);
+    transform: scale(1.25);
+}
+
 .textarea-wrapper svg {
     top: 12px;
 }
