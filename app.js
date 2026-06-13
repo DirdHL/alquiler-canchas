@@ -121,11 +121,16 @@ function initCalendar() {
             list: 'Lista'
         },
         slotMinTime: '06:00:00',
-        slotMaxTime: '23:00:00',
+        slotMaxTime: '25:00:00',
         allDaySlot: false,
         slotDuration: '00:30:00',
         snapDuration: '00:30:00',
         slotLabelInterval: '01:00',
+        slotLabelContent: function(arg) {
+            if (arg.text === '0') return '00';
+            if (arg.text === '1') return '01';
+            return arg.text;
+        },
         expandRows: true,
         stickyHeaderDates: true,
         selectable: true,
@@ -148,14 +153,17 @@ function initCalendar() {
                 const filtered = filterEvents(bookings);
 
                 // Convert to FullCalendar event format
-                const fcEvents = filtered.map(b => ({
-                    id: b.id,
-                    title: `${b.name} (${b.sport})${b.pelota === true || b.pelota === 'true' ? (b.sport === 'Vóley' ? ' 🏐' : ' ⚽') : ''}${b.chaleco === true || b.chaleco === 'true' ? ' 🎽' : ''}`,
-                    start: `${b.date}T${b.start_time}`,
-                    end: `${b.date}T${b.end_time}`,
-                    className: `${b.court === 'Grande' ? 'event-cancha-grande' : 'event-cancha-pequena'} ${b.sport === 'Fútbol' ? 'event-sport-futbol' : 'event-sport-voley'}`,
-                    extendedProps: b // Keep original data
-                }));
+                const fcEvents = filtered.map(b => {
+                    const { start, end } = getStartAndEndDates(b.date, b.start_time, b.end_time);
+                    return {
+                        id: b.id,
+                        title: `${b.name} (${b.sport})${b.pelota === true || b.pelota === 'true' ? (b.sport === 'Vóley' ? ' 🏐' : ' ⚽') : ''}${b.chaleco === true || b.chaleco === 'true' ? ' 🎽' : ''}`,
+                        start: formatISOString(start),
+                        end: formatISOString(end),
+                        className: `${b.court === 'Grande' ? 'event-cancha-grande' : 'event-cancha-pequena'} ${b.sport === 'Fútbol' ? 'event-sport-futbol' : 'event-sport-voley'}`,
+                        extendedProps: b // Keep original data
+                    };
+                });
 
                 successCallback(fcEvents);
             }).catch(err => {
@@ -297,18 +305,18 @@ function setupEventListeners() {
             const startMins = parseTimeToMinutes(startTime);
             const endTime = bookingEndTimeInput.value;
 
+            let adjust = false;
             if (endTime) {
-                const endMins = parseTimeToMinutes(endTime);
-                if (endMins - startMins < 60) {
-                    const newEndMins = startMins + 60;
-                    const newEndHour = Math.floor(newEndMins / 60);
-                    const newEndMin = newEndMins % 60;
-                    const formattedHour = String(newEndHour).padStart(2, '0');
-                    const formattedMin = String(newEndMin).padStart(2, '0');
-                    bookingEndTimeInput.value = `${formattedHour}:${formattedMin}`;
+                const duration = getDurationInMinutes(startTime, endTime);
+                if (duration < 60) {
+                    adjust = true;
                 }
             } else {
-                const newEndMins = startMins + 60;
+                adjust = true;
+            }
+
+            if (adjust) {
+                const newEndMins = (startMins + 60) % 1440;
                 const newEndHour = Math.floor(newEndMins / 60);
                 const newEndMin = newEndMins % 60;
                 const formattedHour = String(newEndHour).padStart(2, '0');
@@ -529,10 +537,10 @@ function openBookingModal(booking = null, defaults = null) {
             bookingStartTimeInput.value = defaults.start_time;
 
             // Ensure end time is at least 1 hour after start time
-            const startMins = parseTimeToMinutes(defaults.start_time);
-            const endMins = parseTimeToMinutes(defaults.end_time);
-            if (endMins - startMins < 60) {
-                const newEndMins = startMins + 60;
+            const duration = getDurationInMinutes(defaults.start_time, defaults.end_time);
+            if (duration < 60) {
+                const startMins = parseTimeToMinutes(defaults.start_time);
+                const newEndMins = (startMins + 60) % 1440;
                 const newEndHour = Math.floor(newEndMins / 60);
                 const newEndMin = newEndMins % 60;
                 const formattedHour = String(newEndHour).padStart(2, '0');
@@ -649,26 +657,46 @@ function filterEvents(bookings) {
 
 // Check overlapping bookings
 function checkOverlaps(id, court, date, startTime, endTime) {
-    // Convert new time to comparable numbers (minutes of day)
-    const newStart = parseTimeToMinutes(startTime);
-    const newEnd = parseTimeToMinutes(endTime);
+    const { start: newStart, end: newEnd } = getStartAndEndDates(date, startTime, endTime);
 
     if (newStart >= newEnd) {
         return "La hora de inicio debe ser anterior a la hora de fin.";
     }
 
-    // Check conflicts on the same date and same court
+    // Operating hours check: Closed from 01:00 AM to 06:00 AM
+    const closedStart = new Date(newStart);
+    closedStart.setHours(1, 0, 0, 0);
+
+    const closedEnd = new Date(newStart);
+    closedEnd.setHours(6, 0, 0, 0);
+
+    const isOverlap = (startA, endA, startB, endB) => startA < endB && endA > startB;
+
+    if (isOverlap(newStart, newEnd, closedStart, closedEnd)) {
+        return "El local está cerrado de 01:00 AM a 06:00 AM. Por favor elige otro horario.";
+    }
+
+    // Also check next day closed window in case it crosses midnight
+    const closedStartNext = new Date(closedStart);
+    closedStartNext.setDate(closedStartNext.getDate() + 1);
+    const closedEndNext = new Date(closedEnd);
+    closedEndNext.setDate(closedEndNext.getDate() + 1);
+
+    if (isOverlap(newStart, newEnd, closedStartNext, closedEndNext)) {
+        return "El local está cerrado de 01:00 AM a 06:00 AM. Por favor elige otro horario.";
+    }
+
+    // Check conflicts on the same court (considering midnight crossing)
     for (const event of allEvents) {
         // Skip current event if editing
         if (event.id === id) continue;
 
-        if (event.court === court && event.date === date) {
-            const existStart = parseTimeToMinutes(event.start_time);
-            const existEnd = parseTimeToMinutes(event.end_time);
+        if (event.court === court) {
+            const { start: existStart, end: existEnd } = getStartAndEndDates(event.date, event.start_time, event.end_time);
 
             // Overlap check formula: (StartA < EndB) AND (EndA > StartB)
-            if (newStart < existEnd && newEnd > existStart) {
-                return `Conflicto de horario: La ${court === 'Grande' ? 'Cancha Grande' : 'Cancha Pequeña'} ya está reservada por ${event.name} en este horario (${event.start_time} - ${event.end_time}).`;
+            if (isOverlap(newStart, newEnd, existStart, existEnd)) {
+                return `Conflicto de horario: La ${court === 'Grande' ? 'Cancha Grande' : 'Cancha Pequeña'} ya está reservada por ${event.name} en este horario (${event.date} ${event.start_time} - ${event.end_time}).`;
             }
         }
     }
@@ -1214,10 +1242,10 @@ function showSettingsError(msg) {
 
 // Update Dashboard Statistics Card
 function updateStats() {
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = getCurrentBusinessDate();
 
-    // Filter events belonging to today
-    const todayEvents = allEvents.filter(e => e.date === todayStr);
+    // Filter events belonging to today's business day
+    const todayEvents = allEvents.filter(e => getBusinessDate(e.date, e.start_time) === todayStr);
 
     statTodayReservations.textContent = todayEvents.length;
 
@@ -1225,8 +1253,11 @@ function updateStats() {
     let hoursPequena = 0;
 
     todayEvents.forEach(e => {
-        const start = parseTimeToMinutes(e.start_time);
-        const end = parseTimeToMinutes(e.end_time);
+        let start = parseTimeToMinutes(e.start_time);
+        let end = parseTimeToMinutes(e.end_time);
+        if (end <= start) {
+            end += 1440; // Add 24 hours in minutes
+        }
         const diffHours = (end - start) / 60;
 
         if (e.court === 'Grande') {
@@ -1262,11 +1293,15 @@ function updateDailySummary() {
     const summaryListContainer = document.getElementById('dailySummaryList');
     if (!summaryListContainer) return;
 
-    // Filter events for this day
-    const dayEvents = allEvents.filter(e => e.date === dateStr);
+    // Filter events for this business day
+    const dayEvents = allEvents.filter(e => getBusinessDate(e.date, e.start_time) === dateStr);
 
-    // Sort by start time
-    dayEvents.sort((a, b) => a.start_time.localeCompare(b.start_time));
+    // Sort by actual chronological start date/time
+    dayEvents.sort((a, b) => {
+        const dateA = new Date(`${a.date}T${a.start_time}`);
+        const dateB = new Date(`${b.date}T${b.start_time}`);
+        return dateA - dateB;
+    });
 
     if (dayEvents.length === 0) {
         summaryListContainer.innerHTML = '<p class="no-activity" style="width: 100%;">No hay reservas programadas para este día.</p>';
@@ -1557,7 +1592,12 @@ function formatTimeHHMM(timeStr) {
     if (!timeStr) return '';
     const parts = timeStr.split(':');
     if (parts.length >= 2) {
-        return `${parts[0]}:${parts[1]}`;
+        const hour = parts[0].padStart(2, '0');
+        const min = parts[1].padStart(2, '0');
+        return `${hour}:${min}`;
+    }
+    if (timeStr === '0' || timeStr === '00' || timeStr === 0) {
+        return '00:00';
     }
     return timeStr;
 }
@@ -1572,3 +1612,59 @@ function formatDateDDMMYYYY(dateStr) {
     }
     return dateStr;
 }
+
+// ==========================================
+// Helper functions for crossing midnight and business days
+// ==========================================
+function getStartAndEndDates(dateStr, startTimeStr, endTimeStr) {
+    const start = new Date(`${dateStr}T${startTimeStr}`);
+    let end = new Date(`${dateStr}T${endTimeStr}`);
+    if (end <= start) {
+        end.setDate(end.getDate() + 1);
+    }
+    return { start, end };
+}
+
+function formatISOString(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}:00`;
+}
+
+function getBusinessDate(dateStr, startTimeStr) {
+    const hours = parseInt(startTimeStr.split(':')[0], 10);
+    if (hours < 6) {
+        const date = new Date(`${dateStr}T12:00:00`);
+        date.setDate(date.getDate() - 1);
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+    return dateStr;
+}
+
+function getCurrentBusinessDate() {
+    const now = new Date();
+    const hours = now.getHours();
+    if (hours < 6) {
+        now.setDate(now.getDate() - 1);
+    }
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+function getDurationInMinutes(startTime, endTime) {
+    const startMins = parseTimeToMinutes(startTime);
+    let endMins = parseTimeToMinutes(endTime);
+    if (endMins <= startMins) {
+        endMins += 1440;
+    }
+    return endMins - startMins;
+}
+
