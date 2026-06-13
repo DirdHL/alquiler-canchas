@@ -625,9 +625,9 @@ function openBookingModal(booking = null, defaults = null) {
             bookingSourceCustomInput.required = false;
         }
 
-        // Reset Payment Type to default Efectivo
+        // Reset Payment Type to default Yape
         if (bookingPaymentTypeInput) {
-            bookingPaymentTypeInput.value = 'Efectivo';
+            bookingPaymentTypeInput.value = 'Yape';
         }
 
         // Reset toggles to default false
