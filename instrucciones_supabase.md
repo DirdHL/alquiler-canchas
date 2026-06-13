@@ -33,6 +33,8 @@ Una vez que tu proyecto se haya creado, debes estructurar la base de datos para 
 CREATE TABLE IF NOT EXISTS reservas (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,  -- Número único por reserva
   name TEXT NOT NULL,        -- Nombre del cliente
+  dni TEXT,                  -- DNI del cliente
+  medio TEXT,                -- Medio de contacto
   court TEXT NOT NULL,       -- Cancha: "Grande" o "Pequeña"
   sport TEXT NOT NULL,       -- Deporte: "Fútbol" o "Vóley"
   date DATE NOT NULL,        -- Fecha de la reserva
@@ -41,13 +43,17 @@ CREATE TABLE IF NOT EXISTS reservas (
   notes TEXT,                -- Notas adicionales (opcional)
   pelota BOOLEAN DEFAULT false, -- Indica si incluye pelota
   chaleco BOOLEAN DEFAULT false, -- Indica si incluye chaleco
+  tipo_pago TEXT DEFAULT 'Efectivo', -- Tipo de pago: "Efectivo" o "Yape"
   created_at TIMESTAMPTZ DEFAULT now()  -- Fecha/hora en que se registró
 );
 
 -- 💡 NOTA: Si ya tienes la tabla "reservas" creada en Supabase, no es necesario borrarla.
--- Simplemente ejecuta este código adicional para agregar las nuevas columnas de Pelota y Chaleco:
+-- Simplemente ejecuta este código adicional para agregar las nuevas columnas:
+-- ALTER TABLE reservas ADD COLUMN IF NOT EXISTS dni TEXT;
+-- ALTER TABLE reservas ADD COLUMN IF NOT EXISTS medio TEXT;
 -- ALTER TABLE reservas ADD COLUMN IF NOT EXISTS pelota BOOLEAN DEFAULT false;
 -- ALTER TABLE reservas ADD COLUMN IF NOT EXISTS chaleco BOOLEAN DEFAULT false;
+-- ALTER TABLE reservas ADD COLUMN IF NOT EXISTS tipo_pago TEXT DEFAULT 'Efectivo';
 
 -- ✅ PARTE 2: Activar la "seguridad por filas" (Row Level Security)
 -- Esto es obligatorio en el nuevo Supabase para que la página web

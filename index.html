@@ -271,17 +271,29 @@
                         </div>
                     </div>
 
-                    <div class="form-group">
-                        <label for="bookingSource">Medio *</label>
-                        <div class="input-wrapper">
-                            <i data-lucide="share-2"></i>
-                            <select id="bookingSource" required>
-                                <option value="Facebook">Facebook</option>
-                                <option value="TikTok">TikTok</option>
-                                <option value="Instagram">Instagram</option>
-                                <option value="WhatsApp">WhatsApp</option>
-                                <option value="Otro...">Otro...</option>
-                            </select>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="bookingSource">Medio *</label>
+                            <div class="input-wrapper">
+                                <i data-lucide="share-2"></i>
+                                <select id="bookingSource" required>
+                                    <option value="Facebook">Facebook</option>
+                                    <option value="TikTok">TikTok</option>
+                                    <option value="Instagram">Instagram</option>
+                                    <option value="WhatsApp">WhatsApp</option>
+                                    <option value="Otro...">Otro...</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="bookingPaymentType">Tipo de Pago *</label>
+                            <div class="input-wrapper">
+                                <i data-lucide="wallet"></i>
+                                <select id="bookingPaymentType" required>
+                                    <option value="Efectivo">Efectivo</option>
+                                    <option value="Yape">Yape</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
                     <div class="form-group hidden" id="customSourceGroup">
@@ -397,14 +409,16 @@ CREATE TABLE IF NOT EXISTS reservas (
   notes TEXT,
   pelota BOOLEAN DEFAULT false,
   chaleco BOOLEAN DEFAULT false,
+  tipo_pago TEXT DEFAULT 'Efectivo',
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- Si ya tienes la tabla creada, ejecuta esto para agregar DNI, Medio, Pelota y Chaleco:
+-- Si ya tienes la tabla creada, ejecuta esto para agregar DNI, Medio, Pelota, Chaleco y Tipo de Pago:
 -- ALTER TABLE reservas ADD COLUMN IF NOT EXISTS dni TEXT;
 -- ALTER TABLE reservas ADD COLUMN IF NOT EXISTS medio TEXT;
 -- ALTER TABLE reservas ADD COLUMN IF NOT EXISTS pelota BOOLEAN DEFAULT false;
 -- ALTER TABLE reservas ADD COLUMN IF NOT EXISTS chaleco BOOLEAN DEFAULT false;
+-- ALTER TABLE reservas ADD COLUMN IF NOT EXISTS tipo_pago TEXT DEFAULT 'Efectivo';
 
 ALTER TABLE reservas ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Acceso publico" ON reservas FOR ALL USING (true) WITH CHECK (true);

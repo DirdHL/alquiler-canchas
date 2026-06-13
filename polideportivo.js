@@ -40,6 +40,7 @@ const btnDeleteBooking = document.getElementById('btnDeleteBooking');
 const btnCopyReservation = document.getElementById('btnCopyReservation');
 const bookingDniInput = document.getElementById('bookingDni');
 const bookingSourceInput = document.getElementById('bookingSource');
+const bookingPaymentTypeInput = document.getElementById('bookingPaymentType');
 const customSourceGroup = document.getElementById('customSourceGroup');
 const bookingSourceCustomInput = document.getElementById('bookingSourceCustom');
 
@@ -606,6 +607,11 @@ function openBookingModal(booking = null, defaults = null) {
                 bookingSourceCustomInput.required = true;
             }
         }
+
+        // Populate correct Payment Type
+        if (bookingPaymentTypeInput) {
+            bookingPaymentTypeInput.value = booking.tipo_pago || 'Efectivo';
+        }
     } else {
         // New Mode
         modalTitle.textContent = 'Nueva Reserva';
@@ -617,6 +623,11 @@ function openBookingModal(booking = null, defaults = null) {
             bookingSourceInput.value = 'Facebook';
             customSourceGroup.classList.add('hidden');
             bookingSourceCustomInput.required = false;
+        }
+
+        // Reset Payment Type to default Efectivo
+        if (bookingPaymentTypeInput) {
+            bookingPaymentTypeInput.value = 'Efectivo';
         }
 
         // Reset toggles to default false
@@ -856,6 +867,7 @@ async function handleSaveBooking(e) {
     }
     const pelota = bookingPelotaInput.value === 'true';
     const chaleco = bookingChalecoInput.value === 'true';
+    const tipo_pago = bookingPaymentTypeInput ? bookingPaymentTypeInput.value : 'Efectivo';
 
     // 1. Validation for empty inputs
     if (!name || !dni || !date || !startTime || !endTime || !medio) {
@@ -882,7 +894,8 @@ async function handleSaveBooking(e) {
         notes,
         pelota,
         chaleco,
-        medio
+        medio,
+        tipo_pago
     };
 
     try {
@@ -1465,6 +1478,7 @@ function updateDailySummary() {
                     <span class="summary-detail-tag">DNI: ${escapeHTML(e.dni)}</span>
                     <span class="summary-detail-tag"><i data-lucide="user"></i> ${escapeHTML(e.notes || 'Sin asesor')}</span>
                     <span class="summary-detail-tag"><i data-lucide="share-2"></i> ${escapeHTML(e.medio || 'Otro')}</span>
+                    <span class="summary-detail-tag"><i data-lucide="wallet"></i> ${escapeHTML(e.tipo_pago || 'Efectivo')}</span>
                     ${pelotaVal ? `<span class="summary-detail-tag" style="color:#34d399;">⚽ Pelota</span>` : ''}
                     ${chalecoVal ? `<span class="summary-detail-tag" style="color:#34d399;">🎽 Chaleco</span>` : ''}
                 </div>
