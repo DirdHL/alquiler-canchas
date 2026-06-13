@@ -965,7 +965,7 @@ function handleCopyReservation() {
         }
     }
 
-    const message = `*RESERVA DE POLIDEPORTIVO HUARAL-HUANDO*
+    const message = `*RESERVA DE CANCHA POLIDEPORTIV0*
 
 Nombre del cliente: ${clientName}
 DNI: ${dniText}
