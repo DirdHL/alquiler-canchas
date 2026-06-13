@@ -865,6 +865,23 @@ body.no-scroll {
     color: var(--primary) !important;
     opacity: 0.95;
     filter: drop-shadow(0 0 4px rgba(16, 185, 129, 0.3));
+    pointer-events: auto;
+    cursor: pointer;
+    transition: var(--transition-smooth);
+}
+
+.input-wrapper:has(input[type="date"]) svg:hover,
+.input-wrapper:has(input[type="time"]) svg:hover {
+    transform: scale(1.2) translateY(-50%);
+    opacity: 1;
+}
+
+/* Note: since svg is absolutely positioned, we must preserve its top alignment or layout if needed. Wait, in style.css:
+.input-wrapper svg has position: absolute; left: 14px; top is not defined, it is vertically centered by align-items: center on the flex parent. Scaling it might shift it slightly, so transform: scale(1.2) is perfect and safe. */
+.input-wrapper:has(input[type="date"]) svg:hover,
+.input-wrapper:has(input[type="time"]) svg:hover {
+    transform: scale(1.2);
+    opacity: 1;
 }
 
 /* Custom styling for native date and time picker indicators */

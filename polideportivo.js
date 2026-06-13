@@ -445,16 +445,22 @@ function setupEventListeners() {
         formStatsRates.addEventListener('submit', handleStatsRatesSave);
     }
 
-    // Make date and time inputs show their picker when clicking anywhere on them
-    const dateAndTimeInputs = document.querySelectorAll('input[type="date"], input[type="time"]');
-    dateAndTimeInputs.forEach(input => {
-        input.addEventListener('click', function () {
-            try {
-                this.showPicker();
-            } catch (e) {
-                console.error("showPicker no está soportado en este navegador:", e);
-            }
-        });
+    // Make date and time inputs show their picker when clicking on the left icon (SVG)
+    document.querySelectorAll('.input-wrapper').forEach(wrapper => {
+        const input = wrapper.querySelector('input[type="date"], input[type="time"]');
+        if (input) {
+            wrapper.addEventListener('click', function (e) {
+                // Trigger showPicker only if they clicked the left SVG icon (or inside it)
+                const svg = wrapper.querySelector('svg');
+                if (svg && (e.target === svg || svg.contains(e.target))) {
+                    try {
+                        input.showPicker();
+                    } catch (err) {
+                        console.error("showPicker no está soportado en este navegador:", err);
+                    }
+                }
+            });
+        }
     });
 }
 
