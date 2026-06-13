@@ -146,7 +146,7 @@ function initCalendar() {
         slotDuration: '00:30:00',
         snapDuration: '00:30:00',
         slotLabelInterval: '01:00',
-        slotLabelContent: function(arg) {
+        slotLabelContent: function (arg) {
             if (arg.text === '0') return '00';
             if (arg.text === '1') return '01';
             return arg.text;
@@ -158,7 +158,7 @@ function initCalendar() {
         editable: false,
         height: 'auto',
         nowIndicator: true,
-        datesSet: function() {
+        datesSet: function () {
             updateDailySummary();
         },
 
@@ -1406,7 +1406,7 @@ function updateDailySummary() {
 }
 
 // Global function to trigger modal edit directly from summary click
-window.openEditFromSummary = function(id) {
+window.openEditFromSummary = function (id) {
     const booking = allEvents.find(e => e.id === id);
     if (booking) {
         openBookingModal(booking);
@@ -1530,7 +1530,7 @@ async function fetchAndRenderHistory() {
 
             if (error) throw error;
             entries = data || [];
-            
+
             // Filter out entries that belong to Polideportivo complex
             const polideportivoCourts = ['Cancha Grande', 'Cancha Pequeña', 'Cancha de Vóley'];
             entries = entries.filter(e => {
@@ -1758,32 +1758,32 @@ function handleOpenStatsClick() {
 function handleStatsAuthSubmit(e) {
     e.preventDefault();
     const pwd = statsPasswordInput.value;
-    
+
     if (statsCountdownInterval) {
         clearInterval(statsCountdownInterval);
         statsCountdownInterval = null;
     }
-    
+
     if (pwd === 'Reservasupabase') {
         localStorage.setItem('canchapro_stats_unlocked', 'true');
         closeModal(modalStatsAuth);
         openStatsDashboard();
     } else {
-        let seconds = 20;
-        statsAuthError.textContent = `🚨 ¡ADVERTENCIA! Contraseña incorrecta. Su computadora explotará en ${seconds} segundos... 💥💣`;
+        let seconds = 15;
+        statsAuthError.textContent = `🚨 ¡ADVERTENCIA! Contraseña incorrecta. Su computadora explotará en ${seconds} segundos... Ingresa la contraseña correcta o sal de la ventana`;
         statsAuthError.style.display = 'block';
         statsPasswordInput.focus();
-        
+
         statsCountdownInterval = setInterval(() => {
             seconds--;
             if (seconds > 0) {
-                statsAuthError.textContent = `🚨 ¡ADVERTENCIA! Contraseña incorrecta. Su computadora explotará en ${seconds} segundos... 💥💣`;
+                statsAuthError.textContent = `🚨 ¡ADVERTENCIA! Contraseña incorrecta. Su computadora explotará en ${seconds} segundos... Ingresa la contraseña correcta o sal de la ventana`;
             } else if (seconds === 0) {
-                statsAuthError.textContent = `🚨 ¡ADVERTENCIA! Contraseña incorrecta. Su computadora explotará en 0 segundos... 💥💣`;
+                statsAuthError.textContent = `🚨 ¡ADVERTENCIA! Contraseña incorrecta. Su computadora explotará en 0 segundos... Ingresa la contraseña correcta o sal de la ventana`;
             } else {
                 clearInterval(statsCountdownInterval);
                 statsCountdownInterval = null;
-                statsAuthError.textContent = 'naaa mentira xD 🤪';
+                statsAuthError.textContent = 'Naaa mentira xD';
             }
         }, 1000);
     }
@@ -1801,7 +1801,7 @@ function openStatsDashboard() {
         c.classList.remove('active');
         c.style.display = 'none';
     });
-    
+
     // Set to first tab (report)
     const reportTabBtn = document.querySelector('[data-tab="tab-report"]');
     if (reportTabBtn) reportTabBtn.classList.add('active');
@@ -1810,13 +1810,13 @@ function openStatsDashboard() {
         reportTabContent.classList.add('active');
         reportTabContent.style.display = 'block';
     }
-    
+
     // Build rates inputs dynamically
     buildRatesForm();
-    
+
     // Calculate and render stats
     updateStatsDashboard();
-    
+
     // Open modal
     openModal(modalStats);
 }
@@ -1862,19 +1862,19 @@ function handleStatsRatesSave(e) {
     const rPequena = document.getElementById('ratePequena').value;
     const rPelota = document.getElementById('ratePelota').value;
     const rChaleco = document.getElementById('rateChaleco').value;
-    
+
     localStorage.setItem('canchapro_rate_grande', rGrande);
     localStorage.setItem('canchapro_rate_pequena', rPequena);
     localStorage.setItem('canchapro_rate_pelota', rPelota);
     localStorage.setItem('canchapro_rate_chaleco', rChaleco);
-    
+
     statsRatesFeedback.className = 'settings-feedback success';
     statsRatesFeedback.textContent = '¡Tarifas guardadas y aplicadas con éxito! ✅';
     statsRatesFeedback.style.display = 'block';
-    
+
     // Recalculate dashboard immediately
     updateStatsDashboard();
-    
+
     setTimeout(() => {
         statsRatesFeedback.style.display = 'none';
     }, 2000);
@@ -1883,17 +1883,17 @@ function handleStatsRatesSave(e) {
 function isSameBusinessWeek(eventDateStr, currentBusinessDateStr) {
     const eventDate = new Date(eventDateStr + 'T12:00:00');
     const currentDate = new Date(currentBusinessDateStr + 'T12:00:00');
-    
+
     const currentDay = currentDate.getDay();
     const diffToMonday = currentDay === 0 ? -6 : 1 - currentDay; // Monday is 1
     const monday = new Date(currentDate);
     monday.setDate(currentDate.getDate() + diffToMonday);
-    monday.setHours(0,0,0,0);
-    
+    monday.setHours(0, 0, 0, 0);
+
     const sunday = new Date(monday);
     sunday.setDate(monday.getDate() + 6);
-    sunday.setHours(23,59,59,999);
-    
+    sunday.setHours(23, 59, 59, 999);
+
     return eventDate >= monday && eventDate <= sunday;
 }
 
@@ -1904,21 +1904,21 @@ function getEventIncome(e) {
     } else if (e.court === 'Pequeña') {
         courtRate = parseFloat(localStorage.getItem('canchapro_rate_pequena') || '25');
     }
-    
+
     const pelotaRate = parseFloat(localStorage.getItem('canchapro_rate_pelota') || '5');
     const chalecoRate = parseFloat(localStorage.getItem('canchapro_rate_chaleco') || '5');
-    
+
     let start = parseTimeToMinutes(e.start_time);
     let end = parseTimeToMinutes(e.end_time);
     if (end <= start) {
         end += 1440;
     }
     const durationHours = (end - start) / 60;
-    
+
     const courtIncome = durationHours * courtRate;
     const pelotaIncome = (e.pelota === true || e.pelota === 'true') ? pelotaRate : 0;
     const chalecoIncome = (e.chaleco === true || e.chaleco === 'true') ? chalecoRate : 0;
-    
+
     return {
         durationHours,
         courtIncome,
@@ -1931,11 +1931,11 @@ function getEventIncome(e) {
 function updateStatsDashboard() {
     const todayStr = getCurrentBusinessDate();
     const currentMonthPrefix = todayStr.substring(0, 7);
-    
+
     const todayEvents = allEvents.filter(e => getBusinessDate(e.date, e.start_time) === todayStr);
     const weekEvents = allEvents.filter(e => isSameBusinessWeek(getBusinessDate(e.date, e.start_time), todayStr));
     const monthEvents = allEvents.filter(e => getBusinessDate(e.date, e.start_time).startsWith(currentMonthPrefix));
-    
+
     const metrics = {
         Grande: {
             today: { count: 0, hours: 0, income: 0 },
@@ -1958,14 +1958,14 @@ function updateStatsDashboard() {
             month: { count: 0, income: 0 }
         }
     };
-    
+
     // Today metrics
     todayEvents.forEach(e => {
         const inc = getEventIncome(e);
         metrics.Total.today.count++;
         metrics.Total.today.income += inc.total;
         metrics.Extras.today.income += inc.pelotaIncome + inc.chalecoIncome;
-        
+
         if (e.court === 'Grande') {
             metrics.Grande.today.count++;
             metrics.Grande.today.hours += inc.durationHours;
@@ -1976,14 +1976,14 @@ function updateStatsDashboard() {
             metrics.Pequena.today.income += inc.courtIncome;
         }
     });
-    
+
     // Week metrics
     weekEvents.forEach(e => {
         const inc = getEventIncome(e);
         metrics.Total.week.count++;
         metrics.Total.week.income += inc.total;
         metrics.Extras.week.income += inc.pelotaIncome + inc.chalecoIncome;
-        
+
         if (e.court === 'Grande') {
             metrics.Grande.week.count++;
             metrics.Grande.week.hours += inc.durationHours;
@@ -1994,14 +1994,14 @@ function updateStatsDashboard() {
             metrics.Pequena.week.income += inc.courtIncome;
         }
     });
-    
+
     // Month metrics
     monthEvents.forEach(e => {
         const inc = getEventIncome(e);
         metrics.Total.month.count++;
         metrics.Total.month.income += inc.total;
         metrics.Extras.month.income += inc.pelotaIncome + inc.chalecoIncome;
-        
+
         if (e.court === 'Grande') {
             metrics.Grande.month.count++;
             metrics.Grande.month.hours += inc.durationHours;
@@ -2012,17 +2012,17 @@ function updateStatsDashboard() {
             metrics.Pequena.month.income += inc.courtIncome;
         }
     });
-    
+
     // Update dashboard labels
     document.getElementById('statsIncomeToday').textContent = `S/. ${metrics.Total.today.income.toFixed(2)}`;
     document.getElementById('statsCountToday').textContent = `${metrics.Total.today.count} reservas`;
-    
+
     document.getElementById('statsIncomeWeek').textContent = `S/. ${metrics.Total.week.income.toFixed(2)}`;
     document.getElementById('statsCountWeek').textContent = `${metrics.Total.week.count} reservas`;
-    
+
     document.getElementById('statsIncomeMonth').textContent = `S/. ${metrics.Total.month.income.toFixed(2)}`;
     document.getElementById('statsCountMonth').textContent = `${metrics.Total.month.count} reservas`;
-    
+
     // Render breakdown table rows
     const tbody = document.getElementById('statsBreakdownTableBody');
     if (tbody) {
