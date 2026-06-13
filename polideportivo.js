@@ -1843,20 +1843,20 @@ function handleStatsAuthSubmit(e) {
         openStatsDashboard();
     } else {
         let seconds = 20;
-        statsAuthError.textContent = `Contraseña incorrecta, ingrese la clave correcta o su computadora explotará en ${seconds} segundos`;
+        statsAuthError.textContent = `🚨 ¡ADVERTENCIA! Contraseña incorrecta. Su computadora explotará en ${seconds} segundos... 💥💣`;
         statsAuthError.style.display = 'block';
         statsPasswordInput.focus();
         
         statsCountdownInterval = setInterval(() => {
             seconds--;
             if (seconds > 0) {
-                statsAuthError.textContent = `Contraseña incorrecta, ingrese la clave correcta o su computadora explotará en ${seconds} segundos`;
+                statsAuthError.textContent = `🚨 ¡ADVERTENCIA! Contraseña incorrecta. Su computadora explotará en ${seconds} segundos... 💥💣`;
             } else if (seconds === 0) {
-                statsAuthError.textContent = `Contraseña incorrecta, ingrese la clave correcta o su computadora explotará en 0 segundos`;
+                statsAuthError.textContent = `🚨 ¡ADVERTENCIA! Contraseña incorrecta. Su computadora explotará en 0 segundos... 💥💣`;
             } else {
                 clearInterval(statsCountdownInterval);
                 statsCountdownInterval = null;
-                statsAuthError.textContent = 'naaa mentira xD';
+                statsAuthError.textContent = 'naaa mentira xD 🤪';
             }
         }, 1000);
     }
