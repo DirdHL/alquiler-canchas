@@ -2433,6 +2433,191 @@ function updateStatsDashboard() {
             }).join('');
         }
     }
+
+    // ==========================================
+    // Advanced Statistics: Usage & Channels
+    // ==========================================
+    const statsMediosTbody = document.getElementById('statsMediosTableBody');
+    const statsEquipamientoTbody = document.getElementById('statsEquipamientoTableBody');
+    const statsHorasPicoList = document.getElementById('statsHorasPicoList');
+    const statsClientesVipList = document.getElementById('statsClientesVipList');
+
+    if (statsMediosTbody || statsEquipamientoTbody || statsHorasPicoList || statsClientesVipList) {
+        // 1. Contact channels (medio)
+        const normalizeChannel = (m) => {
+            if (!m) return 'Otros';
+            const cleaned = m.trim().toLowerCase();
+            if (cleaned.includes('whatsapp')) return 'WhatsApp';
+            if (cleaned.includes('facebook')) return 'Facebook';
+            if (cleaned.includes('instagram')) return 'Instagram';
+            if (cleaned.includes('tiktok')) return 'TikTok';
+            return 'Otros';
+        };
+
+        const channels = ['WhatsApp', 'Facebook', 'Instagram', 'TikTok', 'Otros'];
+        const channelCounts = {
+            WhatsApp: { today: 0, week: 0, month: 0 },
+            Facebook: { today: 0, week: 0, month: 0 },
+            Instagram: { today: 0, week: 0, month: 0 },
+            TikTok: { today: 0, week: 0, month: 0 },
+            Otros: { today: 0, week: 0, month: 0 }
+        };
+
+        let totalToday = todayEvents.length;
+        let totalWeek = weekEvents.length;
+        let totalMonth = monthEvents.length;
+
+        todayEvents.forEach(e => {
+            const ch = normalizeChannel(e.medio);
+            if (channelCounts[ch]) channelCounts[ch].today++;
+        });
+        weekEvents.forEach(e => {
+            const ch = normalizeChannel(e.medio);
+            if (channelCounts[ch]) channelCounts[ch].week++;
+        });
+        monthEvents.forEach(e => {
+            const ch = normalizeChannel(e.medio);
+            if (channelCounts[ch]) channelCounts[ch].month++;
+        });
+
+        if (statsMediosTbody) {
+            statsMediosTbody.innerHTML = channels.map(ch => {
+                const todayVal = channelCounts[ch].today;
+                const weekVal = channelCounts[ch].week;
+                const monthVal = channelCounts[ch].month;
+
+                const todayPct = totalToday > 0 ? ((todayVal / totalToday) * 100).toFixed(0) : 0;
+                const weekPct = totalWeek > 0 ? ((weekVal / totalWeek) * 100).toFixed(0) : 0;
+                const monthPct = totalMonth > 0 ? ((monthVal / totalMonth) * 100).toFixed(0) : 0;
+
+                let color = 'var(--text-primary)';
+                if (ch === 'WhatsApp') color = '#25d366';
+                else if (ch === 'Facebook') color = '#1877f2';
+                else if (ch === 'Instagram') color = '#e1306c';
+                else if (ch === 'TikTok') color = '#00f2fe';
+
+                return `
+                    <tr style="border-bottom: 1px solid var(--border-color);">
+                        <td style="padding: 10px 4px;">
+                            <strong style="color: ${color};">${ch}</strong>
+                        </td>
+                        <td style="padding: 10px 4px; text-align: right;">
+                            <strong>${todayVal}</strong> <span style="font-size: 11px; color: var(--text-muted);">(${todayPct}%)</span>
+                        </td>
+                        <td style="padding: 10px 4px; text-align: right;">
+                            <strong>${weekVal}</strong> <span style="font-size: 11px; color: var(--text-muted);">(${weekPct}%)</span>
+                        </td>
+                        <td style="padding: 10px 4px; text-align: right;">
+                            <strong>${monthVal}</strong> <span style="font-size: 11px; color: var(--text-muted);">(${monthPct}%)</span>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // 2. Extra equipment count
+        const eqCounts = {
+            Pelotas: { today: 0, week: 0, month: 0 },
+            Chalecos: { today: 0, week: 0, month: 0 }
+        };
+
+        todayEvents.forEach(e => {
+            if (e.pelota === true || e.pelota === 'true') eqCounts.Pelotas.today++;
+            if (e.chaleco === true || e.chaleco === 'true') eqCounts.Chalecos.today++;
+        });
+        weekEvents.forEach(e => {
+            if (e.pelota === true || e.pelota === 'true') eqCounts.Pelotas.week++;
+            if (e.chaleco === true || e.chaleco === 'true') eqCounts.Chalecos.week++;
+        });
+        monthEvents.forEach(e => {
+            if (e.pelota === true || e.pelota === 'true') eqCounts.Pelotas.month++;
+            if (e.chaleco === true || e.chaleco === 'true') eqCounts.Chalecos.month++;
+        });
+
+        if (statsEquipamientoTbody) {
+            statsEquipamientoTbody.innerHTML = `
+                <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 10px 4px;"><strong style="color: #60a5fa;">⚽ Pelotas</strong></td>
+                    <td style="padding: 10px 4px; text-align: right;"><strong>${eqCounts.Pelotas.today}</strong></td>
+                    <td style="padding: 10px 4px; text-align: right;"><strong>${eqCounts.Pelotas.week}</strong></td>
+                    <td style="padding: 10px 4px; text-align: right;"><strong>${eqCounts.Pelotas.month}</strong></td>
+                </tr>
+                <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 10px 4px;"><strong style="color: #fca5a5;">🎽 Chalecos</strong></td>
+                    <td style="padding: 10px 4px; text-align: right;"><strong>${eqCounts.Chalecos.today}</strong></td>
+                    <td style="padding: 10px 4px; text-align: right;"><strong>${eqCounts.Chalecos.week}</strong></td>
+                    <td style="padding: 10px 4px; text-align: right;"><strong>${eqCounts.Chalecos.month}</strong></td>
+                </tr>
+            `;
+        }
+
+        // 3. Peak hours
+        if (statsHorasPicoList) {
+            const hourCounts = {};
+            monthEvents.forEach(e => {
+                const hhmm = formatTimeHHMM(e.start_time);
+                if (hhmm) {
+                    hourCounts[hhmm] = (hourCounts[hhmm] || 0) + 1;
+                }
+            });
+            const sortedHours = Object.keys(hourCounts)
+                .map(h => ({ hour: h, count: hourCounts[h] }))
+                .sort((a, b) => b.count - a.count)
+                .slice(0, 3);
+
+            if (sortedHours.length === 0) {
+                statsHorasPicoList.innerHTML = `<li style="color: var(--text-muted);">No hay reservas en este mes.</li>`;
+            } else {
+                statsHorasPicoList.innerHTML = sortedHours.map((sh, idx) => {
+                    const label = sh.count === 1 ? '1 reserva' : `${sh.count} reservas`;
+                    return `
+                        <li>
+                            <span style="font-weight: 600; color: var(--primary);">${idx + 1}. Hora: ${sh.hour}</span> 
+                            <span style="color: var(--text-secondary);"> - ${label}</span>
+                        </li>
+                    `;
+                }).join('');
+            }
+        }
+
+        // 4. VIP clients
+        if (statsClientesVipList) {
+            const clientCounts = {};
+            monthEvents.forEach(e => {
+                if (e.name && e.name.trim()) {
+                    const key = e.name.trim().toLowerCase();
+                    if (!clientCounts[key]) {
+                        clientCounts[key] = { name: e.name.trim(), dni: e.dni ? e.dni.trim() : '', count: 0 };
+                    }
+                    clientCounts[key].count++;
+                }
+            });
+            const sortedClients = Object.values(clientCounts)
+                .sort((a, b) => b.count - a.count)
+                .slice(0, 5);
+
+            if (sortedClients.length === 0) {
+                statsClientesVipList.innerHTML = `<li style="color: var(--text-muted);">No hay reservas en este mes.</li>`;
+            } else {
+                statsClientesVipList.innerHTML = sortedClients.map((sc, idx) => {
+                    const label = sc.count === 1 ? '1 reserva' : `${sc.count} reservas`;
+                    const dniText = sc.dni ? ` (DNI: ${sc.dni})` : '';
+                    return `
+                        <li>
+                            <span style="font-weight: 600; color: var(--primary);">${idx + 1}. ${escapeHTML(sc.name)}</span>
+                            <span style="font-size: 11px; color: var(--text-muted);">${dniText}</span>
+                            <span style="color: var(--text-secondary);"> - ${label}</span>
+                        </li>
+                    `;
+                }).join('');
+            }
+        }
+
+        if (window.lucide) {
+            lucide.createIcons();
+        }
+    }
 }
+
 
 

@@ -549,6 +549,9 @@ ALTER PUBLICATION supabase_realtime ADD TABLE reservas, historial;
                     <button class="tab-btn" data-tab="tab-asesores" style="background: none; border: none; color: var(--text-secondary); font-weight: 500; cursor: pointer; padding: 6px 12px; display: flex; align-items: center; gap: 6px; font-size: 14px;">
                         <i data-lucide="users" style="width: 16px; height: 16px;"></i> Estadísticas de Asesores
                     </button>
+                    <button class="tab-btn" data-tab="tab-uso-canales" style="background: none; border: none; color: var(--text-secondary); font-weight: 500; cursor: pointer; padding: 6px 12px; display: flex; align-items: center; gap: 6px; font-size: 14px;">
+                        <i data-lucide="bar-chart-3" style="width: 16px; height: 16px;"></i> Uso y Canales
+                    </button>
                 </div>
 
                 <!-- Tab: Report -->
@@ -623,6 +626,81 @@ ALTER PUBLICATION supabase_realtime ADD TABLE reservas, historial;
                                 <!-- Dynamic rows for advisors -->
                             </tbody>
                         </table>
+                    </div>
+                </div>
+
+                <!-- Tab: Uso y Canales -->
+                <div class="tab-content" id="tab-uso-canales" style="display: none;">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+                        <!-- Column 1: Medios de Adquisición -->
+                        <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px;">
+                            <h4 style="margin-top: 0; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; color: var(--primary); font-size: 15px;">
+                                <i data-lucide="share-2" style="width: 18px; height: 18px;"></i> Reservas por Medio de Contacto
+                            </h4>
+                            <div style="overflow-x: auto;">
+                                <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
+                                    <thead>
+                                        <tr style="border-bottom: 1px solid var(--border-color); color: var(--text-secondary);">
+                                            <th style="padding: 8px 4px; font-weight: 600;">Medio</th>
+                                            <th style="padding: 8px 4px; font-weight: 600; text-align: right;">Hoy</th>
+                                            <th style="padding: 8px 4px; font-weight: 600; text-align: right;">Semana</th>
+                                            <th style="padding: 8px 4px; font-weight: 600; text-align: right;">Mes</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="statsMediosTableBody">
+                                        <!-- Dynamic rows -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Column 2: Equipamiento Rentado (Pelotas + Chalecos) -->
+                        <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px; display: flex; flex-direction: column; justify-content: space-between;">
+                            <div>
+                                <h4 style="margin-top: 0; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; color: var(--primary); font-size: 15px;">
+                                    <i data-lucide="package" style="width: 18px; height: 18px;"></i> Equipamiento Rentado (Cantidad)
+                                </h4>
+                                <div style="overflow-x: auto;">
+                                    <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
+                                        <thead>
+                                            <tr style="border-bottom: 1px solid var(--border-color); color: var(--text-secondary);">
+                                                <th style="padding: 8px 4px; font-weight: 600;">Artículo</th>
+                                                <th style="padding: 8px 4px; font-weight: 600; text-align: right;">Hoy</th>
+                                                <th style="padding: 8px 4px; font-weight: 600; text-align: right;">Semana</th>
+                                                <th style="padding: 8px 4px; font-weight: 600; text-align: right;">Mes</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="statsEquipamientoTableBody">
+                                            <!-- Dynamic rows -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-top: 20px;">
+                        <!-- Column 3: Horas Pico -->
+                        <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px;">
+                            <h4 style="margin-top: 0; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; color: var(--primary); font-size: 15px;">
+                                <i data-lucide="clock" style="width: 18px; height: 18px;"></i> Horas Pico del Mes
+                            </h4>
+                            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">Horas de inicio con mayor cantidad de reservas este mes:</p>
+                            <ol id="statsHorasPicoList" style="margin: 0; padding-left: 20px; font-size: 13px; line-height: 1.8; color: var(--text-primary);">
+                                <!-- Dynamic list -->
+                            </ol>
+                        </div>
+
+                        <!-- Column 4: Clientes VIP -->
+                        <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px;">
+                            <h4 style="margin-top: 0; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; color: var(--primary); font-size: 15px;">
+                                <i data-lucide="award" style="width: 18px; height: 18px;"></i> Clientes Frecuentes (Mes)
+                            </h4>
+                            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">Clientes con mayor número de reservas este mes:</p>
+                            <ol id="statsClientesVipList" style="margin: 0; padding-left: 20px; font-size: 13px; line-height: 1.8; color: var(--text-primary);">
+                                <!-- Dynamic list -->
+                            </ol>
+                        </div>
                     </div>
                 </div>
             </div>
