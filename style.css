@@ -1323,25 +1323,42 @@ body.no-scroll {
         position: fixed;
         bottom: 20px;
         right: 20px;
-        width: 56px;
-        height: 56px;
-        border-radius: 50%;
-        padding: 0;
+        height: 50px;
+        padding: 0 18px;
+        border-radius: 25px; /* Pill shape */
         z-index: 90;
-        box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4);
         display: flex;
         align-items: center;
         justify-content: center;
+        gap: 6px;
+        animation: pulse-emerald 2s infinite;
     }
 
     #btnNewReservation .btn-text {
-        display: none;
+        display: inline;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.3px;
+        text-transform: uppercase;
+        white-space: nowrap;
     }
 
     #btnNewReservation svg {
-        width: 24px;
-        height: 24px;
+        width: 18px;
+        height: 18px;
         margin: 0;
+    }
+
+    @keyframes pulse-emerald {
+        0% {
+            box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4), 0 0 0 0 rgba(16, 185, 129, 0.7);
+        }
+        70% {
+            box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4), 0 0 0 10px rgba(16, 185, 129, 0);
+        }
+        100% {
+            box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4), 0 0 0 0 rgba(16, 185, 129, 0);
+        }
     }
 
     /* Minimize main content margins */
