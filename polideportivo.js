@@ -2098,6 +2098,48 @@ function updateStatsDashboard() {
     const weekEvents = allEvents.filter(e => isSameBusinessWeek(getBusinessDate(e.date, e.start_time), todayStr));
     const monthEvents = allEvents.filter(e => getBusinessDate(e.date, e.start_time).startsWith(currentMonthPrefix));
 
+    // Calculate historical/previous periods
+    // Yesterday
+    const currentDate = new Date(todayStr + 'T12:00:00');
+    const yesterday = new Date(currentDate);
+    yesterday.setDate(currentDate.getDate() - 1);
+    const yesterdayStr = formatISOString(yesterday).substring(0, 10);
+    const yesterdayEvents = allEvents.filter(e => getBusinessDate(e.date, e.start_time) === yesterdayStr);
+    let yesterdayIncome = 0;
+    yesterdayEvents.forEach(e => { yesterdayIncome += getEventIncome(e).total; });
+
+    // Previous Week
+    const currentDay = currentDate.getDay();
+    const diffToMonday = currentDay === 0 ? -6 : 1 - currentDay;
+    const currentMonday = new Date(currentDate);
+    currentMonday.setDate(currentDate.getDate() + diffToMonday);
+    const prevMonday = new Date(currentMonday);
+    prevMonday.setDate(currentMonday.getDate() - 7);
+    const prevSunday = new Date(prevMonday);
+    prevSunday.setDate(prevMonday.getDate() + 6);
+    const prevMondayStr = formatISOString(prevMonday).substring(0, 10);
+    const prevSundayStr = formatISOString(prevSunday).substring(0, 10);
+    const prevWeekEvents = allEvents.filter(e => {
+        const d = getBusinessDate(e.date, e.start_time);
+        return d >= prevMondayStr && d <= prevSundayStr;
+    });
+    let prevWeekIncome = 0;
+    prevWeekEvents.forEach(e => { prevWeekIncome += getEventIncome(e).total; });
+
+    // Previous Month
+    const currentYear = parseInt(currentMonthPrefix.split('-')[0], 10);
+    const currentMonth = parseInt(currentMonthPrefix.split('-')[1], 10);
+    let prevYear = currentYear;
+    let prevMonth = currentMonth - 1;
+    if (prevMonth === 0) {
+        prevMonth = 12;
+        prevYear--;
+    }
+    const prevMonthPrefix = `${prevYear}-${String(prevMonth).padStart(2, '0')}`;
+    const prevMonthEvents = allEvents.filter(e => getBusinessDate(e.date, e.start_time).startsWith(prevMonthPrefix));
+    let prevMonthIncome = 0;
+    prevMonthEvents.forEach(e => { prevMonthIncome += getEventIncome(e).total; });
+
     const metrics = {
         Grande: {
             today: { count: 0, hours: 0, income: 0 },
@@ -2229,15 +2271,46 @@ function updateStatsDashboard() {
         }
     });
 
-    // Update dashboard labels
+    // Helper to render comparison text
+    function renderCompareBadge(current, previous) {
+        if (previous === 0) {
+            if (current > 0) return `<span style="color: #34d399; font-weight: 500;">↑ +100% vs per. ant.</span>`;
+            return `<span style="color: var(--text-muted);">0% vs per. ant.</span>`;
+        }
+        const diff = ((current - previous) / previous) * 100;
+        if (diff > 0) return `<span style="color: #34d399; font-weight: 500;">↑ +${diff.toFixed(0)}% vs per. ant.</span>`;
+        if (diff < 0) return `<span style="color: #f87171; font-weight: 500;">↓ ${Math.abs(diff).toFixed(0)}% vs per. ant.</span>`;
+        return `<span style="color: var(--text-muted);">= 0% vs per. ant.</span>`;
+    }
+
+    // Update dashboard labels & comparisons
     document.getElementById('statsIncomeToday').textContent = `S/. ${metrics.Total.today.income.toFixed(2)}`;
     document.getElementById('statsCountToday').textContent = `${metrics.Total.today.count} reservas`;
+    document.getElementById('statsCompareToday').innerHTML = renderCompareBadge(metrics.Total.today.income, yesterdayIncome);
 
     document.getElementById('statsIncomeWeek').textContent = `S/. ${metrics.Total.week.income.toFixed(2)}`;
     document.getElementById('statsCountWeek').textContent = `${metrics.Total.week.count} reservas`;
+    document.getElementById('statsCompareWeek').innerHTML = renderCompareBadge(metrics.Total.week.income, prevWeekIncome);
 
     document.getElementById('statsIncomeMonth').textContent = `S/. ${metrics.Total.month.income.toFixed(2)}`;
     document.getElementById('statsCountMonth').textContent = `${metrics.Total.month.count} reservas`;
+    document.getElementById('statsCompareMonth').innerHTML = renderCompareBadge(metrics.Total.month.income, prevMonthIncome);
+
+    // Calculate Month efficiency (Capacity & Duration)
+    const numberCourts = 3; // Cancha Grande, Cancha Pequeña, Cancha de Vóley
+    const hoursPerDay = 17; // e.g. 7 AM to 12 AM
+    const dailyCapacity = numberCourts * hoursPerDay;
+    const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
+    const monthlyCapacity = dailyCapacity * daysInMonth;
+
+    let totalMonthHours = 0;
+    monthEvents.forEach(e => { totalMonthHours += getEventIncome(e).durationHours; });
+    const occupationPct = monthlyCapacity > 0 ? ((totalMonthHours / monthlyCapacity) * 100).toFixed(1) : '0.0';
+    const totalMonthCount = monthEvents.length;
+    const avgDuration = totalMonthCount > 0 ? (totalMonthHours / totalMonthCount).toFixed(1) : '0.0';
+
+    document.getElementById('statsOcupacionMonth').textContent = `${occupationPct}%`;
+    document.getElementById('statsDurationMonth').textContent = `Duración prom: ${avgDuration} h`;
 
     // Render breakdown table rows
     const tbody = document.getElementById('statsBreakdownTableBody');
@@ -2245,7 +2318,7 @@ function updateStatsDashboard() {
         tbody.innerHTML = `
             <tr>
                 <td>
-                    <strong style="color: var(--text-primary);">Fútbol Grande</strong><br>
+                    <strong style="color: var(--text-primary);">Cancha Grande</strong><br>
                     <span style="font-size: 11px; color: var(--text-muted);">Alquileres / Horas</span>
                 </td>
                 <td style="text-align: right;">
@@ -2263,7 +2336,7 @@ function updateStatsDashboard() {
             </tr>
             <tr>
                 <td>
-                    <strong style="color: var(--text-primary);">Fútbol Chico</strong><br>
+                    <strong style="color: var(--text-primary);">Cancha Pequeña</strong><br>
                     <span style="font-size: 11px; color: var(--text-muted);">Alquileres / Horas</span>
                 </td>
                 <td style="text-align: right;">
@@ -2281,7 +2354,7 @@ function updateStatsDashboard() {
             </tr>
             <tr>
                 <td>
-                    <strong style="color: var(--text-primary);">Cancha Vóley</strong><br>
+                    <strong style="color: var(--text-primary);">Cancha de Vóley</strong><br>
                     <span style="font-size: 11px; color: var(--text-muted);">Alquileres / Horas</span>
                 </td>
                 <td style="text-align: right;">
@@ -2374,6 +2447,81 @@ function updateStatsDashboard() {
         `;
     }
 
+    // Calculate sports stats
+    const sportMetrics = {
+        Futbol: {
+            today: { count: 0, hours: 0, income: 0 },
+            week: { count: 0, hours: 0, income: 0 },
+            month: { count: 0, hours: 0, income: 0 }
+        },
+        Voley: {
+            today: { count: 0, hours: 0, income: 0 },
+            week: { count: 0, hours: 0, income: 0 },
+            month: { count: 0, hours: 0, income: 0 }
+        }
+    };
+    const processSport = (e, period) => {
+        const inc = getEventIncome(e);
+        const isVoley = (e.court === 'Cancha de Vóley') || (e.sport && e.sport.trim().toLowerCase().includes('voley'));
+        const sKey = isVoley ? 'Voley' : 'Futbol';
+        sportMetrics[sKey][period].count++;
+        sportMetrics[sKey][period].hours += inc.durationHours;
+        sportMetrics[sKey][period].income += inc.total;
+    };
+    todayEvents.forEach(e => processSport(e, 'today'));
+    weekEvents.forEach(e => processSport(e, 'week'));
+    monthEvents.forEach(e => processSport(e, 'month'));
+
+    const totalSportMonthIncome = sportMetrics.Futbol.month.income + sportMetrics.Voley.month.income;
+    const futbolPct = totalSportMonthIncome > 0 ? ((sportMetrics.Futbol.month.income / totalSportMonthIncome) * 100).toFixed(0) : 0;
+    const voleyPct = totalSportMonthIncome > 0 ? ((sportMetrics.Voley.month.income / totalSportMonthIncome) * 100).toFixed(0) : 0;
+
+    const deportesTbody = document.getElementById('statsDeportesTableBody');
+    if (deportesTbody) {
+        deportesTbody.innerHTML = `
+            <tr>
+                <td>
+                    <strong style="color: var(--text-primary);">Fútbol (⚽)</strong><br>
+                    <div style="width: 100px; background: rgba(255,255,255,0.05); height: 6px; border-radius: 3px; margin-top: 4px; overflow: hidden;">
+                        <div style="width: ${futbolPct}%; background: #10b981; height: 100%; border-radius: 3px;"></div>
+                    </div>
+                </td>
+                <td style="text-align: right;">
+                    <strong>S/. ${sportMetrics.Futbol.today.income.toFixed(2)}</strong><br>
+                    <span style="font-size: 11px; color: var(--text-muted);">${sportMetrics.Futbol.today.count} res. / ${sportMetrics.Futbol.today.hours.toFixed(1)}h</span>
+                </td>
+                <td style="text-align: right;">
+                    <strong>S/. ${sportMetrics.Futbol.week.income.toFixed(2)}</strong><br>
+                    <span style="font-size: 11px; color: var(--text-muted);">${sportMetrics.Futbol.week.count} res. / ${sportMetrics.Futbol.week.hours.toFixed(1)}h</span>
+                </td>
+                <td style="text-align: right;">
+                    <strong>S/. ${sportMetrics.Futbol.month.income.toFixed(2)}</strong><br>
+                    <span style="font-size: 11px; color: var(--text-muted);">${sportMetrics.Futbol.month.count} res. / ${sportMetrics.Futbol.month.hours.toFixed(1)}h (${futbolPct}%)</span>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <strong style="color: var(--text-primary);">Vóley (🏐)</strong><br>
+                    <div style="width: 100px; background: rgba(255,255,255,0.05); height: 6px; border-radius: 3px; margin-top: 4px; overflow: hidden;">
+                        <div style="width: ${voleyPct}%; background: #f59e0b; height: 100%; border-radius: 3px;"></div>
+                    </div>
+                </td>
+                <td style="text-align: right;">
+                    <strong>S/. ${sportMetrics.Voley.today.income.toFixed(2)}</strong><br>
+                    <span style="font-size: 11px; color: var(--text-muted);">${sportMetrics.Voley.today.count} res. / ${sportMetrics.Voley.today.hours.toFixed(1)}h</span>
+                </td>
+                <td style="text-align: right;">
+                    <strong>S/. ${sportMetrics.Voley.week.income.toFixed(2)}</strong><br>
+                    <span style="font-size: 11px; color: var(--text-muted);">${sportMetrics.Voley.week.count} res. / ${sportMetrics.Voley.week.hours.toFixed(1)}h</span>
+                </td>
+                <td style="text-align: right;">
+                    <strong>S/. ${sportMetrics.Voley.month.income.toFixed(2)}</strong><br>
+                    <span style="font-size: 11px; color: var(--text-muted);">${sportMetrics.Voley.month.count} res. / ${sportMetrics.Voley.month.hours.toFixed(1)}h (${voleyPct}%)</span>
+                </td>
+            </tr>
+        `;
+    }
+
     // Calculate advisor statistics
     const activeAdvisors = new Set();
     const getAdvisorName = (notes) => {
@@ -2447,16 +2595,21 @@ function updateStatsDashboard() {
                 </tr>
             `;
         } else {
+            const maxAdvIncome = Math.max(...sortedAdvisors.map(adv => adv.month.income), 1);
             asesoresTbody.innerHTML = sortedAdvisors.map(adv => {
                 const isSinAsesor = adv.name === 'Sin Asesor';
                 const nameStyle = isSinAsesor ? 'color: var(--text-muted); font-style: italic;' : 'color: var(--text-primary); font-weight: 500;';
                 const todayCountLabel = adv.today.count === 1 ? '1 cancha' : `${adv.today.count} canchas`;
                 const weekCountLabel = adv.week.count === 1 ? '1 cancha' : `${adv.week.count} canchas`;
                 const monthCountLabel = adv.month.count === 1 ? '1 cancha' : `${adv.month.count} canchas`;
+                const advMonthPct = maxAdvIncome > 0 ? ((adv.month.income / maxAdvIncome) * 100).toFixed(0) : 0;
                 return `
                     <tr>
                         <td style="padding: 12px 16px;">
-                            <span style="${nameStyle}">${escapeHTML(adv.name)}</span>
+                            <span style="${nameStyle}">${escapeHTML(adv.name)}</span><br>
+                            <div style="width: 80px; background: rgba(255,255,255,0.05); height: 4px; border-radius: 2px; margin-top: 4px; overflow: hidden;">
+                                <div style="width: ${advMonthPct}%; background: var(--primary); height: 100%; border-radius: 2px;"></div>
+                            </div>
                         </td>
                         <td style="padding: 12px 16px; text-align: right;">
                             <strong>S/. ${adv.today.income.toFixed(2)}</strong><br>
@@ -2483,8 +2636,9 @@ function updateStatsDashboard() {
     const statsEquipamientoTbody = document.getElementById('statsEquipamientoTableBody');
     const statsHorasPicoList = document.getElementById('statsHorasPicoList');
     const statsClientesVipList = document.getElementById('statsClientesVipList');
+    const statsDiasDemandaContainer = document.getElementById('statsDiasDemandaContainer');
 
-    if (statsMediosTbody || statsEquipamientoTbody || statsHorasPicoList || statsClientesVipList) {
+    if (statsMediosTbody || statsEquipamientoTbody || statsHorasPicoList || statsClientesVipList || statsDiasDemandaContainer) {
         // 1. Contact channels (medio)
         const normalizeChannel = (m) => {
             if (!m) return 'Otros';
@@ -2541,7 +2695,10 @@ function updateStatsDashboard() {
                 return `
                     <tr style="border-bottom: 1px solid var(--border-color);">
                         <td style="padding: 10px 4px;">
-                            <strong style="color: ${color};">${ch}</strong>
+                            <strong style="color: ${color};">${ch}</strong><br>
+                            <div style="width: 80px; background: rgba(255,255,255,0.05); height: 4px; border-radius: 2px; margin-top: 4px; overflow: hidden;">
+                                <div style="width: ${monthPct}%; background: ${color}; height: 100%; border-radius: 2px;"></div>
+                            </div>
                         </td>
                         <td style="padding: 10px 4px; text-align: right;">
                             <strong>${todayVal}</strong> <span style="font-size: 11px; color: var(--text-muted);">(${todayPct}%)</span>
@@ -2653,6 +2810,39 @@ function updateStatsDashboard() {
                     `;
                 }).join('');
             }
+        }
+
+        // 5. Weekday Demands (Mes)
+        if (statsDiasDemandaContainer) {
+            const daysOfWeekNames = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+            const weekdayStats = daysOfWeekNames.map(name => ({ name, count: 0, income: 0 }));
+            monthEvents.forEach(e => {
+                const eventBusDate = getBusinessDate(e.date, e.start_time);
+                const dateObj = new Date(eventBusDate + 'T12:00:00');
+                const dayIndex = dateObj.getDay();
+                const inc = getEventIncome(e);
+                weekdayStats[dayIndex].count++;
+                weekdayStats[dayIndex].income += inc.total;
+            });
+            weekdayStats.sort((a, b) => b.count - a.count || b.income - a.income);
+
+            const maxCount = Math.max(...weekdayStats.map(d => d.count), 1);
+            statsDiasDemandaContainer.innerHTML = weekdayStats.map((d, idx) => {
+                if (d.count === 0) return '';
+                const pct = ((d.count / maxCount) * 100).toFixed(0);
+                const countLabel = d.count === 1 ? '1 reserva' : `${d.count} reservas`;
+                return `
+                    <div style="margin-bottom: 6px;">
+                        <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 2px;">
+                            <span style="font-weight: 600; color: var(--text-primary);">${idx + 1}. ${d.name}</span>
+                            <span style="color: var(--text-secondary); font-size: 11px;">${countLabel} - S/. ${d.income.toFixed(0)}</span>
+                        </div>
+                        <div style="width: 100%; background: rgba(255,255,255,0.05); height: 6px; border-radius: 3px; overflow: hidden;">
+                            <div style="width: ${pct}%; background: linear-gradient(90deg, var(--primary), #3b82f6); height: 100%; border-radius: 3px;"></div>
+                        </div>
+                    </div>
+                `;
+            }).join('') || '<div style="color: var(--text-muted); font-size: 13px;">No hay reservas este mes.</div>';
         }
 
         if (window.lucide) {
