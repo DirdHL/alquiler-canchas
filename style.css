@@ -47,11 +47,16 @@
     -webkit-font-smoothing: antialiased;
 }
 
+html,
+body {
+    overflow-x: hidden;
+    width: 100%;
+}
+
 body {
     background: radial-gradient(circle at 50% 0%, #1e1b4b 0%, var(--bg-primary) 70%);
     color: var(--text-primary);
     min-height: 100vh;
-    overflow-x: hidden;
 }
 
 body.no-scroll {
@@ -1268,6 +1273,7 @@ body.no-scroll {
 @media (max-width: 900px) {
     .app-container {
         grid-template-columns: 1fr;
+        overflow-x: hidden;
     }
 
     .sidebar {
