@@ -210,8 +210,39 @@ function initCalendar() {
             });
         },
 
+        // Click/tap on a cell to create an event (optimized for mobile)
+        dateClick: function (info) {
+            if (window.innerWidth >= 768) return; // Managed by select callback on desktop
+            
+            const dateStr = info.dateStr.split('T')[0];
+            let startTimeStr = '14:00';
+            let endTimeStr = '15:00';
+
+            if (info.dateStr.includes('T')) {
+                startTimeStr = formatTime(info.date);
+                
+                // End time: start time + 1 hour
+                const startMins = info.date.getHours() * 60 + info.date.getMinutes();
+                const newEndMins = (startMins + 60) % 1440;
+                const newEndHour = Math.floor(newEndMins / 60);
+                const newEndMin = newEndMins % 60;
+                const formattedHour = String(newEndHour).padStart(2, '0');
+                const formattedMin = String(newEndMin).padStart(2, '0');
+                endTimeStr = `${formattedHour}:${formattedMin}`;
+            }
+
+            openBookingModal(null, {
+                date: dateStr,
+                start_time: startTimeStr,
+                end_time: endTimeStr
+            });
+        },
+
         // Click event to view/edit
         eventClick: function (info) {
+            if (info.jsEvent) {
+                info.jsEvent.stopPropagation();
+            }
             const bookingData = info.event.extendedProps;
             openBookingModal(bookingData);
         }
@@ -559,6 +590,9 @@ function populateAsesoresDropdown(selectedValue = '') {
 
 // Open Booking Modal (Null = New, Object = Edit)
 function openBookingModal(booking = null, defaults = null) {
+    if (booking === null && modalBooking.classList.contains('active')) {
+        return; // Prevent duplicate triggers if already open for new booking
+    }
     formBooking.reset();
     bookingError.style.display = 'none';
 
