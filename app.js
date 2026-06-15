@@ -7,6 +7,8 @@ let dbMode = 'local'; // 'local' or 'supabase'
 let supabaseClient = null;
 let calendar = null;
 let allEvents = []; // Cache for local/downloaded events
+let cachedClientsData = [];
+let currentClientsFilter = '';
 let statsCountdownInterval = null;
 
 // DOM Elements
@@ -445,6 +447,13 @@ function setupEventListeners() {
     }
     if (btnLockStats) {
         btnLockStats.addEventListener('click', handleLockStatsClick);
+    }
+    const searchInput = document.getElementById('statsClientesSearch');
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+            currentClientsFilter = e.target.value.trim().toLowerCase();
+            renderClientsTable(currentClientsFilter);
+        });
     }
     tabButtons.forEach(btn => {
         btn.addEventListener('click', () => {
@@ -2655,11 +2664,196 @@ function updateStatsDashboard() {
             }).join('') || '<div style="color: var(--text-muted); font-size: 13px;">No hay reservas este mes.</div>';
         }
 
+        // 6. Consolidated Clients List (DNI / Name unifications)
+        const clientsMap = new Map();
+        allEvents.forEach(e => {
+            const name = (e.name || '').trim();
+            const dni = (e.dni || '').trim();
+            if (!name) return;
+
+            const hasDni = dni && dni.length >= 6 && !/^0+$/.test(dni);
+            const key = hasDni ? `dni:${dni}` : `name:${name.toLowerCase()}`;
+
+            if (!clientsMap.has(key)) {
+                clientsMap.set(key, {
+                    key,
+                    name: name,
+                    namesUsed: new Set([name]),
+                    dni: hasDni ? dni : '',
+                    totalBookings: 0,
+                    totalSpend: 0,
+                    courts: {},
+                    bookings: []
+                });
+            }
+
+            const client = clientsMap.get(key);
+            client.namesUsed.add(name);
+            if (name.length > client.name.length) {
+                client.name = name;
+            }
+            if (!client.dni && hasDni) {
+                client.dni = dni;
+            }
+
+            const inc = getEventIncome(e);
+            client.totalBookings++;
+            client.totalSpend += inc.total;
+            client.courts[e.court] = (client.courts[e.court] || 0) + 1;
+
+            client.bookings.push({
+                date: e.date,
+                start_time: e.start_time,
+                end_time: e.end_time,
+                court: e.court,
+                income: inc.total,
+                tipo_pago: e.tipo_pago || 'Efectivo'
+            });
+        });
+
+        cachedClientsData = Array.from(clientsMap.values()).map(c => {
+            c.bookings.sort((a, b) => {
+                if (b.date !== a.date) return b.date.localeCompare(a.date);
+                return b.start_time.localeCompare(a.start_time);
+            });
+            return c;
+        });
+
+        cachedClientsData.sort((a, b) => b.totalBookings - a.totalBookings || b.totalSpend - a.totalSpend);
+        
+        renderClientsTable(currentClientsFilter);
+
         if (window.lucide) {
             lucide.createIcons();
         }
     }
 }
+
+function renderClientsTable(filterText = '') {
+    const tbody = document.getElementById('statsClientesTableBody');
+    if (!tbody) return;
+
+    const filtered = cachedClientsData.filter(c => {
+        return c.name.toLowerCase().includes(filterText) || c.dni.includes(filterText);
+    });
+
+    if (filtered.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5" style="text-align: center; padding: 24px; color: var(--text-muted);">
+                    No se encontraron clientes que coincidan con la búsqueda.
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    tbody.innerHTML = filtered.map((c, idx) => {
+        const detailId = `client-detail-${idx}`;
+        
+        // Build court preferences text
+        const courtPrefs = Object.entries(c.courts)
+            .map(([court, count]) => `<li><strong>${court}:</strong> ${count} ${count === 1 ? 'alquiler' : 'alquileres'}</li>`)
+            .join('');
+
+        // Build history rows (limit to last 10 bookings)
+        const historyRows = c.bookings.slice(0, 10).map(b => {
+            const dateParts = b.date.split('-');
+            const formattedDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
+            const timeRange = `${formatTimeHHMM(b.start_time)} - ${formatTimeHHMM(b.end_time)}`;
+            return `
+                <tr style="border-bottom: 1px dashed rgba(255,255,255,0.05);">
+                    <td style="padding: 6px 8px; text-align: left;">${formattedDate}</td>
+                    <td style="padding: 6px 8px; text-align: left;">${timeRange}</td>
+                    <td style="padding: 6px 8px; text-align: left; color: var(--text-primary); font-weight: 500;">${b.court}</td>
+                    <td style="padding: 6px 8px; text-align: right; color: #34d399; font-weight: 600;">S/. ${b.income.toFixed(2)}</td>
+                    <td style="padding: 6px 8px; text-align: center; color: var(--text-muted); font-size: 10px;">${b.tipo_pago || 'Efectivo'}</td>
+                </tr>
+            `;
+        }).join('');
+
+        const dniDisplay = c.dni ? escapeHTML(c.dni) : '<span style="color: var(--text-muted); font-style: italic;">Sin DNI</span>';
+
+        const nameVariationsText = c.namesUsed.size > 1
+            ? `<br><span style="font-size: 11px; color: var(--text-muted); font-style: italic;">(Nombres usados: ${Array.from(c.namesUsed).map(n => escapeHTML(n)).join(', ')})</span>`
+            : '';
+
+        return `
+            <tr style="border-bottom: 1px solid var(--border-color); cursor: pointer;" onclick="toggleClientDetails('${detailId}')">
+                <td style="padding: 12px 16px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <i data-lucide="user" style="width: 16px; height: 16px; color: var(--primary);"></i>
+                        <div>
+                            <strong style="color: var(--text-primary);">${escapeHTML(c.name)}</strong>
+                            ${nameVariationsText}
+                        </div>
+                    </div>
+                </td>
+                <td style="padding: 12px 16px; color: var(--text-secondary);">${dniDisplay}</td>
+                <td style="padding: 12px 16px; text-align: right; font-weight: 600; color: var(--primary);">${c.totalBookings}</td>
+                <td style="padding: 12px 16px; text-align: right; font-weight: 600; color: #34d399;">S/. ${c.totalSpend.toFixed(2)}</td>
+                <td style="padding: 12px 16px; text-align: center;">
+                    <button class="btn btn-secondary btn-sm" style="padding: 4px 8px; font-size: 11px; gap: 4px; display: inline-flex; align-items: center;">
+                        <i data-lucide="history" style="width: 12px; height: 12px;"></i> Historial
+                    </button>
+                </td>
+            </tr>
+            <tr class="client-detail-row" id="${detailId}" style="display: none; background: rgba(255, 255, 255, 0.01);">
+                <td colspan="5" style="padding: 16px; border-bottom: 1px solid var(--border-color);">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; font-size: 13px;">
+                        <div>
+                            <h5 style="margin: 0 0 8px 0; color: var(--primary); font-size: 14px; display: flex; align-items: center; gap: 6px;">
+                                <i data-lucide="layout-grid" style="width: 14px; height: 14px;"></i> Preferencia de Canchas
+                            </h5>
+                            <ul style="padding-left: 20px; margin: 0; line-height: 1.6; color: var(--text-secondary);">
+                                ${courtPrefs}
+                            </ul>
+                        </div>
+                        <div style="grid-column: span 2;">
+                            <h5 style="margin: 0 0 8px 0; color: var(--primary); font-size: 14px; display: flex; align-items: center; gap: 6px;">
+                                <i data-lucide="history" style="width: 14px; height: 14px;"></i> Historial de Alquileres (Últimas 10)
+                            </h5>
+                            <div style="max-height: 180px; overflow-y: auto; border: 1px solid rgba(255,255,255,0.05); border-radius: var(--radius-sm);">
+                                <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                                    <thead>
+                                        <tr style="border-bottom: 1px solid var(--border-color); background: rgba(255,255,255,0.02); color: var(--text-secondary);">
+                                            <th style="padding: 6px 8px; text-align: left;">Fecha</th>
+                                            <th style="padding: 6px 8px; text-align: left;">Horario</th>
+                                            <th style="padding: 6px 8px; text-align: left;">Cancha</th>
+                                            <th style="padding: 6px 8px; text-align: right;">Monto</th>
+                                            <th style="padding: 6px 8px; text-align: center;">Pago</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${historyRows}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+
+    if (window.lucide) {
+        lucide.createIcons({
+            attrs: {
+                class: 'lucide'
+            },
+            nameAttr: 'data-lucide',
+            nodeOrTagName: tbody
+        });
+    }
+}
+
+window.toggleClientDetails = function(detailId) {
+    const detailRow = document.getElementById(detailId);
+    if (detailRow) {
+        const isVisible = detailRow.style.display === 'table-row';
+        detailRow.style.display = isVisible ? 'none' : 'table-row';
+    }
+};
 
 
 

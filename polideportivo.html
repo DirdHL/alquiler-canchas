@@ -569,6 +569,9 @@ ALTER PUBLICATION supabase_realtime ADD TABLE reservas, historial;
                     <button class="tab-btn" data-tab="tab-uso-canales" style="background: none; border: none; color: var(--text-secondary); font-weight: 500; cursor: pointer; padding: 6px 12px; display: flex; align-items: center; gap: 6px; font-size: 14px;">
                         <i data-lucide="bar-chart-3" style="width: 16px; height: 16px;"></i> Uso y Canales
                     </button>
+                    <button class="tab-btn" data-tab="tab-clientes" style="background: none; border: none; color: var(--text-secondary); font-weight: 500; cursor: pointer; padding: 6px 12px; display: flex; align-items: center; gap: 6px; font-size: 14px;">
+                        <i data-lucide="contact" style="width: 16px; height: 16px;"></i> Directorio de Clientes
+                    </button>
                 </div>
 
                 <!-- Tab: Report -->
@@ -749,6 +752,32 @@ ALTER PUBLICATION supabase_realtime ADD TABLE reservas, historial;
                                 <!-- Dynamic list with progress bars -->
                             </div>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Tab: Clientes -->
+                <div class="tab-content" id="tab-clientes" style="display: none;">
+                    <div style="margin-bottom: 16px;">
+                        <div class="input-wrapper" style="margin: 0; width: 100%;">
+                            <i data-lucide="search"></i>
+                            <input type="text" id="statsClientesSearch" placeholder="Buscar cliente por nombre o DNI..." style="width: 100%;">
+                        </div>
+                    </div>
+                    <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: var(--radius-md); overflow-x: auto; max-height: 400px; overflow-y: auto;">
+                        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 14px;">
+                            <thead>
+                                <tr style="border-bottom: 1px solid var(--border-color); background: rgba(255, 255, 255, 0.03);">
+                                    <th style="padding: 12px 16px; color: var(--text-secondary); font-weight: 600;">Cliente</th>
+                                    <th style="padding: 12px 16px; color: var(--text-secondary); font-weight: 600;">DNI</th>
+                                    <th style="padding: 12px 16px; color: var(--text-secondary); font-weight: 600; text-align: right;">Alquileres</th>
+                                    <th style="padding: 12px 16px; color: var(--text-secondary); font-weight: 600; text-align: right;">Inversión Total</th>
+                                    <th style="padding: 12px 16px; color: var(--text-secondary); font-weight: 600; text-align: center;">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="statsClientesTableBody">
+                                <!-- Dynamic rows -->
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
