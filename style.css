@@ -59,8 +59,10 @@ body {
     min-height: 100vh;
 }
 
+html.no-scroll,
 body.no-scroll {
     overflow: hidden !important;
+    height: 100%;
 }
 
 /* App Container Layout */
@@ -694,7 +696,9 @@ body.no-scroll {
     backdrop-filter: blur(8px);
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: flex-start;
+    overflow-y: auto;
+    padding: 40px 20px;
     z-index: 100;
     opacity: 0;
     pointer-events: none;
@@ -716,6 +720,7 @@ body.no-scroll {
     transform: translateY(20px);
     transition: transform 0.3s ease;
     overflow: hidden;
+    margin: auto;
 }
 
 .modal-lg {

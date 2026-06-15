@@ -769,8 +769,10 @@ function updateBodyScroll() {
 
     if (isAnyModalActive || isSidebarActive) {
         document.body.classList.add('no-scroll');
+        document.documentElement.classList.add('no-scroll');
     } else {
         document.body.classList.remove('no-scroll');
+        document.documentElement.classList.remove('no-scroll');
     }
 }
 
@@ -2447,80 +2449,7 @@ function updateStatsDashboard() {
         `;
     }
 
-    // Calculate sports stats
-    const sportMetrics = {
-        Futbol: {
-            today: { count: 0, hours: 0, income: 0 },
-            week: { count: 0, hours: 0, income: 0 },
-            month: { count: 0, hours: 0, income: 0 }
-        },
-        Voley: {
-            today: { count: 0, hours: 0, income: 0 },
-            week: { count: 0, hours: 0, income: 0 },
-            month: { count: 0, hours: 0, income: 0 }
-        }
-    };
-    const processSport = (e, period) => {
-        const inc = getEventIncome(e);
-        const isVoley = (e.court === 'Cancha de Vóley') || (e.sport && e.sport.trim().toLowerCase().includes('voley'));
-        const sKey = isVoley ? 'Voley' : 'Futbol';
-        sportMetrics[sKey][period].count++;
-        sportMetrics[sKey][period].hours += inc.durationHours;
-        sportMetrics[sKey][period].income += inc.total;
-    };
-    todayEvents.forEach(e => processSport(e, 'today'));
-    weekEvents.forEach(e => processSport(e, 'week'));
-    monthEvents.forEach(e => processSport(e, 'month'));
 
-    const totalSportMonthIncome = sportMetrics.Futbol.month.income + sportMetrics.Voley.month.income;
-    const futbolPct = totalSportMonthIncome > 0 ? ((sportMetrics.Futbol.month.income / totalSportMonthIncome) * 100).toFixed(0) : 0;
-    const voleyPct = totalSportMonthIncome > 0 ? ((sportMetrics.Voley.month.income / totalSportMonthIncome) * 100).toFixed(0) : 0;
-
-    const deportesTbody = document.getElementById('statsDeportesTableBody');
-    if (deportesTbody) {
-        deportesTbody.innerHTML = `
-            <tr>
-                <td>
-                    <strong style="color: var(--text-primary);">Fútbol (⚽)</strong><br>
-                    <div style="width: 100px; background: rgba(255,255,255,0.05); height: 6px; border-radius: 3px; margin-top: 4px; overflow: hidden;">
-                        <div style="width: ${futbolPct}%; background: #10b981; height: 100%; border-radius: 3px;"></div>
-                    </div>
-                </td>
-                <td style="text-align: right;">
-                    <strong>S/. ${sportMetrics.Futbol.today.income.toFixed(2)}</strong><br>
-                    <span style="font-size: 11px; color: var(--text-muted);">${sportMetrics.Futbol.today.count} res. / ${sportMetrics.Futbol.today.hours.toFixed(1)}h</span>
-                </td>
-                <td style="text-align: right;">
-                    <strong>S/. ${sportMetrics.Futbol.week.income.toFixed(2)}</strong><br>
-                    <span style="font-size: 11px; color: var(--text-muted);">${sportMetrics.Futbol.week.count} res. / ${sportMetrics.Futbol.week.hours.toFixed(1)}h</span>
-                </td>
-                <td style="text-align: right;">
-                    <strong>S/. ${sportMetrics.Futbol.month.income.toFixed(2)}</strong><br>
-                    <span style="font-size: 11px; color: var(--text-muted);">${sportMetrics.Futbol.month.count} res. / ${sportMetrics.Futbol.month.hours.toFixed(1)}h (${futbolPct}%)</span>
-                </td>
-            </tr>
-            <tr>
-                <td>
-                    <strong style="color: var(--text-primary);">Vóley (🏐)</strong><br>
-                    <div style="width: 100px; background: rgba(255,255,255,0.05); height: 6px; border-radius: 3px; margin-top: 4px; overflow: hidden;">
-                        <div style="width: ${voleyPct}%; background: #f59e0b; height: 100%; border-radius: 3px;"></div>
-                    </div>
-                </td>
-                <td style="text-align: right;">
-                    <strong>S/. ${sportMetrics.Voley.today.income.toFixed(2)}</strong><br>
-                    <span style="font-size: 11px; color: var(--text-muted);">${sportMetrics.Voley.today.count} res. / ${sportMetrics.Voley.today.hours.toFixed(1)}h</span>
-                </td>
-                <td style="text-align: right;">
-                    <strong>S/. ${sportMetrics.Voley.week.income.toFixed(2)}</strong><br>
-                    <span style="font-size: 11px; color: var(--text-muted);">${sportMetrics.Voley.week.count} res. / ${sportMetrics.Voley.week.hours.toFixed(1)}h</span>
-                </td>
-                <td style="text-align: right;">
-                    <strong>S/. ${sportMetrics.Voley.month.income.toFixed(2)}</strong><br>
-                    <span style="font-size: 11px; color: var(--text-muted);">${sportMetrics.Voley.month.count} res. / ${sportMetrics.Voley.month.hours.toFixed(1)}h (${voleyPct}%)</span>
-                </td>
-            </tr>
-        `;
-    }
 
     // Calculate advisor statistics
     const activeAdvisors = new Set();
