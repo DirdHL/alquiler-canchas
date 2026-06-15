@@ -299,15 +299,23 @@ function setupEventListeners() {
     }
 
     // Responsive views adjust
+    let lastWidth = window.innerWidth;
     window.addEventListener('resize', () => {
-        if (window.innerWidth >= 900) {
+        const currentWidth = window.innerWidth;
+        if (currentWidth >= 900) {
             closeSidebarDrawer();
         }
-        if (!calendar) return;
-        const newView = window.innerWidth < 768 ? 'timeGridDay' : 'timeGridWeek';
-        if (calendar.view.type !== newView) {
+        if (!calendar) {
+            lastWidth = currentWidth;
+            return;
+        }
+        const wasMobile = lastWidth < 768;
+        const isMobile = currentWidth < 768;
+        if (wasMobile !== isMobile) {
+            const newView = isMobile ? 'timeGridDay' : 'timeGridWeek';
             calendar.changeView(newView);
         }
+        lastWidth = currentWidth;
     });
 
     // Operator Identity Actions
