@@ -816,6 +816,7 @@ async function fetchBookings() {
             const { data, error } = await supabaseClient
                 .from('reservas')
                 .select('*')
+                .or('negocio.eq.Polideportivo,negocio.is.null')
                 .order('date', { ascending: true })
                 .order('start_time', { ascending: true });
 
@@ -989,7 +990,8 @@ async function handleSaveBooking(e) {
         pelota,
         chaleco,
         medio,
-        tipo_pago
+        tipo_pago,
+        negocio: 'Polideportivo'
     };
 
     try {

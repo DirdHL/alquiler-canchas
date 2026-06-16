@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bungalows de Tomayquichua - Sistema de Reservas</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap"
+        rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- FullCalendar CSS & JS -->
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/locales/es.global.min.js"></script>
+    <!-- Supabase JS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+    <style>
+        :root {
+            /* Light Sepia Theme - Soft, Premium & Eye-Comforting (Inspired by official landing page) */
+            --bg-primary: #f5f2e9;
+            /* Soft parchment cream */
+            --bg-secondary: #eae4d3;
+            /* Warm beige for containers/sidebars */
+            --bg-card: #ffffff;
+            /* Off-white card background */
+            --border-color: rgba(27, 76, 51, 0.16);
+            /* Delicate forest green border */
+
+            --text-primary: #153224;
+            /* Deep forest green for main titles/text */
+            --text-secondary: #7c542a;
+            /* Warm rust brown for subheadings/labels */
+            --text-muted: #9c8b78;
+            /* Muted gray-brown for small details */
+
+            --primary: #1b4c33;
+            /* Brand Forest Green */
+            --primary-hover: #123624;
+            --primary-glow: rgba(27, 76, 51, 0.12);
+
+            --accent-orange: #b35c1e;
+            /* Brand Terracotta Orange */
+            --accent-orange-hover: #994912;
+            --accent-orange-glow: rgba(179, 92, 30, 0.2);
+
+            --font-sans: 'Outfit', sans-serif;
+            --font-serif: 'Playfair Display', Georgia, serif;
+            --blur-strength: 8px;
+        }
+
+        body.dark-theme {
+            /* Dark Forest Theme - Eye-Comforting Night Mode */
+            --bg-primary: #0d120f;
+            /* Very dark forest black */
+            --bg-secondary: #141c18;
+            /* Dark forest charcoal */
+            --bg-card: #18221d;
+            /* Slightly lighter card */
+            --border-color: rgba(245, 242, 233, 0.12);
+            /* Cream border */
+
+            --text-primary: #f5f2e9;
+            /* Soft warm parchment text */
+            --text-secondary: #cfc2ad;
+            /* Muted cream */
+            --text-muted: #8c8072;
+            /* Warm gray-brown */
+
+            --primary: #236142;
+            /* Softer brand green */
+            --primary-hover: #2e7a55;
+            --primary-glow: rgba(35, 97, 66, 0.25);
+
+            --accent-orange: #e07a34;
+            /* Terracotta orange */
+            --accent-orange-hover: #f98e4a;
+            --accent-orange-glow: rgba(224, 122, 52, 0.25);
+        }
+
+        body {
+            background: radial-gradient(circle at 50% 0%, var(--bg-secondary) 0%, var(--bg-primary) 85%) !important;
+            color: var(--text-primary) !important;
+            transition: background 0.3s ease, color 0.3s ease, border-color 0.3s ease !important;
+        }
+
+        /* Serif Typography for Brand feel */
+        .logo-title h2,
+        .header-title h1,
+        .modal-header h3,
+        #modalTitle,
+        #summaryDateLabel {
+            font-family: var(--font-serif) !important;
+            font-weight: 700 !important;
+        }
+
+        /* Sidebar overrides */
+        .sidebar {
+            background: var(--bg-secondary) !important;
+            border-right: 1px solid var(--border-color) !important;
+            transition: background 0.3s ease, border-color 0.3s ease !important;
+        }
+
+        /* Input fields and select overrides */
+        input,
+        select,
+        textarea {
+            background: var(--bg-card) !important;
+            border: 1px solid var(--border-color) !important;
+            color: var(--text-primary) !important;
+            transition: background 0.3s ease, color 0.3s ease, border-color 0.3s ease !important;
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            border-color: var(--accent-orange) !important;
+            box-shadow: 0 0 0 3px var(--accent-orange-glow) !important;
+        }
+
+        /* Card overrides with soft shadows */
+        .calendar-card,
+        .stats-card,
+        .status-indicator-card,
+        .user-profile-card {
+            background: var(--bg-card) !important;
+            border: 1px solid var(--border-color) !important;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04) !important;
+            transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease !important;
+        }
+
+        body.dark-theme .calendar-card,
+        body.dark-theme .stats-card,
+        body.dark-theme .status-indicator-card,
+        body.dark-theme .user-profile-card {
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35) !important;
+        }
+
+        .stat-item {
+            border-bottom: 1px solid var(--border-color) !important;
+        }
+
+        /* Modal overrides */
+        .modal-card {
+            background: var(--bg-secondary) !important;
+            border: 1px solid var(--border-color) !important;
+            color: var(--text-primary) !important;
+            transition: background 0.3s ease, border-color 0.3s ease !important;
+        }
+
+        .modal-header {
+            border-bottom: 1px solid var(--border-color) !important;
+        }
+
+        /* FullCalendar styling overrides */
+        .fc {
+            --fc-border-color: var(--border-color) !important;
+            --fc-today-bg-color: rgba(27, 76, 51, 0.08) !important;
+            --fc-page-bg-color: transparent !important;
+            --fc-neutral-bg-color: rgba(0, 0, 0, 0.02) !important;
+        }
+
+        .fc th,
+        .fc td,
+        .fc-theme-standard td,
+        .fc-theme-standard th {
+            border: 1px solid var(--border-color) !important;
+        }
+
+        .fc .fc-toolbar-title {
+            color: var(--text-primary) !important;
+            font-family: var(--font-serif) !important;
+        }
+
+        .fc .fc-timegrid-slot-label,
+        .fc .fc-col-header-cell a {
+            color: var(--text-primary) !important;
+        }
+
+        .fc .fc-button-primary {
+            background: var(--bg-primary) !important;
+            border: 1px solid var(--border-color) !important;
+            color: var(--text-primary) !important;
+            font-weight: 600 !important;
+        }
+
+        .fc .fc-button-primary:hover {
+            background: var(--bg-secondary) !important;
+        }
+
+        .fc .fc-button-primary:not(:disabled).fc-button-active {
+            background: var(--primary) !important;
+            border-color: var(--primary) !important;
+            color: white !important;
+        }
+
+        .fc-theme-standard .fc-scrollgrid {
+            border: 1px solid var(--border-color) !important;
+        }
+
+        .fc-col-header-cell.fc-day-today {
+            background: rgba(27, 76, 51, 0.12) !important;
+        }
+
+        .fc .fc-col-header-cell.fc-day-selected {
+            background: var(--accent-orange-glow) !important;
+            border-bottom: 3px solid var(--accent-orange) !important;
+        }
+
+        .fc .fc-col-header-cell.fc-day-selected a {
+            color: var(--accent-orange) !important;
+        }
+
+        /* Custom buttons styling */
+        .btn-secondary {
+            background: var(--bg-primary) !important;
+            color: var(--text-primary) !important;
+            border: 1px solid var(--border-color) !important;
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-secondary) !important;
+        }
+
+        .btn-toggle {
+            background: var(--bg-primary) !important;
+            border: 1px solid var(--border-color) !important;
+            color: var(--text-secondary) !important;
+        }
+
+        .btn-toggle.active-no {
+            background: #ef4444 !important;
+            color: white !important;
+            border-color: #ef4444 !important;
+        }
+
+        .btn-toggle.active-si {
+            background: var(--primary) !important;
+            color: white !important;
+            border-color: var(--primary) !important;
+        }
+
+        .status-dot.disconnected {
+            background-color: var(--accent-orange) !important;
+            color: var(--accent-orange) !important;
+        }
+
+        .sidebar-footer p {
+            color: var(--text-muted) !important;
+        }
+
+        .btn-orange {
+            background: var(--accent-orange) !important;
+            color: white !important;
+            box-shadow: 0 4px 14px var(--accent-orange-glow) !important;
+        }
+
+        .btn-orange:hover {
+            background: var(--accent-orange-hover) !important;
+            transform: translateY(-1px) !important;
+        }
+
+        .logo-title h2 {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--primary) !important;
+            display: flex;
+            flex-direction: column;
+            line-height: 1.1;
+        }
+
+        .logo-title h2 span {
+            color: var(--text-primary) !important;
+        }
+
+        .logo-title h2 .logo-subtitle {
+            font-family: var(--font-sans) !important;
+            font-size: 9px;
+            font-weight: 700;
+            color: var(--accent-orange) !important;
+            background: rgba(179, 92, 30, 0.08) !important;
+            border: 1px solid rgba(179, 92, 30, 0.2) !important;
+            padding: 2px 8px;
+            border-radius: 100px;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin-top: 4px;
+            width: fit-content;
+        }
+
+        /* Color classes for different bungalows (Greens, Oranges and Warm Yellow/Cream tones) */
+        .color-b1 {
+            border-color: #1b4c33 !important;
+        }
+
+        /* Deep Forest Green */
+        .color-b2 {
+            border-color: #10b981 !important;
+        }
+
+        /* Emerald Green */
+        .color-b3 {
+            border-color: #b35c1e !important;
+        }
+
+        /* Terracotta Orange */
+        .color-b4 {
+            border-color: #d97706 !important;
+        }
+
+        /* Amber Orange */
+        .color-b5 {
+            border-color: #eab308 !important;
+        }
+
+        /* Warm Yellow */
+        .color-b6 {
+            border-color: #84cc16 !important;
+        }
+
+        /* Lime Green */
+
+        /* FullCalendar event colors (Cream, Green, Orange - NO blue) */
+        .event-bungalow-1 {
+            background: linear-gradient(135deg, #1b4c33, #123624) !important;
+            color: white !important;
+        }
+
+        .event-bungalow-2 {
+            background: linear-gradient(135deg, #10b981, #059669) !important;
+            color: white !important;
+        }
+
+        .event-bungalow-3 {
+            background: linear-gradient(135deg, #b35c1e, #994912) !important;
+            color: white !important;
+        }
+
+        .event-bungalow-4 {
+            background: linear-gradient(135deg, #d97706, #b45309) !important;
+            color: white !important;
+        }
+
+        .event-bungalow-5 {
+            background: linear-gradient(135deg, #fbbf24, #f59e0b) !important;
+            color: #2e2b26 !important;
+        }
+
+        .event-bungalow-6 {
+            background: linear-gradient(135deg, #84cc16, #65a30d) !important;
+            color: white !important;
+        }
+
+        .event-type-hospedaje {
+            border-left: 5px solid #1b4c33 !important;
+        }
+
+        .event-type-pasadia {
+            border-left: 5px solid #b35c1e !important;
+        }
+
+        .filter-item input:checked+.custom-checkbox.color-b1 {
+            background: #1b4c33;
+            border-color: #1b4c33;
+        }
+
+        .filter-item input:checked+.custom-checkbox.color-b2 {
+            background: #10b981;
+            border-color: #10b981;
+        }
+
+        .filter-item input:checked+.custom-checkbox.color-b3 {
+            background: #b35c1e;
+            border-color: #b35c1e;
+        }
+
+        .filter-item input:checked+.custom-checkbox.color-b4 {
+            background: #d97706;
+            border-color: #d97706;
+        }
+
+        .filter-item input:checked+.custom-checkbox.color-b5 {
+            background: #fbbf24;
+            border-color: #fbbf24;
+        }
+
+        .filter-item input:checked+.custom-checkbox.color-b6 {
+            background: #84cc16;
+            border-color: #84cc16;
+        }
+
+        .filter-item input:checked+.custom-checkbox.color-hospedaje {
+            background: #1b4c33;
+            border-color: #1b4c33;
+        }
+
+        .filter-item input:checked+.custom-checkbox.color-pasadia {
+            background: #b35c1e;
+            border-color: #b35c1e;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Sidebar Backdrop for Mobile -->
+        <div class="sidebar-backdrop-overlay" id="sidebarBackdrop"></div>
+
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="logo-area">
+                <div class="logo-title">
+                    <i data-lucide="trees" class="logo-icon" style="color: var(--primary);"></i>
+                    <h2>Bungalows <span class="logo-subtitle">de Tomayquichua</span></h2>
+                </div>
+                <button class="btn-close-sidebar" id="btnCloseSidebar">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+
+            <div class="status-indicator-card"
+                style="background: rgba(254, 252, 243, 0.02); border-color: var(--border-color);">
+                <div class="status-header">
+                    <span class="status-dot disconnected" id="statusDot"></span>
+                    <span class="status-text" id="statusText">Modo Sin Conexión (Local)</span>
+                </div>
+                <p class="status-desc" id="statusDesc">Accede con el link y la contraseña para poder compartir la
+                    información con los demás asesores.</p>
+                <button class="btn btn-secondary btn-sm" id="btnOpenSettings">
+                    <i data-lucide="database"></i> Configurar Base de Datos
+                </button>
+            </div>
+
+            <nav class="nav-filters">
+                <h3>Filtrar por Bungalow</h3>
+                <div class="filter-sub-list">
+                    <label class="filter-item">
+                        <input type="checkbox" id="filterB1" checked>
+                        <span class="custom-checkbox color-b1"></span>
+                        Bungalow 1
+                    </label>
+                    <label class="filter-item">
+                        <input type="checkbox" id="filterB2" checked>
+                        <span class="custom-checkbox color-b2"></span>
+                        Bungalow 2
+                    </label>
+                    <label class="filter-item">
+                        <input type="checkbox" id="filterB3" checked>
+                        <span class="custom-checkbox color-b3"></span>
+                        Bungalow 3
+                    </label>
+                    <label class="filter-item">
+                        <input type="checkbox" id="filterB4" checked>
+                        <span class="custom-checkbox color-b4"></span>
+                        Bungalow 4
+                    </label>
+                    <label class="filter-item">
+                        <input type="checkbox" id="filterB5" checked>
+                        <span class="custom-checkbox color-b5"></span>
+                        Bungalow 5
+                    </label>
+                    <label class="filter-item">
+                        <input type="checkbox" id="filterB6" checked>
+                        <span class="custom-checkbox color-b6"></span>
+                        Bungalow 6
+                    </label>
+                </div>
+
+                <h3>Filtrar por Estadía</h3>
+                <div class="filter-group">
+                    <label class="filter-item">
+                        <input type="checkbox" id="filterHospedaje" checked>
+                        <span class="custom-checkbox color-hospedaje"></span>
+                        <i data-lucide="moon" class="inline-icon" style="color: #10b981;"></i> Día y Noche
+                    </label>
+                    <label class="filter-item">
+                        <input type="checkbox" id="filterPasadia" checked>
+                        <span class="custom-checkbox color-pasadia"></span>
+                        <i data-lucide="sun" class="inline-icon" style="color: #f97316;"></i> Full Day
+                    </label>
+                </div>
+
+                <h3>Opciones</h3>
+                <button class="btn btn-secondary btn-sm btn-sidebar-action" id="btnOpenHistory"
+                    style="margin-bottom: 8px;">
+                    <i data-lucide="history"></i> Historial de Cambios
+                </button>
+
+                <h3>Otras Sedes</h3>
+                <a href="index.html" class="btn btn-secondary btn-sm btn-sidebar-action"
+                    style="background: rgba(27, 76, 51, 0.08); border-color: rgba(27, 76, 51, 0.25); color: var(--primary); text-decoration: none; display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                    <i data-lucide="building" style="width: 16px; height: 16px;"></i> Sport Victoria (Los Pinos)
+                </a>
+                <a href="polideportivo.html" class="btn btn-secondary btn-sm btn-sidebar-action"
+                    style="background: rgba(179, 92, 30, 0.08); border-color: rgba(179, 92, 30, 0.25); color: var(--accent-orange); text-decoration: none; display: flex; align-items: center; gap: 8px;">
+                    <i data-lucide="building-2" style="width: 16px; height: 16px;"></i> Polideportivo Huaral-Huando
+                </a>
+            </nav>
+
+            <div class="stats-card">
+                <h3>Resumen de Hoy</h3>
+                <div class="stat-item">
+                    <span class="stat-label">Reservas Totales</span>
+                    <span class="stat-value" id="statTodayReservations">0</span>
+                </div>
+                <div class="stat-item" style="font-size: 12px;">
+                    <span class="stat-label">B1/B2/B3 Ocupados</span>
+                    <span class="stat-value" id="statPart1">0 h</span>
+                </div>
+                <div class="stat-item" style="font-size: 12px;">
+                    <span class="stat-label">B4/B5/B6 Ocupados</span>
+                    <span class="stat-value" id="statPart2">0 h</span>
+                </div>
+            </div>
+
+            <!-- User Profile Card -->
+            <div class="user-profile-card">
+                <div class="user-info">
+                    <div class="user-avatar">
+                        <i data-lucide="user"></i>
+                    </div>
+                    <div class="user-details">
+                        <span class="user-label">Operador Activo</span>
+                        <span class="user-name" id="displayUserName">Invitado</span>
+                    </div>
+                </div>
+                <button class="btn-edit-user" id="btnEditUser" title="Cambiar Nombre">
+                    <i data-lucide="pencil"></i>
+                </button>
+            </div>
+
+            <footer class="sidebar-footer">
+                <p>Tomayquichua &copy; 2026</p>
+                <p class="footer-note">Desarrollado por Rogger Dird Huaicama Lacerna</p>
+            </footer>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="app-header">
+                <div class="header-left">
+                    <button class="btn btn-secondary btn-menu" id="btnToggleSidebar">
+                        <i data-lucide="menu"></i>
+                    </button>
+                    <div class="header-title">
+                        <h1>Calendario de Bungalows</h1>
+                        <p>Control de hospedajes y pasadías por bungalows.</p>
+                    </div>
+                </div>
+                <div class="header-actions" style="display: flex; align-items: center; gap: 12px;">
+                    <button class="btn btn-secondary" id="btnThemeToggle" title="Cambiar Tema (Modo Vista)"
+                        style="display: flex; align-items: center; gap: 8px;">
+                        <i data-lucide="moon"></i> <span class="btn-text">Modo Noche</span>
+                    </button>
+                    <button class="btn btn-orange" id="btnNewReservation">
+                        <i data-lucide="plus"></i> <span class="btn-text">Nueva Reserva</span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Calendar Container -->
+            <div class="calendar-card">
+                <div id="calendar"></div>
+            </div>
+
+            <!-- Resumen Diario -->
+            <div class="calendar-card" style="margin-top: 24px;">
+                <div class="activity-header" style="margin-bottom: 20px;">
+                    <h3 style="display: flex; align-items: center; gap: 8px;">
+                        <i data-lucide="list-todo" style="color: var(--accent-orange);"></i>
+                        Resumen de Reservas - <span id="summaryDateLabel">Cargando...</span>
+                    </h3>
+                </div>
+                <div class="summary-list" id="dailySummaryList">
+                    <!-- Se llenará dinámicamente -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Booking Modal -->
+    <div class="modal-backdrop" id="modalBooking">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 id="modalTitle">Nueva Reserva</h3>
+                <button class="btn-close" id="btnCloseBooking"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="formBooking">
+                    <input type="hidden" id="bookingId">
+
+                    <div class="form-group">
+                        <label for="bookingName">Nombre del Cliente *</label>
+                        <div class="input-wrapper">
+                            <i data-lucide="user"></i>
+                            <input type="text" id="bookingName" required placeholder="Ej. Juan Pérez">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="bookingDni">DNI *</label>
+                        <div class="input-wrapper">
+                            <i data-lucide="credit-card"></i>
+                            <input type="text" id="bookingDni" required placeholder="Ej. 12345678" maxlength="12">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="bookingCourt">Bungalow *</label>
+                            <div class="input-wrapper">
+                                <i data-lucide="home"></i>
+                                <select id="bookingCourt" required>
+                                    <option value="Bungalow 1">Bungalow 1</option>
+                                    <option value="Bungalow 2">Bungalow 2</option>
+                                    <option value="Bungalow 3">Bungalow 3</option>
+                                    <option value="Bungalow 4">Bungalow 4</option>
+                                    <option value="Bungalow 5">Bungalow 5</option>
+                                    <option value="Bungalow 6">Bungalow 6</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="bookingSport">Tipo Estadía *</label>
+                            <div class="input-wrapper">
+                                <i data-lucide="tag"></i>
+                                <select id="bookingSport" required>
+                                    <option value="Día y Noche">Día y Noche</option>
+                                    <option value="Full Day">Full Day</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <input type="hidden" id="bookingPelota" value="false">
+                    <input type="hidden" id="bookingChaleco" value="false">
+
+                    <div class="form-group">
+                        <label for="bookingDate">Fecha *</label>
+                        <div class="input-wrapper">
+                            <i data-lucide="calendar"></i>
+                            <input type="date" id="bookingDate" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="bookingStartTime">Hora Inicio *</label>
+                            <div class="input-wrapper">
+                                <i data-lucide="clock"></i>
+                                <input type="time" id="bookingStartTime" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="bookingEndTime">Hora Fin *</label>
+                            <div class="input-wrapper">
+                                <i data-lucide="clock"></i>
+                                <input type="time" id="bookingEndTime" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div
+                        style="font-size: 12px; color: var(--text-secondary); margin-top: -8px; margin-bottom: 16px; display: flex; align-items: center; gap: 6px;">
+                        <i data-lucide="info" style="width: 14px; height: 14px; flex-shrink: 0;"></i>
+                        <span>Los horarios se fijan automáticamente según el Tipo de Estadía (Full Day: 9am-6pm / Día y
+                            Noche: 3pm-12pm).</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="bookingExtraHours">Horas Extras (Ej. 1:30, 2 o 0:45) *</label>
+                        <div class="input-wrapper">
+                            <i data-lucide="plus-circle"></i>
+                            <input type="text" id="bookingExtraHours" placeholder="0 o Ej. 1:30" value="0" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="bookingSource">Medio *</label>
+                            <div class="input-wrapper">
+                                <i data-lucide="share-2"></i>
+                                <select id="bookingSource" required>
+                                    <option value="Facebook">Facebook</option>
+                                    <option value="TikTok">TikTok</option>
+                                    <option value="Instagram">Instagram</option>
+                                    <option value="WhatsApp">WhatsApp</option>
+                                    <option value="Otro...">Otro...</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="bookingPaymentType">Tipo de Pago *</label>
+                            <div class="input-wrapper">
+                                <i data-lucide="wallet"></i>
+                                <select id="bookingPaymentType" required>
+                                    <option value="Transferencia">Transferencia</option>
+                                    <option value="Yape">Yape</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group hidden" id="customSourceGroup">
+                        <label for="bookingSourceCustom">Escribe el Nombre del Medio *</label>
+                        <div class="input-wrapper">
+                            <i data-lucide="pencil"></i>
+                            <input type="text" id="bookingSourceCustom" placeholder="Nombre del nuevo medio...">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="bookingNotes">Asesor *</label>
+                        <div class="input-wrapper">
+                            <i data-lucide="user-check"></i>
+                            <select id="bookingNotes" required>
+                                <!-- Se llenará dinámicamente -->
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group hidden" id="customAsesorGroup">
+                        <label for="bookingNotesCustom">Escribe el Nombre del Asesor *</label>
+                        <div class="input-wrapper">
+                            <i data-lucide="pencil"></i>
+                            <input type="text" id="bookingNotesCustom" placeholder="Nombre del nuevo asesor...">
+                        </div>
+                    </div>
+
+                    <div class="form-error" id="bookingError"></div>
+
+                    <div class="modal-actions">
+                        <div class="left-actions">
+                            <button type="button" class="btn btn-danger btn-delete hidden" id="btnDeleteBooking">
+                                <i data-lucide="trash-2"></i> Eliminar
+                            </button>
+                            <button type="button" class="btn btn-copy-reservation" id="btnCopyReservation"
+                                style="background: var(--accent-orange);">
+                                <i data-lucide="copy"></i> Copiar Detalles
+                            </button>
+                        </div>
+                        <div class="right-actions">
+                            <button type="submit" class="btn btn-orange" id="btnSaveBooking">Guardar Reserva</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal-backdrop" id="modalSettings">
+        <div class="modal-card modal-lg">
+            <div class="modal-header">
+                <h3>Configuración de Supabase (Bungalows Tomayquichua)</h3>
+                <button class="btn-close" id="btnCloseSettings"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <p class="settings-intro">Ingresa las credenciales de base de datos en la nube para Bungalows de
+                    Tomayquichua.</p>
+                <form id="formSettings">
+                    <div class="form-group">
+                        <label for="supabaseUrl">URL DE LA BASE DE DATOS</label>
+                        <div class="input-wrapper">
+                            <i data-lucide="link-2"></i>
+                            <input type="url" id="supabaseUrl" placeholder="https://xxxxxx.supabase.co" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="supabaseKey">Clave Anon de Supabase</label>
+                        <div class="input-wrapper">
+                            <i data-lucide="key-round"></i>
+                            <input type="password" id="supabaseKey"
+                                placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." required>
+                        </div>
+                    </div>
+
+                    <div class="settings-actions">
+                        <button type="button" class="btn btn-secondary" id="btnTestSupabase">Probar Conexión</button>
+                        <button type="submit" class="btn btn-orange">Guardar Credenciales</button>
+                    </div>
+                    <div class="settings-feedback" id="settingsFeedback"></div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- History Modal -->
+    <div class="modal-backdrop" id="modalHistory">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 style="display: flex; align-items: center; gap: 8px;">
+                    <i data-lucide="history" style="color: var(--accent-orange);"></i> Historial de Actividad
+                </h3>
+                <button class="btn-close" id="btnCloseHistory"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body" style="padding-top: 16px;">
+                <div class="activity-list" id="activityList">
+                    <p class="no-activity">No hay actividad registrada.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Onboarding Modal -->
+    <div class="modal-backdrop" id="modalUserOnboarding">
+        <div class="modal-card modal-sm" style="max-width: 380px;">
+            <div class="modal-header">
+                <h3>Identificación de Operador</h3>
+            </div>
+            <div class="modal-body">
+                <p class="settings-intro" style="margin-bottom: 16px;">Ingresa tu nombre o alias para registrar el
+                    historial de cambios en el sistema.</p>
+                <form id="formUserOnboarding">
+                    <div class="form-group">
+                        <label for="onboardingName">Nombre / Alias *</label>
+                        <div class="input-wrapper">
+                            <i data-lucide="user"></i>
+                            <input type="text" id="onboardingName" required placeholder="Ej. Juan Pérez" maxlength="25">
+                        </div>
+                    </div>
+                    <div class="modal-actions" style="margin-top: 16px;">
+                        <button type="submit" class="btn btn-orange" style="width: 100%">Continuar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Logic Script -->
+    <script src="bungalows_tomayquichua.js"></script>
+</body>
+
+</html>
