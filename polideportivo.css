@@ -1,112 +1,46 @@
 /* ==========================================
    Polideportivo Huaral-Huando Stylesheet Overrides
-   Theme: High-Contrast Emerald / Obsidian Green
+   Theme: Vibrant Emerald / Forest Green
    ========================================== */
 
-:root {
-    --primary: #10b981 !important;
-    --primary-hover: #059669 !important;
-    --primary-glow: rgba(16, 185, 129, 0.3) !important;
-    
-    /* Overwrite text colors to be much lighter and higher contrast */
-    --text-primary: #ffffff !important;
-    --text-secondary: #e2e8f0 !important; /* Lighter slate gray */
-    --text-muted: #cbd5e1 !important;      /* Light gray (was #64748b) */
-    --border-color: rgba(255, 255, 255, 0.15) !important;
-}
-
 body {
-    background: radial-gradient(circle at 50% 0%, #064e3b 0%, #0b131a 50%, #020617 100%) !important;
-    color: var(--text-primary) !important;
+    background: radial-gradient(circle at 50% 0%, #064e3b 0%, #022c22 40%, #0b131a 100%) !important;
 }
 
-/* Sidebar Contrast Enhancements */
 .sidebar {
-    background: rgba(15, 23, 42, 0.85) !important; /* Darker background for high text contrast */
-    border-right: 1px solid rgba(16, 185, 129, 0.35) !important;
-    backdrop-filter: blur(24px) !important;
-}
-
-/* Sidebar Navigation Text */
-.sidebar h3 {
-    color: #34d399 !important; /* Bright green section headers */
-    font-weight: 700 !important;
-    letter-spacing: 1.5px !important;
-}
-
-.filter-item {
-    color: #e2e8f0 !important; /* Bright text for items */
-    font-weight: 500 !important;
-}
-
-.filter-item:hover {
-    color: #ffffff !important;
+    background: rgba(6, 78, 59, 0.45) !important;
+    border-right: 1px solid rgba(16, 185, 129, 0.2) !important;
 }
 
 .main-content {
-    background: radial-gradient(circle at 50% 0%, rgba(16, 185, 129, 0.1) 0%, rgba(2, 6, 23, 0) 80%) !important;
+    background: radial-gradient(circle at 50% 0%, #022c22 0%, #090d16 80%) !important;
 }
 
-/* Cards visibility improvements */
 .stats-card,
 .status-indicator-card {
-    border-color: rgba(16, 185, 129, 0.35) !important;
-    background: rgba(15, 23, 42, 0.7) !important;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) !important;
-}
-
-.stats-card h3 {
-    color: #e2e8f0 !important;
-    font-weight: 600 !important;
-}
-
-.stat-label {
-    color: #cbd5e1 !important; /* Lighter text for stat labels */
-}
-
-.stat-value {
-    color: #ffffff !important;
-    font-weight: 700 !important;
+    border-color: rgba(16, 185, 129, 0.25) !important;
+    background: rgba(6, 78, 59, 0.2) !important;
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, #10b981, #059669) !important;
-    color: #ffffff !important;
-    font-weight: 700 !important;
-    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4) !important;
-    border: 1px solid rgba(52, 211, 153, 0.3) !important;
+    background: #10b981 !important;
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3) !important;
 }
 
 .btn-primary:hover {
-    background: linear-gradient(135deg, #059669, #047857) !important;
-    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.6) !important;
-    transform: translateY(-1px) !important;
-}
-
-.btn-secondary {
-    background: rgba(255, 255, 255, 0.1) !important;
-    color: #ffffff !important;
-    border: 1px solid rgba(255, 255, 255, 0.2) !important;
-    font-weight: 600 !important;
-}
-
-.btn-secondary:hover {
-    background: rgba(255, 255, 255, 0.15) !important;
-    border-color: rgba(255, 255, 255, 0.3) !important;
+    background: #059669 !important;
 }
 
 .badge-complex {
-    color: #ffffff !important; /* Bright white text inside badge */
-    background: #065f46 !important; /* Solid dark green background */
-    border: 1px solid #10b981 !important;
-    box-shadow: 0 2px 10px rgba(16, 185, 129, 0.2) !important;
-    font-weight: 600 !important;
+    color: #34d399 !important;
+    background: rgba(16, 185, 129, 0.15) !important;
+    border-color: rgba(16, 185, 129, 0.35) !important;
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.15) !important;
 }
 
 .calendar-card {
-    background: rgba(15, 23, 42, 0.8) !important;
-    border: 1px solid rgba(16, 185, 129, 0.3) !important;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
+    background: rgba(6, 78, 59, 0.08) !important;
+    border: 1px solid rgba(16, 185, 129, 0.2) !important;
 }
 
 /* ==========================================
@@ -114,7 +48,7 @@ body {
    ========================================== */
 .fc {
     --fc-today-bg-color: rgba(16, 185, 129, 0.15) !important;
-    --fc-border-color: rgba(255, 255, 255, 0.22) !important; /* Bright grid borders */
+    --fc-border-color: rgba(255, 255, 255, 0.22) !important; /* High-contrast white grid borders */
 }
 
 /* Make grid lines highly visible */
@@ -174,7 +108,6 @@ body {
     border: 1px solid rgba(255, 255, 255, 0.2) !important;
     color: #ffffff !important;
     font-weight: 700 !important;
-    opacity: 0.95;
 }
 
 .fc .fc-button-primary:hover {
@@ -210,7 +143,7 @@ body {
     font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 1px;
-    color: #cbd5e1 !important;
+    color: var(--text-muted);
     font-weight: 700;
     margin-top: 14px;
     margin-bottom: 6px;
@@ -235,22 +168,21 @@ body {
 }
 
 .summary-item-card {
-    background: rgba(15, 23, 42, 0.65) !important; /* Darker background for high contrast */
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
     border-radius: var(--radius-md);
     padding: 16px;
     display: flex;
     flex-direction: column;
     gap: 10px;
     transition: var(--transition-smooth);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
 
 .summary-item-card:hover {
-    background: rgba(16, 185, 129, 0.08) !important;
-    border-color: rgba(16, 185, 129, 0.5) !important;
-    transform: translateY(-3px);
-    box-shadow: 0 8px 20px rgba(16, 185, 129, 0.25);
+    background: rgba(16, 185, 129, 0.04);
+    border-color: rgba(16, 185, 129, 0.3);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.1);
 }
 
 .summary-item-header {
@@ -260,9 +192,9 @@ body {
 }
 
 .summary-item-time {
-    font-size: 14px;
-    font-weight: 800;
-    color: #4ade80 !important; /* Ultra bright neon mint green */
+    font-size: 13px;
+    font-weight: 700;
+    color: #10b981;
 }
 
 .summary-item-court {
@@ -274,27 +206,27 @@ body {
 }
 
 .court-badge-grande {
-    background: rgba(99, 102, 241, 0.25) !important;
-    color: #e0e7ff !important; /* Highly readable lavender/white */
-    border: 1px solid rgba(99, 102, 241, 0.5) !important;
+    background: rgba(99, 102, 241, 0.15) !important;
+    color: #818cf8 !important;
+    border: 1px solid rgba(99, 102, 241, 0.3) !important;
 }
 
 .court-badge-pequena {
-    background: rgba(236, 72, 153, 0.25) !important;
-    color: #fce7f3 !important; /* Highly readable pink/white */
-    border: 1px solid rgba(236, 72, 153, 0.5) !important;
+    background: rgba(236, 72, 153, 0.15) !important;
+    color: #f472b6 !important;
+    border: 1px solid rgba(236, 72, 153, 0.3) !important;
 }
 
 .court-badge-voley {
-    background: rgba(245, 158, 11, 0.25) !important;
-    color: #fef9c3 !important; /* Highly readable amber/white */
-    border: 1px solid rgba(245, 158, 11, 0.5) !important;
+    background: rgba(245, 158, 11, 0.15) !important;
+    color: #fbbf24 !important;
+    border: 1px solid rgba(245, 158, 11, 0.3) !important;
 }
 
 .summary-item-client {
     font-size: 15px;
-    font-weight: 700;
-    color: #ffffff !important;
+    font-weight: 600;
+    color: #f8fafc;
 }
 
 .summary-item-details {
@@ -302,41 +234,61 @@ body {
     flex-wrap: wrap;
     gap: 12px;
     font-size: 12px;
-    color: #f1f5f9 !important; /* Lighter white-gray for clear reading */
+    color: var(--text-secondary);
 }
 
 .summary-detail-tag {
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    color: #f1f5f9 !important;
 }
 
-/* Modals & Popups Contrast */
-.modal-card {
-    background: #111827 !important; /* Deep dark slate-black for high text contrast */
-    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+/* ==========================================
+   Sidebar Contrast & Legibility Overrides
+   ========================================== */
+
+/* Make labels in the "Resumen de Hoy" card highly readable */
+.stats-card .stat-label {
+    color: #cbd5e1 !important; /* Light slate gray */
 }
 
-.modal-header h3 {
+.stats-card .stat-value {
     color: #ffffff !important;
-    font-weight: 700 !important;
 }
 
-.form-group label {
-    color: #e2e8f0 !important;
-    font-weight: 600 !important;
+/* Make "Reportes" button text and border highly visible */
+#btnOpenStats {
+    color: #34d399 !important; /* Bright mint green */
+    border-color: rgba(52, 211, 153, 0.4) !important;
+    background: rgba(16, 185, 129, 0.08) !important;
 }
 
-.input-wrapper input,
-.input-wrapper select {
-    background: #1f2937 !important;
+#btnOpenStats:hover {
     color: #ffffff !important;
-    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    border-color: #34d399 !important;
+    background: rgba(16, 185, 129, 0.18) !important;
 }
 
-.input-wrapper input:focus,
-.input-wrapper select:focus {
-    border-color: #10b981 !important;
-    outline: none !important;
+/* Make "Operador Activo" label highly visible */
+.user-label {
+    color: #cbd5e1 !important; /* Light readable gray */
+}
+
+.user-name {
+    color: #ffffff !important;
+}
+
+/* Make edit user profile pencil icon visible */
+.btn-edit-user {
+    color: #cbd5e1 !important;
+}
+
+.btn-edit-user:hover {
+    color: #ffffff !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Make status indicator card description readable */
+.status-desc {
+    color: #cbd5e1 !important;
 }

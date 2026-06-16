@@ -557,13 +557,18 @@ body.no-scroll {
 
 /* FullCalendar Theme Overrides for Premium Dark Mode */
 .fc {
-    --fc-border-color: rgba(255, 255, 255, 0.06);
+    --fc-border-color: rgba(255, 255, 255, 0.22) !important;
     --fc-daygrid-event-dot-width: 8px;
     --fc-page-bg-color: transparent;
     --fc-neutral-bg-color: rgba(255, 255, 255, 0.02);
     --fc-today-bg-color: rgba(16, 185, 129, 0.06);
     --fc-now-indicator-color: #ef4444;
     font-family: var(--font-sans);
+}
+
+/* Make grid lines highly visible in dark mode */
+.fc-theme-standard td, .fc-theme-standard th {
+    border: 1px solid rgba(255, 255, 255, 0.22) !important;
 }
 
 /* Custom glowing styling for FullCalendar Now Indicator */
@@ -585,21 +590,25 @@ body.no-scroll {
     border-bottom: 2px solid var(--primary) !important;
 }
 
+.fc .fc-col-header-cell.fc-day-today a {
+    color: #10b981 !important; /* Today text color */
+}
+
 .fc .fc-toolbar {
     margin-bottom: 20px;
 }
 
 .fc .fc-toolbar-title {
     font-size: 20px;
-    font-weight: 600;
-    color: var(--text-primary);
+    font-weight: 700 !important;
+    color: #ffffff !important;
 }
 
 .fc .fc-button-primary {
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid var(--border-color);
-    color: var(--text-primary);
-    font-weight: 500;
+    color: #ffffff !important;
+    font-weight: 700 !important;
     text-transform: capitalize;
     transition: var(--transition-smooth);
 }
@@ -622,9 +631,9 @@ body.no-scroll {
 
 .fc th {
     padding: 10px 0 !important;
-    font-weight: 600;
-    color: var(--text-secondary);
-    font-size: 13px;
+    font-weight: 700 !important;
+    color: #ffffff !important;
+    font-size: 14px !important;
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
@@ -634,15 +643,27 @@ body.no-scroll {
 }
 
 .fc .fc-daygrid-day-number {
-    color: var(--text-secondary);
-    font-size: 13px;
+    color: #ffffff !important;
+    font-size: 14px !important;
     padding: 8px !important;
-    font-weight: 500;
+    font-weight: 700 !important;
 }
 
 .fc .fc-daygrid-day.fc-day-today .fc-daygrid-day-number {
     color: var(--primary);
     font-weight: 700;
+}
+
+/* Time slot labels (14:00, 15:00, etc.) */
+.fc .fc-timegrid-slot-label {
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    font-size: 13px !important;
+}
+
+.fc .fc-timegrid-slot-minor {
+    border-top-style: solid !important;
+    border-top-color: rgba(255, 255, 255, 0.12) !important;
 }
 
 /* Custom Booking Events Rendering */
@@ -651,7 +672,7 @@ body.no-scroll {
     border-radius: 6px !important;
     padding: 4px 8px !important;
     font-size: 12px !important;
-    font-weight: 500 !important;
+    font-weight: 600 !important;
     cursor: pointer;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
     transition: var(--transition-smooth);
