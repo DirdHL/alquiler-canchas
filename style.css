@@ -74,10 +74,10 @@ body.no-scroll {
 
 /* Sidebar Styles */
 .sidebar {
-    position: sticky;
-    top: 0;
-    height: 100vh;
-    overflow-y: auto;
+    position: relative;
+    height: auto;
+    min-height: 100vh;
+    overflow-y: visible;
     background: rgba(15, 23, 42, 0.8);
     border-right: 1px solid var(--border-color);
     padding: 30px 24px;
