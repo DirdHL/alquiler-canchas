@@ -640,6 +640,34 @@ body.no-scroll {
 
 .fc-col-header-cell {
     background: rgba(255, 255, 255, 0.01);
+    cursor: pointer;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.fc-col-header-cell:hover {
+    background: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Highlight Selected Column Header (Distinct from Today) */
+.fc .fc-col-header-cell.fc-day-selected {
+    background: rgba(59, 130, 246, 0.2) !important;
+    border-bottom: 3px solid #3b82f6 !important;
+}
+
+.fc .fc-col-header-cell.fc-day-selected a {
+    color: #60a5fa !important;
+    font-weight: 700 !important;
+}
+
+/* Today and Selected: Keep today's text color green/mint to show it is Today, but show selected blue border and background */
+.fc .fc-col-header-cell.fc-day-today.fc-day-selected a {
+    color: #10b981 !important; /* Keep it emerald green */
+}
+
+/* Highlight Selected Column Grid (Daygrid and Timegrid) */
+.fc .fc-daygrid-day.fc-day-selected,
+.fc .fc-timegrid-col.fc-day-selected {
+    background: rgba(59, 130, 246, 0.05) !important;
 }
 
 .fc .fc-daygrid-day-number {

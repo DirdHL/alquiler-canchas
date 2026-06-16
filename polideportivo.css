@@ -292,3 +292,8 @@ body {
 .status-desc {
     color: #cbd5e1 !important;
 }
+
+/* Today and Selected: Keep mint color for today header text in Polideportivo */
+.fc .fc-col-header-cell.fc-day-today.fc-day-selected a {
+    color: #34d399 !important;
+}

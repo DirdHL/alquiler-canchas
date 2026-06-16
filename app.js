@@ -163,6 +163,14 @@ function initCalendar() {
         nowIndicator: true,
         datesSet: function () {
             updateDailySummary();
+            if (calendar) {
+                const currentDate = calendar.getDate();
+                const year = currentDate.getFullYear();
+                const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+                const day = String(currentDate.getDate()).padStart(2, '0');
+                const dateStr = `${year}-${month}-${day}`;
+                highlightSelectedDay(dateStr);
+            }
         },
 
         // Fetch Events Dynamically
@@ -490,6 +498,21 @@ function setupEventListeners() {
                     }
                 }
             });
+        }
+    });
+
+    // Click header cell to navigate & select day
+    document.addEventListener('click', function(e) {
+        const header = e.target.closest('.fc-col-header-cell[data-date]');
+        if (header && calendar) {
+            const dateStr = header.getAttribute('data-date');
+            if (dateStr) {
+                const parts = dateStr.split('-');
+                const localDate = new Date(parts[0], parts[1] - 1, parts[2]);
+                calendar.gotoDate(localDate);
+                updateDailySummary();
+                highlightSelectedDay(dateStr);
+            }
         }
     });
 }
@@ -1497,6 +1520,15 @@ window.openEditFromSummary = function (id) {
         openBookingModal(booking);
     }
 };
+
+function highlightSelectedDay(dateStr) {
+    document.querySelectorAll('.fc-day-selected').forEach(el => {
+        el.classList.remove('fc-day-selected');
+    });
+    document.querySelectorAll(`[data-date="${dateStr}"]`).forEach(el => {
+        el.classList.add('fc-day-selected');
+    });
+}
 
 // ==========================================
 // Operator Identity & Audit History Logic
