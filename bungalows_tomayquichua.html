@@ -308,9 +308,9 @@
             border-color: #b35c1e !important;
         }
 
-        /* Terracotta Orange */
+        /* Royal Indigo */
         .color-b4 {
-            border-color: #d97706 !important;
+            border-color: #6366f1 !important;
         }
 
         /* Amber Orange */
@@ -342,7 +342,7 @@
         }
 
         .event-bungalow-4 {
-            background: linear-gradient(135deg, #d97706, #b45309) !important;
+            background: linear-gradient(135deg, #6366f1, #4f46e5) !important;
             color: white !important;
         }
 
@@ -357,11 +357,11 @@
         }
 
         .event-type-hospedaje {
-            border-left: 5px solid #1b4c33 !important;
+            border-left: 6px solid #38bdf8 !important; /* Sky Blue for Día y Noche */
         }
 
         .event-type-pasadia {
-            border-left: 5px solid #b35c1e !important;
+            border-left: 6px solid #f97316 !important; /* Sun Orange for Full Day */
         }
 
         .filter-item input:checked+.custom-checkbox.color-b1 {
@@ -380,8 +380,8 @@
         }
 
         .filter-item input:checked+.custom-checkbox.color-b4 {
-            background: #d97706;
-            border-color: #d97706;
+            background: #6366f1;
+            border-color: #6366f1;
         }
 
         .filter-item input:checked+.custom-checkbox.color-b5 {
@@ -402,6 +402,21 @@
         .filter-item input:checked+.custom-checkbox.color-pasadia {
             background: #b35c1e;
             border-color: #b35c1e;
+        }
+
+        /* Spacing and typography overrides for filters to improve spacing and readability */
+        .filter-sub-list {
+            display: flex;
+            flex-direction: column;
+            gap: 14px; /* Space out the filter options vertically */
+            margin-bottom: 20px;
+        }
+
+        .filter-sub-list .filter-item,
+        .filter-group .filter-item {
+            gap: 12px !important; /* Space out checkbox, icons and text horizontally */
+            font-size: 15px !important; /* Slightly larger premium typography */
+            padding: 4px 0 !important; /* Added breathing room */
         }
     </style>
 </head>
@@ -549,7 +564,7 @@
                     </button>
                     <div class="header-title">
                         <h1>Calendario de Bungalows</h1>
-                        <p>Control de hospedajes y pasadías por bungalows.</p>
+                        <p>Control de hospedajes.</p>
                     </div>
                 </div>
                 <div class="header-actions" style="display: flex; align-items: center; gap: 12px;">

@@ -90,6 +90,7 @@ function initCalendar() {
     calendar = new FullCalendar.Calendar(calendarEl, {
         initialView: 'dayGridMonth',
         locale: 'es',
+        firstDay: 1, // Start week on Monday
         headerToolbar: {
             left: 'prev,next today',
             center: 'title',
@@ -129,10 +130,13 @@ function initCalendar() {
                     else if (b.court === 'Bungalow 6') bungalowClass = 'event-bungalow-6';
 
                     let typeClass = b.sport === 'Día y Noche' ? 'event-type-hospedaje' : 'event-type-pasadia';
+                    const emoji = b.sport === 'Día y Noche' ? '🌙' : '☀️';
+                    const sportTag = b.sport === 'Día y Noche' ? '[D&N]' : '[FD]';
+                    const breakfastEmoji = b.pelota === true || b.pelota === 'true' ? ' 🍳' : '';
 
                     return {
                         id: b.id,
-                        title: `${b.name} (${b.court})${b.pelota === true || b.pelota === 'true' ? ' 🍳' : ''}`,
+                        title: `${emoji} ${sportTag} ${b.name} (${b.court})${breakfastEmoji}`,
                         start: start.toISOString(),
                         end: end.toISOString(),
                         className: `${bungalowClass} ${typeClass}`,
@@ -742,7 +746,27 @@ function updateDailySummary() {
         div.style.padding = '12px';
         div.style.borderBottom = '1px solid var(--border-color)';
         div.style.fontSize = '14px';
-        div.innerHTML = `<strong>${b.start_time} - ${b.end_time}</strong>: ${b.name} (${b.court} - ${b.sport})`;
+        div.style.display = 'flex';
+        div.style.alignItems = 'center';
+        div.style.justifyContent = 'space-between';
+        div.style.flexWrap = 'wrap';
+        div.style.gap = '8px';
+
+        const isHospedaje = b.sport === 'Día y Noche';
+        const badgeStyle = isHospedaje 
+            ? 'background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3);'
+            : 'background: rgba(249, 115, 22, 0.12); color: #f97316; border: 1px solid rgba(249, 115, 22, 0.3);';
+        const badgeText = isHospedaje ? '🌙 Día y Noche' : '☀️ Full Day';
+
+        div.innerHTML = `
+            <div>
+                <strong>${b.start_time} - ${b.end_time}</strong>: ${b.name} 
+                <span style="color: var(--text-muted); margin-left: 6px;">(${b.court})</span>
+            </div>
+            <span style="${badgeStyle} padding: 2px 8px; border-radius: 100px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; display: inline-flex; align-items: center; gap: 4px;">
+                ${badgeText}
+            </span>
+        `;
         list.appendChild(div);
     });
 }

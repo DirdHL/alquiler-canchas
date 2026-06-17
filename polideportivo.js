@@ -133,6 +133,7 @@ function initCalendar() {
     calendar = new FullCalendar.Calendar(calendarEl, {
         initialView: window.innerWidth < 768 ? 'timeGridDay' : 'timeGridWeek',
         locale: 'es',
+        firstDay: 1, // Start week on Monday
         headerToolbar: {
             left: 'prev,next today',
             center: 'title',
