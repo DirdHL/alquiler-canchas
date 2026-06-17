@@ -133,7 +133,6 @@ function initCalendar() {
     calendar = new FullCalendar.Calendar(calendarEl, {
         initialView: window.innerWidth < 768 ? 'timeGridDay' : 'timeGridWeek',
         locale: 'es',
-        firstDay: 1, // Start week on Monday
         headerToolbar: {
             left: 'prev,next today',
             center: 'title',
@@ -817,7 +816,6 @@ async function fetchBookings() {
             const { data, error } = await supabaseClient
                 .from('reservas')
                 .select('*')
-                .or('negocio.eq.Polideportivo,negocio.is.null')
                 .order('date', { ascending: true })
                 .order('start_time', { ascending: true });
 
@@ -991,8 +989,7 @@ async function handleSaveBooking(e) {
         pelota,
         chaleco,
         medio,
-        tipo_pago,
-        negocio: 'Polideportivo'
+        tipo_pago
     };
 
     try {
