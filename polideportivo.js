@@ -35,6 +35,7 @@ const bookingNotesInput = document.getElementById('bookingNotes');
 const bookingPelotaInput = document.getElementById('bookingPelota');
 const bookingChalecoInput = document.getElementById('bookingChaleco');
 const bookingError = document.getElementById('bookingError');
+const bookingIsBlockInput = document.getElementById('bookingIsBlock');
 
 const btnNewReservation = document.getElementById('btnNewReservation');
 const btnCloseBooking = document.getElementById('btnCloseBooking');
@@ -194,12 +195,13 @@ function initCalendar() {
                         courtClass = 'event-cancha-voley';
                     }
                     const { start, end } = getStartAndEndDates(b.date, b.start_time, b.end_time);
+                    const isBlock = b.sport === 'Bloqueo';
                     return {
                         id: b.id,
-                        title: `${b.name} (${b.court})${b.pelota === true || b.pelota === 'true' ? (b.sport === 'Vóley' ? ' 🏐' : ' ⚽') : ''}${b.chaleco === true || b.chaleco === 'true' ? ' 🎽' : ''}`,
+                        title: isBlock ? b.name : `${b.name} (${b.court})${b.pelota === true || b.pelota === 'true' ? (b.sport === 'Vóley' ? ' 🏐' : ' ⚽') : ''}${b.chaleco === true || b.chaleco === 'true' ? ' 🎽' : ''}`,
                         start: formatISOString(start),
                         end: formatISOString(end),
-                        className: `${courtClass} ${b.sport === 'Fútbol' ? 'event-sport-futbol' : 'event-sport-voley'}`,
+                        className: isBlock ? 'event-sport-bloqueo' : `${courtClass} ${b.sport === 'Fútbol' ? 'event-sport-futbol' : 'event-sport-voley'}`,
                         extendedProps: b // Keep original data
                     };
                 });
@@ -418,6 +420,12 @@ function setupEventListeners() {
     setupToggleListeners('pelota');
     setupToggleListeners('chaleco');
 
+    if (bookingIsBlockInput) {
+        bookingIsBlockInput.addEventListener('change', () => {
+            toggleBlockFields(bookingIsBlockInput.checked);
+        });
+    }
+
     // Asesor select dropdown change listener
     const selectAsesor = document.getElementById('bookingNotes');
     const customGroup = document.getElementById('customAsesorGroup');
@@ -535,8 +543,78 @@ function setupEventListeners() {
     });
 }
 
+function toggleBlockFields(isBlock) {
+    const groupDni = document.getElementById('groupDni');
+    const groupSport = document.getElementById('groupSport');
+    const rowEquipamiento = document.getElementById('rowEquipamiento');
+    const rowMedioPago = document.getElementById('rowMedioPago');
+    const labelName = document.querySelector('label[for="bookingName"]');
+
+    if (isBlock) {
+        if (groupDni) groupDni.style.display = 'none';
+        if (groupSport) groupSport.style.display = 'none';
+        if (rowEquipamiento) rowEquipamiento.style.display = 'none';
+        if (rowMedioPago) rowMedioPago.style.display = 'none';
+        if (labelName) labelName.innerHTML = 'Motivo del Bloqueo *';
+        if (bookingSportInput) {
+            bookingSportInput.value = 'Bloqueo';
+            bookingSportInput.disabled = true;
+        }
+
+        // Toggle required attributes to prevent hidden browser validation failure
+        if (bookingDniInput) bookingDniInput.required = false;
+        if (bookingSportInput) bookingSportInput.required = false;
+        if (bookingSourceInput) bookingSourceInput.required = false;
+        if (bookingPaymentTypeInput) bookingPaymentTypeInput.required = false;
+        if (bookingSourceCustomInput) bookingSourceCustomInput.required = false;
+
+        // Add "Todas las Canchas" option if not already present, and set it as selected
+        let todasOption = bookingCourtInput.querySelector('option[value="Todas"]');
+        if (!todasOption) {
+            todasOption = document.createElement('option');
+            todasOption.value = 'Todas';
+            todasOption.textContent = 'Todas las Canchas';
+            bookingCourtInput.insertBefore(todasOption, bookingCourtInput.firstChild);
+        }
+        bookingCourtInput.value = 'Todas';
+
+    } else {
+        if (groupDni) groupDni.style.display = '';
+        if (groupSport) groupSport.style.display = '';
+        if (rowEquipamiento) rowEquipamiento.style.display = '';
+        if (rowMedioPago) rowMedioPago.style.display = '';
+        if (labelName) labelName.innerHTML = 'Nombre del Cliente *';
+        
+        if (bookingSportInput) {
+            bookingSportInput.disabled = false;
+        }
+        handleCourtSportDependency();
+
+        // Restore required attributes for normal bookings
+        if (bookingDniInput) bookingDniInput.required = true;
+        if (bookingSportInput) bookingSportInput.required = true;
+        if (bookingSourceInput) bookingSourceInput.required = true;
+        if (bookingPaymentTypeInput) bookingPaymentTypeInput.required = true;
+
+        // Remove "Todas las Canchas" option if present, and fallback to "Cancha Grande"
+        const todasOption = bookingCourtInput.querySelector('option[value="Todas"]');
+        if (todasOption) {
+            todasOption.remove();
+        }
+        if (bookingCourtInput.value === 'Todas') {
+            bookingCourtInput.value = 'Cancha Grande';
+        }
+    }
+}
+
 // Automatic lock/fill of sport based on court choice
 function handleCourtSportDependency() {
+    const isBlock = bookingIsBlockInput ? bookingIsBlockInput.checked : false;
+    if (isBlock) {
+        bookingSportInput.value = 'Bloqueo';
+        bookingSportInput.disabled = true;
+        return;
+    }
     const court = bookingCourtInput.value;
     if (court.includes('Vóley')) {
         bookingSportInput.value = 'Vóley';
@@ -658,6 +736,12 @@ function openBookingModal(booking = null, defaults = null) {
     formBooking.reset();
     bookingError.style.display = 'none';
 
+    const btnSave = document.getElementById('btnSaveBooking');
+    if (btnSave) {
+        btnSave.disabled = false;
+        btnSave.textContent = 'Guardar Reserva';
+    }
+
     // Close mobile drawer if open
     closeSidebarDrawer();
 
@@ -665,10 +749,25 @@ function openBookingModal(booking = null, defaults = null) {
         // Edit Mode
         modalTitle.textContent = 'Editar Reserva';
         bookingIdInput.value = booking.id;
-        bookingNameInput.value = booking.name;
-        if (bookingDniInput) bookingDniInput.value = booking.dni || '';
+
+        const isBlock = booking.sport === 'Bloqueo';
+        if (bookingIsBlockInput) {
+            bookingIsBlockInput.checked = isBlock;
+        }
+        toggleBlockFields(isBlock);
+
+        let cleanName = booking.name;
+        if (isBlock) {
+            if (cleanName.startsWith('🔒 Bloqueo: ')) {
+                cleanName = cleanName.replace('🔒 Bloqueo: ', '');
+            } else if (cleanName.startsWith('🔒 Bloqueo:')) {
+                cleanName = cleanName.replace('🔒 Bloqueo:', '');
+            }
+        }
+        bookingNameInput.value = cleanName;
+        if (bookingDniInput) bookingDniInput.value = isBlock ? '' : (booking.dni || '');
         bookingCourtInput.value = booking.court;
-        bookingSportInput.value = booking.sport;
+        bookingSportInput.value = isBlock ? 'Fútbol' : booking.sport;
         bookingDateInput.value = booking.date;
         bookingStartTimeInput.value = booking.start_time;
         bookingEndTimeInput.value = booking.end_time;
@@ -688,26 +787,36 @@ function openBookingModal(booking = null, defaults = null) {
         if (bookingSourceInput && customSourceGroup && bookingSourceCustomInput) {
             const savedMedio = booking.medio || 'Facebook';
             const standardMedios = ['Facebook', 'TikTok', 'Instagram', 'WhatsApp'];
-            if (standardMedios.includes(savedMedio)) {
+            if (standardMedios.includes(savedMedio) && !isBlock) {
                 bookingSourceInput.value = savedMedio;
                 customSourceGroup.classList.add('hidden');
                 bookingSourceCustomInput.required = false;
             } else {
-                bookingSourceInput.value = 'Otro...';
-                customSourceGroup.classList.remove('hidden');
-                bookingSourceCustomInput.value = savedMedio;
-                bookingSourceCustomInput.required = true;
+                if (isBlock) {
+                    bookingSourceInput.value = 'Facebook';
+                    customSourceGroup.classList.add('hidden');
+                    bookingSourceCustomInput.required = false;
+                } else {
+                    bookingSourceInput.value = 'Otro...';
+                    customSourceGroup.classList.remove('hidden');
+                    bookingSourceCustomInput.value = savedMedio;
+                    bookingSourceCustomInput.required = true;
+                }
             }
         }
 
         // Populate correct Payment Type
         if (bookingPaymentTypeInput) {
-            bookingPaymentTypeInput.value = booking.tipo_pago || 'Efectivo';
+            bookingPaymentTypeInput.value = isBlock ? 'Efectivo' : (booking.tipo_pago || 'Efectivo');
         }
     } else {
         // New Mode
         modalTitle.textContent = 'Nueva Reserva';
         bookingIdInput.value = '';
+        if (bookingIsBlockInput) {
+            bookingIsBlockInput.checked = false;
+        }
+        toggleBlockFields(false);
         btnDeleteBooking.classList.add('hidden');
 
         // Reset Medio to default Facebook
@@ -830,7 +939,7 @@ async function fetchBookings() {
     }
 
     // Filter to only include Polideportivo courts to prevent data contamination from other complexes
-    const polideportivoCourts = ['Cancha Grande', 'Cancha Pequeña', 'Cancha de Vóley'];
+    const polideportivoCourts = ['Cancha Grande', 'Cancha Pequeña', 'Cancha de Vóley', 'Todas'];
     return bookings.filter(b => polideportivoCourts.includes(b.court));
 }
 
@@ -852,6 +961,11 @@ function filterEvents(bookings) {
         if (b.court === 'Cancha Grande' && filterCanchaGrande.checked) courtMatch = true;
         else if (b.court === 'Cancha Pequeña' && filterCanchaPequena.checked) courtMatch = true;
         else if (b.court === 'Cancha de Vóley' && filterCanchaVoley.checked) courtMatch = true;
+        else if (b.court === 'Todas' && (filterCanchaGrande.checked || filterCanchaPequena.checked || filterCanchaVoley.checked)) courtMatch = true;
+
+        if (b.sport === 'Bloqueo') {
+            return courtMatch;
+        }
 
         const sportMatch = (b.sport === 'Fútbol' && filterFutbol.checked) ||
             (b.sport === 'Vóley' && filterVoley.checked);
@@ -909,11 +1023,16 @@ function checkOverlaps(id, court, date, startTime, endTime) {
         // Skip current event if editing
         if (event.id === id) continue;
 
-        if (event.court === court) {
+        if (court === 'Todas' || event.court === 'Todas' || event.court === court) {
             const { start: existStart, end: existEnd } = getStartAndEndDates(event.date, event.start_time, event.end_time);
 
             // Overlap check formula: (StartA < EndB) AND (EndA > StartB)
             if (isOverlap(newStart, newEnd, existStart, existEnd)) {
+                if (court === 'Todas' || event.court === 'Todas') {
+                    let eventCourtName = event.court === 'Todas' ? 'Todas las Canchas' : event.court;
+                    let targetCourtName = court === 'Todas' ? 'Todas las Canchas' : court;
+                    return `Conflicto de horario: Hay un bloqueo o reserva activa (${event.name} en ${eventCourtName}) que interfiere con este bloqueo/reserva total en ${targetCourtName} (${event.date} ${event.start_time} - ${event.end_time}).`;
+                }
                 overlapCount++;
                 overlappingDetails.push(`${event.name} (${event.date} ${event.start_time} - ${event.end_time})`);
             }
@@ -939,11 +1058,18 @@ async function handleSaveBooking(e) {
     e.preventDefault();
     bookingError.style.display = 'none';
 
+    const btnSave = document.getElementById('btnSaveBooking');
+    if (btnSave) {
+        btnSave.disabled = true;
+        btnSave.textContent = 'Guardando...';
+    }
+
     const id = bookingIdInput.value || crypto.randomUUID();
-    const name = bookingNameInput.value.trim();
-    const dni = bookingDniInput ? bookingDniInput.value.trim() : '';
+    const isBlock = bookingIsBlockInput ? bookingIsBlockInput.checked : false;
+    let name = bookingNameInput.value.trim();
+    let dni = bookingDniInput ? bookingDniInput.value.trim() : '';
     const court = bookingCourtInput.value;
-    const sport = bookingSportInput.value;
+    let sport = bookingSportInput.value;
     const date = bookingDateInput.value;
     const startTime = bookingStartTimeInput.value;
     const endTime = bookingEndTimeInput.value;
@@ -959,20 +1085,51 @@ async function handleSaveBooking(e) {
     } else {
         medio = medio ? medio.trim() : '';
     }
-    const pelota = bookingPelotaInput.value === 'true';
-    const chaleco = bookingChalecoInput.value === 'true';
-    const tipo_pago = bookingPaymentTypeInput ? bookingPaymentTypeInput.value : 'Efectivo';
+    let pelota = bookingPelotaInput.value === 'true';
+    let chaleco = bookingChalecoInput.value === 'true';
+    let tipo_pago = bookingPaymentTypeInput ? bookingPaymentTypeInput.value : 'Efectivo';
+
+    if (isBlock) {
+        if (!name.startsWith('🔒 Bloqueo:')) {
+            name = `🔒 Bloqueo: ${name}`;
+        }
+        dni = '-';
+        sport = 'Bloqueo';
+        pelota = false;
+        chaleco = false;
+        medio = '-';
+        tipo_pago = 'Efectivo';
+    }
 
     // 1. Validation for empty inputs
-    if (!name || !dni || !date || !startTime || !endTime || !medio) {
-        showBookingError("Por favor completa todos los campos requeridos.");
-        return;
+    if (isBlock) {
+        if (!name || !date || !startTime || !endTime) {
+            showBookingError("Por favor completa el motivo del bloqueo, fecha y horarios.");
+            if (btnSave) {
+                btnSave.disabled = false;
+                btnSave.textContent = 'Guardar Reserva';
+            }
+            return;
+        }
+    } else {
+        if (!name || !dni || !date || !startTime || !endTime || !medio) {
+            showBookingError("Por favor completa todos los campos requeridos.");
+            if (btnSave) {
+                btnSave.disabled = false;
+                btnSave.textContent = 'Guardar Reserva';
+            }
+            return;
+        }
     }
 
     // 2. Validate time overlaps
     const overlapMsg = checkOverlaps(bookingIdInput.value, court, date, startTime, endTime);
     if (overlapMsg) {
         showBookingError(overlapMsg);
+        if (btnSave) {
+            btnSave.disabled = false;
+            btnSave.textContent = 'Guardar Reserva';
+        }
         return;
     }
 
@@ -1025,7 +1182,12 @@ async function handleSaveBooking(e) {
         const formattedDate = formatDateDDMMYYYY(date);
         const formattedStart = formatTimeHHMM(startTime);
         const formattedEnd = formatTimeHHMM(endTime);
-        const logDetails = `${isUpdate ? 'modificó la' : 'creó una'} reserva para ${name} (${court} - ${sport}${pelota ? ' + Pelota' : ''}${chaleco ? ' + Chaleco' : ''}) el ${formattedDate} de ${formattedStart} a ${formattedEnd}`;
+        let logDetails;
+        if (isBlock) {
+            logDetails = `${isUpdate ? 'modificó el' : 'creó un'} bloqueo (${name}) para la cancha ${court} el ${formattedDate} de ${formattedStart} a ${formattedEnd}`;
+        } else {
+            logDetails = `${isUpdate ? 'modificó la' : 'creó una'} reserva para ${name} (${court} - ${sport}${pelota ? ' + Pelota' : ''}${chaleco ? ' + Chaleco' : ''}) el ${formattedDate} de ${formattedStart} a ${formattedEnd}`;
+        }
         await addHistoryEntry(logAction, logDetails);
 
         // Refresh Calendar UI & Close modal
@@ -1036,6 +1198,10 @@ async function handleSaveBooking(e) {
     } catch (err) {
         console.error("Error al guardar reserva:", err);
         showBookingError("Error de base de datos: " + err.message);
+        if (btnSave) {
+            btnSave.disabled = false;
+            btnSave.textContent = 'Guardar Reserva';
+        }
     }
 }
 
@@ -1089,6 +1255,74 @@ function showBookingError(msg) {
 
 // Format and copy the reservation details to the clipboard (Polideportivo specialized)
 function handleCopyReservation() {
+    const isBlock = bookingIsBlockInput ? bookingIsBlockInput.checked : false;
+
+    if (isBlock) {
+        const clientName = bookingNameInput.value.trim();
+        const courtText = bookingCourtInput.value;
+        let dateText = bookingDateInput.value;
+        const startTime = bookingStartTimeInput.value;
+        const endTime = bookingEndTimeInput.value;
+
+        let advisorText = bookingNotesInput.value;
+        if (advisorText === 'Otro...') {
+            advisorText = document.getElementById('bookingNotesCustom').value.trim();
+        } else {
+            advisorText = advisorText ? advisorText.trim() : '';
+        }
+
+        // Validate if everything is filled
+        if (!clientName || !courtText || !dateText || !startTime || !endTime) {
+            showBookingError("Por favor completa el motivo del bloqueo, fecha y horarios antes de copiar.");
+            return;
+        }
+
+        // Clear any previous error
+        bookingError.style.display = 'none';
+
+        // Format date from YYYY-MM-DD to DD/MM/YYYY
+        if (dateText && dateText.includes('-')) {
+            const parts = dateText.split('-');
+            if (parts.length === 3) {
+                dateText = `${parts[2]}/${parts[1]}/${parts[0]}`;
+            }
+        }
+
+        // Format court name for WhatsApp copy
+        let courtFormatted = courtText;
+        if (courtText === 'Cancha Grande') {
+            courtFormatted = 'Cancha Grande de Fútbol';
+        } else if (courtText === 'Cancha Pequeña') {
+            courtFormatted = 'Cancha Pequeña de Fútbol';
+        }
+
+        const message = `*BLOQUEO DE CANCHA POLIDEPORTIVO*
+
+Cancha: ${courtFormatted}
+Fecha: ${dateText}
+Hora: ${startTime} - ${endTime}
+Motivo: ${clientName}
+Registrado por: ${advisorText}`;
+
+        // Copy to clipboard
+        navigator.clipboard.writeText(message).then(() => {
+            // Change button style/content temporarily to show success
+            const originalHtml = btnCopyReservation.innerHTML;
+            btnCopyReservation.innerHTML = '<i data-lucide="check"></i> ¡Copiado!';
+            btnCopyReservation.style.backgroundColor = '#16a34a'; // green-600
+            if (window.lucide) lucide.createIcons();
+
+            setTimeout(() => {
+                btnCopyReservation.innerHTML = originalHtml;
+                btnCopyReservation.style.backgroundColor = ''; // Reverts to CSS
+                if (window.lucide) lucide.createIcons();
+            }, 2000);
+        }).catch(err => {
+            console.error('No se pudo copiar el texto: ', err);
+        });
+        return;
+    }
+
     const clientName = bookingNameInput.value.trim();
     const dniText = bookingDniInput ? bookingDniInput.value.trim() : '';
     const courtText = bookingCourtInput.value; // Keeps exact court string e.g. "Fútbol Grande 1" or "Vóley 2"
@@ -1479,8 +1713,8 @@ function showSettingsError(msg) {
 function updateStats() {
     const todayStr = getCurrentBusinessDate();
 
-    // Filter events belonging to today's business day
-    const todayEvents = allEvents.filter(e => getBusinessDate(e.date, e.start_time) === todayStr);
+    // Filter events belonging to today's business day, excluding blocks
+    const todayEvents = allEvents.filter(e => getBusinessDate(e.date, e.start_time) === todayStr && e.sport !== 'Bloqueo');
 
     statTodayReservations.textContent = todayEvents.length;
 
@@ -1554,30 +1788,46 @@ function updateDailySummary() {
 
     let html = '';
     dayEvents.forEach(e => {
-        let badgeClass = 'court-badge-grande';
-        if (e.court === 'Cancha Pequeña') badgeClass = 'court-badge-pequena';
-        if (e.court === 'Cancha de Vóley') badgeClass = 'court-badge-voley';
-
-        const pelotaVal = e.pelota === true || e.pelota === 'true';
-        const chalecoVal = e.chaleco === true || e.chaleco === 'true';
-
-        html += `
-            <div class="summary-item-card" onclick="openEditFromSummary('${e.id}')" style="cursor: pointer;">
-                <div class="summary-item-header">
-                    <span class="summary-item-time">${formatTimeHHMM(e.start_time)} - ${formatTimeHHMM(e.end_time)}</span>
-                    <span class="summary-item-court ${badgeClass}">${e.court}</span>
+        const isBlock = e.sport === 'Bloqueo';
+        if (isBlock) {
+            html += `
+                <div class="summary-item-card event-sport-bloqueo" onclick="openEditFromSummary('${e.id}')" style="cursor: pointer; border-left: 5px solid #ef4444 !important;">
+                    <div class="summary-item-header">
+                        <span class="summary-item-time" style="color: #e5e7eb;">${formatTimeHHMM(e.start_time)} - ${formatTimeHHMM(e.end_time)}</span>
+                        <span class="summary-item-court court-badge-bloqueo" style="background: #ef4444; color: white; padding: 2px 6px; border-radius: 4px; font-size: 11px;">Bloqueo: ${e.court === 'Todas' ? 'Todas las Canchas' : e.court}</span>
+                    </div>
+                    <div class="summary-item-client" style="color: #ffffff; font-weight: bold;">${escapeHTML(e.name)}</div>
+                    <div class="summary-item-details" style="color: #d1d5db;">
+                        <span class="summary-detail-tag" style="color: #e5e7eb;"><i data-lucide="user"></i> ${escapeHTML(e.notes || 'Sin detalle')}</span>
+                    </div>
                 </div>
-                <div class="summary-item-client">${escapeHTML(e.name)}</div>
-                <div class="summary-item-details">
-                    <span class="summary-detail-tag">DNI: ${escapeHTML(e.dni)}</span>
-                    <span class="summary-detail-tag"><i data-lucide="user"></i> ${escapeHTML(e.notes || 'Sin asesor')}</span>
-                    <span class="summary-detail-tag"><i data-lucide="share-2"></i> ${escapeHTML(e.medio || 'Otro')}</span>
-                    <span class="summary-detail-tag"><i data-lucide="wallet"></i> ${escapeHTML(e.tipo_pago || 'Efectivo')}</span>
-                    ${pelotaVal ? `<span class="summary-detail-tag" style="color:#34d399;">⚽ Pelota</span>` : ''}
-                    ${chalecoVal ? `<span class="summary-detail-tag" style="color:#34d399;">🎽 Chaleco</span>` : ''}
+            `;
+        } else {
+            let badgeClass = 'court-badge-grande';
+            if (e.court === 'Cancha Pequeña') badgeClass = 'court-badge-pequena';
+            if (e.court === 'Cancha de Vóley') badgeClass = 'court-badge-voley';
+
+            const pelotaVal = e.pelota === true || e.pelota === 'true';
+            const chalecoVal = e.chaleco === true || e.chaleco === 'true';
+
+            html += `
+                <div class="summary-item-card" onclick="openEditFromSummary('${e.id}')" style="cursor: pointer;">
+                    <div class="summary-item-header">
+                        <span class="summary-item-time">${formatTimeHHMM(e.start_time)} - ${formatTimeHHMM(e.end_time)}</span>
+                        <span class="summary-item-court ${badgeClass}">${e.court}</span>
+                    </div>
+                    <div class="summary-item-client">${escapeHTML(e.name)}</div>
+                    <div class="summary-item-details">
+                        <span class="summary-detail-tag">DNI: ${escapeHTML(e.dni)}</span>
+                        <span class="summary-detail-tag"><i data-lucide="user"></i> ${escapeHTML(e.notes || 'Sin asesor')}</span>
+                        <span class="summary-detail-tag"><i data-lucide="share-2"></i> ${escapeHTML(e.medio || 'Otro')}</span>
+                        <span class="summary-detail-tag"><i data-lucide="wallet"></i> ${escapeHTML(e.tipo_pago || 'Efectivo')}</span>
+                        ${pelotaVal ? `<span class="summary-detail-tag" style="color:#34d399;">⚽ Pelota</span>` : ''}
+                        ${chalecoVal ? `<span class="summary-detail-tag" style="color:#34d399;">🎽 Chaleco</span>` : ''}
+                    </div>
                 </div>
-            </div>
-        `;
+            `;
+        }
     });
 
     summaryListContainer.innerHTML = html;
@@ -2101,6 +2351,16 @@ function isSameBusinessWeek(eventDateStr, currentBusinessDateStr) {
 }
 
 function getEventIncome(e) {
+    if (e.sport === 'Bloqueo') {
+        return {
+            durationHours: 0,
+            courtIncome: 0,
+            pelotaIncome: 0,
+            chalecoIncome: 0,
+            total: 0
+        };
+    }
+
     let courtRate = 0;
     if (e.court === 'Cancha Grande') {
         courtRate = parseFloat(localStorage.getItem('canchapro_rate_grande_poli') || '30');
@@ -2137,9 +2397,9 @@ function updateStatsDashboard() {
     const todayStr = getCurrentBusinessDate();
     const currentMonthPrefix = todayStr.substring(0, 7);
 
-    const todayEvents = allEvents.filter(e => getBusinessDate(e.date, e.start_time) === todayStr);
-    const weekEvents = allEvents.filter(e => isSameBusinessWeek(getBusinessDate(e.date, e.start_time), todayStr));
-    const monthEvents = allEvents.filter(e => getBusinessDate(e.date, e.start_time).startsWith(currentMonthPrefix));
+    const todayEvents = allEvents.filter(e => getBusinessDate(e.date, e.start_time) === todayStr && e.sport !== 'Bloqueo');
+    const weekEvents = allEvents.filter(e => isSameBusinessWeek(getBusinessDate(e.date, e.start_time), todayStr) && e.sport !== 'Bloqueo');
+    const monthEvents = allEvents.filter(e => getBusinessDate(e.date, e.start_time).startsWith(currentMonthPrefix) && e.sport !== 'Bloqueo');
 
     // Calculate historical/previous periods
     // Yesterday
@@ -2147,7 +2407,7 @@ function updateStatsDashboard() {
     const yesterday = new Date(currentDate);
     yesterday.setDate(currentDate.getDate() - 1);
     const yesterdayStr = formatISOString(yesterday).substring(0, 10);
-    const yesterdayEvents = allEvents.filter(e => getBusinessDate(e.date, e.start_time) === yesterdayStr);
+    const yesterdayEvents = allEvents.filter(e => getBusinessDate(e.date, e.start_time) === yesterdayStr && e.sport !== 'Bloqueo');
     let yesterdayIncome = 0;
     yesterdayEvents.forEach(e => { yesterdayIncome += getEventIncome(e).total; });
 
@@ -2164,7 +2424,7 @@ function updateStatsDashboard() {
     const prevSundayStr = formatISOString(prevSunday).substring(0, 10);
     const prevWeekEvents = allEvents.filter(e => {
         const d = getBusinessDate(e.date, e.start_time);
-        return d >= prevMondayStr && d <= prevSundayStr;
+        return d >= prevMondayStr && d <= prevSundayStr && e.sport !== 'Bloqueo';
     });
     let prevWeekIncome = 0;
     prevWeekEvents.forEach(e => { prevWeekIncome += getEventIncome(e).total; });
@@ -2179,7 +2439,7 @@ function updateStatsDashboard() {
         prevYear--;
     }
     const prevMonthPrefix = `${prevYear}-${String(prevMonth).padStart(2, '0')}`;
-    const prevMonthEvents = allEvents.filter(e => getBusinessDate(e.date, e.start_time).startsWith(prevMonthPrefix));
+    const prevMonthEvents = allEvents.filter(e => getBusinessDate(e.date, e.start_time).startsWith(prevMonthPrefix) && e.sport !== 'Bloqueo');
     let prevMonthIncome = 0;
     prevMonthEvents.forEach(e => { prevMonthIncome += getEventIncome(e).total; });
 
@@ -2818,6 +3078,7 @@ function updateStatsDashboard() {
         // 6. Consolidated Clients List (DNI / Name unifications)
         const clientsMap = new Map();
         allEvents.forEach(e => {
+            if (e.sport === 'Bloqueo') return;
             const name = (e.name || '').trim();
             const dni = (e.dni || '').trim();
             if (!name) return;

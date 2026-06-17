@@ -203,6 +203,13 @@
                 <form id="formBooking">
                     <input type="hidden" id="bookingId">
 
+                    <div class="form-group" style="margin-bottom: 16px;">
+                        <label class="checkbox-container" style="display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;">
+                            <input type="checkbox" id="bookingIsBlock" style="width: 18px; height: 18px; cursor: pointer;">
+                            <span style="font-weight: 600; color: #f87171;">🔒 ¿Bloquear horario / cancha?</span>
+                        </label>
+                    </div>
+
                     <div class="form-group">
                         <label for="bookingName">Nombre del Cliente *</label>
                         <div class="input-wrapper">
@@ -211,7 +218,7 @@
                         </div>
                     </div>
 
-                    <div class="form-group">
+                    <div class="form-group" id="groupDni">
                         <label for="bookingDni">DNI *</label>
                         <div class="input-wrapper">
                             <i data-lucide="credit-card"></i>
@@ -232,7 +239,7 @@
                                 </select>
                             </div>
                         </div>
-                        <div class="form-group">
+                        <div class="form-group" id="groupSport">
                             <label for="bookingSport">Deporte *</label>
                             <div class="input-wrapper">
                                 <i data-lucide="award"></i>
@@ -244,7 +251,7 @@
                         </div>
                     </div>
 
-                    <div class="form-row">
+                    <div class="form-row" id="rowEquipamiento">
                         <div class="form-group">
                             <label>¿Pelota? *</label>
                             <div class="toggle-group" id="pelotaToggle">
@@ -288,7 +295,7 @@
                         </div>
                     </div>
 
-                    <div class="form-row">
+                    <div class="form-row" id="rowMedioPago">
                         <div class="form-group">
                             <label for="bookingSource">Medio *</label>
                             <div class="input-wrapper">

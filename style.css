@@ -1712,4 +1712,13 @@ body.no-scroll {
     border-radius: var(--radius-md);
     padding: 12px;
 }
+
+/* Event style for locks / blocks */
+.event-sport-bloqueo {
+    background: linear-gradient(135deg, #4b5563, #374151) !important; /* Gris oscuro para bloqueos */
+    color: #e5e7eb !important;
+    border-left: 5px solid #ef4444 !important; /* Borde rojo para llamar la atención */
+    opacity: 0.9;
+}
+
 
