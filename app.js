@@ -1728,17 +1728,17 @@ function updateDailySummary() {
                         <span class="summary-item-court ${badgeClass}">Cancha ${e.court}</span>
                     </div>
                     <div class="summary-item-client">${escapeHTML(e.name)}</div>
+                    ${(pelotaVal || chalecoVal) ? `
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: -4px; margin-bottom: 2px;">
+                        ${pelotaVal ? `<span class="summary-detail-tag" style="color:#34d399;">⚽ Pelota</span>` : ''}
+                        ${chalecoVal ? `<span class="summary-detail-tag" style="color:#34d399;">🎽 Chaleco</span>` : ''}
+                    </div>
+                    ` : ''}
                     <div class="summary-item-details" style="flex-direction: column; align-items: flex-start; gap: 8px;">
                         <div style="display: flex; flex-wrap: wrap; gap: 12px;">
                             <span class="summary-detail-tag">DNI: ${escapeHTML(e.dni || '-')}</span>
                             <span class="summary-detail-tag"><i data-lucide="user"></i> ${escapeHTML(e.notes || 'Sin asesor')}</span>
                         </div>
-                        ${(pelotaVal || chalecoVal) ? `
-                        <div style="display: flex; flex-wrap: wrap; gap: 12px;">
-                            ${pelotaVal ? `<span class="summary-detail-tag" style="color:#34d399;">⚽ Pelota</span>` : ''}
-                            ${chalecoVal ? `<span class="summary-detail-tag" style="color:#34d399;">🎽 Chaleco</span>` : ''}
-                        </div>
-                        ` : ''}
                         <div style="display: flex; flex-wrap: wrap; gap: 12px;">
                             <span class="summary-detail-tag"><i data-lucide="share-2"></i> ${escapeHTML(e.medio || 'Otro')}</span>
                             <span class="summary-detail-tag"><i data-lucide="wallet"></i> ${escapeHTML(e.tipo_pago || 'Efectivo')}</span>
