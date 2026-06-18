@@ -563,8 +563,8 @@ function toggleBlockFields(isBlock) {
         if (rowMedioPago) rowMedioPago.style.display = '';
         if (labelName) labelName.innerHTML = 'Nombre del Cliente *';
 
-        // Restore required attributes for normal bookings
-        if (bookingDniInput) bookingDniInput.required = true;
+        // Restore required attributes for normal bookings (DNI is optional now)
+        if (bookingDniInput) bookingDniInput.required = false;
         if (bookingSportInput) bookingSportInput.required = true;
         if (bookingSourceInput) bookingSourceInput.required = true;
         if (bookingPaymentTypeInput) bookingPaymentTypeInput.required = true;
@@ -1042,7 +1042,7 @@ async function handleSaveBooking(e) {
             return;
         }
     } else {
-        if (!name || !dni || !date || !startTime || !endTime || !medio) {
+        if (!name || !date || !startTime || !endTime || !medio) {
             showBookingError("Por favor completa todos los campos requeridos.");
             if (btnSave) {
                 btnSave.disabled = false;
@@ -1268,8 +1268,8 @@ Registrado por: ${advisorText}`;
         medioText = medioText ? medioText.trim() : '';
     }
 
-    // Validate if everything is filled
-    if (!clientName || !dniText || !courtRaw || !dateText || !startTime || !endTime || !advisorText || !medioText) {
+    // Validate if everything is filled (DNI is optional)
+    if (!clientName || !courtRaw || !dateText || !startTime || !endTime || !advisorText || !medioText) {
         showBookingError("Por favor completa todos los campos obligatorios (*) antes de copiar la reserva.");
         return;
     }
@@ -1313,7 +1313,7 @@ Registrado por: ${advisorText}`;
     const message = `*RESERVA DE CANCHA LOS PINOS*
 
 Nombre del cliente: ${clientName}
-DNI: ${dniText}
+DNI: ${dniText || '-'}
 Cancha (Chica o Grande): ${courtText}
 Fecha: ${dateText}
 Hora: ${timeText} ${timeEmoji}
@@ -1728,13 +1728,21 @@ function updateDailySummary() {
                         <span class="summary-item-court ${badgeClass}">Cancha ${e.court}</span>
                     </div>
                     <div class="summary-item-client">${escapeHTML(e.name)}</div>
-                    <div class="summary-item-details">
-                        <span class="summary-detail-tag">DNI: ${escapeHTML(e.dni)}</span>
-                        <span class="summary-detail-tag"><i data-lucide="user"></i> ${escapeHTML(e.notes || 'Sin asesor')}</span>
-                        <span class="summary-detail-tag"><i data-lucide="share-2"></i> ${escapeHTML(e.medio || 'Otro')}</span>
-                        <span class="summary-detail-tag"><i data-lucide="wallet"></i> ${escapeHTML(e.tipo_pago || 'Efectivo')}</span>
-                        ${pelotaVal ? `<span class="summary-detail-tag" style="color:#34d399;">⚽ Pelota</span>` : ''}
-                        ${chalecoVal ? `<span class="summary-detail-tag" style="color:#34d399;">🎽 Chaleco</span>` : ''}
+                    <div class="summary-item-details" style="flex-direction: column; align-items: flex-start; gap: 8px;">
+                        <div style="display: flex; flex-wrap: wrap; gap: 12px;">
+                            <span class="summary-detail-tag">DNI: ${escapeHTML(e.dni || '-')}</span>
+                            <span class="summary-detail-tag"><i data-lucide="user"></i> ${escapeHTML(e.notes || 'Sin asesor')}</span>
+                        </div>
+                        ${(pelotaVal || chalecoVal) ? `
+                        <div style="display: flex; flex-wrap: wrap; gap: 12px;">
+                            ${pelotaVal ? `<span class="summary-detail-tag" style="color:#34d399;">⚽ Pelota</span>` : ''}
+                            ${chalecoVal ? `<span class="summary-detail-tag" style="color:#34d399;">🎽 Chaleco</span>` : ''}
+                        </div>
+                        ` : ''}
+                        <div style="display: flex; flex-wrap: wrap; gap: 12px;">
+                            <span class="summary-detail-tag"><i data-lucide="share-2"></i> ${escapeHTML(e.medio || 'Otro')}</span>
+                            <span class="summary-detail-tag"><i data-lucide="wallet"></i> ${escapeHTML(e.tipo_pago || 'Efectivo')}</span>
+                        </div>
                     </div>
                 </div>
             `;
