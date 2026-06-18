@@ -10,6 +10,7 @@ let allEvents = []; // Cache for local/downloaded events
 let cachedClientsData = [];
 let currentClientsFilter = '';
 let statsCountdownInterval = null;
+let bookingModalIsAdmin = false;
 
 // DOM Elements
 const sidebar = document.getElementById('sidebar');
@@ -404,8 +405,14 @@ function setupEventListeners() {
     setupToggleListeners('chaleco');
 
     if (bookingIsBlockInput) {
-        bookingIsBlockInput.addEventListener('change', () => {
-            toggleBlockFields(bookingIsBlockInput.checked);
+        bookingIsBlockInput.addEventListener('click', (e) => {
+            const isChecking = bookingIsBlockInput.checked;
+            const action = isChecking ? "bloquear la cancha" : "desbloquear la cancha";
+            if (!requestAdminPassword(action)) {
+                e.preventDefault();
+                return;
+            }
+            toggleBlockFields(isChecking);
         });
     }
 
@@ -605,13 +612,24 @@ function toggleBlockFields(isBlock) {
 function toggleAllDayFields(isAllDay) {
     if (isAllDay) {
         bookingStartTimeInput.value = "06:00";
-        bookingEndTimeInput.value = "01:00";
+        bookingEndTimeInput.value = "23:00";
         bookingStartTimeInput.disabled = true;
         bookingEndTimeInput.disabled = true;
     } else {
         bookingStartTimeInput.disabled = false;
         bookingEndTimeInput.disabled = false;
     }
+}
+
+function requestAdminPassword(actionDescription) {
+    if (bookingModalIsAdmin) return true;
+    const pwd = prompt(`Ingresa la contraseña de administrador para ${actionDescription}:`);
+    if (pwd === 'Reservasupabase') {
+        bookingModalIsAdmin = true;
+        return true;
+    }
+    alert("Contraseña incorrecta. No tienes permiso para esta acción.");
+    return false;
 }
 
 // Helper to set toggle button active states and hidden input value
@@ -719,6 +737,7 @@ function populateAsesoresDropdown(selectedValue = '') {
 
 // Open Booking Modal (Null = New, Object = Edit)
 function openBookingModal(booking = null, defaults = null) {
+    bookingModalIsAdmin = false;
     if (booking === null && modalBooking.classList.contains('active')) {
         return; // Prevent duplicate triggers if already open for new booking
     }
@@ -738,7 +757,7 @@ function openBookingModal(booking = null, defaults = null) {
         // Edit Mode
         modalTitle.textContent = 'Editar Reserva';
         bookingIdInput.value = booking.id;
-        
+
         const isBlock = booking.sport === 'Bloqueo';
         if (bookingIsBlockInput) {
             bookingIsBlockInput.checked = isBlock;
@@ -761,10 +780,10 @@ function openBookingModal(booking = null, defaults = null) {
         bookingStartTimeInput.value = booking.start_time;
         bookingEndTimeInput.value = booking.end_time;
 
-        // Check if it is an all-day block ("06:00" to "01:00")
+        // Check if it is an all-day block ("06:00" to "23:00")
         const isAllDay = isBlock && 
             (booking.start_time.startsWith("06:00") || booking.start_time === "06:00:00") && 
-            (booking.end_time.startsWith("01:00") || booking.end_time === "01:00:00");
+            (booking.end_time.startsWith("23:00") || booking.end_time === "23:00:00");
         if (bookingIsAllDayInput) {
             bookingIsAllDayInput.checked = isAllDay;
         }
@@ -1043,6 +1062,15 @@ async function handleSaveBooking(e) {
 
     const id = bookingIdInput.value || crypto.randomUUID();
     const isBlock = bookingIsBlockInput ? bookingIsBlockInput.checked : false;
+    if (isBlock) {
+        if (!requestAdminPassword("guardar este bloqueo")) {
+            if (btnSave) {
+                btnSave.disabled = false;
+                btnSave.textContent = 'Guardar Reserva';
+            }
+            return;
+        }
+    }
     let name = bookingNameInput.value.trim();
     let dni = bookingDniInput ? bookingDniInput.value.trim() : '';
     const court = bookingCourtInput.value;
@@ -1186,6 +1214,13 @@ async function handleSaveBooking(e) {
 async function handleDeleteBooking() {
     const id = bookingIdInput.value;
     if (!id) return;
+
+    const isBlock = bookingIsBlockInput ? bookingIsBlockInput.checked : false;
+    if (isBlock) {
+        if (!requestAdminPassword("eliminar este bloqueo")) {
+            return;
+        }
+    }
 
     if (!confirm("¿Estás seguro de que deseas eliminar esta reserva?")) {
         return;
