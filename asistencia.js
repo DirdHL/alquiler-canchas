@@ -6,6 +6,7 @@ let dbMode = 'local'; // 'local' or 'supabase'
 let supabaseClient = null;
 let allAttendanceRecords = [];
 let employeeList = ['Admin', 'Rogger', 'Vicky'];
+let activeEmployeesList = ['Admin', 'Rogger', 'Vicky'];
 let selectedEmployeeName = '';
 let realtimeChannel = null;
 
@@ -212,6 +213,9 @@ function setupRealtimeSubscription() {
         .on('postgres_changes', { event: '*', schema: 'public', table: 'asistencias' }, () => {
             fetchAttendanceRecords();
         })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'personal_asistencia' }, () => {
+            fetchAttendanceRecords();
+        })
         .subscribe();
 }
 
@@ -219,6 +223,7 @@ function setupRealtimeSubscription() {
 async function fetchAttendanceRecords() {
     try {
         if (dbMode === 'supabase' && supabaseClient) {
+            // 1. Fetch attendance records
             const { data, error } = await supabaseClient
                 .from('asistencias')
                 .select('*')
@@ -227,12 +232,34 @@ async function fetchAttendanceRecords() {
             
             if (error) throw error;
             allAttendanceRecords = data || [];
+
+            // 2. Fetch active employees from personal_asistencia
+            try {
+                const { data: empData, error: empError } = await supabaseClient
+                    .from('personal_asistencia')
+                    .select('name')
+                    .eq('is_active', true)
+                    .order('name', { ascending: true });
+                
+                if (empError) throw empError;
+                
+                if (empData && empData.length > 0) {
+                    activeEmployeesList = empData.map(e => e.name);
+                } else {
+                    activeEmployeesList = ['Admin', 'Rogger', 'Vicky'];
+                }
+            } catch (empErr) {
+                console.warn("Table personal_asistencia not found or failed, using localStorage fallback:", empErr.message);
+                loadActiveEmployeesFromLocal();
+            }
         } else {
             allAttendanceRecords = getLocalAttendance();
+            loadActiveEmployeesFromLocal();
         }
     } catch (err) {
         console.error("Error fetching attendance:", err);
         allAttendanceRecords = getLocalAttendance();
+        loadActiveEmployeesFromLocal();
     }
 
     // Refresh dynamic list of employee names based on records and defaults
@@ -247,24 +274,28 @@ async function fetchAttendanceRecords() {
     updateEmployeeStats();
 }
 
-// Refresh employee names dynamically
-function refreshEmployeeList() {
-    const recordNames = new Set(allAttendanceRecords.map(r => r.employee_name).filter(name => name && name !== 'Todos'));
-    
-    // Load custom names from localStorage or initialize with defaults if empty
+function loadActiveEmployeesFromLocal() {
     try {
         let savedCustom = localStorage.getItem('canchapro_custom_employees');
         if (savedCustom === null) {
             const defaults = ['Admin', 'Rogger', 'Vicky'];
             localStorage.setItem('canchapro_custom_employees', JSON.stringify(defaults));
-            savedCustom = defaults;
+            activeEmployeesList = defaults;
         } else {
-            savedCustom = JSON.parse(savedCustom);
+            activeEmployeesList = JSON.parse(savedCustom);
         }
-        savedCustom.forEach(name => recordNames.add(name));
     } catch (e) {
-        console.warn("Error loading custom employee list:", e);
+        console.warn("Error loading custom employee list from local:", e);
+        activeEmployeesList = ['Admin', 'Rogger', 'Vicky'];
     }
+}
+
+// Refresh employee names dynamically (combines active + historical records)
+function refreshEmployeeList() {
+    const recordNames = new Set(allAttendanceRecords.map(r => r.employee_name).filter(name => name && name !== 'Todos'));
+    
+    // Also include active workers
+    activeEmployeesList.forEach(name => recordNames.add(name));
 
     employeeList = Array.from(recordNames).sort();
 }
@@ -276,18 +307,7 @@ function populateEmployeeDropdowns() {
     const currentFilterVal = filterEmployee.value;
     const currentAdminVal = adminEmployeeSelect.value;
 
-    // Load active names from localStorage
-    let activeEmployees = ['Admin', 'Rogger', 'Vicky'];
-    try {
-        const savedCustom = localStorage.getItem('canchapro_custom_employees');
-        if (savedCustom) {
-            activeEmployees = JSON.parse(savedCustom);
-        } else {
-            localStorage.setItem('canchapro_custom_employees', JSON.stringify(activeEmployees));
-        }
-    } catch (e) {
-        console.warn(e);
-    }
+    const activeEmployees = activeEmployeesList;
 
     // 1. Mark Clock dropdown (Active employees only)
     employeeSelect.innerHTML = '<option value="" disabled selected>-- Elige tu Nombre --</option>';
@@ -414,19 +434,28 @@ async function handleEmployeeChange() {
             if (newName && newName.trim()) {
                 const cleanName = newName.trim();
                 
-                let customNames = [];
-                try {
-                    const savedCustom = localStorage.getItem('canchapro_custom_employees');
-                    if (savedCustom) {
-                        customNames = JSON.parse(savedCustom);
+                if (!activeEmployeesList.includes(cleanName)) {
+                    if (dbMode === 'supabase' && supabaseClient) {
+                        try {
+                            const { error: insErr } = await supabaseClient
+                                .from('personal_asistencia')
+                                .insert([{ name: cleanName, is_active: true }]);
+                            
+                            if (insErr) {
+                                // Try updating if it was inactive previously
+                                const { error: updErr } = await supabaseClient
+                                    .from('personal_asistencia')
+                                    .update({ is_active: true })
+                                    .eq('name', cleanName);
+                                if (updErr) throw updErr;
+                            }
+                        } catch (err) {
+                            console.warn("Could not save new employee to Supabase, saving locally:", err.message);
+                            saveNewEmployeeLocal(cleanName);
+                        }
+                    } else {
+                        saveNewEmployeeLocal(cleanName);
                     }
-                } catch (e) {
-                    console.warn(e);
-                }
-                
-                if (!customNames.includes(cleanName)) {
-                    customNames.push(cleanName);
-                    localStorage.setItem('canchapro_custom_employees', JSON.stringify(customNames));
                 }
                 
                 // Reload data and dropdowns
@@ -452,31 +481,34 @@ async function handleEmployeeChange() {
     if (selectedEmployeeName === '_delete_') {
         const pwd = prompt("Ingrese la contraseña de administrador para eliminar un trabajador:");
         if (pwd === 'Reservasupabase') {
-            let customNames = [];
-            try {
-                const savedCustom = localStorage.getItem('canchapro_custom_employees');
-                if (savedCustom) {
-                    customNames = JSON.parse(savedCustom);
-                }
-            } catch (e) {
-                console.warn(e);
-            }
-
-            if (customNames.length === 0) {
-                alert("No hay trabajadores personalizados guardados para eliminar.");
+            if (activeEmployeesList.length === 0) {
+                alert("No hay trabajadores guardados para eliminar.");
                 employeeSelect.value = '';
                 selectedEmployeeName = '';
                 return;
             }
 
-            const listStr = customNames.join(', ');
+            const listStr = activeEmployeesList.join(', ');
             const nameToDelete = prompt(`Trabajadores eliminables:\n[ ${listStr} ]\n\nEscriba el nombre exacto del trabajador que desea eliminar:`);
             
             if (nameToDelete) {
                 const cleanName = nameToDelete.trim();
-                if (customNames.includes(cleanName)) {
-                    customNames = customNames.filter(name => name !== cleanName);
-                    localStorage.setItem('canchapro_custom_employees', JSON.stringify(customNames));
+                if (activeEmployeesList.includes(cleanName)) {
+                    if (dbMode === 'supabase' && supabaseClient) {
+                        try {
+                            const { error: delErr } = await supabaseClient
+                                .from('personal_asistencia')
+                                .update({ is_active: false })
+                                .eq('name', cleanName);
+                            
+                            if (delErr) throw delErr;
+                        } catch (err) {
+                            console.warn("Could not deactivate employee in Supabase, updating locally:", err.message);
+                            deleteEmployeeLocal(cleanName);
+                        }
+                    } else {
+                        deleteEmployeeLocal(cleanName);
+                    }
                     
                     // Reload data and dropdowns
                     await fetchAttendanceRecords();
@@ -499,6 +531,41 @@ async function handleEmployeeChange() {
             employeeSelect.value = '';
             selectedEmployeeName = '';
         }
+    }
+
+    // Helper functions for local storage operations
+    function saveNewEmployeeLocal(cleanName) {
+        let customNames = [];
+        try {
+            const savedCustom = localStorage.getItem('canchapro_custom_employees');
+            if (savedCustom) {
+                customNames = JSON.parse(savedCustom);
+            } else {
+                customNames = ['Admin', 'Rogger', 'Vicky'];
+            }
+        } catch (e) {
+            console.warn(e);
+        }
+        if (!customNames.includes(cleanName)) {
+            customNames.push(cleanName);
+            localStorage.setItem('canchapro_custom_employees', JSON.stringify(customNames));
+        }
+    }
+
+    function deleteEmployeeLocal(cleanName) {
+        let customNames = [];
+        try {
+            const savedCustom = localStorage.getItem('canchapro_custom_employees');
+            if (savedCustom) {
+                customNames = JSON.parse(savedCustom);
+            } else {
+                customNames = ['Admin', 'Rogger', 'Vicky'];
+            }
+        } catch (e) {
+            console.warn(e);
+        }
+        customNames = customNames.filter(name => name !== cleanName);
+        localStorage.setItem('canchapro_custom_employees', JSON.stringify(customNames));
     }
 
     if (!selectedEmployeeName) {
