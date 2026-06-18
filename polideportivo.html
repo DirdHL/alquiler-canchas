@@ -220,11 +220,20 @@
                         </label>
                     </div>
 
+                    <div class="form-group" id="groupAllDay" style="margin-bottom: 16px; display: none;">
+                        <label class="checkbox-container"
+                            style="display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;">
+                            <input type="checkbox" id="bookingIsAllDay"
+                                style="width: 18px; height: 18px; cursor: pointer;">
+                            <span style="font-weight: 600; color: #fbbf24;">⏰ ¿Todo el día?</span>
+                        </label>
+                    </div>
+
                     <div class="form-group">
                         <label for="bookingName">Nombre del Cliente *</label>
                         <div class="input-wrapper">
                             <i data-lucide="user"></i>
-                            <input type="text" id="bookingName" required placeholder="Ej. Juan Pérez">
+                            <input type="text" id="bookingName" required placeholder="Nombre del cliente">
                         </div>
                     </div>
 
@@ -517,7 +526,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE reservas, historial;
                         <label for="onboardingName">Nombre / Alias *</label>
                         <div class="input-wrapper">
                             <i data-lucide="user"></i>
-                            <input type="text" id="onboardingName" required placeholder="Ej. Juan Pérez o Admin 1"
+                            <input type="text" id="onboardingName" required placeholder="Nombre o alias de operador"
                                 maxlength="25">
                         </div>
                     </div>

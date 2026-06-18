@@ -36,6 +36,7 @@ const bookingPelotaInput = document.getElementById('bookingPelota');
 const bookingChalecoInput = document.getElementById('bookingChaleco');
 const bookingError = document.getElementById('bookingError');
 const bookingIsBlockInput = document.getElementById('bookingIsBlock');
+const bookingIsAllDayInput = document.getElementById('bookingIsAllDay');
 
 const btnNewReservation = document.getElementById('btnNewReservation');
 const btnCloseBooking = document.getElementById('btnCloseBooking');
@@ -426,6 +427,12 @@ function setupEventListeners() {
         });
     }
 
+    if (bookingIsAllDayInput) {
+        bookingIsAllDayInput.addEventListener('change', () => {
+            toggleAllDayFields(bookingIsAllDayInput.checked);
+        });
+    }
+
     // Asesor select dropdown change listener
     const selectAsesor = document.getElementById('bookingNotes');
     const customGroup = document.getElementById('customAsesorGroup');
@@ -549,6 +556,7 @@ function toggleBlockFields(isBlock) {
     const rowEquipamiento = document.getElementById('rowEquipamiento');
     const rowMedioPago = document.getElementById('rowMedioPago');
     const labelName = document.querySelector('label[for="bookingName"]');
+    const groupAllDay = document.getElementById('groupAllDay');
 
     if (isBlock) {
         if (groupDni) groupDni.style.display = 'none';
@@ -556,6 +564,9 @@ function toggleBlockFields(isBlock) {
         if (rowEquipamiento) rowEquipamiento.style.display = 'none';
         if (rowMedioPago) rowMedioPago.style.display = 'none';
         if (labelName) labelName.innerHTML = 'Motivo del Bloqueo *';
+        if (bookingNameInput) {
+            bookingNameInput.placeholder = 'Ej. Mantenimiento, Evento privado...';
+        }
         if (bookingSportInput) {
             bookingSportInput.value = 'Bloqueo';
             bookingSportInput.disabled = true;
@@ -578,12 +589,17 @@ function toggleBlockFields(isBlock) {
         }
         bookingCourtInput.value = 'Todas';
 
+        if (groupAllDay) groupAllDay.style.display = 'flex';
+
     } else {
         if (groupDni) groupDni.style.display = '';
         if (groupSport) groupSport.style.display = '';
         if (rowEquipamiento) rowEquipamiento.style.display = '';
         if (rowMedioPago) rowMedioPago.style.display = '';
         if (labelName) labelName.innerHTML = 'Nombre del Cliente *';
+        if (bookingNameInput) {
+            bookingNameInput.placeholder = 'Nombre del cliente';
+        }
         
         if (bookingSportInput) {
             bookingSportInput.disabled = false;
@@ -604,6 +620,24 @@ function toggleBlockFields(isBlock) {
         if (bookingCourtInput.value === 'Todas') {
             bookingCourtInput.value = 'Cancha Grande';
         }
+
+        if (groupAllDay) groupAllDay.style.display = 'none';
+        if (bookingIsAllDayInput) {
+            bookingIsAllDayInput.checked = false;
+        }
+        toggleAllDayFields(false);
+    }
+}
+
+function toggleAllDayFields(isAllDay) {
+    if (isAllDay) {
+        bookingStartTimeInput.value = "06:00";
+        bookingEndTimeInput.value = "01:00";
+        bookingStartTimeInput.disabled = true;
+        bookingEndTimeInput.disabled = true;
+    } else {
+        bookingStartTimeInput.disabled = false;
+        bookingEndTimeInput.disabled = false;
     }
 }
 
@@ -772,6 +806,15 @@ function openBookingModal(booking = null, defaults = null) {
         bookingStartTimeInput.value = booking.start_time;
         bookingEndTimeInput.value = booking.end_time;
 
+        // Check if it is an all-day block ("06:00" to "01:00")
+        const isAllDay = isBlock && 
+            (booking.start_time.startsWith("06:00") || booking.start_time === "06:00:00") && 
+            (booking.end_time.startsWith("01:00") || booking.end_time === "01:00:00");
+        if (bookingIsAllDayInput) {
+            bookingIsAllDayInput.checked = isAllDay;
+        }
+        toggleAllDayFields(isAllDay);
+
         // Populate and select correct advisor
         populateAsesoresDropdown(booking.notes || '');
 
@@ -816,7 +859,11 @@ function openBookingModal(booking = null, defaults = null) {
         if (bookingIsBlockInput) {
             bookingIsBlockInput.checked = false;
         }
+        if (bookingIsAllDayInput) {
+            bookingIsAllDayInput.checked = false;
+        }
         toggleBlockFields(false);
+        toggleAllDayFields(false);
         btnDeleteBooking.classList.add('hidden');
 
         // Reset Medio to default Facebook
