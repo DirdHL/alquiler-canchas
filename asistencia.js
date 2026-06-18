@@ -1,0 +1,1236 @@
+// ==========================================================================
+// CanchaPro - Attendance System Javascript Logic
+// ==========================================================================
+
+let dbMode = 'local'; // 'local' or 'supabase'
+let supabaseClient = null;
+let allAttendanceRecords = [];
+let employeeList = ['Admin', 'Rogger', 'Vicky'];
+let selectedEmployeeName = '';
+let realtimeChannel = null;
+
+// DOM Elements
+const statusDot = document.getElementById('statusDot');
+const statusText = document.getElementById('statusText');
+const statusDesc = document.getElementById('statusDesc');
+
+const liveClock = document.getElementById('liveClock');
+const liveDate = document.getElementById('liveDate');
+const employeeSelect = document.getElementById('employeeSelect');
+const employeeStatusBox = document.getElementById('employeeStatusBox');
+const btnToggleAttendance = document.getElementById('btnToggleAttendance');
+
+const progressEmployeeTitle = document.getElementById('progressEmployeeTitle');
+const progressPercentageText = document.getElementById('progressPercentageText');
+const goalProgressBar = document.getElementById('goalProgressBar');
+const progressCurrentText = document.getElementById('progressCurrentText');
+
+const metricWorkedHours = document.getElementById('metricWorkedHours');
+const metricRemainingHours = document.getElementById('metricRemainingHours');
+const metricOvertimeHours = document.getElementById('metricOvertimeHours');
+
+const filterEmployee = document.getElementById('filterEmployee');
+const filterMonth = document.getElementById('filterMonth');
+const attendanceTableBody = document.getElementById('attendanceTableBody');
+
+// Monthly metrics elements
+const statsWorkedHours = document.getElementById('statsWorkedHours');
+const statsJustifiedHours = document.getElementById('statsJustifiedHours');
+const statsTotalMonthHours = document.getElementById('statsTotalMonthHours');
+const statsDaysWorked = document.getElementById('statsDaysWorked');
+const statsDaysJustified = document.getElementById('statsDaysJustified');
+const statsMonthlyOvertime = document.getElementById('statsMonthlyOvertime');
+
+const btnAdminActions = document.getElementById('btnAdminActions');
+const modalAdminAuth = document.getElementById('modalAdminAuth');
+const btnCloseAdminAuth = document.getElementById('btnCloseAdminAuth');
+const formAdminAuth = document.getElementById('formAdminAuth');
+const adminPasswordInput = document.getElementById('adminPassword');
+const adminAuthError = document.getElementById('adminAuthError');
+
+const modalAdminRegister = document.getElementById('modalAdminRegister');
+const btnCloseAdminRegister = document.getElementById('btnCloseAdminRegister');
+const formAdminRegister = document.getElementById('formAdminRegister');
+const adminRegisterType = document.getElementById('adminRegisterType');
+const adminEmployeeSelectGroup = document.getElementById('adminEmployeeSelectGroup');
+const adminEmployeeSelect = document.getElementById('adminEmployeeSelect');
+const adminRegisterDate = document.getElementById('adminRegisterDate');
+const adminRegisterHours = document.getElementById('adminRegisterHours');
+const adminRegisterNotes = document.getElementById('adminRegisterNotes');
+const adminRegisterError = document.getElementById('adminRegisterError');
+
+const modalUserOnboarding = document.getElementById('modalUserOnboarding');
+const formUserOnboarding = document.getElementById('formUserOnboarding');
+const onboardingNameInput = document.getElementById('onboardingName');
+const displayUserName = document.getElementById('displayUserName');
+const btnEditUser = document.getElementById('btnEditUser');
+
+// Sidebar toggle for mobile drawer
+const sidebar = document.getElementById('sidebar');
+const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+const btnToggleSidebar = document.getElementById('btnToggleSidebar');
+const btnCloseSidebar = document.getElementById('btnCloseSidebar');
+
+// Initialize application
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. Initialize Icons
+    if (window.lucide) lucide.createIcons();
+
+    // 2. Start Live clock
+    startClock();
+
+    // 3. Check Operator Identity
+    checkOperatorIdentity();
+
+    // 4. Setup Event Listeners
+    setupEventListeners();
+
+    // 5. Connect to database
+    loadDatabaseSettings();
+});
+
+// Live Clock function
+function startClock() {
+    const updateTime = () => {
+        const now = new Date();
+        
+        // Time HH:MM:SS
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const seconds = String(now.getSeconds()).padStart(2, '0');
+        liveClock.textContent = `${hours}:${minutes}:${seconds}`;
+
+        // Date Spanish
+        const options = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+        liveDate.textContent = now.toLocaleDateString('es-ES', options);
+    };
+
+    updateTime();
+    setInterval(updateTime, 1000);
+}
+
+// Check Operator Identity
+function checkOperatorIdentity() {
+    const savedName = localStorage.getItem('canchapro_user_name');
+    if (!savedName) {
+        openModal(modalUserOnboarding);
+        setTimeout(() => onboardingNameInput.focus(), 100);
+    } else {
+        displayUserName.textContent = savedName;
+    }
+}
+
+// Handle Operator Identity form
+if (formUserOnboarding) {
+    formUserOnboarding.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const rawName = onboardingNameInput.value.trim();
+        if (rawName) {
+            localStorage.setItem('canchapro_user_name', rawName);
+            displayUserName.textContent = rawName;
+            closeModal(modalUserOnboarding);
+            addHistoryEntry('crear', `inició sesión en control de asistencia`);
+        }
+    });
+}
+
+if (btnEditUser) {
+    btnEditUser.addEventListener('click', () => {
+        const currentName = localStorage.getItem('canchapro_user_name') || '';
+        onboardingNameInput.value = currentName;
+        openModal(modalUserOnboarding);
+    });
+}
+
+// Load Supabase Settings
+function loadDatabaseSettings() {
+    const url = localStorage.getItem('canchapro_supabase_url');
+    const key = localStorage.getItem('canchapro_supabase_key');
+
+    if (url && key) {
+        try {
+            supabaseClient = supabase.createClient(url, key);
+            dbMode = 'supabase';
+            testSupabaseSilent();
+        } catch (e) {
+            console.error("Supabase client init error:", e);
+            setLocalMode();
+        }
+    } else {
+        setLocalMode();
+    }
+}
+
+function setLocalMode() {
+    dbMode = 'local';
+    supabaseClient = null;
+    updateStatusUI(false);
+    fetchAttendanceRecords();
+}
+
+function updateStatusUI(connected, errorMsg = null) {
+    if (connected) {
+        statusDot.className = 'status-dot connected';
+        statusText.textContent = 'Conectado a la Nube (Supabase)';
+        statusDesc.textContent = 'Las asistencias están sincronizadas con la nube en tiempo real.';
+    } else {
+        statusDot.className = 'status-dot disconnected';
+        if (errorMsg) {
+            statusText.textContent = 'Error de Conexión (Supabase)';
+            statusDesc.textContent = errorMsg;
+        } else {
+            statusText.textContent = 'Modo Sin Conexión (Local)';
+            statusDesc.textContent = 'Las asistencias se guardarán de forma local en este navegador.';
+        }
+    }
+}
+
+async function testSupabaseSilent() {
+    try {
+        const { error } = await supabaseClient.from('asistencias').select('id').limit(1);
+        if (error) throw error;
+
+        updateStatusUI(true);
+        setupRealtimeSubscription();
+        fetchAttendanceRecords();
+    } catch (err) {
+        console.warn("Supabase table error:", err.message);
+        updateStatusUI(false, 'Configurado, pero no pudimos conectar a la tabla "asistencias". ¿Ejecutaste el SQL?');
+        fetchAttendanceRecords(); // Fallback to local data
+    }
+}
+
+// Realtime Sync Subscription
+function setupRealtimeSubscription() {
+    if (!supabaseClient) return;
+
+    if (realtimeChannel) {
+        supabaseClient.removeChannel(realtimeChannel);
+    }
+
+    realtimeChannel = supabaseClient.channel('realtime_asistencias')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'asistencias' }, () => {
+            fetchAttendanceRecords();
+        })
+        .subscribe();
+}
+
+// Fetch Attendance records
+async function fetchAttendanceRecords() {
+    try {
+        if (dbMode === 'supabase' && supabaseClient) {
+            const { data, error } = await supabaseClient
+                .from('asistencias')
+                .select('*')
+                .order('date', { ascending: false })
+                .order('check_in', { ascending: false });
+            
+            if (error) throw error;
+            allAttendanceRecords = data || [];
+        } else {
+            allAttendanceRecords = getLocalAttendance();
+        }
+    } catch (err) {
+        console.error("Error fetching attendance:", err);
+        allAttendanceRecords = getLocalAttendance();
+    }
+
+    // Refresh dynamic list of employee names based on records and defaults
+    refreshEmployeeList();
+
+    // Re-populate select boxes
+    populateEmployeeDropdowns();
+    populateMonthFilter();
+
+    // Render Table and Recalculate stats
+    renderAttendanceTable();
+    updateEmployeeStats();
+}
+
+// Refresh employee names dynamically
+function refreshEmployeeList() {
+    const recordNames = new Set(allAttendanceRecords.map(r => r.employee_name).filter(name => name && name !== 'Todos'));
+    
+    // Load custom names from localStorage or initialize with defaults if empty
+    try {
+        let savedCustom = localStorage.getItem('canchapro_custom_employees');
+        if (savedCustom === null) {
+            const defaults = ['Admin', 'Rogger', 'Vicky'];
+            localStorage.setItem('canchapro_custom_employees', JSON.stringify(defaults));
+            savedCustom = defaults;
+        } else {
+            savedCustom = JSON.parse(savedCustom);
+        }
+        savedCustom.forEach(name => recordNames.add(name));
+    } catch (e) {
+        console.warn("Error loading custom employee list:", e);
+    }
+
+    employeeList = Array.from(recordNames).sort();
+}
+
+// Populate dropdown select inputs
+function populateEmployeeDropdowns() {
+    // Save current selection to restore it
+    const currentSelVal = employeeSelect.value;
+    const currentFilterVal = filterEmployee.value;
+    const currentAdminVal = adminEmployeeSelect.value;
+
+    // Load active names from localStorage
+    let activeEmployees = ['Admin', 'Rogger', 'Vicky'];
+    try {
+        const savedCustom = localStorage.getItem('canchapro_custom_employees');
+        if (savedCustom) {
+            activeEmployees = JSON.parse(savedCustom);
+        } else {
+            localStorage.setItem('canchapro_custom_employees', JSON.stringify(activeEmployees));
+        }
+    } catch (e) {
+        console.warn(e);
+    }
+
+    // 1. Mark Clock dropdown (Active employees only)
+    employeeSelect.innerHTML = '<option value="" disabled selected>-- Elige tu Nombre --</option>';
+    activeEmployees.forEach(name => {
+        const option = document.createElement('option');
+        option.value = name;
+        option.textContent = name;
+        employeeSelect.appendChild(option);
+    });
+    
+    // Admin option to register new worker
+    const optAdd = document.createElement('option');
+    optAdd.value = '_add_new_';
+    optAdd.textContent = '➕ Agregar nuevo trabajador...';
+    optAdd.style.fontWeight = '600';
+    optAdd.style.color = '#818cf8';
+    employeeSelect.appendChild(optAdd);
+
+    // Admin option to delete a worker
+    const optDel = document.createElement('option');
+    optDel.value = '_delete_';
+    optDel.textContent = '➖ Eliminar trabajador...';
+    optDel.style.fontWeight = '600';
+    optDel.style.color = '#ef4444';
+    employeeSelect.appendChild(optDel);
+
+    // 2. Filter Table dropdown (All employees who have records + active ones)
+    filterEmployee.innerHTML = '<option value="todos">Todos los trabajadores</option>';
+    employeeList.forEach(name => {
+        const option = document.createElement('option');
+        option.value = name;
+        option.textContent = name;
+        filterEmployee.appendChild(option);
+    });
+
+    // 3. Admin register employee dropdown (Active employees only)
+    adminEmployeeSelect.innerHTML = '';
+    activeEmployees.forEach(name => {
+        const option = document.createElement('option');
+        option.value = name;
+        option.textContent = name;
+        adminEmployeeSelect.appendChild(option);
+    });
+
+    // Restore selections if valid
+    if (employeeSelect.querySelector(`option[value="${currentSelVal}"]`)) {
+        employeeSelect.value = currentSelVal;
+    }
+    if (currentFilterVal === 'todos' || employeeList.includes(currentFilterVal)) {
+        filterEmployee.value = currentFilterVal;
+    }
+    if (activeEmployees.includes(currentAdminVal)) {
+        adminEmployeeSelect.value = currentAdminVal;
+    }
+}
+
+// Populate Month filter list dynamically
+function populateMonthFilter() {
+    const currentSelMonth = filterMonth.value;
+    const months = new Set();
+    
+    // Add current month always
+    const today = new Date();
+    const currentYearMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+    months.add(currentYearMonth);
+
+    // Add unique months from all attendance records
+    allAttendanceRecords.forEach(r => {
+        if (r.date) {
+            const parts = r.date.split('-'); // YYYY-MM-DD
+            if (parts.length === 3) {
+                months.add(`${parts[0]}-${parts[1]}`);
+            }
+        }
+    });
+
+    // Sort months descending
+    const sortedMonths = Array.from(months).sort().reverse();
+    
+    filterMonth.innerHTML = '';
+    sortedMonths.forEach(ym => {
+        const option = document.createElement('option');
+        option.value = ym;
+        
+        const [year, month] = ym.split('-');
+        const dateObj = new Date(year, month - 1, 1);
+        const monthName = dateObj.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+        option.textContent = monthName.charAt(0).toUpperCase() + monthName.slice(1);
+        
+        filterMonth.appendChild(option);
+    });
+
+    if (sortedMonths.includes(currentSelMonth)) {
+        filterMonth.value = currentSelMonth;
+    } else {
+        filterMonth.value = currentYearMonth;
+    }
+}
+
+// LocalStorage helpers for attendance
+function getLocalAttendance() {
+    const data = localStorage.getItem('canchapro_asistencias_local');
+    if (!data) return [];
+    try {
+        return JSON.parse(data);
+    } catch (e) {
+        return [];
+    }
+}
+
+function saveLocalAttendance(list) {
+    localStorage.setItem('canchapro_asistencias_local', JSON.stringify(list));
+}
+
+// Dynamic state box updates when employee is selected
+async function handleEmployeeChange() {
+    selectedEmployeeName = employeeSelect.value;
+    
+    // Add new worker logic (admin auth guarded)
+    if (selectedEmployeeName === '_add_new_') {
+        const pwd = prompt("Ingrese la contraseña de administrador para registrar un nuevo trabajador:");
+        if (pwd === 'Reservasupabase') {
+            const newName = prompt("Ingrese el nombre completo del nuevo trabajador:");
+            if (newName && newName.trim()) {
+                const cleanName = newName.trim();
+                
+                let customNames = [];
+                try {
+                    const savedCustom = localStorage.getItem('canchapro_custom_employees');
+                    if (savedCustom) {
+                        customNames = JSON.parse(savedCustom);
+                    }
+                } catch (e) {
+                    console.warn(e);
+                }
+                
+                if (!customNames.includes(cleanName)) {
+                    customNames.push(cleanName);
+                    localStorage.setItem('canchapro_custom_employees', JSON.stringify(customNames));
+                }
+                
+                // Reload data and dropdowns
+                await fetchAttendanceRecords();
+                
+                // Select newly registered worker
+                employeeSelect.value = cleanName;
+                selectedEmployeeName = cleanName;
+                
+                await addHistoryEntry('crear', `registró al nuevo trabajador: ${cleanName}`);
+            } else {
+                employeeSelect.value = '';
+                selectedEmployeeName = '';
+            }
+        } else {
+            if (pwd !== null) alert("Contraseña incorrecta o cancelado.");
+            employeeSelect.value = '';
+            selectedEmployeeName = '';
+        }
+    }
+
+    // Delete worker logic (admin auth guarded)
+    if (selectedEmployeeName === '_delete_') {
+        const pwd = prompt("Ingrese la contraseña de administrador para eliminar un trabajador:");
+        if (pwd === 'Reservasupabase') {
+            let customNames = [];
+            try {
+                const savedCustom = localStorage.getItem('canchapro_custom_employees');
+                if (savedCustom) {
+                    customNames = JSON.parse(savedCustom);
+                }
+            } catch (e) {
+                console.warn(e);
+            }
+
+            if (customNames.length === 0) {
+                alert("No hay trabajadores personalizados guardados para eliminar.");
+                employeeSelect.value = '';
+                selectedEmployeeName = '';
+                return;
+            }
+
+            const listStr = customNames.join(', ');
+            const nameToDelete = prompt(`Trabajadores eliminables:\n[ ${listStr} ]\n\nEscriba el nombre exacto del trabajador que desea eliminar:`);
+            
+            if (nameToDelete) {
+                const cleanName = nameToDelete.trim();
+                if (customNames.includes(cleanName)) {
+                    customNames = customNames.filter(name => name !== cleanName);
+                    localStorage.setItem('canchapro_custom_employees', JSON.stringify(customNames));
+                    
+                    // Reload data and dropdowns
+                    await fetchAttendanceRecords();
+                    
+                    employeeSelect.value = '';
+                    selectedEmployeeName = '';
+                    await addHistoryEntry('eliminar', `eliminó al trabajador: ${cleanName}`);
+                    alert(`El trabajador "${cleanName}" fue eliminado correctamente.`);
+                } else {
+                    alert(`El nombre "${cleanName}" no coincide con ningún trabajador de la lista.`);
+                    employeeSelect.value = '';
+                    selectedEmployeeName = '';
+                }
+            } else {
+                employeeSelect.value = '';
+                selectedEmployeeName = '';
+            }
+        } else {
+            if (pwd !== null) alert("Contraseña incorrecta o cancelado.");
+            employeeSelect.value = '';
+            selectedEmployeeName = '';
+        }
+    }
+
+    if (!selectedEmployeeName) {
+        employeeStatusBox.innerHTML = '<span class="status-title" style="color: var(--text-muted);">Selecciona un empleado para comenzar</span>';
+        btnToggleAttendance.disabled = true;
+        btnToggleAttendance.className = 'btn btn-primary';
+        btnToggleAttendance.innerHTML = '<i data-lucide="fingerprint"></i> Marcar Asistencia';
+        if (window.lucide) lucide.createIcons();
+        return;
+    }
+
+    // Find active shift or shift status today
+    const todayStr = getLocalDateString(new Date());
+    const employeeShiftsToday = allAttendanceRecords.filter(r => r.employee_name === selectedEmployeeName && r.date === todayStr && r.type === 'Trabajo');
+    
+    const activeShift = employeeShiftsToday.find(r => r.check_in && !r.check_out);
+    
+    btnToggleAttendance.disabled = false;
+    
+    if (activeShift) {
+        // Shift in progress -> Action: CHECK OUT
+        employeeStatusBox.className = 'employee-status-box active-shift';
+        employeeStatusBox.innerHTML = `
+            <span class="status-title" style="color: #fbbf24; display: flex; align-items: center; gap: 6px;">
+                <i data-lucide="play" class="animate-pulse" style="width: 16px; height: 16px;"></i> Turno Activo
+            </span>
+            <span class="status-desc">Ingresaste hoy a las <strong>${activeShift.check_in.substring(0, 5)}</strong>. Haz clic para registrar tu salida.</span>
+        `;
+        btnToggleAttendance.className = 'btn btn-danger';
+        btnToggleAttendance.innerHTML = '<i data-lucide="log-out"></i> Marcar Salida (Check-Out)';
+        btnToggleAttendance.style.background = '';
+        btnToggleAttendance.style.boxShadow = '';
+    } else if (employeeShiftsToday.length > 0 && employeeShiftsToday[employeeShiftsToday.length - 1].check_out) {
+        // Workday completed or shift completed -> Action: CHECK IN AGAIN
+        const lastShift = employeeShiftsToday[employeeShiftsToday.length - 1];
+        employeeStatusBox.className = 'employee-status-box completed-shift';
+        employeeStatusBox.innerHTML = `
+            <span class="status-title" style="color: #10b981; display: flex; align-items: center; gap: 6px;">
+                <i data-lucide="check-circle-2" style="width: 16px; height: 16px;"></i> Jornada Registrada
+            </span>
+            <span class="status-desc">Completaste un turno hoy (${lastShift.check_in.substring(0, 5)} - ${lastShift.check_out.substring(0, 5)}). Haz clic si deseas iniciar uno nuevo.</span>
+        `;
+        btnToggleAttendance.className = 'btn btn-primary';
+        btnToggleAttendance.innerHTML = '<i data-lucide="play"></i> Iniciar Nuevo Turno (Check-In)';
+        btnToggleAttendance.style.background = '#6366f1';
+        btnToggleAttendance.style.boxShadow = '0 4px 14px rgba(99, 102, 241, 0.25)';
+    } else {
+        // No attendance recorded today -> Action: CHECK IN
+        employeeStatusBox.className = 'employee-status-box';
+        employeeStatusBox.innerHTML = `
+            <span class="status-title" style="color: var(--text-primary);">Entrada Pendiente</span>
+            <span class="status-desc">Aún no has registrado tu ingreso de hoy. Haz clic para registrar entrada.</span>
+        `;
+        btnToggleAttendance.className = 'btn btn-primary';
+        btnToggleAttendance.innerHTML = '<i data-lucide="log-in"></i> Marcar Entrada (Check-In)';
+        btnToggleAttendance.style.background = '#6366f1';
+        btnToggleAttendance.style.boxShadow = '0 4px 14px rgba(99, 102, 241, 0.25)';
+    }
+
+    if (window.lucide) lucide.createIcons();
+
+    // Update worked progress metrics
+    updateEmployeeStats();
+}
+
+// Mark attendance button clicked (Entry/Exit)
+async function handleToggleAttendance() {
+    if (!selectedEmployeeName) return;
+
+    btnToggleAttendance.disabled = true;
+    
+    const now = new Date();
+    const todayStr = getLocalDateString(now);
+    const timeStr = getLocalTimeString(now);
+    
+    const employeeShiftsToday = allAttendanceRecords.filter(r => r.employee_name === selectedEmployeeName && r.date === todayStr && r.type === 'Trabajo');
+    const activeShift = employeeShiftsToday.find(r => r.check_in && !r.check_out);
+
+    try {
+        if (activeShift) {
+            // CHECK OUT OPERATION
+            const checkInTime = activeShift.check_in;
+            const diffHours = calculateDurationInHours(activeShift.date, checkInTime, todayStr, timeStr);
+            
+            const updatedShift = {
+                ...activeShift,
+                check_out: timeStr,
+                hours_credited: Number(diffHours.toFixed(2)),
+                notes: `Salida registrada automáticamente a las ${timeStr.substring(0, 5)}`
+            };
+
+            if (dbMode === 'supabase' && supabaseClient) {
+                const { error } = await supabaseClient
+                    .from('asistencias')
+                    .update({
+                        check_out: updatedShift.check_out,
+                        hours_credited: updatedShift.hours_credited,
+                        notes: updatedShift.notes
+                    })
+                    .eq('id', activeShift.id);
+                
+                if (error) throw error;
+            } else {
+                let localList = getLocalAttendance();
+                localList = localList.map(r => r.id === activeShift.id ? updatedShift : r);
+                saveLocalAttendance(localList);
+            }
+
+            const formattedHoursStr = formatHoursText(diffHours);
+            await addHistoryEntry('editar', `marcó SALIDA de la oficina (${formattedHoursStr})`);
+        } else {
+            // CHECK IN OPERATION
+            const newShift = {
+                id: generateUUID(),
+                employee_name: selectedEmployeeName,
+                date: todayStr,
+                check_in: timeStr,
+                check_out: null,
+                type: 'Trabajo',
+                hours_credited: 0,
+                notes: `Entrada registrada automáticamente a las ${timeStr.substring(0, 5)}`
+            };
+
+            if (dbMode === 'supabase' && supabaseClient) {
+                const { error } = await supabaseClient
+                    .from('asistencias')
+                    .insert([newShift]);
+                
+                if (error) throw error;
+            } else {
+                const localList = getLocalAttendance();
+                localList.unshift(newShift);
+                saveLocalAttendance(localList);
+            }
+
+            await addHistoryEntry('crear', `marcó ENTRADA en la oficina a las ${timeStr.substring(0, 5)}`);
+        }
+
+        // Fetch latest
+        await fetchAttendanceRecords();
+        
+        // Refresh display
+        handleEmployeeChange();
+
+    } catch (err) {
+        console.error("Error registering attendance:", err);
+        alert("Ocurrió un error al guardar en la base de datos: " + err.message);
+        btnToggleAttendance.disabled = false;
+    }
+}
+
+// Calculate hours stats for selected employee (Weekly progress + Monthly stats)
+function updateEmployeeStats() {
+    const selectedName = selectedEmployeeName || employeeSelect.value;
+    progressEmployeeTitle.textContent = selectedName ? `Progreso de ${selectedName}` : 'Progreso de Horas';
+
+    if (!selectedName) {
+        // Reset metrics UI
+        progressPercentageText.textContent = '0%';
+        goalProgressBar.style.width = '0%';
+        progressCurrentText.textContent = '0.0 h acumuladas';
+        metricWorkedHours.textContent = '0.0';
+        metricRemainingHours.textContent = '48.0';
+        metricOvertimeHours.textContent = '0.0';
+
+        // Reset monthly detailed metrics
+        if (statsWorkedHours) statsWorkedHours.textContent = '0.0 h';
+        if (statsJustifiedHours) statsJustifiedHours.textContent = '0.0 h';
+        if (statsTotalMonthHours) statsTotalMonthHours.textContent = '0.0 h';
+        if (statsDaysWorked) statsDaysWorked.textContent = '0 días';
+        if (statsDaysJustified) statsDaysJustified.textContent = '0 días';
+        if (statsMonthlyOvertime) statsMonthlyOvertime.textContent = '0.0 h';
+        return;
+    }
+
+    // --- 1. WEEKLY PROGRESS METRICS ---
+    const now = new Date();
+    const { monday, sunday } = getMondayAndSundayOfDate(now);
+    const mondayStr = getLocalDateString(monday);
+    const sundayStr = getLocalDateString(sunday);
+
+    const weekRecords = allAttendanceRecords.filter(r => 
+        r.employee_name === selectedName && 
+        r.date >= mondayStr && 
+        r.date <= sundayStr
+    );
+
+    let totalWorked = 0;
+    weekRecords.forEach(r => {
+        totalWorked += Number(r.hours_credited || 0);
+    });
+
+    const targetGoal = 48.0;
+    const remaining = Math.max(0, targetGoal - totalWorked);
+    const overtime = Math.max(0, totalWorked - targetGoal);
+    const percent = Math.min(100, (totalWorked / targetGoal) * 100);
+
+    progressPercentageText.textContent = `${percent.toFixed(0)}%`;
+    goalProgressBar.style.width = `${percent}%`;
+    progressCurrentText.textContent = `${totalWorked.toFixed(1)} h acumuladas esta semana`;
+    metricWorkedHours.textContent = totalWorked.toFixed(1);
+    metricRemainingHours.textContent = remaining.toFixed(1);
+    metricOvertimeHours.textContent = overtime.toFixed(1);
+
+    if (percent < 30) {
+        goalProgressBar.style.background = '#ef4444';
+    } else if (percent < 80) {
+        goalProgressBar.style.background = '#fbbf24';
+    } else {
+        goalProgressBar.style.background = '#10b981';
+    }
+
+    // --- 2. MONTHLY ACCUMULATED STATS ---
+    const selectedMonth = filterMonth.value; // e.g. "YYYY-MM"
+    const monthRecords = allAttendanceRecords.filter(r => 
+        r.employee_name === selectedName && 
+        r.date.startsWith(selectedMonth)
+    );
+
+    let workedHours = 0;
+    let justifiedHours = 0;
+    let daysWorked = 0;
+    let daysJustified = 0;
+
+    monthRecords.forEach(r => {
+        const hours = Number(r.hours_credited || 0);
+        if (r.type === 'Trabajo') {
+            workedHours += hours;
+            if (r.check_in) {
+                daysWorked++;
+            }
+        } else if (r.type === 'Feriado' || r.type === 'Permiso') {
+            justifiedHours += hours;
+            daysJustified++;
+        }
+    });
+
+    const totalMonthHours = workedHours + justifiedHours;
+
+    // Calculate Monthly Overtime (Horas Extra del Mes)
+    // We group by weeks (Monday-Sunday) whose Sunday date falls within the selected month.
+    let monthlyOvertime = 0;
+    const employeeAllRecords = allAttendanceRecords.filter(r => r.employee_name === selectedName);
+    const uniqueMondays = new Set();
+    
+    employeeAllRecords.forEach(r => {
+        if (!r.date) return;
+        const parts = r.date.split('-');
+        if (parts.length !== 3) return;
+        
+        const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+        const { monday, sunday } = getMondayAndSundayOfDate(d);
+        const sundayStr = getLocalDateString(sunday);
+        
+        if (sundayStr.startsWith(selectedMonth)) {
+            uniqueMondays.add(getLocalDateString(monday));
+        }
+    });
+    
+    uniqueMondays.forEach(mondayStr => {
+        const mondayParts = mondayStr.split('-');
+        const monDate = new Date(Number(mondayParts[0]), Number(mondayParts[1]) - 1, Number(mondayParts[2]));
+        const sunDate = new Date(monDate.getTime());
+        sunDate.setDate(monDate.getDate() + 6);
+        
+        const sunStr = getLocalDateString(sunDate);
+        
+        const weekRecords = allAttendanceRecords.filter(r => 
+            r.employee_name === selectedName && 
+            r.date >= mondayStr && 
+            r.date <= sunStr
+        );
+        
+        let weekTotal = 0;
+        weekRecords.forEach(wr => {
+            weekTotal += Number(wr.hours_credited || 0);
+        });
+        
+        if (weekTotal > 48) {
+            monthlyOvertime += (weekTotal - 48);
+        }
+    });
+
+    if (statsWorkedHours) statsWorkedHours.textContent = `${workedHours.toFixed(1)} h`;
+    if (statsJustifiedHours) statsJustifiedHours.textContent = `${justifiedHours.toFixed(1)} h`;
+    if (statsTotalMonthHours) statsTotalMonthHours.textContent = `${totalMonthHours.toFixed(1)} h`;
+    if (statsDaysWorked) statsDaysWorked.textContent = `${daysWorked} ${daysWorked === 1 ? 'día' : 'días'}`;
+    if (statsDaysJustified) statsDaysJustified.textContent = `${daysJustified} ${daysJustified === 1 ? 'día' : 'días'}`;
+    if (statsMonthlyOvertime) statsMonthlyOvertime.textContent = `${monthlyOvertime.toFixed(1)} h`;
+}
+
+// Render Attendance list Table
+function renderAttendanceTable() {
+    if (!attendanceTableBody) return;
+
+    const filterName = filterEmployee.value;
+    const filterSelectedMonth = filterMonth.value; // format: "YYYY-MM"
+
+    let filtered = allAttendanceRecords;
+
+    // 1. Filter by employee name (supporting general holidays mapped to 'Todos' or specific employee)
+    if (filterName !== 'todos') {
+        filtered = filtered.filter(r => r.employee_name === filterName || r.employee_name === 'Todos');
+    }
+
+    // 2. Filter by selected Month
+    if (filterSelectedMonth) {
+        filtered = filtered.filter(r => {
+            if (!r.date) return false;
+            return r.date.startsWith(filterSelectedMonth);
+        });
+    }
+
+    if (filtered.length === 0) {
+        attendanceTableBody.innerHTML = `
+            <tr>
+                <td colspan="8" class="empty-state">
+                    <i data-lucide="calendar-x"></i>
+                    <p>No se encontraron registros de asistencias con los filtros aplicados.</p>
+                </td>
+            </tr>
+        `;
+        if (window.lucide) lucide.createIcons();
+        return;
+    }
+
+    attendanceTableBody.innerHTML = filtered.map(r => {
+        const dateFormatted = formatDateDDMMYYYY(r.date);
+        const inFormatted = r.check_in ? r.check_in.substring(0, 5) : '--:--';
+        const outFormatted = r.check_out ? r.check_out.substring(0, 5) : '--:--';
+        
+        let typeBadgeClass = 'status-badge';
+        if (r.type === 'Trabajo') typeBadgeClass += ' presente';
+        else if (r.type === 'Feriado') typeBadgeClass += ' feriado';
+        else if (r.type === 'Permiso') typeBadgeClass += ' permiso';
+        
+        const typeLabel = r.type === 'Trabajo' ? 'Trabajo Presencial' : r.type;
+
+        return `
+            <tr>
+                <td><strong>${escapeHTML(r.employee_name)}</strong></td>
+                <td>${dateFormatted}</td>
+                <td>${inFormatted}</td>
+                <td>${outFormatted}</td>
+                <td style="font-weight: 600;">${Number(r.hours_credited || 0).toFixed(1)} h</td>
+                <td><span class="${typeBadgeClass}">${typeLabel}</span></td>
+                <td style="font-size: 12px; color: var(--text-secondary); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHTML(r.notes || '')}">
+                    ${escapeHTML(r.notes || '')}
+                </td>
+                <td style="text-align: center;">
+                    <button class="btn-action-icon delete" onclick="handleDeleteRecord('${r.id}')" title="Eliminar Registro">
+                        <i data-lucide="trash-2" style="width: 16px; height: 16px;"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+
+    if (window.lucide) lucide.createIcons();
+}
+
+// Admin Action trigger (opens unlock dialog)
+function handleAdminActionsClick() {
+    // If already authenticated during session, open directly
+    const sessionAuth = sessionStorage.getItem('canchapro_admin_authenticated');
+    if (sessionAuth === 'true') {
+        openAdminRegisterModal();
+    } else {
+        openModal(modalAdminAuth);
+        adminPasswordInput.value = '';
+        adminAuthError.style.display = 'none';
+        setTimeout(() => adminPasswordInput.focus(), 100);
+    }
+}
+
+// Unlock admin form submission
+function handleAdminAuthSubmit(e) {
+    e.preventDefault();
+    const pwd = adminPasswordInput.value;
+
+    if (pwd === 'Reservasupabase') {
+        sessionStorage.setItem('canchapro_admin_authenticated', 'true');
+        closeModal(modalAdminAuth);
+        openAdminRegisterModal();
+    } else {
+        adminAuthError.textContent = '❌ Contraseña incorrecta. Inténtelo nuevamente.';
+        adminAuthError.style.display = 'block';
+        adminPasswordInput.focus();
+    }
+}
+
+function openAdminRegisterModal() {
+    formAdminRegister.reset();
+    adminRegisterDate.value = getLocalDateString(new Date());
+    adminRegisterHours.value = "8.0";
+    adminRegisterError.style.display = 'none';
+    
+    // Handle conditional fields
+    toggleAdminEmployeeSelect();
+    
+    openModal(modalAdminRegister);
+}
+
+function toggleAdminEmployeeSelect() {
+    if (adminRegisterType.value === 'Feriado') {
+        adminEmployeeSelectGroup.style.display = 'none';
+        adminEmployeeSelect.required = false;
+    } else {
+        adminEmployeeSelectGroup.style.display = 'block';
+        adminEmployeeSelect.required = true;
+    }
+}
+
+// Handle administrative saving of Feriados / Permisos
+async function handleAdminRegisterSubmit(e) {
+    e.preventDefault();
+    adminRegisterError.style.display = 'none';
+
+    const type = adminRegisterType.value;
+    const date = adminRegisterDate.value;
+    const hours = Number(adminRegisterHours.value);
+    const notes = adminRegisterNotes.value.trim();
+    
+    if (!date || isNaN(hours) || hours <= 0) {
+        adminRegisterError.textContent = '⚠️ Complete todos los campos con valores válidos.';
+        adminRegisterError.style.display = 'block';
+        return;
+    }
+
+    try {
+        const recordsToInsert = [];
+        
+        if (type === 'Feriado') {
+            // Option 1: Insert record for "Todos"
+            // Option 2: Insert individual record for every active employee so it displays in their metrics
+            // We do Option 2 to keep metrics functional!
+            employeeList.forEach(empName => {
+                recordsToInsert.push({
+                    id: generateUUID(),
+                    employee_name: empName,
+                    date: date,
+                    check_in: null,
+                    check_out: null,
+                    type: 'Feriado',
+                    hours_credited: hours,
+                    notes: notes || 'Feriado Nacional'
+                });
+            });
+        } else {
+            const employeeName = adminEmployeeSelect.value;
+            if (!employeeName) {
+                adminRegisterError.textContent = '⚠️ Seleccione un trabajador.';
+                adminRegisterError.style.display = 'block';
+                return;
+            }
+            recordsToInsert.push({
+                id: generateUUID(),
+                employee_name: employeeName,
+                date: date,
+                check_in: null,
+                check_out: null,
+                type: 'Permiso',
+                hours_credited: hours,
+                notes: notes || 'Permiso Especial'
+            });
+        }
+
+        // Save records to database
+        if (dbMode === 'supabase' && supabaseClient) {
+            const { error } = await supabaseClient
+                .from('asistencias')
+                .insert(recordsToInsert);
+            
+            if (error) throw error;
+        } else {
+            const localList = getLocalAttendance();
+            recordsToInsert.forEach(rec => {
+                localList.unshift(rec);
+            });
+            saveLocalAttendance(localList);
+        }
+
+        // Add history log entry
+        const detailsLog = type === 'Feriado' 
+            ? `registró feriado nacional del ${formatDateDDMMYYYY(date)}: ${notes || 'Feriado'}`
+            : `registró permiso para ${adminEmployeeSelect.value} del ${formatDateDDMMYYYY(date)}: ${notes || 'Permiso'}`;
+        
+        await addHistoryEntry('crear', detailsLog);
+
+        closeModal(modalAdminRegister);
+        await fetchAttendanceRecords();
+
+    } catch (err) {
+        console.error("Error registering admin action:", err);
+        adminRegisterError.textContent = '❌ Error al guardar en base de datos: ' + err.message;
+        adminRegisterError.style.display = 'block';
+    }
+}
+
+// Delete attendance record
+async function handleDeleteRecord(id) {
+    // Requires admin authentication
+    const sessionAuth = sessionStorage.getItem('canchapro_admin_authenticated');
+    
+    const executeDelete = async () => {
+        if (!confirm("¿Estás seguro de que deseas eliminar este registro de asistencia?")) {
+            return;
+        }
+
+        const targetRecord = allAttendanceRecords.find(r => r.id === id);
+        if (!targetRecord) return;
+
+        try {
+            if (dbMode === 'supabase' && supabaseClient) {
+                const { error } = await supabaseClient
+                    .from('asistencias')
+                    .delete()
+                    .eq('id', id);
+                
+                if (error) throw error;
+            } else {
+                let localList = getLocalAttendance();
+                localList = localList.filter(r => r.id !== id);
+                saveLocalAttendance(localList);
+            }
+
+            await addHistoryEntry('eliminar', `eliminó registro de asistencia de ${targetRecord.employee_name} del ${formatDateDDMMYYYY(targetRecord.date)}`);
+            await fetchAttendanceRecords();
+
+        } catch (err) {
+            console.error("Error deleting record:", err);
+            alert("Error al eliminar el registro: " + err.message);
+        }
+    };
+
+    if (sessionAuth === 'true') {
+        await executeDelete();
+    } else {
+        // Authenticate first
+        openModal(modalAdminAuth);
+        adminPasswordInput.value = '';
+        adminAuthError.style.display = 'none';
+        setTimeout(() => adminPasswordInput.focus(), 100);
+        
+        // Monkey-patch submission temporary callback
+        const originalHandler = formAdminAuth.onsubmit;
+        formAdminAuth.addEventListener('submit', async function tempHandler(e) {
+            e.preventDefault();
+            const pwd = adminPasswordInput.value;
+            if (pwd === 'Reservasupabase') {
+                sessionStorage.setItem('canchapro_admin_authenticated', 'true');
+                closeModal(modalAdminAuth);
+                formAdminAuth.removeEventListener('submit', tempHandler);
+                await executeDelete();
+            } else {
+                adminAuthError.textContent = '❌ Contraseña incorrecta. Inténtelo nuevamente.';
+                adminAuthError.style.display = 'block';
+            }
+        });
+    }
+}
+
+// Shared helper to insert logs into the 'historial' table
+async function addHistoryEntry(action, details) {
+    const userName = localStorage.getItem('canchapro_user_name') || 'Invitado';
+    const entry = {
+        action,
+        user_name: userName,
+        details: `[Asistencia] ${details}`,
+        created_at: new Date().toISOString()
+    };
+
+    if (dbMode === 'supabase' && supabaseClient) {
+        try {
+            await supabaseClient.from('historial').insert([entry]);
+        } catch (e) {
+            console.error("Failed to save history entry in Supabase:", e);
+            saveHistoryEntryLocal(entry);
+        }
+    } else {
+        saveHistoryEntryLocal(entry);
+    }
+}
+
+function saveHistoryEntryLocal(entry) {
+    try {
+        const historyData = localStorage.getItem('canchapro_historial');
+        let history = [];
+        if (historyData) {
+            history = JSON.parse(historyData);
+        }
+        history.unshift(entry);
+        if (history.length > 50) history = history.slice(0, 50);
+        localStorage.setItem('canchapro_historial', JSON.stringify(history));
+    } catch (e) {
+        console.warn("Could not save history entry locally:", e);
+    }
+}
+
+// Setup Event Listeners
+function setupEventListeners() {
+    // Sidebar Mobile Drawer
+    if (btnToggleSidebar) {
+        btnToggleSidebar.addEventListener('click', () => {
+            sidebar.classList.add('active');
+            sidebarBackdrop.classList.add('active');
+        });
+    }
+    if (btnCloseSidebar) {
+        btnCloseSidebar.addEventListener('click', closeSidebarDrawer);
+    }
+    if (sidebarBackdrop) {
+        sidebarBackdrop.addEventListener('click', closeSidebarDrawer);
+    }
+
+    // Employee selection changes
+    employeeSelect.addEventListener('change', handleEmployeeChange);
+    
+    // Trigger marker entry/exit button
+    btnToggleAttendance.addEventListener('click', handleToggleAttendance);
+
+    // Filters
+    filterEmployee.addEventListener('change', () => {
+        renderAttendanceTable();
+        updateEmployeeStats();
+    });
+    filterMonth.addEventListener('change', () => {
+        renderAttendanceTable();
+        updateEmployeeStats();
+    });
+
+    // Admin dialogs
+    btnAdminActions.addEventListener('click', handleAdminActionsClick);
+    btnCloseAdminAuth.addEventListener('click', () => closeModal(modalAdminAuth));
+    formAdminAuth.addEventListener('submit', handleAdminAuthSubmit);
+
+    btnCloseAdminRegister.addEventListener('click', () => closeModal(modalAdminRegister));
+    formAdminRegister.addEventListener('submit', handleAdminRegisterSubmit);
+    adminRegisterType.addEventListener('change', toggleAdminEmployeeSelect);
+}
+
+function closeSidebarDrawer() {
+    sidebar.classList.remove('active');
+    sidebarBackdrop.classList.remove('active');
+}
+
+// Modal Helpers
+function openModal(modalEl) {
+    if (!modalEl) return;
+    modalEl.classList.add('active');
+    document.body.classList.add('no-scroll');
+}
+
+function closeModal(modalEl) {
+    if (!modalEl) return;
+    modalEl.classList.remove('active');
+    document.body.classList.remove('no-scroll');
+}
+
+// Date & Time Utility helpers
+function getLocalDateString(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+}
+
+function getLocalTimeString(date) {
+    const h = String(date.getHours()).padStart(2, '0');
+    const m = String(date.getMinutes()).padStart(2, '0');
+    const s = String(date.getSeconds()).padStart(2, '0');
+    return `${h}:${m}:${s}`;
+}
+
+function getMondayAndSundayOfDate(d) {
+    const date = new Date(d.getTime());
+    const day = date.getDay();
+    const diff = date.getDate() - day + (day === 0 ? -6 : 1); // Monday
+    const monday = new Date(date.setDate(diff));
+    monday.setHours(0, 0, 0, 0);
+
+    const sunday = new Date(monday.getTime());
+    sunday.setDate(monday.getDate() + 6);
+    sunday.setHours(23, 59, 59, 999);
+
+    return { monday, sunday };
+}
+
+function calculateDurationInHours(startDateStr, startTimeStr, endDateStr, endTimeStr) {
+    const startObj = new Date(`${startDateStr}T${startTimeStr}`);
+    const endObj = new Date(`${endDateStr}T${endTimeStr}`);
+    
+    // Difference in milliseconds
+    const diffMs = endObj - startObj;
+    if (diffMs < 0) return 0;
+    
+    // Convert to hours
+    return diffMs / (1000 * 60 * 60);
+}
+
+function formatHoursText(hoursDecimal) {
+    const hours = Math.floor(hoursDecimal);
+    const minutes = Math.round((hoursDecimal - hours) * 60);
+    
+    let text = '';
+    if (hours > 0) text += `${hours} h `;
+    if (minutes > 0 || hours === 0) text += `${minutes} min`;
+    return text.trim();
+}
+
+function formatDateDDMMYYYY(dateStr) {
+    if (!dateStr || !dateStr.includes('-')) return '';
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+        return `${parts[2]}/${parts[1]}/${parts[2].length === 4 ? parts[0] : parts[0]}`;
+    }
+    return dateStr;
+}
+
+function generateUUID() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+    });
+}
+
+function escapeHTML(str) {
+    if (!str) return '';
+    return str.replace(/[&<>'"]/g,
+        tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+    );
+}
+
+// Expose handleDeleteRecord globally for inline onclick
+window.handleDeleteRecord = handleDeleteRecord;

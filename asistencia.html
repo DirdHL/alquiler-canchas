@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nuevo Horizonte - Control de Asistencias</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Supabase JS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="asistencia.css">
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Sidebar Backdrop for Mobile -->
+        <div class="sidebar-backdrop-overlay" id="sidebarBackdrop"></div>
+
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="logo-area">
+                <div class="logo-title">
+                    <i data-lucide="clock" class="logo-icon" style="color: #6366f1;"></i>
+                    <h2>Nuevo<span>Horizonte</span><span class="logo-subtitle" style="background: rgba(99, 102, 241, 0.12); border-color: rgba(99, 102, 241, 0.3); color: #818cf8;">Personal</span></h2>
+                </div>
+                <button class="btn-close-sidebar" id="btnCloseSidebar">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+
+            <!-- Supabase Status Indicators -->
+            <div class="status-indicator-card">
+                <div class="status-header">
+                    <span class="status-dot disconnected" id="statusDot"></span>
+                    <span class="status-text" id="statusText">Modo Sin Conexión (Local)</span>
+                </div>
+                <p class="status-desc" id="statusDesc">Cargando conexión con la base de datos...</p>
+            </div>
+
+            <!-- Navigation Menu -->
+            <nav class="nav-filters">
+                <h3>Sedes y Alquileres</h3>
+                <a href="index.html" class="btn btn-secondary btn-sm btn-sidebar-action"
+                    style="background: rgba(16, 185, 129, 0.05); border-color: rgba(16, 185, 129, 0.15); color: #10b981; text-decoration: none; display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                    <i data-lucide="calendar" style="width: 16px; height: 16px;"></i> Sport Victoria (Los Pinos)
+                </a>
+                <a href="polideportivo.html" class="btn btn-secondary btn-sm btn-sidebar-action"
+                    style="background: rgba(16, 185, 129, 0.05); border-color: rgba(16, 185, 129, 0.15); color: #10b981; text-decoration: none; display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                    <i data-lucide="building" style="width: 16px; height: 16px;"></i> Polideportivo Huaral-Huando
+                </a>
+
+                <h3>Personal</h3>
+                <a href="asistencia.html" class="btn btn-secondary btn-sm btn-sidebar-action"
+                    style="background: rgba(99, 102, 241, 0.15); border-color: rgba(99, 102, 241, 0.3); color: #818cf8; text-decoration: none; display: flex; align-items: center; gap: 8px; font-weight: 600;">
+                    <i data-lucide="clock" style="width: 16px; height: 16px;"></i> Control de Asistencias
+                </a>
+            </nav>
+
+            <!-- Quick Info Card -->
+            <div class="stats-card">
+                <h3>Fórmula de Asistencia</h3>
+                <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.4; margin-bottom: 6px;">
+                    Meta semanal: <strong>48 horas</strong> por trabajador.
+                </p>
+                <p style="font-size: 11px; color: var(--text-muted); line-height: 1.3;">
+                    * Los feriados nacionales y permisos especiales suman 8 horas justificadas de manera automática.
+                </p>
+            </div>
+
+            <!-- User Profile Card -->
+            <div class="user-profile-card">
+                <div class="user-info">
+                    <div class="user-avatar">
+                        <i data-lucide="user"></i>
+                    </div>
+                    <div class="user-details">
+                        <span class="user-label">Operador Activo</span>
+                        <span class="user-name" id="displayUserName">Invitado</span>
+                    </div>
+                </div>
+                <button class="btn-edit-user" id="btnEditUser" title="Cambiar Nombre">
+                    <i data-lucide="pencil"></i>
+                </button>
+            </div>
+
+            <footer class="sidebar-footer">
+                <p>Nuevo Horizonte &copy; 2026</p>
+                <p class="footer-note">Desarrollado por Rogger Dird Huaicama Lacerna</p>
+            </footer>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="app-header">
+                <div class="header-left">
+                    <button class="btn btn-secondary btn-menu" id="btnToggleSidebar">
+                        <i data-lucide="menu"></i>
+                    </button>
+                    <div class="header-title">
+                        <h1>Control de Asistencias de Oficina</h1>
+                        <p>Registro de horas trabajadas y cumplimiento del límite semanal del personal.</p>
+                    </div>
+                </div>
+                <!-- Admin Actions Button -->
+                <button class="btn btn-secondary" id="btnAdminActions" style="border-color: rgba(99, 102, 241, 0.3); color: #818cf8;">
+                    <i data-lucide="shield-check"></i> <span class="btn-text">Registrar Feriado / Permiso</span>
+                </button>
+            </header>
+
+            <!-- Dashboard Grid -->
+            <div class="attendance-layout">
+                <!-- Left Column: Clock and Selection -->
+                <div style="display: flex; flex-direction: column; gap: 20px;">
+                    <!-- Clock Card -->
+                    <div class="clock-card">
+                        <h3 style="margin: 0; color: var(--text-secondary); font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Hora de la Oficina</h3>
+                        <div class="live-time-display">
+                            <div class="time" id="liveClock">00:00:00</div>
+                            <div class="date" id="liveDate">Cargando fecha...</div>
+                        </div>
+
+                        <div class="form-group" style="text-align: left;">
+                            <label for="employeeSelect" style="margin-bottom: 6px; display: block; font-weight: 500; font-size: 13px;">Selecciona tu nombre *</label>
+                            <div class="input-wrapper">
+                                <i data-lucide="user"></i>
+                                <select id="employeeSelect" required>
+                                    <option value="" disabled selected>-- Elige tu Nombre --</option>
+                                    <!-- Populated dynamically -->
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Dynamic Status Message -->
+                        <div class="employee-status-box" id="employeeStatusBox">
+                            <span class="status-title" style="color: var(--text-muted);">Selecciona un empleado para comenzar</span>
+                        </div>
+
+                        <!-- Big action button -->
+                        <button class="btn btn-primary" id="btnToggleAttendance" style="width: 100%; height: 50px; font-size: 16px; background: #6366f1; box-shadow: 0 4px 14px rgba(99, 102, 241, 0.25);" disabled>
+                            <i data-lucide="fingerprint"></i> Marcar Asistencia
+                        </button>
+                    </div>
+
+                    <!-- Progress Card -->
+                    <div class="progress-card">
+                        <div class="goal-header">
+                            <h3 id="progressEmployeeTitle">Progreso de Horas</h3>
+                            <span class="goal-pct" id="progressPercentageText" style="font-weight: 700; color: #10b981;">0%</span>
+                        </div>
+                        <div class="goal-progress-container">
+                            <div class="goal-progress-bar" id="goalProgressBar"></div>
+                        </div>
+                        <div class="goal-progress-text">
+                            <span id="progressCurrentText">0.0 h acumuladas</span>
+                            <span>Meta: 48 h / sem</span>
+                        </div>
+
+                        <div class="metrics-row">
+                            <div class="metric-box">
+                                <div class="val" id="metricWorkedHours">0.0</div>
+                                <div class="lbl">Horas sem.</div>
+                            </div>
+                            <div class="metric-box">
+                                <div class="val" id="metricRemainingHours" style="color: #fbbf24;">48.0</div>
+                                <div class="lbl">Restantes</div>
+                            </div>
+                            <div class="metric-box">
+                                <div class="val" id="metricOvertimeHours" style="color: #60a5fa;">0.0</div>
+                                <div class="lbl">Horas extra</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Detailed Stats Card -->
+                    <div class="progress-card" style="margin-top: 20px;">
+                        <h3 style="margin-bottom: 16px; display: flex; align-items: center; gap: 8px; font-size: 15px; color: var(--text-primary);">
+                            <i data-lucide="bar-chart-3" style="color: #60a5fa; width: 18px; height: 18px;"></i>
+                            Resumen Mensual
+                        </h3>
+                        
+                        <div style="display: flex; flex-direction: column; gap: 12px; font-size: 13px;">
+                            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+                                <span style="color: var(--text-secondary);">Horas Presenciales:</span>
+                                <strong id="statsWorkedHours">0.0 h</strong>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+                                <span style="color: var(--text-secondary);">Horas Justificadas:</span>
+                                <strong id="statsJustifiedHours" style="color: #c084fc;">0.0 h</strong>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+                                <span style="color: var(--text-secondary);">Total Horas Acumuladas:</span>
+                                <strong id="statsTotalMonthHours" style="color: #34d399;">0.0 h</strong>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+                                <span style="color: var(--text-secondary);">Días en Oficina:</span>
+                                <strong id="statsDaysWorked">0 días</strong>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+                                <span style="color: var(--text-secondary);">Días de Feriado / Permiso:</span>
+                                <strong id="statsDaysJustified">0 días</strong>
+                            </div>
+                            <div style="display: flex; justify-content: space-between;">
+                                <span style="color: var(--text-secondary);">Horas Extra del Mes:</span>
+                                <strong id="statsMonthlyOvertime" style="color: #fbbf24;">0.0 h</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Filters and Table -->
+                <div class="calendar-card" style="min-height: auto;">
+                    <div class="activity-header" style="margin-bottom: 16px;">
+                        <h3 style="display: flex; align-items: center; gap: 8px;">
+                            <i data-lucide="list-checks" style="color: #818cf8;"></i>
+                            Historial de Marcaciones
+                        </h3>
+                    </div>
+
+                    <!-- Filters -->
+                    <div class="filter-bar">
+                        <div class="filter-input-group">
+                            <label for="filterEmployee">Colaborador</label>
+                            <select id="filterEmployee">
+                                <option value="todos">Todos los trabajadores</option>
+                            </select>
+                        </div>
+
+                        <div class="filter-input-group">
+                            <label for="filterMonth">Mes de Registro</label>
+                            <select id="filterMonth">
+                                <!-- Populated dynamically (current month and previous months) -->
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Table container -->
+                    <div class="attendance-table-container">
+                        <table class="attendance-table">
+                            <thead>
+                                <tr>
+                                    <th>Colaborador</th>
+                                    <th>Fecha</th>
+                                    <th>Entrada</th>
+                                    <th>Salida</th>
+                                    <th>Horas Abonadas</th>
+                                    <th>Tipo</th>
+                                    <th>Notas</th>
+                                    <th style="width: 80px; text-align: center;">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="attendanceTableBody">
+                                <!-- Populated dynamically -->
+                                <tr>
+                                    <td colspan="8" class="empty-state">
+                                        <i data-lucide="loader-2" class="animate-spin"></i> Cargando registros...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal: User Onboarding (Identificación de Operador) -->
+    <div class="modal-backdrop" id="modalUserOnboarding">
+        <div class="modal-card modal-sm" style="max-width: 380px;">
+            <div class="modal-header">
+                <h3>Identificación de Operador</h3>
+            </div>
+            <div class="modal-body">
+                <p class="settings-intro" style="margin-bottom: 16px;">Ingresa tu nombre o alias para registrar el historial de cambios en el sistema.</p>
+                <form id="formUserOnboarding">
+                    <div class="form-group">
+                        <label for="onboardingName">Nombre / Alias *</label>
+                        <div class="input-wrapper">
+                            <i data-lucide="user"></i>
+                            <input type="text" id="onboardingName" required placeholder="Ej. Juan Pérez o Admin 1" maxlength="25">
+                        </div>
+                    </div>
+                    <div class="modal-actions" style="margin-top: 16px;">
+                        <button type="submit" class="btn btn-primary" style="width: 100%; background: #6366f1;">Continuar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Admin Authentication -->
+    <div class="modal-backdrop" id="modalAdminAuth">
+        <div class="modal-card modal-sm" style="max-width: 380px;">
+            <div class="modal-header">
+                <h3 style="display: flex; align-items: center; gap: 8px; margin: 0;">
+                    <i data-lucide="lock" style="color: var(--danger);"></i> Acceso de Administrador
+                </h3>
+                <button class="btn-close" id="btnCloseAdminAuth"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <p class="settings-intro" style="margin-bottom: 16px; font-size: 13px; color: var(--text-secondary);">Ingrese la contraseña de administrador para proceder.</p>
+                <form id="formAdminAuth">
+                    <div class="form-group">
+                        <label for="adminPassword">Contraseña *</label>
+                        <div class="input-wrapper">
+                            <i data-lucide="key-round"></i>
+                            <input type="password" id="adminPassword" required placeholder="••••••••">
+                        </div>
+                    </div>
+                    <div class="form-error" id="adminAuthError" style="display: none; color: var(--danger); margin-bottom: 12px; font-size: 13px;"></div>
+                    <div class="modal-actions" style="margin-top: 16px;">
+                        <button type="submit" class="btn btn-primary" style="width: 100%; background: #6366f1;">Desbloquear</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Register Holiday / Permit -->
+    <div class="modal-backdrop" id="modalAdminRegister">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 id="adminModalTitle">Registrar Feriado / Permiso Especial</h3>
+                <button class="btn-close" id="btnCloseAdminRegister"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="formAdminRegister">
+                    <div class="form-group">
+                        <label for="adminRegisterType">Tipo de Registro *</label>
+                        <div class="input-wrapper">
+                            <i data-lucide="award"></i>
+                            <select id="adminRegisterType" required>
+                                <option value="Feriado">Feriado Nacional (Aplica a todos los trabajadores)</option>
+                                <option value="Permiso">Permiso Especial (Aplica a un trabajador específico)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group" id="adminEmployeeSelectGroup">
+                        <label for="adminEmployeeSelect">Trabajador *</label>
+                        <div class="input-wrapper">
+                            <i data-lucide="user"></i>
+                            <select id="adminEmployeeSelect">
+                                <!-- Dynamic options -->
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="adminRegisterDate">Fecha *</label>
+                        <div class="input-wrapper">
+                            <i data-lucide="calendar"></i>
+                            <input type="date" id="adminRegisterDate" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="adminRegisterHours">Horas Justificadas Abonadas *</label>
+                        <div class="input-wrapper">
+                            <i data-lucide="clock"></i>
+                            <input type="number" id="adminRegisterHours" value="8.0" min="0" max="24" step="0.5" required>
+                        </div>
+                        <small style="color: var(--text-muted); margin-top: 4px; display: block;">
+                            Por defecto son 8 horas (un turno estándar).
+                        </small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="adminRegisterNotes">Observaciones / Motivo</label>
+                        <div class="input-wrapper">
+                            <i data-lucide="pencil"></i>
+                            <input type="text" id="adminRegisterNotes" placeholder="Ej. Feriado Semana Santa o Permiso por cita médica">
+                        </div>
+                    </div>
+
+                    <div class="form-error" id="adminRegisterError" style="display: none; color: var(--danger); margin-bottom: 12px; font-size: 13px;"></div>
+
+                    <div class="modal-actions" style="margin-top: 20px;">
+                        <button type="submit" class="btn btn-primary" style="width: 100%; background: #6366f1;">Guardar Registro</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom scripts -->
+    <script src="asistencia.js"></script>
+</body>
+
+</html>
