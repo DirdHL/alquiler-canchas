@@ -28,7 +28,9 @@
             <div class="logo-area">
                 <div class="logo-title">
                     <i data-lucide="clock" class="logo-icon" style="color: #6366f1;"></i>
-                    <h2>Nuevo<span>Horizonte</span><span class="logo-subtitle" style="background: rgba(99, 102, 241, 0.12); border-color: rgba(99, 102, 241, 0.3); color: #818cf8;">Personal</span></h2>
+                    <h2>Nuevo<span>Horizonte</span><span class="logo-subtitle"
+                            style="background: rgba(99, 102, 241, 0.12); border-color: rgba(99, 102, 241, 0.3); color: #818cf8;">Personal</span>
+                    </h2>
                 </div>
                 <button class="btn-close-sidebar" id="btnCloseSidebar">
                     <i data-lucide="x"></i>
@@ -44,14 +46,6 @@
                 <p class="status-desc" id="statusDesc">Cargando conexión con la base de datos...</p>
             </div>
 
-            <!-- Navigation Menu -->
-            <nav class="nav-filters">
-                <h3>Personal</h3>
-                <a href="asistencia.html" class="btn btn-secondary btn-sm btn-sidebar-action"
-                    style="background: rgba(99, 102, 241, 0.15); border-color: rgba(99, 102, 241, 0.3); color: #818cf8; text-decoration: none; display: flex; align-items: center; gap: 8px; font-weight: 600;">
-                    <i data-lucide="clock" style="width: 16px; height: 16px;"></i> Control de Asistencias
-                </a>
-            </nav>
 
             <!-- Quick Info Card -->
             <div class="stats-card">
@@ -99,7 +93,8 @@
                     </div>
                 </div>
                 <!-- Admin Actions Button -->
-                <button class="btn btn-secondary" id="btnAdminActions" style="border-color: rgba(99, 102, 241, 0.3); color: #818cf8;">
+                <button class="btn btn-secondary" id="btnAdminActions"
+                    style="border-color: rgba(99, 102, 241, 0.3); color: #818cf8;">
                     <i data-lucide="shield-check"></i> <span class="btn-text">Registrar Feriado / Permiso</span>
                 </button>
             </header>
@@ -110,14 +105,18 @@
                 <div style="display: flex; flex-direction: column; gap: 20px;">
                     <!-- Clock Card -->
                     <div class="clock-card">
-                        <h3 style="margin: 0; color: var(--text-secondary); font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Hora de la Oficina</h3>
+                        <h3
+                            style="margin: 0; color: var(--text-secondary); font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">
+                            Hora de la Oficina</h3>
                         <div class="live-time-display">
                             <div class="time" id="liveClock">00:00:00</div>
                             <div class="date" id="liveDate">Cargando fecha...</div>
                         </div>
 
                         <div class="form-group" style="text-align: left;">
-                            <label for="employeeSelect" style="margin-bottom: 6px; display: block; font-weight: 500; font-size: 13px;">Selecciona tu nombre *</label>
+                            <label for="employeeSelect"
+                                style="margin-bottom: 6px; display: block; font-weight: 500; font-size: 13px;">Selecciona
+                                tu nombre *</label>
                             <div class="input-wrapper">
                                 <i data-lucide="user"></i>
                                 <select id="employeeSelect" required>
@@ -129,11 +128,14 @@
 
                         <!-- Dynamic Status Message -->
                         <div class="employee-status-box" id="employeeStatusBox">
-                            <span class="status-title" style="color: var(--text-muted);">Selecciona un empleado para comenzar</span>
+                            <span class="status-title" style="color: var(--text-muted);">Selecciona un empleado para
+                                comenzar</span>
                         </div>
 
                         <!-- Big action button -->
-                        <button class="btn btn-primary" id="btnToggleAttendance" style="width: 100%; height: 50px; font-size: 16px; background: #6366f1; box-shadow: 0 4px 14px rgba(99, 102, 241, 0.25);" disabled>
+                        <button class="btn btn-primary" id="btnToggleAttendance"
+                            style="width: 100%; height: 50px; font-size: 16px; background: #6366f1; box-shadow: 0 4px 14px rgba(99, 102, 241, 0.25);"
+                            disabled>
                             <i data-lucide="fingerprint"></i> Marcar Asistencia
                         </button>
                     </div>
@@ -142,7 +144,8 @@
                     <div class="progress-card">
                         <div class="goal-header">
                             <h3 id="progressEmployeeTitle">Progreso de Horas</h3>
-                            <span class="goal-pct" id="progressPercentageText" style="font-weight: 700; color: #10b981;">0%</span>
+                            <span class="goal-pct" id="progressPercentageText"
+                                style="font-weight: 700; color: #10b981;">0%</span>
                         </div>
                         <div class="goal-progress-container">
                             <div class="goal-progress-bar" id="goalProgressBar"></div>
@@ -170,17 +173,20 @@
 
                     <!-- Detailed Stats Card -->
                     <div class="progress-card" style="margin-top: 20px;">
-                        <h3 style="margin-bottom: 16px; display: flex; align-items: center; gap: 8px; font-size: 15px; color: var(--text-primary);">
+                        <h3
+                            style="margin-bottom: 16px; display: flex; align-items: center; gap: 8px; font-size: 15px; color: var(--text-primary);">
                             <i data-lucide="bar-chart-3" style="color: #60a5fa; width: 18px; height: 18px;"></i>
                             Resumen Mensual
                         </h3>
-                        
+
                         <div style="display: flex; flex-direction: column; gap: 12px; font-size: 13px;">
-                            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+                            <div
+                                style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
                                 <span style="color: var(--text-secondary);">Horas Presenciales:</span>
                                 <strong id="statsWorkedHours">0.0 h</strong>
                             </div>
-                            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+                            <div
+                                style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
                                 <span style="color: var(--text-secondary);">Horas Justificadas:</span>
                                 <strong id="statsJustifiedHours" style="color: #c084fc;">0.0 h</strong>
                             </div>
@@ -255,17 +261,20 @@
                 <h3>Identificación de Operador</h3>
             </div>
             <div class="modal-body">
-                <p class="settings-intro" style="margin-bottom: 16px;">Ingresa tu nombre o alias para registrar el historial de cambios en el sistema.</p>
+                <p class="settings-intro" style="margin-bottom: 16px;">Ingresa tu nombre o alias para registrar el
+                    historial de cambios en el sistema.</p>
                 <form id="formUserOnboarding">
                     <div class="form-group">
                         <label for="onboardingName">Nombre / Alias *</label>
                         <div class="input-wrapper">
                             <i data-lucide="user"></i>
-                            <input type="text" id="onboardingName" required placeholder="Nombre o alias de operador" maxlength="25">
+                            <input type="text" id="onboardingName" required placeholder="Nombre o alias de operador"
+                                maxlength="25">
                         </div>
                     </div>
                     <div class="modal-actions" style="margin-top: 16px;">
-                        <button type="submit" class="btn btn-primary" style="width: 100%; background: #6366f1;">Continuar</button>
+                        <button type="submit" class="btn btn-primary"
+                            style="width: 100%; background: #6366f1;">Continuar</button>
                     </div>
                 </form>
             </div>
@@ -282,7 +291,8 @@
                 <button class="btn-close" id="btnCloseAdminAuth"><i data-lucide="x"></i></button>
             </div>
             <div class="modal-body">
-                <p class="settings-intro" style="margin-bottom: 16px; font-size: 13px; color: var(--text-secondary);">Ingrese la contraseña de administrador para proceder.</p>
+                <p class="settings-intro" style="margin-bottom: 16px; font-size: 13px; color: var(--text-secondary);">
+                    Ingrese la contraseña de administrador para proceder.</p>
                 <form id="formAdminAuth">
                     <div class="form-group">
                         <label for="adminPassword">Contraseña *</label>
@@ -291,9 +301,11 @@
                             <input type="password" id="adminPassword" required placeholder="••••••••">
                         </div>
                     </div>
-                    <div class="form-error" id="adminAuthError" style="display: none; color: var(--danger); margin-bottom: 12px; font-size: 13px;"></div>
+                    <div class="form-error" id="adminAuthError"
+                        style="display: none; color: var(--danger); margin-bottom: 12px; font-size: 13px;"></div>
                     <div class="modal-actions" style="margin-top: 16px;">
-                        <button type="submit" class="btn btn-primary" style="width: 100%; background: #6366f1;">Desbloquear</button>
+                        <button type="submit" class="btn btn-primary"
+                            style="width: 100%; background: #6366f1;">Desbloquear</button>
                     </div>
                 </form>
             </div>
@@ -343,7 +355,8 @@
                         <label for="adminRegisterHours">Horas Justificadas Abonadas *</label>
                         <div class="input-wrapper">
                             <i data-lucide="clock"></i>
-                            <input type="number" id="adminRegisterHours" value="8.0" min="0" max="24" step="0.5" required>
+                            <input type="number" id="adminRegisterHours" value="8.0" min="0" max="24" step="0.5"
+                                required>
                         </div>
                         <small style="color: var(--text-muted); margin-top: 4px; display: block;">
                             Por defecto son 8 horas (un turno estándar).
@@ -354,14 +367,17 @@
                         <label for="adminRegisterNotes">Observaciones / Motivo</label>
                         <div class="input-wrapper">
                             <i data-lucide="pencil"></i>
-                            <input type="text" id="adminRegisterNotes" placeholder="Ej. Feriado Semana Santa o Permiso por cita médica">
+                            <input type="text" id="adminRegisterNotes"
+                                placeholder="Ej. Feriado Semana Santa o Permiso por cita médica">
                         </div>
                     </div>
 
-                    <div class="form-error" id="adminRegisterError" style="display: none; color: var(--danger); margin-bottom: 12px; font-size: 13px;"></div>
+                    <div class="form-error" id="adminRegisterError"
+                        style="display: none; color: var(--danger); margin-bottom: 12px; font-size: 13px;"></div>
 
                     <div class="modal-actions" style="margin-top: 20px;">
-                        <button type="submit" class="btn btn-primary" style="width: 100%; background: #6366f1;">Guardar Registro</button>
+                        <button type="submit" class="btn btn-primary" style="width: 100%; background: #6366f1;">Guardar
+                            Registro</button>
                     </div>
                 </form>
             </div>

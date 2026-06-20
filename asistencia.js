@@ -961,16 +961,16 @@ function renderAttendanceTable() {
 
         return `
             <tr>
-                <td><strong>${escapeHTML(r.employee_name)}</strong></td>
-                <td>${dateFormatted}</td>
-                <td>${inFormatted}</td>
-                <td>${outFormatted}</td>
-                <td style="font-weight: 600;">${realHours.toFixed(1)} h${lunchIcon}</td>
-                <td><span class="${typeBadgeClass}">${typeLabel}</span></td>
-                <td style="font-size: 12px; color: var(--text-secondary); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHTML(r.notes || '')}">
+                <td data-label="Colaborador"><strong>${escapeHTML(r.employee_name)}</strong></td>
+                <td data-label="Fecha">${dateFormatted}</td>
+                <td data-label="Entrada">${inFormatted}</td>
+                <td data-label="Salida">${outFormatted}</td>
+                <td data-label="Horas Abonadas" style="font-weight: 600;">${realHours.toFixed(1)} h${lunchIcon}</td>
+                <td data-label="Tipo"><span class="${typeBadgeClass}">${typeLabel}</span></td>
+                <td data-label="Notas" style="font-size: 12px; color: var(--text-secondary); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHTML(r.notes || '')}">
                     ${escapeHTML(r.notes || '')}
                 </td>
-                <td style="text-align: center;">
+                <td data-label="Acción" style="text-align: center;">
                     <button class="btn-action-icon delete" onclick="handleDeleteRecord('${r.id}')" title="Eliminar Registro">
                         <i data-lucide="trash-2" style="width: 16px; height: 16px;"></i>
                     </button>
@@ -1247,7 +1247,7 @@ function setupEventListeners() {
     // Sidebar Mobile Drawer
     if (btnToggleSidebar) {
         btnToggleSidebar.addEventListener('click', () => {
-            sidebar.classList.add('active');
+            sidebar.classList.add('open');
             sidebarBackdrop.classList.add('active');
         });
     }
@@ -1285,7 +1285,7 @@ function setupEventListeners() {
 }
 
 function closeSidebarDrawer() {
-    sidebar.classList.remove('active');
+    sidebar.classList.remove('open');
     sidebarBackdrop.classList.remove('active');
 }
 
