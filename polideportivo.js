@@ -2538,12 +2538,6 @@ async function fetchAndRenderHistory() {
             if (error) throw error;
             entries = data || [];
 
-            // Filter out entries that belong to Los Pinos complex
-            entries = entries.filter(e => {
-                const d = e.details || '';
-                return !d.includes('(Grande -') && !d.includes('(Pequeña -');
-            });
-
             if (btnClearHistoryLocal) btnClearHistoryLocal.style.display = 'none';
         } catch (e) {
             console.warn("Fallo al obtener historial de Supabase, usando local:", e);
@@ -2558,6 +2552,13 @@ async function fetchAndRenderHistory() {
             btnClearHistoryLocal.style.display = 'none';
         }
     }
+
+    // Filter out entries that belong to Los Pinos complex or Office Attendance
+    entries = entries.filter(e => {
+        const d = e.details || '';
+        if (d.includes('[Asistencia]')) return false;
+        return !d.includes('(Grande -') && !d.includes('(Pequeña -');
+    });
 
     if (!activityList) return;
 

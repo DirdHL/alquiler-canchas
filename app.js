@@ -2405,13 +2405,6 @@ async function fetchAndRenderHistory() {
             if (error) throw error;
             entries = data || [];
 
-            // Filter out entries that belong to Polideportivo complex
-            const polideportivoCourts = ['Cancha Grande', 'Cancha Pequeña', 'Cancha de Vóley'];
-            entries = entries.filter(e => {
-                const d = e.details || '';
-                return !polideportivoCourts.some(court => d.includes(`(${court} -`));
-            });
-
             if (btnClearHistoryLocal) btnClearHistoryLocal.style.display = 'none';
         } catch (e) {
             console.warn("Fallo al obtener historial de Supabase, usando local:", e);
@@ -2426,6 +2419,14 @@ async function fetchAndRenderHistory() {
             btnClearHistoryLocal.style.display = 'none';
         }
     }
+
+    // Filter out entries that belong to Polideportivo complex or Office Attendance
+    entries = entries.filter(e => {
+        const d = e.details || '';
+        if (d.includes('[Asistencia]')) return false;
+        const polideportivoCourts = ['Cancha Grande', 'Cancha Pequeña', 'Cancha de Vóley'];
+        return !polideportivoCourts.some(court => d.includes(`(${court} -`));
+    });
 
     if (!activityList) return;
 
