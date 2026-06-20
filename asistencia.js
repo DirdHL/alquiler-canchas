@@ -9,6 +9,7 @@ let employeeList = ['Admin', 'Rogger', 'Vicky'];
 let activeEmployeesList = ['Admin', 'Rogger', 'Vicky'];
 let selectedEmployeeName = '';
 let realtimeChannel = null;
+let adminAuthCallback = null;
 
 // DOM Elements
 const statusDot = document.getElementById('statusDot');
@@ -989,6 +990,7 @@ function handleAdminActionsClick() {
     if (sessionAuth === 'true') {
         openAdminRegisterModal();
     } else {
+        adminAuthCallback = openAdminRegisterModal;
         openModal(modalAdminAuth);
         adminPasswordInput.value = '';
         adminAuthError.style.display = 'none';
@@ -1004,7 +1006,10 @@ function handleAdminAuthSubmit(e) {
     if (pwd === 'Reservasupabase') {
         sessionStorage.setItem('canchapro_admin_authenticated', 'true');
         closeModal(modalAdminAuth);
-        openAdminRegisterModal();
+        if (typeof adminAuthCallback === 'function') {
+            adminAuthCallback();
+            adminAuthCallback = null;
+        }
     } else {
         adminAuthError.textContent = '❌ Contraseña incorrecta. Inténtelo nuevamente.';
         adminAuthError.style.display = 'block';
@@ -1182,26 +1187,11 @@ async function handleDeleteRecord(id) {
         await executeDelete();
     } else {
         // Authenticate first
+        adminAuthCallback = executeDelete;
         openModal(modalAdminAuth);
         adminPasswordInput.value = '';
         adminAuthError.style.display = 'none';
         setTimeout(() => adminPasswordInput.focus(), 100);
-        
-        // Monkey-patch submission temporary callback
-        const originalHandler = formAdminAuth.onsubmit;
-        formAdminAuth.addEventListener('submit', async function tempHandler(e) {
-            e.preventDefault();
-            const pwd = adminPasswordInput.value;
-            if (pwd === 'Reservasupabase') {
-                sessionStorage.setItem('canchapro_admin_authenticated', 'true');
-                closeModal(modalAdminAuth);
-                formAdminAuth.removeEventListener('submit', tempHandler);
-                await executeDelete();
-            } else {
-                adminAuthError.textContent = '❌ Contraseña incorrecta. Inténtelo nuevamente.';
-                adminAuthError.style.display = 'block';
-            }
-        });
     }
 }
 
