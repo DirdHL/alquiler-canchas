@@ -70,6 +70,16 @@ const onboardingNameInput = document.getElementById('onboardingName');
 const displayUserName = document.getElementById('displayUserName');
 const btnEditUser = document.getElementById('btnEditUser');
 
+// System Guide Elements
+const btnOpenGuide = document.getElementById('btnOpenGuide');
+const modalSystemGuide = document.getElementById('modalSystemGuide');
+const btnCloseGuide = document.getElementById('btnCloseGuide');
+const btnCloseGuideBtn = document.getElementById('btnCloseGuideBtn');
+
+// Lunch Toggle Elements
+const lunchToggleGroup = document.getElementById('lunchToggleGroup');
+const lunchCheckbox = document.getElementById('lunchCheckbox');
+
 // Sidebar toggle for mobile drawer
 const sidebar = document.getElementById('sidebar');
 const sidebarBackdrop = document.getElementById('sidebarBackdrop');
@@ -590,6 +600,7 @@ async function handleEmployeeChange() {
 
     if (!selectedEmployeeName) {
         employeeStatusBox.innerHTML = '<span class="status-title" style="color: var(--text-muted);">Selecciona un empleado para comenzar</span>';
+        if (lunchToggleGroup) lunchToggleGroup.style.display = 'none';
         btnToggleAttendance.disabled = true;
         btnToggleAttendance.className = 'btn btn-primary';
         btnToggleAttendance.innerHTML = '<i data-lucide="fingerprint"></i> Marcar Asistencia';
@@ -607,6 +618,10 @@ async function handleEmployeeChange() {
     
     if (activeShift) {
         // Shift in progress -> Action: CHECK OUT
+        if (lunchToggleGroup) {
+            lunchToggleGroup.style.display = 'block';
+            lunchCheckbox.checked = true;
+        }
         employeeStatusBox.className = 'employee-status-box active-shift';
         employeeStatusBox.innerHTML = `
             <span class="status-title" style="color: #fbbf24; display: flex; align-items: center; gap: 6px;">
@@ -620,6 +635,7 @@ async function handleEmployeeChange() {
         btnToggleAttendance.style.boxShadow = '';
     } else if (employeeShiftsToday.length > 0 && employeeShiftsToday[employeeShiftsToday.length - 1].check_out) {
         // Workday completed or shift completed -> Action: CHECK IN AGAIN
+        if (lunchToggleGroup) lunchToggleGroup.style.display = 'none';
         const lastShift = employeeShiftsToday[employeeShiftsToday.length - 1];
         employeeStatusBox.className = 'employee-status-box completed-shift';
         employeeStatusBox.innerHTML = `
@@ -634,6 +650,7 @@ async function handleEmployeeChange() {
         btnToggleAttendance.style.boxShadow = '0 4px 14px rgba(99, 102, 241, 0.25)';
     } else {
         // No attendance recorded today -> Action: CHECK IN
+        if (lunchToggleGroup) lunchToggleGroup.style.display = 'none';
         employeeStatusBox.className = 'employee-status-box';
         employeeStatusBox.innerHTML = `
             <span class="status-title" style="color: var(--text-primary);">Entrada Pendiente</span>
@@ -670,15 +687,25 @@ async function handleToggleAttendance() {
             const checkInTime = activeShift.check_in;
             const diffHours = calculateDurationInHours(activeShift.date, checkInTime, todayStr, timeStr);
             
-            // Deduct 1 hour for lunch if shift duration is > 5 hours
-            const lunchDeducted = diffHours > 5;
+            // Check checkbox status (default to true if not available)
+            const tookLunch = lunchCheckbox ? lunchCheckbox.checked : true;
+            
+            // Deduct 1 hour for lunch if shift duration is > 5 hours AND they took lunch
+            const lunchDeducted = diffHours > 5 && tookLunch;
             const finalHours = lunchDeducted ? Math.max(0, diffHours - 1) : diffHours;
+            
+            let checkoutNotes = `Salida registrada automáticamente a las ${timeStr.substring(0, 5)}`;
+            if (lunchDeducted) {
+                checkoutNotes += ' (Descuento 1h almuerzo)';
+            } else if (diffHours > 5 && !tookLunch) {
+                checkoutNotes += ' (Sin almuerzo)';
+            }
             
             const updatedShift = {
                 ...activeShift,
                 check_out: timeStr,
                 hours_credited: Number(finalHours.toFixed(2)),
-                notes: `Salida registrada automáticamente a las ${timeStr.substring(0, 5)}${lunchDeducted ? ' (Descuento 1h almuerzo)' : ''}`
+                notes: checkoutNotes
             };
 
             if (dbMode === 'supabase' && supabaseClient) {
@@ -1248,6 +1275,23 @@ function setupEventListeners() {
         sidebarBackdrop.addEventListener('click', closeSidebarDrawer);
     }
 
+    // System Guide Modal Listeners
+    if (btnOpenGuide) {
+        btnOpenGuide.addEventListener('click', () => {
+            openModal(modalSystemGuide);
+        });
+    }
+    if (btnCloseGuide) {
+        btnCloseGuide.addEventListener('click', () => {
+            closeModal(modalSystemGuide);
+        });
+    }
+    if (btnCloseGuideBtn) {
+        btnCloseGuideBtn.addEventListener('click', () => {
+            closeModal(modalSystemGuide);
+        });
+    }
+
     // Employee selection changes
     employeeSelect.addEventListener('change', handleEmployeeChange);
     
@@ -1392,6 +1436,12 @@ function getRealHoursCredited(r) {
     if (r.type !== 'Trabajo' || !r.check_in || !r.check_out) {
         return Number(r.hours_credited || 0);
     }
+    
+    // Si la nota indica expresamente que no almorzó, no se descuenta
+    if (r.notes && (r.notes.includes('Sin almuerzo') || r.notes.includes('Sin refrigerio') || r.notes.includes('no almorzó'))) {
+        return Number(r.hours_credited || 0);
+    }
+
     const elapsed = calculateDurationInHours(r.date, r.check_in, r.date, r.check_out);
     const savedHours = Number(r.hours_credited || 0);
     

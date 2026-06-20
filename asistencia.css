@@ -465,3 +465,95 @@
         font-size: 28px;
     }
 }
+
+/* ==========================================================================
+   Attendance Guide Styles
+   ========================================================================== */
+.guide-section-card {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    transition: var(--transition-smooth);
+}
+
+.guide-section-card:hover {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(99, 102, 241, 0.25);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.guide-card-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.guide-card-header h4 {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.guide-icon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+}
+
+.guide-icon.purple {
+    color: #a78bfa;
+}
+
+.guide-icon.emerald {
+    color: #34d399;
+}
+
+.guide-icon.amber {
+    color: #fbbf24;
+}
+
+.guide-icon.red {
+    color: #f87171;
+}
+
+.guide-card-desc {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin-bottom: 10px;
+}
+
+.guide-list {
+    margin-left: 20px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+.guide-list li {
+    margin-bottom: 6px;
+}
+
+.guide-list li strong {
+    color: var(--text-primary);
+}
+
+.guide-example-box {
+    background: rgba(99, 102, 241, 0.08);
+    border-left: 3px solid #6366f1;
+    padding: 10px 12px;
+    border-radius: 4px;
+    font-size: 12.5px;
+    color: var(--text-primary);
+    line-height: 1.4;
+    margin: 8px 0 12px 0;
+}
+
+.font-sm {
+    font-size: 12.5px !important;
+}
+
