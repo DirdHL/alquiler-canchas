@@ -1116,23 +1116,30 @@ function openBookingModal(booking = null, defaults = null) {
         btnDeleteBooking.classList.remove('hidden');
 
         // Populate and select correct Medio
-        if (bookingSourceInput && customSourceGroup && bookingSourceCustomInput) {
+        if (bookingSourceInput) {
             const savedMedio = booking.medio || 'Facebook';
-            const standardMedios = ['Facebook', 'TikTok', 'Instagram', 'WhatsApp', 'Cliente frecuente'];
+            const standardMedios = ['Facebook', 'TikTok', 'Instagram', 'WhatsApp', 'Cliente frecuente', 'Recomendación'];
             if (standardMedios.includes(savedMedio) && !isBlock) {
                 bookingSourceInput.value = savedMedio;
-                customSourceGroup.classList.add('hidden');
-                bookingSourceCustomInput.required = false;
+                if (customSourceGroup) customSourceGroup.classList.add('hidden');
+                if (bookingSourceCustomInput) bookingSourceCustomInput.required = false;
             } else {
                 if (isBlock) {
                     bookingSourceInput.value = 'Facebook';
-                    customSourceGroup.classList.add('hidden');
-                    bookingSourceCustomInput.required = false;
+                    if (customSourceGroup) customSourceGroup.classList.add('hidden');
+                    if (bookingSourceCustomInput) bookingSourceCustomInput.required = false;
                 } else {
-                    bookingSourceInput.value = 'Otro...';
-                    customSourceGroup.classList.remove('hidden');
-                    bookingSourceCustomInput.value = savedMedio;
-                    bookingSourceCustomInput.required = true;
+                    // Fallback for legacy custom values: dynamically add them to select if they exist
+                    let customOption = bookingSourceInput.querySelector(`option[value="${savedMedio}"]`);
+                    if (!customOption) {
+                        customOption = document.createElement('option');
+                        customOption.value = savedMedio;
+                        customOption.textContent = savedMedio;
+                        bookingSourceInput.appendChild(customOption);
+                    }
+                    bookingSourceInput.value = savedMedio;
+                    if (customSourceGroup) customSourceGroup.classList.add('hidden');
+                    if (bookingSourceCustomInput) bookingSourceCustomInput.required = false;
                 }
             }
         }
@@ -3426,16 +3433,18 @@ function updateStatsDashboard() {
             if (cleaned.includes('instagram')) return 'Instagram';
             if (cleaned.includes('tiktok')) return 'TikTok';
             if (cleaned.includes('cliente frecuente')) return 'Cliente frecuente';
+            if (cleaned.includes('recomendación') || cleaned.includes('recomendacion')) return 'Recomendación';
             return 'Otros';
         };
 
-        const channels = ['WhatsApp', 'Facebook', 'Instagram', 'TikTok', 'Cliente frecuente', 'Otros'];
+        const channels = ['WhatsApp', 'Facebook', 'Instagram', 'TikTok', 'Cliente frecuente', 'Recomendación', 'Otros'];
         const channelCounts = {
             WhatsApp: { today: 0, week: 0, month: 0 },
             Facebook: { today: 0, week: 0, month: 0 },
             Instagram: { today: 0, week: 0, month: 0 },
             TikTok: { today: 0, week: 0, month: 0 },
             'Cliente frecuente': { today: 0, week: 0, month: 0 },
+            'Recomendación': { today: 0, week: 0, month: 0 },
             Otros: { today: 0, week: 0, month: 0 }
         };
 
@@ -3472,6 +3481,7 @@ function updateStatsDashboard() {
                 else if (ch === 'Instagram') color = '#e1306c';
                 else if (ch === 'TikTok') color = '#00f2fe';
                 else if (ch === 'Cliente frecuente') color = '#f59e0b';
+                else if (ch === 'Recomendación') color = '#a78bfa';
 
                 return `
                     <tr style="border-bottom: 1px solid var(--border-color);">
