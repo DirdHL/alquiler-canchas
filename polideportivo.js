@@ -1117,7 +1117,7 @@ function openBookingModal(booking = null, defaults = null) {
         // Populate and select correct Medio
         if (bookingSourceInput && customSourceGroup && bookingSourceCustomInput) {
             const savedMedio = booking.medio || 'Facebook';
-            const standardMedios = ['Facebook', 'TikTok', 'Instagram', 'WhatsApp'];
+            const standardMedios = ['Facebook', 'TikTok', 'Instagram', 'WhatsApp', 'Cliente frecuente'];
             if (standardMedios.includes(savedMedio) && !isBlock) {
                 bookingSourceInput.value = savedMedio;
                 customSourceGroup.classList.add('hidden');
@@ -3424,15 +3424,17 @@ function updateStatsDashboard() {
             if (cleaned.includes('facebook')) return 'Facebook';
             if (cleaned.includes('instagram')) return 'Instagram';
             if (cleaned.includes('tiktok')) return 'TikTok';
+            if (cleaned.includes('cliente frecuente')) return 'Cliente frecuente';
             return 'Otros';
         };
 
-        const channels = ['WhatsApp', 'Facebook', 'Instagram', 'TikTok', 'Otros'];
+        const channels = ['WhatsApp', 'Facebook', 'Instagram', 'TikTok', 'Cliente frecuente', 'Otros'];
         const channelCounts = {
             WhatsApp: { today: 0, week: 0, month: 0 },
             Facebook: { today: 0, week: 0, month: 0 },
             Instagram: { today: 0, week: 0, month: 0 },
             TikTok: { today: 0, week: 0, month: 0 },
+            'Cliente frecuente': { today: 0, week: 0, month: 0 },
             Otros: { today: 0, week: 0, month: 0 }
         };
 
@@ -3468,6 +3470,7 @@ function updateStatsDashboard() {
                 else if (ch === 'Facebook') color = '#1877f2';
                 else if (ch === 'Instagram') color = '#e1306c';
                 else if (ch === 'TikTok') color = '#00f2fe';
+                else if (ch === 'Cliente frecuente') color = '#f59e0b';
 
                 return `
                     <tr style="border-bottom: 1px solid var(--border-color);">
