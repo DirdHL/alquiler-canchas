@@ -1086,7 +1086,7 @@ function openBookingModal(booking = null, defaults = null) {
 
         // Populate and select correct Medio
         if (bookingSourceInput) {
-            const savedMedio = booking.medio || 'Facebook';
+            const savedMedio = booking.medio || 'Cliente frecuente';
             const standardMedios = ['Facebook', 'TikTok', 'Instagram', 'WhatsApp', 'Cliente frecuente', 'Recomendación'];
             if (standardMedios.includes(savedMedio) && !isBlock) {
                 bookingSourceInput.value = savedMedio;
@@ -1094,7 +1094,7 @@ function openBookingModal(booking = null, defaults = null) {
                 if (bookingSourceCustomInput) bookingSourceCustomInput.required = false;
             } else {
                 if (isBlock) {
-                    bookingSourceInput.value = 'Facebook';
+                    bookingSourceInput.value = 'Cliente frecuente';
                     if (customSourceGroup) customSourceGroup.classList.add('hidden');
                     if (bookingSourceCustomInput) bookingSourceCustomInput.required = false;
                 } else {
@@ -1131,9 +1131,9 @@ function openBookingModal(booking = null, defaults = null) {
         toggleAllDayFields(false);
         btnDeleteBooking.classList.add('hidden');
 
-        // Reset Medio to default Facebook
+        // Reset Medio to default Cliente frecuente
         if (bookingSourceInput && customSourceGroup && bookingSourceCustomInput) {
-            bookingSourceInput.value = 'Facebook';
+            bookingSourceInput.value = 'Cliente frecuente';
             customSourceGroup.classList.add('hidden');
             bookingSourceCustomInput.required = false;
         }
