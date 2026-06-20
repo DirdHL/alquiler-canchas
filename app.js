@@ -30,8 +30,129 @@ const bookingNameInput = document.getElementById('bookingName');
 const bookingCourtInput = document.getElementById('bookingCourt');
 const bookingSportInput = document.getElementById('bookingSport');
 const bookingDateInput = document.getElementById('bookingDate');
-const bookingStartTimeInput = document.getElementById('bookingStartTime');
-const bookingEndTimeInput = document.getElementById('bookingEndTime');
+const bookingStartTimeInput = {
+    _changeListeners: new Set(),
+    get value() {
+        const h = document.getElementById('startHourSelect').value;
+        const m = document.getElementById('startMinSelect').value;
+        const ampm = document.getElementById('startAmpmSelect').value;
+        if (!h || !m || !ampm) return "";
+        let hour = parseInt(h, 10);
+        if (ampm === 'pm' && hour < 12) hour += 12;
+        if (ampm === 'am' && hour === 12) hour = 0;
+        return `${String(hour).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    },
+    set value(val) {
+        if (!val) {
+            document.getElementById('startHourSelect').value = "";
+            document.getElementById('startMinSelect').value = "";
+            document.getElementById('startAmpmSelect').value = "pm";
+            return;
+        }
+        const parts = val.split(':');
+        let h = parseInt(parts[0], 10);
+        let m = parts[1];
+        let ampm = h >= 12 ? 'pm' : 'am';
+        let h12 = h % 12;
+        if (h12 === 0) h12 = 12;
+        document.getElementById('startHourSelect').value = String(h12);
+        document.getElementById('startMinSelect').value = String(m).padStart(2, '0');
+        document.getElementById('startAmpmSelect').value = ampm;
+    },
+    get disabled() {
+        return document.getElementById('startHourSelect').disabled;
+    },
+    set disabled(val) {
+        document.getElementById('startHourSelect').disabled = val;
+        document.getElementById('startMinSelect').disabled = val;
+        document.getElementById('startAmpmSelect').disabled = val;
+    },
+    addEventListener(event, callback) {
+        if (event === 'change') {
+            this._changeListeners.add(callback);
+        } else {
+            document.getElementById('startHourSelect').addEventListener(event, callback);
+            document.getElementById('startMinSelect').addEventListener(event, callback);
+            document.getElementById('startAmpmSelect').addEventListener(event, callback);
+        }
+    },
+    removeEventListener(event, callback) {
+        if (event === 'change') {
+            this._changeListeners.delete(callback);
+        } else {
+            document.getElementById('startHourSelect').removeEventListener(event, callback);
+            document.getElementById('startMinSelect').removeEventListener(event, callback);
+            document.getElementById('startAmpmSelect').removeEventListener(event, callback);
+        }
+    },
+    dispatchEvent(event) {
+        if (event.type === 'change') {
+            this._changeListeners.forEach(cb => cb(event));
+        }
+    }
+};
+
+const bookingEndTimeInput = {
+    _changeListeners: new Set(),
+    get value() {
+        const h = document.getElementById('endHourSelect').value;
+        const m = document.getElementById('endMinSelect').value;
+        const ampm = document.getElementById('endAmpmSelect').value;
+        if (!h || !m || !ampm) return "";
+        let hour = parseInt(h, 10);
+        if (ampm === 'pm' && hour < 12) hour += 12;
+        if (ampm === 'am' && hour === 12) hour = 0;
+        return `${String(hour).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    },
+    set value(val) {
+        if (!val) {
+            document.getElementById('endHourSelect').value = "";
+            document.getElementById('endMinSelect').value = "";
+            document.getElementById('endAmpmSelect').value = "pm";
+            return;
+        }
+        const parts = val.split(':');
+        let h = parseInt(parts[0], 10);
+        let m = parts[1];
+        let ampm = h >= 12 ? 'pm' : 'am';
+        let h12 = h % 12;
+        if (h12 === 0) h12 = 12;
+        document.getElementById('endHourSelect').value = String(h12);
+        document.getElementById('endMinSelect').value = String(m).padStart(2, '0');
+        document.getElementById('endAmpmSelect').value = ampm;
+    },
+    get disabled() {
+        return document.getElementById('endHourSelect').disabled;
+    },
+    set disabled(val) {
+        document.getElementById('endHourSelect').disabled = val;
+        document.getElementById('endMinSelect').disabled = val;
+        document.getElementById('endAmpmSelect').disabled = val;
+    },
+    addEventListener(event, callback) {
+        if (event === 'change') {
+            this._changeListeners.add(callback);
+        } else {
+            document.getElementById('endHourSelect').addEventListener(event, callback);
+            document.getElementById('endMinSelect').addEventListener(event, callback);
+            document.getElementById('endAmpmSelect').addEventListener(event, callback);
+        }
+    },
+    removeEventListener(event, callback) {
+        if (event === 'change') {
+            this._changeListeners.delete(callback);
+        } else {
+            document.getElementById('endHourSelect').removeEventListener(event, callback);
+            document.getElementById('endMinSelect').removeEventListener(event, callback);
+            document.getElementById('endAmpmSelect').removeEventListener(event, callback);
+        }
+    },
+    dispatchEvent(event) {
+        if (event.type === 'change') {
+            this._changeListeners.forEach(cb => cb(event));
+        }
+    }
+};
 const bookingNotesInput = document.getElementById('bookingNotes');
 const bookingPelotaInput = document.getElementById('bookingPelota');
 const bookingChalecoInput = document.getElementById('bookingChaleco');
@@ -114,6 +235,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // 3. Load Supabase config from LocalStorage if exists
     loadDatabaseSettings();
 
+    // 3.5 Populate time select dropdowns
+    populateTimeSelects();
+
     // 4. Initialize Calendar
     initCalendar();
 
@@ -153,9 +277,19 @@ function initCalendar() {
         snapDuration: '00:30:00',
         slotLabelInterval: '01:00',
         slotLabelContent: function (arg) {
-            if (arg.text === '0') return '00';
-            if (arg.text === '1') return '01';
-            return arg.text;
+            const date = arg.date;
+            let hours = date.getHours();
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            const ampm = hours >= 12 ? 'pm' : 'am';
+            hours = hours % 12;
+            hours = hours ? hours : 12;
+            return `${hours}:${minutes} ${ampm}`;
+        },
+        eventTimeFormat: {
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true,
+            meridiem: 'short'
         },
         expandRows: true,
         stickyHeaderDates: true,
@@ -387,6 +521,68 @@ function setupEventListeners() {
 
     // Auto-adjust end time when start time changes to be at least 1 hour later
     if (bookingStartTimeInput && bookingEndTimeInput) {
+        // Trigger custom wrapper change event when any inner select changes
+        const triggerStartChange = (e) => {
+            bookingStartTimeInput._changeListeners.forEach(cb => cb({ target: bookingStartTimeInput, originalEvent: e }));
+        };
+        const triggerEndChange = (e) => {
+            bookingEndTimeInput._changeListeners.forEach(cb => cb({ target: bookingEndTimeInput, originalEvent: e }));
+        };
+
+        const startHourSelect = document.getElementById('startHourSelect');
+        const startMinSelect = document.getElementById('startMinSelect');
+        const startAmpmSelect = document.getElementById('startAmpmSelect');
+        const endHourSelect = document.getElementById('endHourSelect');
+        const endMinSelect = document.getElementById('endMinSelect');
+        const endAmpmSelect = document.getElementById('endAmpmSelect');
+
+        if (startHourSelect && startMinSelect && startAmpmSelect) {
+            startHourSelect.addEventListener('change', triggerStartChange);
+            startMinSelect.addEventListener('change', triggerStartChange);
+            startAmpmSelect.addEventListener('change', triggerStartChange);
+        }
+        if (endHourSelect && endMinSelect && endAmpmSelect) {
+            endHourSelect.addEventListener('change', triggerEndChange);
+            endMinSelect.addEventListener('change', triggerEndChange);
+            endAmpmSelect.addEventListener('change', triggerEndChange);
+        }
+
+        // Automated sync logic: changing any start field automatically adjusts the end time to be 1 hour later
+        const syncEndTime = () => {
+            const startHourVal = startHourSelect.value;
+            const startMinVal = startMinSelect.value;
+            const startAmpmVal = startAmpmSelect.value;
+            
+            if (!startHourVal || !startMinVal || !startAmpmVal) return;
+            
+            let hour = parseInt(startHourVal, 10);
+            const minute = parseInt(startMinVal, 10);
+            const ampm = startAmpmVal;
+            
+            if (ampm === 'pm' && hour < 12) hour += 12;
+            if (ampm === 'am' && hour === 12) hour = 0;
+            
+            const startMins = hour * 60 + minute;
+            const endMins = (startMins + 60) % 1440;
+            
+            let endHour24 = Math.floor(endMins / 60);
+            let endMin = endMins % 60;
+            let endAmpm = endHour24 >= 12 ? 'pm' : 'am';
+            let endHour12 = endHour24 % 12;
+            if (endHour12 === 0) endHour12 = 12;
+            
+            endHourSelect.value = String(endHour12);
+            endMinSelect.value = String(endMin).padStart(2, '0');
+            endAmpmSelect.value = endAmpm;
+            triggerEndChange();
+        };
+
+        if (startHourSelect && startMinSelect && startAmpmSelect) {
+            startHourSelect.addEventListener('change', syncEndTime);
+            startMinSelect.addEventListener('change', syncEndTime);
+            startAmpmSelect.addEventListener('change', syncEndTime);
+        }
+
         bookingStartTimeInput.addEventListener('change', () => {
             const startTime = bookingStartTimeInput.value;
             if (!startTime) return;
@@ -405,11 +601,19 @@ function setupEventListeners() {
             }
 
             if (adjust) {
-                const newEndMins = (startMins + 60) % 1440;
-                const newEndHour = Math.floor(newEndMins / 60);
-                const newEndMin = newEndMins % 60;
-                const formattedHour = String(newEndHour).padStart(2, '0');
-                const formattedMin = String(newEndMin).padStart(2, '0');
+                const newEndMins = startMins + 60;
+                let endHour = Math.floor(newEndMins / 60) % 24;
+                let endMin = newEndMins % 60;
+                
+                // If it falls between 01:01 and 05:59, cap at 01:00 (1:00 am next day)
+                const endTotalMins = endHour * 60 + endMin;
+                if (endTotalMins > 60 && endTotalMins < 360) {
+                    endHour = 1;
+                    endMin = 0;
+                }
+                
+                const formattedHour = String(endHour).padStart(2, '0');
+                const formattedMin = String(endMin).padStart(2, '0');
                 bookingEndTimeInput.value = `${formattedHour}:${formattedMin}`;
             }
         });
@@ -520,9 +724,9 @@ function setupEventListeners() {
         formStatsRates.addEventListener('submit', handleStatsRatesSave);
     }
 
-    // Make date and time inputs show their picker when clicking on the left icon (SVG)
+    // Make date input show its picker when clicking on the left icon (SVG)
     document.querySelectorAll('.input-wrapper').forEach(wrapper => {
-        const input = wrapper.querySelector('input[type="date"], input[type="time"]');
+        const input = wrapper.querySelector('input[type="date"]');
         if (input) {
             wrapper.addEventListener('click', function (e) {
                 // Trigger showPicker only if they clicked the left SVG icon (or inside it)
@@ -681,6 +885,10 @@ function setupToggleListeners(type) {
     });
 }
 
+function populateTimeSelects() {
+    // Statically populated via datalists in index.html
+}
+
 // Helper to populate the dropdown of advisors with unique previous entries
 function populateAsesoresDropdown(selectedValue = '') {
     const select = document.getElementById('bookingNotes');
@@ -792,8 +1000,8 @@ function openBookingModal(booking = null, defaults = null) {
         bookingCourtInput.value = booking.court;
         bookingSportInput.value = isBlock ? 'Fútbol' : booking.sport;
         bookingDateInput.value = booking.date;
-        bookingStartTimeInput.value = booking.start_time;
-        bookingEndTimeInput.value = booking.end_time;
+        bookingStartTimeInput.value = booking.start_time ? booking.start_time.substring(0, 5) : "";
+        bookingEndTimeInput.value = booking.end_time ? booking.end_time.substring(0, 5) : "";
 
         // Check if it is an all-day block ("06:00" to "23:00")
         const isAllDay = isBlock && 
@@ -874,20 +1082,26 @@ function openBookingModal(booking = null, defaults = null) {
         // Apply defaults if clicked on calendar
         if (defaults) {
             bookingDateInput.value = defaults.date;
-            bookingStartTimeInput.value = defaults.start_time;
+            bookingStartTimeInput.value = defaults.start_time ? defaults.start_time.substring(0, 5) : "";
 
             // Ensure end time is at least 1 hour after start time
             const duration = getDurationInMinutes(defaults.start_time, defaults.end_time);
             if (duration < 60) {
                 const startMins = parseTimeToMinutes(defaults.start_time);
-                const newEndMins = (startMins + 60) % 1440;
-                const newEndHour = Math.floor(newEndMins / 60);
-                const newEndMin = newEndMins % 60;
-                const formattedHour = String(newEndHour).padStart(2, '0');
-                const formattedMin = String(newEndMin).padStart(2, '0');
+                let endHour = Math.floor((startMins + 60) / 60) % 24;
+                let endMin = (startMins + 60) % 60;
+                
+                const endTotalMins = endHour * 60 + endMin;
+                if (endTotalMins > 60 && endTotalMins < 360) {
+                    endHour = 1;
+                    endMin = 0;
+                }
+                
+                const formattedHour = String(endHour).padStart(2, '0');
+                const formattedMin = String(endMin).padStart(2, '0');
                 bookingEndTimeInput.value = `${formattedHour}:${formattedMin}`;
             } else {
-                bookingEndTimeInput.value = defaults.end_time;
+                bookingEndTimeInput.value = defaults.end_time ? defaults.end_time.substring(0, 5) : "";
             }
         } else {
             // Standard defaults
@@ -1320,7 +1534,7 @@ function handleCopyReservation() {
 
 Cancha (Chica o Grande): ${courtText}
 Fecha: ${dateText}
-Hora: ${startTime} - ${endTime}
+Hora: ${formatTimeHHMM(startTime)} - ${formatTimeHHMM(endTime)}
 Motivo: ${clientName}
 Registrado por: ${advisorText}`;
 
@@ -1382,7 +1596,7 @@ Registrado por: ${advisorText}`;
         }
     }
 
-    const timeText = `${startTime} - ${endTime}`;
+    const timeText = `${formatTimeHHMM(startTime)} - ${formatTimeHHMM(endTime)}`;
     const sportVal = bookingSportInput.value;
     const pelotaVal = bookingPelotaInput.value === 'true';
     const chalecoVal = bookingChalecoInput.value === 'true';
@@ -2108,17 +2322,20 @@ function clearHistoryLocal() {
     }
 }
 
-// Utility to normalize times to HH:MM format (removing seconds if any)
+// Utility to normalize times to 12-hour AM/PM format (removing seconds if any)
 function formatTimeHHMM(timeStr) {
     if (!timeStr) return '';
+    if (timeStr === '0' || timeStr === '00' || timeStr === 0) {
+        return '12:00 am';
+    }
     const parts = timeStr.split(':');
     if (parts.length >= 2) {
-        const hour = parts[0].padStart(2, '0');
+        let hour = parseInt(parts[0], 10);
         const min = parts[1].padStart(2, '0');
-        return `${hour}:${min}`;
-    }
-    if (timeStr === '0' || timeStr === '00' || timeStr === 0) {
-        return '00:00';
+        const ampm = hour >= 12 ? 'pm' : 'am';
+        hour = hour % 12;
+        if (hour === 0) hour = 12;
+        return `${hour}:${min} ${ampm}`;
     }
     return timeStr;
 }

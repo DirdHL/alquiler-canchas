@@ -281,17 +281,37 @@
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="bookingStartTime">Hora Inicio *</label>
-                            <div class="input-wrapper">
-                                <i data-lucide="clock"></i>
-                                <input type="time" id="bookingStartTime" required>
+                            <label>Hora Inicio *</label>
+                            <div class="time-select-row">
+                                <div class="time-spinner-wrapper">
+                                    <i data-lucide="clock" class="time-icon"></i>
+                                    <input type="text" id="startHourSelect" placeholder="HH" maxlength="2" required autocomplete="off">
+                                    <span class="time-separator">:</span>
+                                    <input type="text" id="startMinSelect" placeholder="MM" maxlength="2" required autocomplete="off">
+                                </div>
+                                <div class="input-wrapper ampm-wrapper">
+                                    <select id="startAmpmSelect" class="ampm-select" required>
+                                        <option value="pm">pm</option>
+                                        <option value="am">am</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
                         <div class="form-group">
-                            <label for="bookingEndTime">Hora Fin *</label>
-                            <div class="input-wrapper">
-                                <i data-lucide="clock"></i>
-                                <input type="time" id="bookingEndTime" required>
+                            <label>Hora Fin *</label>
+                            <div class="time-select-row">
+                                <div class="time-spinner-wrapper">
+                                    <i data-lucide="clock" class="time-icon"></i>
+                                    <input type="text" id="endHourSelect" placeholder="HH" maxlength="2" required autocomplete="off">
+                                    <span class="time-separator">:</span>
+                                    <input type="text" id="endMinSelect" placeholder="MM" maxlength="2" required autocomplete="off">
+                                </div>
+                                <div class="input-wrapper ampm-wrapper">
+                                    <select id="endAmpmSelect" class="ampm-select" required>
+                                        <option value="pm">pm</option>
+                                        <option value="am">am</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
                     </div>
