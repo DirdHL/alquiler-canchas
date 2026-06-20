@@ -261,6 +261,7 @@ function initCalendar() {
     calendar = new FullCalendar.Calendar(calendarEl, {
         initialView: window.innerWidth < 768 ? 'timeGridDay' : 'timeGridWeek',
         locale: 'es',
+        firstDay: 1,
         headerToolbar: {
             left: 'prev,next today',
             center: 'title',
@@ -385,14 +386,14 @@ function initCalendar() {
         // Click/tap on a cell to create an event (optimized for mobile)
         dateClick: function (info) {
             if (window.innerWidth >= 768) return; // Managed by select callback on desktop
-            
+
             const dateStr = info.dateStr.split('T')[0];
             let startTimeStr = '14:00';
             let endTimeStr = '15:00';
 
             if (info.dateStr.includes('T')) {
                 startTimeStr = formatTime(info.date);
-                
+
                 // End time: start time + 1 hour
                 const startMins = info.date.getHours() * 60 + info.date.getMinutes();
                 const newEndMins = (startMins + 60) % 1440;
@@ -571,25 +572,25 @@ function setupEventListeners() {
             const startHourVal = startHourSelect.value;
             const startMinVal = startMinSelect.value;
             const startAmpmVal = startAmpmSelect.value;
-            
+
             if (!startHourVal || !startMinVal || !startAmpmVal) return;
-            
+
             let hour = parseInt(startHourVal, 10);
             const minute = parseInt(startMinVal, 10);
             const ampm = startAmpmVal;
-            
+
             if (ampm === 'pm' && hour < 12) hour += 12;
             if (ampm === 'am' && hour === 12) hour = 0;
-            
+
             const startMins = hour * 60 + minute;
             const endMins = (startMins + 60) % 1440;
-            
+
             let endHour24 = Math.floor(endMins / 60);
             let endMin = endMins % 60;
             let endAmpm = endHour24 >= 12 ? 'pm' : 'am';
             let endHour12 = endHour24 % 12;
             if (endHour12 === 0) endHour12 = 12;
-            
+
             endHourSelect.value = String(endHour12);
             endMinSelect.value = String(endMin).padStart(2, '0');
             endAmpmSelect.value = endAmpm;
@@ -623,14 +624,14 @@ function setupEventListeners() {
                 const newEndMins = startMins + 60;
                 let endHour = Math.floor(newEndMins / 60) % 24;
                 let endMin = newEndMins % 60;
-                
+
                 // If it falls between 01:01 and 05:59, cap at 01:00 (1:00 am next day)
                 const endTotalMins = endHour * 60 + endMin;
                 if (endTotalMins > 60 && endTotalMins < 360) {
                     endHour = 1;
                     endMin = 0;
                 }
-                
+
                 const formattedHour = String(endHour).padStart(2, '0');
                 const formattedMin = String(endMin).padStart(2, '0');
                 bookingEndTimeInput.value = `${formattedHour}:${formattedMin}`;
@@ -807,7 +808,7 @@ function setupEventListeners() {
     });
 
     // Click header cell to navigate & select day
-    document.addEventListener('click', function(e) {
+    document.addEventListener('click', function (e) {
         const header = e.target.closest('.fc-col-header-cell[data-date]');
         if (header && calendar) {
             const dateStr = header.getAttribute('data-date');
@@ -872,7 +873,7 @@ function toggleBlockFields(isBlock) {
         if (bookingNameInput) {
             bookingNameInput.placeholder = 'Nombre del cliente';
         }
-        
+
         if (bookingSportInput) {
             bookingSportInput.disabled = false;
         }
@@ -1095,8 +1096,8 @@ function openBookingModal(booking = null, defaults = null) {
         bookingEndTimeInput.value = booking.end_time ? booking.end_time.substring(0, 5) : "";
 
         // Check if it is an all-day block ("06:00" to "23:00")
-        const isAllDay = isBlock && 
-            (booking.start_time.startsWith("06:00") || booking.start_time === "06:00:00") && 
+        const isAllDay = isBlock &&
+            (booking.start_time.startsWith("06:00") || booking.start_time === "06:00:00") &&
             (booking.end_time.startsWith("23:00") || booking.end_time === "23:00:00");
         if (bookingIsAllDayInput) {
             bookingIsAllDayInput.checked = isAllDay;
@@ -1181,13 +1182,13 @@ function openBookingModal(booking = null, defaults = null) {
                 const startMins = parseTimeToMinutes(defaults.start_time);
                 let endHour = Math.floor((startMins + 60) / 60) % 24;
                 let endMin = (startMins + 60) % 60;
-                
+
                 const endTotalMins = endHour * 60 + endMin;
                 if (endTotalMins > 60 && endTotalMins < 360) {
                     endHour = 1;
                     endMin = 0;
                 }
-                
+
                 const formattedHour = String(endHour).padStart(2, '0');
                 const formattedMin = String(endMin).padStart(2, '0');
                 bookingEndTimeInput.value = `${formattedHour}:${formattedMin}`;
@@ -2266,9 +2267,9 @@ function updateAvailabilityGrid() {
         const bookingDate = new Date(yr, mo, dy + startDayOffset);
         const bookingDateStr = `${bookingDate.getFullYear()}-${String(bookingDate.getMonth() + 1).padStart(2, '0')}-${String(bookingDate.getDate()).padStart(2, '0')}`;
 
-        // Filter by peak hours if active: starts between 13:00 and 23:00 (ends 23:30)
+        // Filter by peak hours if active: starts between 13:00 and 01:00 (ends 01:00 next day)
         if (availabilityTimeFilter === 'pico') {
-            if (startDayOffset > 0 || startHour < 13 || startHour >= 23) {
+            if ((startDayOffset === 0 && startHour < 13) || (startDayOffset === 1 && startHour >= 1) || startDayOffset > 1) {
                 continue;
             }
         }
@@ -2305,7 +2306,7 @@ function updateAvailabilityGrid() {
             });
 
             html += `<td style="padding: 6px 8px; border-bottom: 1px solid rgba(255, 255, 255, 0.04); vertical-align: top;">`;
-            
+
             if (totalBlock) {
                 let blockReason = totalBlock.name;
                 if (blockReason.startsWith('🔒 Bloqueo: ')) {
@@ -2349,7 +2350,7 @@ function updateAvailabilityGrid() {
                 if (freeCount > 0) {
                     totalFreeCourtsToday += freeCount;
                     let buttonText = `+ Reservar (${freeCount} Libres)`;
-                    
+
                     html += `<button type="button" class="availability-slot-btn" data-free="${freeCount}" onclick="openBookingFromGrid('${slot.bookingDateStr}', '${slot.startStr}', '${slot.endStr}', '${court}')">
                         <i data-lucide="plus" style="width: 11px; height: 11px;"></i> ${buttonText}
                     </button>`;
@@ -2357,7 +2358,7 @@ function updateAvailabilityGrid() {
                     html += `<div style="font-size: 10px; color: var(--danger); font-weight: 700; text-align: center; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px;">🔴 Completo</div>`;
                 }
             }
-            
+
             html += `</td>`;
         });
 
@@ -3682,7 +3683,7 @@ function updateStatsDashboard() {
         });
 
         cachedClientsData.sort((a, b) => b.totalBookings - a.totalBookings || b.totalSpend - a.totalSpend);
-        
+
         renderClientsTable(currentClientsFilter);
 
         if (window.lucide) {
@@ -3712,7 +3713,7 @@ function renderClientsTable(filterText = '') {
 
     tbody.innerHTML = filtered.map((c, idx) => {
         const detailId = `client-detail-${idx}`;
-        
+
         // Build court preferences text
         const courtPrefs = Object.entries(c.courts)
             .map(([court, count]) => `<li><strong>${court}:</strong> ${count} ${count === 1 ? 'alquiler' : 'alquileres'}</li>`)
@@ -3809,7 +3810,7 @@ function renderClientsTable(filterText = '') {
     }
 }
 
-window.toggleClientDetails = function(detailId) {
+window.toggleClientDetails = function (detailId) {
     const detailRow = document.getElementById(detailId);
     if (detailRow) {
         const isVisible = detailRow.style.display === 'table-row';
