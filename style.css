@@ -1957,5 +1957,287 @@ select option {
     border-color: #f87171;
 }
 
+/* ==========================================
+   Responsive adjustments for Availability Grid on Mobile (768px and down)
+   ========================================== */
+@media (max-width: 768px) {
+    .summary-header-container {
+        flex-direction: column;
+        align-items: stretch !important;
+        gap: 12px !important;
+    }
+
+    .summary-tabs {
+        width: 100%;
+        display: grid !important;
+        grid-template-columns: 1fr 1fr;
+        padding: 3px !important;
+        gap: 4px !important;
+    }
+
+    .summary-tabs .tab-btn {
+        justify-content: center;
+        padding: 8px 6px !important;
+        font-size: 12px !important;
+        font-weight: 600;
+    }
+
+    /* Target the container of text and time toggle buttons inside the tab */
+    #tabAvailabilityContent > div:first-of-type {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 10px !important;
+    }
+
+    #tabAvailabilityContent > div:first-of-type > span {
+        text-align: center;
+        font-size: 12px !important;
+    }
+
+    #tabAvailabilityContent > div:first-of-type > div {
+        display: flex;
+        width: 100%;
+        gap: 4px !important;
+        padding: 3px !important;
+    }
+
+    #tabAvailabilityContent > div:first-of-type > div .btn-toggle-hours {
+        flex: 1;
+        text-align: center;
+        padding: 6px 10px !important;
+        font-size: 11px !important;
+        font-weight: 600;
+    }
+
+    /* Table horizontal scroll styling to ensure columns are clean & readable, never squished */
+    .availability-table {
+        min-width: 560px !important; /* Forces scroll container to act, keeping cells spacious */
+    }
+
+    .availability-table th {
+        font-size: 10px !important;
+        padding: 8px 10px !important;
+    }
+
+    .availability-table th:first-child {
+        width: 90px !important;
+    }
+
+    .availability-table td {
+        padding: 6px 6px !important;
+    }
+
+    /* Make buttons and badges touch-friendly but compact on mobile */
+    .availability-slot-btn,
+    .availability-booked-badge,
+    .availability-blocked-badge {
+        font-size: 10px !important;
+        padding: 6px 4px !important;
+        min-height: 28px;
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+    }
+}
+
+/* Adjustments for even smaller mobile screens (400px and down) */
+@media (max-width: 400px) {
+    .main-content {
+        padding: 12px 8px !important;
+    }
+
+    .calendar-card {
+        padding: 10px !important;
+    }
+    
+    .summary-header-container h3 {
+        font-size: 14px !important;
+    }
+    
+    .summary-tabs .tab-btn {
+        font-size: 11px !important;
+        gap: 4px !important;
+    }
+}
+
+/* Adjustments for extremely narrow mobile screens (360px and down) */
+@media (max-width: 360px) {
+    .time-spinner-wrapper {
+        padding: 0 6px !important;
+    }
+    .time-spinner-wrapper select,
+    .time-spinner-wrapper input {
+        font-size: 13px !important;
+        width: 26px !important;
+    }
+    .time-separator {
+        font-size: 13px !important;
+        margin: 0 1px !important;
+    }
+}
+
+/* ==========================================
+   Color-only Grid Dashboard for Mobile (600px and below)
+   ========================================== */
+@media (max-width: 600px) {
+    /* Prevent table horizontal scrolling by forcing it to fit 100% of container */
+    .availability-table {
+        min-width: 100% !important;
+        table-layout: fixed;
+    }
+
+    /* Set fixed columns */
+    .availability-table th:first-child,
+    .availability-table td:first-child {
+        width: 70px !important;
+        padding: 6px 4px !important;
+        font-size: 10px !important;
+        text-align: center !important;
+    }
+
+    /* Abbreviate table headers to save horizontal space */
+    .availability-table th#courtHeader1 {
+        font-size: 0 !important;
+        text-align: center !important;
+    }
+    .availability-table th#courtHeader1::after {
+        content: 'Grande';
+        font-size: 10px !important;
+        color: var(--text-secondary);
+        font-weight: 700;
+    }
+    
+    .availability-table th#courtHeader2 {
+        font-size: 0 !important;
+        text-align: center !important;
+    }
+    .availability-table th#courtHeader2::after {
+        content: 'Pequeña';
+        font-size: 10px !important;
+        color: var(--text-secondary);
+        font-weight: 700;
+    }
+
+    .availability-table th#courtHeader3 {
+        font-size: 0 !important;
+        text-align: center !important;
+    }
+    .availability-table th#courtHeader3::after {
+        content: 'Vóley';
+        font-size: 10px !important;
+        color: var(--text-secondary);
+        font-weight: 700;
+    }
+
+    .availability-table th {
+        font-size: 9px !important;
+        padding: 6px 2px !important;
+        text-align: center !important;
+    }
+
+    .availability-table td {
+        padding: 4px 3px !important;
+    }
+
+    /* Simplify the "Available Slot" button (+ Reservar) */
+    .availability-slot-btn {
+        font-size: 0 !important; /* Hide long button text */
+        height: 26px;
+        padding: 0 !important;
+        background: #10b981 !important; /* Solid vibrant emerald green */
+        border: none !important;
+        color: white !important;
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        border-radius: 4px;
+        box-shadow: 0 1px 3px rgba(16, 185, 129, 0.2);
+    }
+    
+    .availability-slot-btn svg {
+        display: none !important; /* Hide plus icon to prevent mismatch spacing */
+    }
+    
+    /* Default: display a simple plus sign */
+    .availability-slot-btn::after {
+        content: '+';
+        font-size: 13px !important;
+        font-weight: 800;
+        color: #ffffff;
+    }
+
+    /* If more than 1 court is free, show "+X" (where X is the quantity of free courts) */
+    .availability-slot-btn[data-free="2"]::after {
+        content: '+2';
+    }
+    .availability-slot-btn[data-free="3"]::after {
+        content: '+3';
+    }
+    .availability-slot-btn[data-free="4"]::after {
+        content: '+4';
+    }
+
+    /* Simplify the Booked badge (Occupied slot) */
+    .availability-booked-badge {
+        font-size: 0 !important; /* Hide client names */
+        height: 26px;
+        padding: 0 !important;
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        border-radius: 4px;
+        border: none !important;
+        margin-bottom: 3px !important;
+    }
+
+    /* Turn badges into solid color blocks matching each court category */
+    .availability-booked-badge.court-grande {
+        background: #4f46e5 !important; /* Indigo-600 */
+        box-shadow: 0 1px 3px rgba(79, 70, 229, 0.2);
+    }
+    
+    .availability-booked-badge.court-pequena {
+        background: #db2777 !important; /* Pink-600 */
+        box-shadow: 0 1px 3px rgba(219, 39, 119, 0.2);
+    }
+
+    .availability-booked-badge.court-voley {
+        background: #d97706 !important; /* Amber-600 */
+        box-shadow: 0 1px 3px rgba(217, 119, 6, 0.2);
+    }
+
+    /* Show sport emojis as the only indicator */
+    .availability-booked-badge.court-grande::after,
+    .availability-booked-badge.court-pequena::after {
+        content: '⚽';
+        font-size: 11px !important;
+    }
+
+    .availability-booked-badge.court-voley::after {
+        content: '🏐';
+        font-size: 11px !important;
+    }
+
+    /* Simplify Blocked badges */
+    .availability-blocked-badge {
+        font-size: 0 !important; /* Hide reason text */
+        height: 26px;
+        padding: 0 !important;
+        background: #dc2626 !important; /* Solid Red-600 */
+        border: none !important;
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        border-radius: 4px;
+        margin-bottom: 3px !important;
+        box-shadow: 0 1px 3px rgba(220, 38, 38, 0.2);
+    }
+
+    .availability-blocked-badge::after {
+        content: '🔒';
+        font-size: 11px !important;
+    }
+}
+
 
 

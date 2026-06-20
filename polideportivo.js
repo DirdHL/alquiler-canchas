@@ -2350,7 +2350,7 @@ function updateAvailabilityGrid() {
                     totalFreeCourtsToday += freeCount;
                     let buttonText = `+ Reservar (${freeCount} Libres)`;
                     
-                    html += `<button type="button" class="availability-slot-btn" onclick="openBookingFromGrid('${slot.bookingDateStr}', '${slot.startStr}', '${slot.endStr}', '${court}')">
+                    html += `<button type="button" class="availability-slot-btn" data-free="${freeCount}" onclick="openBookingFromGrid('${slot.bookingDateStr}', '${slot.startStr}', '${slot.endStr}', '${court}')">
                         <i data-lucide="plus" style="width: 11px; height: 11px;"></i> ${buttonText}
                     </button>`;
                 } else {
