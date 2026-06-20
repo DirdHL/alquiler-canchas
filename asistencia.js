@@ -127,8 +127,16 @@ if (formUserOnboarding) {
         e.preventDefault();
         const rawName = onboardingNameInput.value.trim();
         if (rawName) {
-            localStorage.setItem('canchapro_user_name', rawName);
-            displayUserName.textContent = rawName;
+            const formattedName = rawName
+                .split(/\s+/)
+                .map(word => {
+                    if (!word) return '';
+                    return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+                })
+                .filter(word => word.length > 0)
+                .join(' ');
+            localStorage.setItem('canchapro_user_name', formattedName);
+            displayUserName.textContent = formattedName;
             closeModal(modalUserOnboarding);
             addHistoryEntry('crear', `inició sesión en control de asistencia`);
         }
@@ -432,7 +440,15 @@ async function handleEmployeeChange() {
         if (pwd === 'Reservasupabase') {
             const newName = prompt("Ingrese el nombre completo del nuevo trabajador:");
             if (newName && newName.trim()) {
-                const cleanName = newName.trim();
+                const cleanName = newName
+                    .trim()
+                    .split(/\s+/)
+                    .map(word => {
+                        if (!word) return '';
+                        return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+                    })
+                    .filter(word => word.length > 0)
+                    .join(' ');
                 
                 if (!activeEmployeesList.includes(cleanName)) {
                     if (dbMode === 'supabase' && supabaseClient) {

@@ -981,6 +981,15 @@ function populateTimeSelects() {
     // Statically populated via datalists in polideportivo.html
 }
 
+// Helper to transform any name to Title Case (Initial Uppercase, rest lowercase)
+function formatAsesorName(name) {
+    if (!name) return '';
+    return name.trim().split(/\s+/).map(word => {
+        if (!word) return '';
+        return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    }).filter(word => word.length > 0).join(' ');
+}
+
 // Helper to populate the dropdown of advisors with unique previous entries
 function populateAsesoresDropdown(selectedValue = '') {
     const select = document.getElementById('bookingNotes');
@@ -995,13 +1004,15 @@ function populateAsesoresDropdown(selectedValue = '') {
     // Add current user
     const currentUser = localStorage.getItem('canchapro_user_name');
     if (currentUser) {
-        advisors.add(currentUser);
+        const formattedCurrentUser = formatAsesorName(currentUser);
+        if (formattedCurrentUser) advisors.add(formattedCurrentUser);
     }
 
     // Add unique notes (advisor) from all events
     allEvents.forEach(e => {
         if (e.notes && e.notes.trim() && e.notes !== 'Otro...') {
-            advisors.add(e.notes.trim());
+            const formatted = formatAsesorName(e.notes);
+            if (formatted) advisors.add(formatted);
         }
     });
 
@@ -1022,18 +1033,20 @@ function populateAsesoresDropdown(selectedValue = '') {
     const customGroup = document.getElementById('customAsesorGroup');
     const customInput = document.getElementById('bookingNotesCustom');
 
-    if (selectedValue && !advisors.has(selectedValue) && selectedValue !== 'Otro...') {
+    const formattedSelectedValue = formatAsesorName(selectedValue);
+
+    if (formattedSelectedValue && !advisors.has(formattedSelectedValue) && formattedSelectedValue !== 'Otro...') {
         // If the saved value is not in our set, it means it's a custom value
         const optionCustom = document.createElement('option');
-        optionCustom.value = selectedValue;
-        optionCustom.textContent = selectedValue;
+        optionCustom.value = formattedSelectedValue;
+        optionCustom.textContent = formattedSelectedValue;
         select.insertBefore(optionCustom, optionOtro);
-        select.value = selectedValue;
+        select.value = formattedSelectedValue;
         customGroup.classList.add('hidden');
         customInput.required = false;
-    } else if (selectedValue) {
-        select.value = selectedValue;
-        if (selectedValue === 'Otro...') {
+    } else if (formattedSelectedValue) {
+        select.value = formattedSelectedValue;
+        if (formattedSelectedValue === 'Otro...') {
             customGroup.classList.remove('hidden');
             customInput.required = true;
         } else {
@@ -1042,8 +1055,9 @@ function populateAsesoresDropdown(selectedValue = '') {
         }
     } else {
         // Default to current user
-        if (currentUser && advisors.has(currentUser)) {
-            select.value = currentUser;
+        const formattedCurrentUser = formatAsesorName(currentUser);
+        if (formattedCurrentUser && advisors.has(formattedCurrentUser)) {
+            select.value = formattedCurrentUser;
         }
         customGroup.classList.add('hidden');
         customInput.required = false;
@@ -1441,6 +1455,7 @@ async function handleSaveBooking(e) {
     } else {
         notes = notes.trim();
     }
+    notes = formatAsesorName(notes);
     let medio = bookingSourceInput ? bookingSourceInput.value : '';
     if (medio === 'Otro...') {
         medio = bookingSourceCustomInput ? bookingSourceCustomInput.value.trim() : '';
