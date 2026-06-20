@@ -2392,11 +2392,6 @@ function updateAvailabilityGrid() {
         tbody.innerHTML = html;
         if (window.lucide) lucide.createIcons();
     }
-
-    const textEl = document.getElementById('availabilitySummaryText');
-    if (textEl) {
-        textEl.textContent = `${totalFreeCourtsToday} canchas disponibles de ${totalPossibleCourtsToday} turnos totales (${availabilityTimeFilter === 'pico' ? 'Tarde/Noche' : 'Todo el día'})`;
-    }
 }
 
 // Global function to trigger modal open from availability grid cells
