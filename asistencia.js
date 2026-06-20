@@ -27,8 +27,8 @@ const goalProgressBar = document.getElementById('goalProgressBar');
 const progressCurrentText = document.getElementById('progressCurrentText');
 
 const metricWorkedHours = document.getElementById('metricWorkedHours');
-const metricRemainingHours = document.getElementById('metricRemainingHours');
-const metricOvertimeHours = document.getElementById('metricOvertimeHours');
+const metricJustifiedHours = document.getElementById('metricJustifiedHours');
+const metricOwedHours = document.getElementById('metricOwedHours');
 
 const filterEmployee = document.getElementById('filterEmployee');
 const filterMonth = document.getElementById('filterMonth');
@@ -38,6 +38,9 @@ const attendanceTableBody = document.getElementById('attendanceTableBody');
 const statsWorkedHours = document.getElementById('statsWorkedHours');
 const statsJustifiedHours = document.getElementById('statsJustifiedHours');
 const statsTotalMonthHours = document.getElementById('statsTotalMonthHours');
+const statsRequiredHours = document.getElementById('statsRequiredHours');
+const statsOwedHours = document.getElementById('statsOwedHours');
+const labelRequiredHours = document.getElementById('labelRequiredHours');
 const statsDaysWorked = document.getElementById('statsDaysWorked');
 const statsDaysJustified = document.getElementById('statsDaysJustified');
 const statsMonthlyOvertime = document.getElementById('statsMonthlyOvertime');
@@ -666,11 +669,15 @@ async function handleToggleAttendance() {
             const checkInTime = activeShift.check_in;
             const diffHours = calculateDurationInHours(activeShift.date, checkInTime, todayStr, timeStr);
             
+            // Deduct 1 hour for lunch if shift duration is > 5 hours
+            const lunchDeducted = diffHours > 5;
+            const finalHours = lunchDeducted ? Math.max(0, diffHours - 1) : diffHours;
+            
             const updatedShift = {
                 ...activeShift,
                 check_out: timeStr,
-                hours_credited: Number(diffHours.toFixed(2)),
-                notes: `Salida registrada automáticamente a las ${timeStr.substring(0, 5)}`
+                hours_credited: Number(finalHours.toFixed(2)),
+                notes: `Salida registrada automáticamente a las ${timeStr.substring(0, 5)}${lunchDeducted ? ' (Descuento 1h almuerzo)' : ''}`
             };
 
             if (dbMode === 'supabase' && supabaseClient) {
@@ -690,7 +697,7 @@ async function handleToggleAttendance() {
                 saveLocalAttendance(localList);
             }
 
-            const formattedHoursStr = formatHoursText(diffHours);
+            const formattedHoursStr = formatHoursText(finalHours);
             await addHistoryEntry('editar', `marcó SALIDA de la oficina (${formattedHoursStr})`);
         } else {
             // CHECK IN OPERATION
@@ -744,13 +751,16 @@ function updateEmployeeStats() {
         goalProgressBar.style.width = '0%';
         progressCurrentText.textContent = '0.0 h acumuladas';
         metricWorkedHours.textContent = '0.0';
-        metricRemainingHours.textContent = '48.0';
-        metricOvertimeHours.textContent = '0.0';
+        if (metricJustifiedHours) metricJustifiedHours.textContent = '0.0';
+        if (metricOwedHours) metricOwedHours.textContent = '48.0';
 
         // Reset monthly detailed metrics
         if (statsWorkedHours) statsWorkedHours.textContent = '0.0 h';
         if (statsJustifiedHours) statsJustifiedHours.textContent = '0.0 h';
         if (statsTotalMonthHours) statsTotalMonthHours.textContent = '0.0 h';
+        if (statsRequiredHours) statsRequiredHours.textContent = '0.0 h';
+        if (statsOwedHours) statsOwedHours.textContent = '0.0 h';
+        if (labelRequiredHours) labelRequiredHours.textContent = 'Horas Requeridas:';
         if (statsDaysWorked) statsDaysWorked.textContent = '0 días';
         if (statsDaysJustified) statsDaysJustified.textContent = '0 días';
         if (statsMonthlyOvertime) statsMonthlyOvertime.textContent = '0.0 h';
@@ -769,22 +779,28 @@ function updateEmployeeStats() {
         r.date <= sundayStr
     );
 
-    let totalWorked = 0;
+    let weeklyWorked = 0;
+    let weeklyJustified = 0;
     weekRecords.forEach(r => {
-        totalWorked += Number(r.hours_credited || 0);
+        const hours = getRealHoursCredited(r);
+        if (r.type === 'Trabajo') {
+            weeklyWorked += hours;
+        } else if (r.type === 'Feriado' || r.type === 'Permiso') {
+            weeklyJustified += hours;
+        }
     });
 
+    const weeklyTotal = weeklyWorked + weeklyJustified;
     const targetGoal = 48.0;
-    const remaining = Math.max(0, targetGoal - totalWorked);
-    const overtime = Math.max(0, totalWorked - targetGoal);
-    const percent = Math.min(100, (totalWorked / targetGoal) * 100);
+    const weeklyOwed = Math.max(0, targetGoal - weeklyTotal);
+    const percent = Math.min(100, (weeklyTotal / targetGoal) * 100);
 
     progressPercentageText.textContent = `${percent.toFixed(0)}%`;
     goalProgressBar.style.width = `${percent}%`;
-    progressCurrentText.textContent = `${totalWorked.toFixed(1)} h acumuladas esta semana`;
-    metricWorkedHours.textContent = totalWorked.toFixed(1);
-    metricRemainingHours.textContent = remaining.toFixed(1);
-    metricOvertimeHours.textContent = overtime.toFixed(1);
+    progressCurrentText.textContent = `${weeklyTotal.toFixed(1)} h acumuladas esta semana`;
+    if (metricWorkedHours) metricWorkedHours.textContent = weeklyWorked.toFixed(1);
+    if (metricJustifiedHours) metricJustifiedHours.textContent = weeklyJustified.toFixed(1);
+    if (metricOwedHours) metricOwedHours.textContent = weeklyOwed.toFixed(1);
 
     if (percent < 30) {
         goalProgressBar.style.background = '#ef4444';
@@ -807,7 +823,7 @@ function updateEmployeeStats() {
     let daysJustified = 0;
 
     monthRecords.forEach(r => {
-        const hours = Number(r.hours_credited || 0);
+        const hours = getRealHoursCredited(r);
         if (r.type === 'Trabajo') {
             workedHours += hours;
             if (r.check_in) {
@@ -857,7 +873,7 @@ function updateEmployeeStats() {
         
         let weekTotal = 0;
         weekRecords.forEach(wr => {
-            weekTotal += Number(wr.hours_credited || 0);
+            weekTotal += getRealHoursCredited(wr);
         });
         
         if (weekTotal > 48) {
@@ -865,6 +881,22 @@ function updateEmployeeStats() {
         }
     });
 
+    const expectedHours = getExpectedHoursForMonth(selectedMonth);
+    const hoursOwed = Math.max(0, expectedHours - totalMonthHours);
+    
+    const today = new Date();
+    const [year, month] = selectedMonth.split('-').map(Number);
+    const isCurrentMonth = (today.getFullYear() === year && today.getMonth() === (month - 1));
+    
+    if (labelRequiredHours) {
+        labelRequiredHours.textContent = isCurrentMonth ? 'Horas Requeridas (al día de hoy):' : 'Horas Requeridas:';
+    }
+    if (statsRequiredHours) {
+        statsRequiredHours.textContent = `${expectedHours.toFixed(1)} h`;
+    }
+    if (statsOwedHours) {
+        statsOwedHours.textContent = `${hoursOwed.toFixed(1)} h`;
+    }
     if (statsWorkedHours) statsWorkedHours.textContent = `${workedHours.toFixed(1)} h`;
     if (statsJustifiedHours) statsJustifiedHours.textContent = `${justifiedHours.toFixed(1)} h`;
     if (statsTotalMonthHours) statsTotalMonthHours.textContent = `${totalMonthHours.toFixed(1)} h`;
@@ -917,8 +949,15 @@ function renderAttendanceTable() {
         if (r.type === 'Trabajo') typeBadgeClass += ' presente';
         else if (r.type === 'Feriado') typeBadgeClass += ' feriado';
         else if (r.type === 'Permiso') typeBadgeClass += ' permiso';
+        else if (r.type === 'Falta') typeBadgeClass += ' falta';
         
-        const typeLabel = r.type === 'Trabajo' ? 'Trabajo Presencial' : r.type;
+        const typeLabel = r.type === 'Trabajo' ? 'Trabajo Presencial' : (r.type === 'Falta' ? 'Falta / Inasistencia' : r.type);
+
+        // Calculate actual hours and see if lunch was deducted
+        const realHours = getRealHoursCredited(r);
+        const elapsed = r.check_in && r.check_out ? calculateDurationInHours(r.date, r.check_in, r.date, r.check_out) : 0;
+        const lunchDeducted = r.type === 'Trabajo' && elapsed > 5;
+        const lunchIcon = lunchDeducted ? ` <span style="color: #fbbf24; font-size: 11px; cursor: help;" title="Se descontó 1 hora de almuerzo (turno > 5h)">🍴 1h</span>` : '';
 
         return `
             <tr>
@@ -926,7 +965,7 @@ function renderAttendanceTable() {
                 <td>${dateFormatted}</td>
                 <td>${inFormatted}</td>
                 <td>${outFormatted}</td>
-                <td style="font-weight: 600;">${Number(r.hours_credited || 0).toFixed(1)} h</td>
+                <td style="font-weight: 600;">${realHours.toFixed(1)} h${lunchIcon}</td>
                 <td><span class="${typeBadgeClass}">${typeLabel}</span></td>
                 <td style="font-size: 12px; color: var(--text-secondary); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHTML(r.notes || '')}">
                     ${escapeHTML(r.notes || '')}
@@ -977,6 +1016,7 @@ function openAdminRegisterModal() {
     formAdminRegister.reset();
     adminRegisterDate.value = getLocalDateString(new Date());
     adminRegisterHours.value = "8.0";
+    adminRegisterHours.disabled = false;
     adminRegisterError.style.display = 'none';
     
     // Handle conditional fields
@@ -986,12 +1026,27 @@ function openAdminRegisterModal() {
 }
 
 function toggleAdminEmployeeSelect() {
-    if (adminRegisterType.value === 'Feriado') {
+    const type = adminRegisterType.value;
+    const hoursLabel = document.querySelector('label[for="adminRegisterHours"]');
+    
+    if (type === 'Feriado') {
         adminEmployeeSelectGroup.style.display = 'none';
         adminEmployeeSelect.required = false;
-    } else {
+        adminRegisterHours.value = "8.0";
+        adminRegisterHours.disabled = false;
+        if (hoursLabel) hoursLabel.textContent = "Horas Justificadas Abonadas *";
+    } else if (type === 'Falta') {
         adminEmployeeSelectGroup.style.display = 'block';
         adminEmployeeSelect.required = true;
+        adminRegisterHours.value = "0.0";
+        adminRegisterHours.disabled = true;
+        if (hoursLabel) hoursLabel.textContent = "Horas Abonadas (Falta = 0h) *";
+    } else { // Permiso
+        adminEmployeeSelectGroup.style.display = 'block';
+        adminEmployeeSelect.required = true;
+        adminRegisterHours.value = "8.0";
+        adminRegisterHours.disabled = false;
+        if (hoursLabel) hoursLabel.textContent = "Horas Justificadas Abonadas *";
     }
 }
 
@@ -1002,10 +1057,11 @@ async function handleAdminRegisterSubmit(e) {
 
     const type = adminRegisterType.value;
     const date = adminRegisterDate.value;
-    const hours = Number(adminRegisterHours.value);
+    const isFalta = type === 'Falta';
+    const hours = isFalta ? 0 : Number(adminRegisterHours.value);
     const notes = adminRegisterNotes.value.trim();
     
-    if (!date || isNaN(hours) || hours <= 0) {
+    if (!date || isNaN(hours) || (hours <= 0 && !isFalta)) {
         adminRegisterError.textContent = '⚠️ Complete todos los campos con valores válidos.';
         adminRegisterError.style.display = 'block';
         return;
@@ -1043,9 +1099,9 @@ async function handleAdminRegisterSubmit(e) {
                 date: date,
                 check_in: null,
                 check_out: null,
-                type: 'Permiso',
-                hours_credited: hours,
-                notes: notes || 'Permiso Especial'
+                type: type, // 'Permiso' or 'Falta'
+                hours_credited: type === 'Falta' ? 0 : hours,
+                notes: notes || (type === 'Falta' ? 'Falta / Inasistencia' : 'Permiso Especial')
             });
         }
 
@@ -1065,9 +1121,14 @@ async function handleAdminRegisterSubmit(e) {
         }
 
         // Add history log entry
-        const detailsLog = type === 'Feriado' 
-            ? `registró feriado nacional del ${formatDateDDMMYYYY(date)}: ${notes || 'Feriado'}`
-            : `registró permiso para ${adminEmployeeSelect.value} del ${formatDateDDMMYYYY(date)}: ${notes || 'Permiso'}`;
+        let detailsLog = '';
+        if (type === 'Feriado') {
+            detailsLog = `registró feriado nacional del ${formatDateDDMMYYYY(date)}: ${notes || 'Feriado'}`;
+        } else if (type === 'Falta') {
+            detailsLog = `registró falta para ${adminEmployeeSelect.value} del ${formatDateDDMMYYYY(date)}: ${notes || 'Falta'}`;
+        } else {
+            detailsLog = `registró permiso para ${adminEmployeeSelect.value} del ${formatDateDDMMYYYY(date)}: ${notes || 'Permiso'}`;
+        }
         
         await addHistoryEntry('crear', detailsLog);
 
@@ -1313,6 +1374,43 @@ function escapeHTML(str) {
     return str.replace(/[&<>'"]/g,
         tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
     );
+}
+
+// Calculate expected working hours for a given month (Mon-Sat, 8h/day).
+// If it is the current month, only calculate up to today's date.
+function getExpectedHoursForMonth(yearMonthStr) {
+    const today = new Date();
+    const [year, month] = yearMonthStr.split('-').map(Number);
+    const jsMonth = month - 1;
+    
+    const isCurrentMonth = (today.getFullYear() === year && today.getMonth() === jsMonth);
+    const lastDay = isCurrentMonth ? today.getDate() : new Date(year, month, 0).getDate();
+    
+    let workingDays = 0;
+    for (let day = 1; day <= lastDay; day++) {
+        const date = new Date(year, jsMonth, day);
+        const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+        if (dayOfWeek !== 0) { // Exclude Sunday
+            workingDays++;
+        }
+    }
+    return workingDays * 8;
+}
+
+// Get real credited hours, deducting 1 hour for lunch if it's a Trabajo shift > 5 hours
+function getRealHoursCredited(r) {
+    if (r.type !== 'Trabajo' || !r.check_in || !r.check_out) {
+        return Number(r.hours_credited || 0);
+    }
+    const elapsed = calculateDurationInHours(r.date, r.check_in, r.date, r.check_out);
+    const savedHours = Number(r.hours_credited || 0);
+    
+    // If the saved hours are equal to the elapsed hours (within rounding error),
+    // and the elapsed time is greater than 5 hours, we dynamically deduct 1 hour.
+    if (elapsed > 5 && Math.abs(savedHours - elapsed) < 0.05) {
+        return Math.max(0, elapsed - 1);
+    }
+    return savedHours;
 }
 
 // Expose handleDeleteRecord globally for inline onclick

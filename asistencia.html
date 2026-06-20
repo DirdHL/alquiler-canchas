@@ -155,15 +155,15 @@
                         <div class="metrics-row">
                             <div class="metric-box">
                                 <div class="val" id="metricWorkedHours">0.0</div>
-                                <div class="lbl">Horas sem.</div>
+                                <div class="lbl">Presenciales</div>
                             </div>
                             <div class="metric-box">
-                                <div class="val" id="metricRemainingHours" style="color: #fbbf24;">48.0</div>
-                                <div class="lbl">Restantes</div>
+                                <div class="val" id="metricJustifiedHours" style="color: #c084fc;">0.0</div>
+                                <div class="lbl">Justificadas</div>
                             </div>
                             <div class="metric-box">
-                                <div class="val" id="metricOvertimeHours" style="color: #60a5fa;">0.0</div>
-                                <div class="lbl">Horas extra</div>
+                                <div class="val" id="metricOwedHours" style="color: #f87171;">48.0</div>
+                                <div class="lbl">Se Deben</div>
                             </div>
                         </div>
                     </div>
@@ -184,21 +184,9 @@
                                 <span style="color: var(--text-secondary);">Horas Justificadas:</span>
                                 <strong id="statsJustifiedHours" style="color: #c084fc;">0.0 h</strong>
                             </div>
-                            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
-                                <span style="color: var(--text-secondary);">Total Horas Acumuladas:</span>
-                                <strong id="statsTotalMonthHours" style="color: #34d399;">0.0 h</strong>
-                            </div>
-                            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
-                                <span style="color: var(--text-secondary);">Días en Oficina:</span>
-                                <strong id="statsDaysWorked">0 días</strong>
-                            </div>
-                            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
-                                <span style="color: var(--text-secondary);">Días de Feriado / Permiso:</span>
-                                <strong id="statsDaysJustified">0 días</strong>
-                            </div>
                             <div style="display: flex; justify-content: space-between;">
-                                <span style="color: var(--text-secondary);">Horas Extra del Mes:</span>
-                                <strong id="statsMonthlyOvertime" style="color: #fbbf24;">0.0 h</strong>
+                                <span style="color: var(--text-secondary);">Horas que se Deben:</span>
+                                <strong id="statsOwedHours" style="color: #f87171;">0.0 h</strong>
                             </div>
                         </div>
                     </div>
@@ -328,6 +316,7 @@
                             <select id="adminRegisterType" required>
                                 <option value="Feriado">Feriado Nacional (Aplica a todos los trabajadores)</option>
                                 <option value="Permiso">Permiso Especial (Aplica a un trabajador específico)</option>
+                                <option value="Falta">Falta / Inasistencia (Aplica a un trabajador específico)</option>
                             </select>
                         </div>
                     </div>
