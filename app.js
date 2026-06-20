@@ -164,15 +164,30 @@ function initCalendar() {
         editable: false,
         height: 'auto',
         nowIndicator: true,
-        datesSet: function () {
+        datesSet: function (info) {
             updateDailySummary();
-            if (calendar) {
-                const currentDate = calendar.getDate();
+            const currentCalendar = info.view.calendar;
+            if (currentCalendar) {
+                const currentDate = currentCalendar.getDate();
                 const year = currentDate.getFullYear();
                 const month = String(currentDate.getMonth() + 1).padStart(2, '0');
                 const day = String(currentDate.getDate()).padStart(2, '0');
                 const dateStr = `${year}-${month}-${day}`;
                 highlightSelectedDay(dateStr);
+
+                // Override title format in timeGridDay view to prevent showing a range
+                if (info.view.type === 'timeGridDay') {
+                    const titleEl = document.querySelector('.fc-toolbar-title');
+                    if (titleEl) {
+                        const options = { day: 'numeric', month: 'long', year: 'numeric' };
+                        let formattedDate = currentDate.toLocaleDateString('es-ES', options);
+                        if (titleEl.firstChild) {
+                            titleEl.firstChild.nodeValue = formattedDate;
+                        } else {
+                            titleEl.textContent = formattedDate;
+                        }
+                    }
+                }
             }
         },
 
