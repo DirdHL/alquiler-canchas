@@ -11,6 +11,7 @@ let cachedClientsData = [];
 let currentClientsFilter = '';
 let statsCountdownInterval = null;
 let bookingModalIsAdmin = false;
+let availabilityTimeFilter = 'pico';
 
 // DOM Elements
 const sidebar = document.getElementById('sidebar');
@@ -742,6 +743,51 @@ function setupEventListeners() {
         formStatsRates.addEventListener('submit', handleStatsRatesSave);
     }
 
+    // Tabs in Daily Summary
+    const btnTabReservations = document.getElementById('btnTabReservations');
+    const btnTabAvailability = document.getElementById('btnTabAvailability');
+    const tabReservationsContent = document.getElementById('tabReservationsContent');
+    const tabAvailabilityContent = document.getElementById('tabAvailabilityContent');
+
+    if (btnTabReservations && btnTabAvailability) {
+        btnTabReservations.addEventListener('click', () => {
+            btnTabReservations.classList.add('active');
+            btnTabAvailability.classList.remove('active');
+            if (tabReservationsContent) tabReservationsContent.style.display = 'block';
+            if (tabAvailabilityContent) tabAvailabilityContent.style.display = 'none';
+        });
+
+        btnTabAvailability.addEventListener('click', () => {
+            btnTabAvailability.classList.add('active');
+            btnTabReservations.classList.remove('active');
+            if (tabReservationsContent) tabReservationsContent.style.display = 'none';
+            if (tabAvailabilityContent) {
+                tabAvailabilityContent.style.display = 'block';
+                updateAvailabilityGrid();
+            }
+        });
+    }
+
+    // Toggle hours in Availability Tab
+    const btnHoursPico = document.getElementById('btnHoursPico');
+    const btnHoursAll = document.getElementById('btnHoursAll');
+
+    if (btnHoursPico && btnHoursAll) {
+        btnHoursPico.addEventListener('click', () => {
+            btnHoursPico.classList.add('active');
+            btnHoursAll.classList.remove('active');
+            availabilityTimeFilter = 'pico';
+            updateAvailabilityGrid();
+        });
+
+        btnHoursAll.addEventListener('click', () => {
+            btnHoursAll.classList.add('active');
+            btnHoursPico.classList.remove('active');
+            availabilityTimeFilter = 'all';
+            updateAvailabilityGrid();
+        });
+    }
+
     // Make date input show its picker when clicking on the left icon (SVG)
     document.querySelectorAll('.input-wrapper').forEach(wrapper => {
         const input = wrapper.querySelector('input[type="date"]');
@@ -1147,6 +1193,10 @@ function openBookingModal(booking = null, defaults = null) {
                 bookingEndTimeInput.value = `${formattedHour}:${formattedMin}`;
             } else {
                 bookingEndTimeInput.value = defaults.end_time ? defaults.end_time.substring(0, 5) : "";
+            }
+
+            if (defaults.court) {
+                bookingCourtInput.value = defaults.court;
             }
         } else {
             // Standard defaults
@@ -2079,6 +2129,8 @@ function updateDailySummary() {
         summaryDateLabel.textContent = formattedLabel.charAt(0).toUpperCase() + formattedLabel.slice(1);
     }
 
+    updateAvailabilityGrid();
+
     const summaryListContainer = document.getElementById('dailySummaryList');
     if (!summaryListContainer) return;
 
@@ -2159,6 +2211,179 @@ window.openEditFromSummary = function (id) {
     if (booking) {
         openBookingModal(booking);
     }
+};
+
+// Render interactive court availability grid for Polideportivo
+function updateAvailabilityGrid() {
+    if (!calendar) return;
+    const tabAvailabilityContent = document.getElementById('tabAvailabilityContent');
+    if (!tabAvailabilityContent || tabAvailabilityContent.style.display === 'none') return;
+
+    const currentDate = calendar.getDate();
+    const year = currentDate.getFullYear();
+    const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+    const day = String(currentDate.getDate()).padStart(2, '0');
+    const dateStr = `${year}-${month}-${day}`;
+
+    const courts = ['Cancha Grande', 'Cancha Pequeña', 'Cancha de Vóley'];
+
+    const capacities = {
+        'Cancha Grande': 3,
+        'Cancha Pequeña': 4,
+        'Cancha de Vóley': 4
+    };
+
+    // Generate slots
+    const slotDuration = 30; // minutes
+    const numSlots = (19 * 60) / slotDuration; // 19 hours from 06:00 to 01:00 AM
+
+    const slots = [];
+    const yr = parseInt(year, 10);
+    const mo = parseInt(month, 10) - 1;
+    const dy = parseInt(day, 10);
+
+    for (let i = 0; i < numSlots; i++) {
+        const startOffset = i * slotDuration;
+        const endOffset = (i + 1) * slotDuration;
+
+        const startTotalMins = 360 + startOffset;
+        const endTotalMins = 360 + endOffset;
+
+        const startDayOffset = Math.floor(startTotalMins / 1440);
+        const startHour = Math.floor((startTotalMins % 1440) / 60);
+        const startMin = (startTotalMins % 1440) % 60;
+
+        const endDayOffset = Math.floor(endTotalMins / 1440);
+        const endHour = Math.floor((endTotalMins % 1440) / 60);
+        const endMin = (endTotalMins % 1440) % 60;
+
+        const slotStartDate = new Date(yr, mo, dy + startDayOffset, startHour, startMin, 0);
+        const slotEndDate = new Date(yr, mo, dy + endDayOffset, endHour, endMin, 0);
+
+        const startTimeStr = `${String(startHour).padStart(2, '0')}:${String(startMin).padStart(2, '0')}`;
+        const endTimeStr = `${String(endHour).padStart(2, '0')}:${String(endMin).padStart(2, '0')}`;
+
+        const bookingDate = new Date(yr, mo, dy + startDayOffset);
+        const bookingDateStr = `${bookingDate.getFullYear()}-${String(bookingDate.getMonth() + 1).padStart(2, '0')}-${String(bookingDate.getDate()).padStart(2, '0')}`;
+
+        // Filter by peak hours if active: starts between 13:00 and 23:00 (ends 23:30)
+        if (availabilityTimeFilter === 'pico') {
+            if (startDayOffset > 0 || startHour < 13 || startHour >= 23) {
+                continue;
+            }
+        }
+
+        slots.push({
+            startStr: startTimeStr,
+            endStr: endTimeStr,
+            bookingDateStr: bookingDateStr,
+            startDate: slotStartDate,
+            endDate: slotEndDate,
+            displayTime: `${formatTimeHHMM(startTimeStr)} - ${formatTimeHHMM(endTimeStr)}`
+        });
+    }
+
+    let html = '';
+    let totalFreeCourtsToday = 0;
+    let totalPossibleCourtsToday = 0;
+
+    slots.forEach(slot => {
+        html += `<tr>`;
+        html += `<td style="padding: 10px 16px; font-weight: 600; color: var(--text-primary); border-bottom: 1px solid rgba(255, 255, 255, 0.04);">${slot.displayTime}</td>`;
+
+        courts.forEach(court => {
+            const capacity = capacities[court];
+            totalPossibleCourtsToday += capacity;
+
+            // Check if there is an overlapping total block ("Todas")
+            const totalBlock = allEvents.find(e => {
+                if (e.court === 'Todas') {
+                    const { start: existStart, end: existEnd } = getStartAndEndDates(e.date, e.start_time, e.end_time);
+                    return existStart < slot.endDate && existEnd > slot.startDate;
+                }
+                return false;
+            });
+
+            html += `<td style="padding: 6px 8px; border-bottom: 1px solid rgba(255, 255, 255, 0.04); vertical-align: top;">`;
+            
+            if (totalBlock) {
+                let blockReason = totalBlock.name;
+                if (blockReason.startsWith('🔒 Bloqueo: ')) {
+                    blockReason = blockReason.replace('🔒 Bloqueo: ', '');
+                } else if (blockReason.startsWith('🔒 Bloqueo:')) {
+                    blockReason = blockReason.replace('🔒 Bloqueo:', '');
+                }
+                html += `<span class="availability-blocked-badge" onclick="openEditFromSummary('${totalBlock.id}')" title="🔒 Bloqueo Total: ${escapeHTML(blockReason)}" style="margin-bottom: 4px;">🔒 Bloqueo Total: ${escapeHTML(blockReason)}</span>`;
+            } else {
+                // Find all bookings for this court category overlapping with this slot
+                const activeBookings = allEvents.filter(e => {
+                    if (e.court === court) {
+                        const { start: existStart, end: existEnd } = getStartAndEndDates(e.date, e.start_time, e.end_time);
+                        return existStart < slot.endDate && existEnd > slot.startDate;
+                    }
+                    return false;
+                });
+
+                // Display active bookings
+                activeBookings.forEach(booking => {
+                    const isBlock = booking.sport === 'Bloqueo';
+                    if (isBlock) {
+                        let blockReason = booking.name;
+                        if (blockReason.startsWith('🔒 Bloqueo: ')) {
+                            blockReason = blockReason.replace('🔒 Bloqueo: ', '');
+                        } else if (blockReason.startsWith('🔒 Bloqueo:')) {
+                            blockReason = blockReason.replace('🔒 Bloqueo:', '');
+                        }
+                        html += `<span class="availability-blocked-badge" onclick="openEditFromSummary('${booking.id}')" title="🔒 Bloqueo: ${escapeHTML(blockReason)}" style="margin-bottom: 4px; display: block;">🔒 ${escapeHTML(blockReason)}</span>`;
+                    } else {
+                        let courtClass = 'court-grande';
+                        if (court === 'Cancha Pequeña') courtClass = 'court-pequena';
+                        if (court === 'Cancha de Vóley') courtClass = 'court-voley';
+                        const sportEmoji = booking.sport === 'Vóley' ? '🏐' : '⚽';
+                        html += `<span class="availability-booked-badge ${courtClass}" onclick="openEditFromSummary('${booking.id}')" title="Reservado: ${escapeHTML(booking.name)} (${booking.sport})" style="margin-bottom: 4px; display: block;">${sportEmoji} ${escapeHTML(booking.name)}</span>`;
+                    }
+                });
+
+                // Display quick booking button if there is remaining capacity
+                const freeCount = capacity - activeBookings.length;
+                if (freeCount > 0) {
+                    totalFreeCourtsToday += freeCount;
+                    let buttonText = `+ Reservar (${freeCount} Libres)`;
+                    
+                    html += `<button type="button" class="availability-slot-btn" onclick="openBookingFromGrid('${slot.bookingDateStr}', '${slot.startStr}', '${slot.endStr}', '${court}')">
+                        <i data-lucide="plus" style="width: 11px; height: 11px;"></i> ${buttonText}
+                    </button>`;
+                } else {
+                    html += `<div style="font-size: 10px; color: var(--danger); font-weight: 700; text-align: center; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px;">🔴 Completo</div>`;
+                }
+            }
+            
+            html += `</td>`;
+        });
+
+        html += `</tr>`;
+    });
+
+    const tbody = document.getElementById('availabilityTableBody');
+    if (tbody) {
+        tbody.innerHTML = html;
+        if (window.lucide) lucide.createIcons();
+    }
+
+    const textEl = document.getElementById('availabilitySummaryText');
+    if (textEl) {
+        textEl.textContent = `${totalFreeCourtsToday} canchas disponibles de ${totalPossibleCourtsToday} turnos totales (${availabilityTimeFilter === 'pico' ? 'Tarde/Noche' : 'Todo el día'})`;
+    }
+}
+
+// Global function to trigger modal open from availability grid cells
+window.openBookingFromGrid = function (dateStr, startTime, endTime, court) {
+    openBookingModal(null, {
+        date: dateStr,
+        start_time: startTime,
+        end_time: endTime,
+        court: court
+    });
 };
 
 function highlightSelectedDay(dateStr) {

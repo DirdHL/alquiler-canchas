@@ -1792,4 +1792,170 @@ select option {
     transform: none !important;
 }
 
+/* ==========================================
+   Daily Summary Availability Grid & Tabs
+   ========================================== */
+.summary-tabs .tab-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 6px 12px;
+    border-radius: var(--radius-sm);
+    transition: var(--transition-smooth);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.summary-tabs .tab-btn.active {
+    background: var(--primary) !important;
+    color: white !important;
+    box-shadow: 0 2px 8px var(--primary-glow);
+}
+
+.btn-toggle-hours {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: var(--transition-smooth);
+}
+
+.btn-toggle-hours.active {
+    background: var(--primary) !important;
+    color: white !important;
+}
+
+.availability-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 13px;
+}
+
+.availability-table th {
+    padding: 10px 16px;
+    color: var(--text-secondary);
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.availability-table td {
+    padding: 6px 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    vertical-align: top;
+}
+
+.availability-table tr:hover {
+    background: rgba(255, 255, 255, 0.01);
+}
+
+.availability-slot-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    width: 100%;
+    padding: 4px 8px;
+    border-radius: var(--radius-sm);
+    background: rgba(16, 185, 129, 0.08);
+    border: 1px dashed rgba(16, 185, 129, 0.3);
+    color: #34d399;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition-smooth);
+    text-align: center;
+}
+
+.availability-slot-btn:hover {
+    background: var(--primary);
+    border-style: solid;
+    border-color: var(--primary);
+    color: white;
+    box-shadow: 0 2px 8px var(--primary-glow);
+}
+
+.availability-booked-badge {
+    display: block;
+    width: 100%;
+    padding: 4px 8px;
+    border-radius: var(--radius-sm);
+    font-size: 11px;
+    font-weight: 600;
+    text-align: center;
+    cursor: pointer;
+    transition: var(--transition-smooth);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.availability-booked-badge.court-grande {
+    background: rgba(99, 102, 241, 0.15);
+    border: 1px solid rgba(99, 102, 241, 0.4);
+    color: #818cf8;
+}
+
+.availability-booked-badge.court-grande:hover {
+    background: rgba(99, 102, 241, 0.25);
+    border-color: #818cf8;
+}
+
+.availability-booked-badge.court-pequena {
+    background: rgba(236, 72, 153, 0.15);
+    border: 1px solid rgba(236, 72, 153, 0.4);
+    color: #f472b6;
+}
+
+.availability-booked-badge.court-pequena:hover {
+    background: rgba(236, 72, 153, 0.25);
+    border-color: #f472b6;
+}
+
+.availability-booked-badge.court-voley {
+    background: rgba(245, 158, 11, 0.15);
+    border: 1px solid rgba(245, 158, 11, 0.4);
+    color: #fbbf24;
+}
+
+.availability-booked-badge.court-voley:hover {
+    background: rgba(245, 158, 11, 0.25);
+    border-color: #fbbf24;
+}
+
+.availability-blocked-badge {
+    display: block;
+    width: 100%;
+    padding: 4px 8px;
+    border-radius: var(--radius-sm);
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    color: #f87171;
+    font-size: 11px;
+    font-weight: 600;
+    text-align: center;
+    cursor: pointer;
+    transition: var(--transition-smooth);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.availability-blocked-badge:hover {
+    background: rgba(239, 68, 68, 0.25);
+    border-color: #f87171;
+}
+
+
 
