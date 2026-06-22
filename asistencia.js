@@ -351,7 +351,7 @@ function populateEmployeeDropdowns() {
     optAdd.value = '_add_new_';
     optAdd.textContent = '➕ Agregar nuevo trabajador...';
     optAdd.style.fontWeight = '600';
-    optAdd.style.color = '#818cf8';
+    optAdd.style.color = 'var(--primary)';
     employeeSelect.appendChild(optAdd);
 
     // Admin option to delete a worker
@@ -359,7 +359,7 @@ function populateEmployeeDropdowns() {
     optDel.value = '_delete_';
     optDel.textContent = '➖ Eliminar trabajador...';
     optDel.style.fontWeight = '600';
-    optDel.style.color = '#ef4444';
+    optDel.style.color = 'var(--danger)';
     employeeSelect.appendChild(optDel);
 
     // 2. Filter Table dropdown (All employees who have records + active ones)
@@ -695,8 +695,8 @@ async function handleEmployeeChange() {
         `;
         btnToggleAttendance.className = 'btn btn-primary';
         btnToggleAttendance.innerHTML = '<i data-lucide="play"></i> Iniciar Nuevo Turno (Check-In)';
-        btnToggleAttendance.style.background = '#6366f1';
-        btnToggleAttendance.style.boxShadow = '0 4px 14px rgba(99, 102, 241, 0.25)';
+        btnToggleAttendance.style.background = 'var(--primary)';
+        btnToggleAttendance.style.boxShadow = '0 4px 14px var(--primary-glow)';
     } else {
         // No attendance recorded today -> Action: CHECK IN
         if (lunchToggleGroup) lunchToggleGroup.style.display = 'none';
@@ -707,8 +707,8 @@ async function handleEmployeeChange() {
         `;
         btnToggleAttendance.className = 'btn btn-primary';
         btnToggleAttendance.innerHTML = '<i data-lucide="log-in"></i> Marcar Entrada (Check-In)';
-        btnToggleAttendance.style.background = '#6366f1';
-        btnToggleAttendance.style.boxShadow = '0 4px 14px rgba(99, 102, 241, 0.25)';
+        btnToggleAttendance.style.background = 'var(--primary)';
+        btnToggleAttendance.style.boxShadow = '0 4px 14px var(--primary-glow)';
     }
 
     if (window.lucide) lucide.createIcons();
@@ -893,11 +893,11 @@ function updateEmployeeStats() {
     if (metricOwedHours) metricOwedHours.textContent = weeklyOwed.toFixed(1);
 
     if (percent < 30) {
-        goalProgressBar.style.background = '#ef4444';
+        goalProgressBar.style.background = 'var(--progress-low, #ff758c)';
     } else if (percent < 80) {
-        goalProgressBar.style.background = '#fbbf24';
+        goalProgressBar.style.background = 'var(--progress-medium, #fbd07c)';
     } else {
-        goalProgressBar.style.background = '#10b981';
+        goalProgressBar.style.background = 'var(--progress-high, var(--rainbow-gradient))';
     }
 
     // --- 2. MONTHLY ACCUMULATED STATS ---

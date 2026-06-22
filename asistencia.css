@@ -1,7 +1,343 @@
 /* ==========================================================================
-   CanchaPro - Attendance System CSS
-   Extends style.css with Premium dark mode and glassmorphism elements
+   CanchaPro - Attendance System CSS (Rediseño Rosa, Arcoíris y Soles)
+   Extends style.css with a premium vibrant pink theme, glassmorphism,
+   moving rainbow gradients, and solar-themed animation elements.
    ========================================================================== */
+
+:root {
+    /* Color Palette (Vibrant Pink & Sunrise Gold) */
+    --bg-primary: #fff0f6; /* Pastel lavender-pink */
+    --bg-secondary: #ffe4e6; /* Soft misty-rose */
+    --bg-card: rgba(255, 255, 255, 0.78); /* High contrast glassmorphic white card */
+    --border-color: rgba(244, 63, 94, 0.18); /* Pink-rose transparent border */
+
+    --text-primary: #830b42; /* Deep raspberry for readability */
+    --text-secondary: #b81d66; /* Medium dark rose */
+    --text-muted: #db2777; /* Vibrant pink */
+
+    --primary: #ff5e97; /* Bright hot pink */
+    --primary-hover: #e03a74; /* Deep pink hover */
+    --primary-glow: rgba(255, 94, 151, 0.25);
+
+    --accent-grande: #e03a74;
+    --accent-pequena: #ff85a2;
+    --danger: #f43f5e;
+    --danger-hover: #e11d48;
+
+    /* Rainbow and sun additions */
+    --rainbow-gradient: linear-gradient(90deg, #ff4e50, #f9d423, #38ef7d, #00f2fe, #4facfe, #9b51e0, #ff007f, #ff4e50);
+    --rainbow-gradient-text: linear-gradient(90deg, #e03a74, #f99f1b, #0ebd66, #0099e5, #883de0, #e03a74);
+    --sun-gold: #f59e0b;
+    --progress-low: linear-gradient(90deg, #ff758c 0%, #ff7eb3 100%);
+    --progress-medium: linear-gradient(90deg, #ff7eb3 0%, #fbd07c 100%);
+    --progress-high: var(--rainbow-gradient);
+}
+
+/* Force light pink body background with animation */
+body {
+    background: linear-gradient(135deg, #fff0f6 0%, #ffe4e6 50%, #fffbeb 100%) !important;
+    color: var(--text-primary) !important;
+    position: relative;
+    overflow-x: hidden;
+}
+
+/* Decorative Background Elements */
+.sun-decoration-bg {
+    position: fixed;
+    top: -100px;
+    right: -100px;
+    width: 450px;
+    height: 450px;
+    background: radial-gradient(circle, rgba(253, 224, 71, 0.3) 0%, rgba(245, 158, 11, 0.08) 60%, transparent 100%);
+    border-radius: 50%;
+    filter: blur(50px);
+    z-index: -1;
+    pointer-events: none;
+    animation: float-sun 12s infinite alternate ease-in-out;
+}
+
+.rainbow-decoration-bg {
+    position: fixed;
+    bottom: -150px;
+    left: -100px;
+    width: 650px;
+    height: 450px;
+    background: linear-gradient(135deg, 
+        rgba(255, 94, 151, 0.12) 0%,
+        rgba(251, 146, 60, 0.12) 20%,
+        rgba(250, 204, 21, 0.1) 40%,
+        rgba(74, 222, 128, 0.1) 60%,
+        rgba(96, 165, 250, 0.1) 80%,
+        rgba(192, 132, 252, 0.12) 100%);
+    filter: blur(70px);
+    border-radius: 50%;
+    z-index: -2;
+    pointer-events: none;
+    animation: float-rainbow 16s infinite alternate ease-in-out;
+}
+
+@keyframes float-sun {
+    0% { transform: scale(1) translate(0, 0); }
+    100% { transform: scale(1.15) translate(-30px, 30px); }
+}
+
+@keyframes float-rainbow {
+    0% { transform: scale(1) translate(0, 0) rotate(0deg); }
+    100% { transform: scale(1.1) translate(40px, -20px) rotate(15deg); }
+}
+
+/* Override sidebar for a pink/glassmorphic look */
+.sidebar {
+    background: rgba(255, 240, 245, 0.8) !important;
+    border-right: 1px solid rgba(255, 105, 180, 0.25) !important;
+    color: var(--text-primary) !important;
+}
+
+.sidebar h2 {
+    color: var(--text-primary) !important;
+}
+
+.sidebar h2 span {
+    color: var(--primary) !important;
+}
+
+/* Stat Cards in sidebar */
+.stats-card, .status-indicator-card, .user-profile-card {
+    background: rgba(255, 255, 255, 0.6) !important;
+    border: 1px solid rgba(255, 105, 180, 0.2) !important;
+}
+
+/* General Card enhancements with Rainbow Top Border */
+.clock-card, .progress-card, .calendar-card {
+    position: relative;
+    overflow: hidden;
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border-color) !important;
+    box-shadow: 0 10px 30px rgba(255, 105, 180, 0.08) !important;
+}
+
+.clock-card::before, .progress-card::before, .calendar-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4.5px;
+    background: var(--rainbow-gradient);
+    background-size: 200% 100%;
+    animation: rainbow-shift 6s linear infinite;
+    z-index: 10;
+}
+
+@keyframes rainbow-shift {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 200% 50%; }
+}
+
+/* Beautiful Animated Rainbow Text class */
+.rainbow-text {
+    background: var(--rainbow-gradient-text);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: rainbow-shift 6s linear infinite;
+}
+
+/* Slow Rotating Sun Icon class */
+.sun-header-spin {
+    animation: spin-slow 15s linear infinite;
+    color: var(--sun-gold) !important;
+    filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.4));
+}
+
+@keyframes spin-slow {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Clock Display styles (Vibrant Sunrise/Sunset theme) */
+.live-time-display {
+    background: linear-gradient(135deg, #ff5e97 0%, #ff85a2 50%, #f9d423 100%) !important;
+    border: none !important;
+    box-shadow: 0 6px 20px rgba(255, 94, 151, 0.25) !important;
+    color: #ffffff !important;
+    position: relative;
+    overflow: hidden;
+}
+
+.live-time-display::after {
+    content: '';
+    position: absolute;
+    top: -20px;
+    right: -20px;
+    width: 70px;
+    height: 70px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 50%;
+    filter: blur(10px);
+}
+
+.live-time-display .time {
+    color: #ffffff !important;
+    text-shadow: 0 2px 8px rgba(131, 11, 66, 0.25) !important;
+}
+
+.live-time-display .date {
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* Input and Select visibility updates for light mode readability */
+select, input, textarea {
+    background: rgba(255, 255, 255, 0.92) !important;
+    border: 1px solid rgba(255, 105, 180, 0.3) !important;
+    color: var(--text-primary) !important;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.05) !important;
+}
+
+select:focus, input:focus {
+    border-color: var(--primary) !important;
+    box-shadow: 0 0 0 3px rgba(255, 94, 151, 0.15), inset 0 1px 3px rgba(0,0,0,0.05) !important;
+}
+
+select option {
+    background: #ffffff !important;
+    color: var(--text-primary) !important;
+}
+
+/* Table light mode styling */
+.attendance-table th {
+    background: rgba(255, 94, 151, 0.06) !important;
+    color: var(--text-secondary) !important;
+    border-bottom: 2px solid rgba(255, 105, 180, 0.2) !important;
+}
+
+.attendance-table td {
+    color: var(--text-primary) !important;
+    border-bottom: 1px solid rgba(255, 105, 180, 0.1) !important;
+}
+
+.attendance-table tbody tr:hover {
+    background: rgba(255, 94, 151, 0.03) !important;
+}
+
+/* Modal theme styling */
+.modal-backdrop {
+    background: rgba(131, 11, 66, 0.4) !important; /* Soft rose translucent overlay */
+}
+
+.modal-card {
+    background: #fffbfa !important;
+    border: 1px solid rgba(255, 105, 180, 0.35) !important;
+    color: var(--text-primary) !important;
+    box-shadow: 0 20px 50px rgba(131, 11, 66, 0.18) !important;
+}
+
+.modal-header {
+    border-bottom: 1px solid rgba(255, 105, 180, 0.15) !important;
+}
+
+.modal-actions {
+    border-top: 1px solid rgba(255, 105, 180, 0.15) !important;
+}
+
+.settings-intro {
+    color: var(--text-secondary) !important;
+}
+
+/* Interactive checkbox colors */
+.filter-item input:checked+.custom-checkbox {
+    background: var(--primary) !important;
+    border-color: var(--primary) !important;
+}
+
+/* Status dots */
+.status-dot.disconnected {
+    background-color: #ff9f1c !important;
+    color: #ff9f1c !important;
+}
+
+/* Guide Section Cards styling */
+.guide-section-card {
+    background: rgba(255, 255, 255, 0.6) !important;
+    border: 1px solid rgba(255, 105, 180, 0.18) !important;
+}
+
+.guide-section-card:hover {
+    border-color: var(--primary) !important;
+    background: rgba(255, 255, 255, 0.8) !important;
+}
+
+.guide-example-box {
+    background: rgba(255, 94, 151, 0.08) !important;
+    border-left: 3.5px solid var(--primary) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Quick Info stats */
+.employee-status-box {
+    background: rgba(255, 255, 255, 0.65) !important;
+    border: 1px solid rgba(255, 105, 180, 0.18) !important;
+}
+
+.employee-status-box.active-shift {
+    border-color: rgba(255, 159, 28, 0.4) !important;
+    background: rgba(255, 159, 28, 0.05) !important;
+}
+
+.employee-status-box.completed-shift {
+    border-color: rgba(56, 239, 125, 0.4) !important;
+    background: rgba(56, 239, 125, 0.05) !important;
+}
+
+.metric-box {
+    background: rgba(255, 255, 255, 0.5) !important;
+    border: 1px solid rgba(255, 105, 180, 0.15) !important;
+}
+
+/* Rainbow animation on main attendance button if wanted, or just standard colors */
+.btn-primary {
+    box-shadow: 0 4px 14px var(--primary-glow) !important;
+}
+
+.btn-secondary {
+    background: rgba(255, 255, 255, 0.5) !important;
+    border: 1px solid rgba(255, 105, 180, 0.25) !important;
+    color: var(--text-primary) !important;
+}
+
+.btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.8) !important;
+    color: var(--text-primary) !important;
+}
+
+.btn-close-sidebar, .btn-action-icon, .btn-close {
+    color: var(--text-secondary) !important;
+}
+
+.btn-close-sidebar:hover, .btn-action-icon:hover, .btn-close:hover {
+    background: rgba(255, 94, 151, 0.1) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Badge customizations */
+.status-badge.presente {
+    background: rgba(56, 239, 125, 0.12) !important;
+    border: 1px solid rgba(56, 239, 125, 0.3) !important;
+    color: #0b9e4a !important;
+}
+
+.status-badge.feriado {
+    background: rgba(155, 81, 224, 0.12) !important;
+    border: 1px solid rgba(155, 81, 224, 0.3) !important;
+    color: #7b1fa2 !important;
+}
+
+.status-badge.permiso {
+    background: rgba(0, 180, 219, 0.12) !important;
+    border: 1px solid rgba(0, 180, 219, 0.3) !important;
+    color: #007ba1 !important;
+}
+
 
 /* Layout Grid for Attendance Dashboard */
 .attendance-layout {
