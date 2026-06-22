@@ -80,6 +80,12 @@ const btnCloseGuideBtn = document.getElementById('btnCloseGuideBtn');
 const lunchToggleGroup = document.getElementById('lunchToggleGroup');
 const lunchCheckbox = document.getElementById('lunchCheckbox');
 
+// Early Start Elements
+const earlyStartToggleGroup = document.getElementById('earlyStartToggleGroup');
+const earlyStartCheckbox = document.getElementById('earlyStartCheckbox');
+const earlyStartLabel = document.getElementById('earlyStartLabel');
+const earlyStartHelp = document.getElementById('earlyStartHelp');
+
 // Sidebar toggle for mobile drawer
 const sidebar = document.getElementById('sidebar');
 const sidebarBackdrop = document.getElementById('sidebarBackdrop');
@@ -601,6 +607,10 @@ async function handleEmployeeChange() {
     if (!selectedEmployeeName) {
         employeeStatusBox.innerHTML = '<span class="status-title" style="color: var(--text-muted);">Selecciona un empleado para comenzar</span>';
         if (lunchToggleGroup) lunchToggleGroup.style.display = 'none';
+        if (earlyStartToggleGroup) {
+            earlyStartToggleGroup.style.display = 'none';
+            earlyStartCheckbox.checked = false;
+        }
         btnToggleAttendance.disabled = true;
         btnToggleAttendance.className = 'btn btn-primary';
         btnToggleAttendance.innerHTML = '<i data-lucide="fingerprint"></i> Marcar Asistencia';
@@ -613,6 +623,45 @@ async function handleEmployeeChange() {
     const employeeShiftsToday = allAttendanceRecords.filter(r => r.employee_name === selectedEmployeeName && r.date === todayStr && r.type === 'Trabajo');
     
     const activeShift = employeeShiftsToday.find(r => r.check_in && !r.check_out);
+    
+    // Check if early start checkbox should be shown
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMin = now.getMinutes();
+
+    let showEarlyStart = false;
+    let targetStartTime = "";
+    let earlyStartMsg = "";
+
+    if (currentHour === 7 && currentMin >= 20) {
+        showEarlyStart = true;
+        targetStartTime = "08:00:00";
+        earlyStartMsg = "8:00 AM";
+    } else if (currentHour === 8 && currentMin >= 20) {
+        showEarlyStart = true;
+        targetStartTime = "09:00:00";
+        earlyStartMsg = "9:00 AM";
+    }
+
+    if (!activeShift && showEarlyStart) {
+        if (earlyStartToggleGroup) {
+            earlyStartToggleGroup.style.display = 'block';
+            earlyStartCheckbox.checked = true;
+            earlyStartCheckbox.setAttribute('data-target-time', targetStartTime);
+            if (earlyStartLabel) {
+                earlyStartLabel.textContent = `⏰ ¿Iniciar labores a las ${earlyStartMsg}?`;
+            }
+            if (earlyStartHelp) {
+                earlyStartHelp.textContent = `Si marcas esta opción, tu hora de entrada oficial empezará a las ${earlyStartMsg}.`;
+            }
+        }
+    } else {
+        if (earlyStartToggleGroup) {
+            earlyStartToggleGroup.style.display = 'none';
+            earlyStartCheckbox.checked = false;
+            earlyStartCheckbox.removeAttribute('data-target-time');
+        }
+    }
     
     btnToggleAttendance.disabled = false;
     
@@ -729,15 +778,28 @@ async function handleToggleAttendance() {
             await addHistoryEntry('editar', `marcó SALIDA de la oficina (${formattedHoursStr})`);
         } else {
             // CHECK IN OPERATION
+            let checkInTime = timeStr;
+            let checkInNotes = `Entrada registrada automáticamente a las ${timeStr.substring(0, 5)}`;
+            
+            const isEarlyStart = earlyStartToggleGroup && earlyStartToggleGroup.style.display !== 'none' && earlyStartCheckbox && earlyStartCheckbox.checked;
+            
+            if (isEarlyStart) {
+                const targetTime = earlyStartCheckbox.getAttribute('data-target-time');
+                if (targetTime) {
+                    checkInTime = targetTime;
+                    checkInNotes = `Entrada programada a las ${targetTime.substring(0, 5)} (Marcado temprano a las ${timeStr.substring(0, 5)})`;
+                }
+            }
+
             const newShift = {
                 id: generateUUID(),
                 employee_name: selectedEmployeeName,
                 date: todayStr,
-                check_in: timeStr,
+                check_in: checkInTime,
                 check_out: null,
                 type: 'Trabajo',
                 hours_credited: 0,
-                notes: `Entrada registrada automáticamente a las ${timeStr.substring(0, 5)}`
+                notes: checkInNotes
             };
 
             if (dbMode === 'supabase' && supabaseClient) {
@@ -752,7 +814,7 @@ async function handleToggleAttendance() {
                 saveLocalAttendance(localList);
             }
 
-            await addHistoryEntry('crear', `marcó ENTRADA en la oficina a las ${timeStr.substring(0, 5)}`);
+            await addHistoryEntry('crear', `marcó ENTRADA en la oficina a las ${checkInTime.substring(0, 5)} (Marcado temprano a las ${timeStr.substring(0, 5)})`);
         }
 
         // Fetch latest
