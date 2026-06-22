@@ -170,6 +170,11 @@ const bookingSourceInput = document.getElementById('bookingSource');
 const bookingPaymentTypeInput = document.getElementById('bookingPaymentType');
 const customSourceGroup = document.getElementById('customSourceGroup');
 const bookingSourceCustomInput = document.getElementById('bookingSourceCustom');
+const splitPaymentRow = document.getElementById('splitPaymentRow');
+const splitEfectivoInput = document.getElementById('splitEfectivo');
+const splitYapeInput = document.getElementById('splitYape');
+const bookingTotalContainer = document.getElementById('bookingTotalContainer');
+const bookingTotalValue = document.getElementById('bookingTotalValue');
 
 const modalSettings = document.getElementById('modalSettings');
 const btnOpenSettings = document.getElementById('btnOpenSettings');
@@ -821,6 +826,53 @@ function setupEventListeners() {
             }
         }
     });
+
+    // Recalculate price when modal fields change
+    if (bookingCourtInput) {
+        bookingCourtInput.addEventListener('change', updateModalCalculatedTotal);
+    }
+    if (bookingDateInput) {
+        bookingDateInput.addEventListener('change', updateModalCalculatedTotal);
+    }
+    if (bookingStartTimeInput) {
+        bookingStartTimeInput.addEventListener('change', updateModalCalculatedTotal);
+    }
+    if (bookingEndTimeInput) {
+        bookingEndTimeInput.addEventListener('change', updateModalCalculatedTotal);
+    }
+
+    // Toggle split payment inputs view
+    if (bookingPaymentTypeInput) {
+        bookingPaymentTypeInput.addEventListener('change', () => {
+            if (bookingPaymentTypeInput.value === 'Dividido') {
+                if (splitPaymentRow) splitPaymentRow.classList.remove('hidden');
+                const total = updateModalCalculatedTotal();
+                if (splitEfectivoInput && splitYapeInput) {
+                    splitEfectivoInput.value = total.toFixed(2);
+                    splitYapeInput.value = '0.00';
+                }
+            } else {
+                if (splitPaymentRow) splitPaymentRow.classList.add('hidden');
+            }
+        });
+    }
+
+    // Auto-calculate values for split payment
+    if (splitEfectivoInput && splitYapeInput) {
+        splitEfectivoInput.addEventListener('input', () => {
+            const total = updateModalCalculatedTotal();
+            const cashVal = parseFloat(splitEfectivoInput.value) || 0;
+            const yapeVal = Math.max(0, total - cashVal);
+            splitYapeInput.value = yapeVal.toFixed(2);
+        });
+
+        splitYapeInput.addEventListener('input', () => {
+            const total = updateModalCalculatedTotal();
+            const yapeVal = parseFloat(splitYapeInput.value) || 0;
+            const cashVal = Math.max(0, total - yapeVal);
+            splitEfectivoInput.value = cashVal.toFixed(2);
+        });
+    }
 }
 
 function toggleBlockFields(isBlock) {
@@ -900,6 +952,7 @@ function toggleBlockFields(isBlock) {
         }
         toggleAllDayFields(false);
     }
+    updateModalCalculatedTotal();
 }
 
 function toggleAllDayFields(isAllDay) {
@@ -973,6 +1026,7 @@ function setupToggleListeners(type) {
         btn.addEventListener('click', () => {
             const val = btn.getAttribute('data-value') === 'true';
             setToggleValue(type, val);
+            updateModalCalculatedTotal();
         });
     });
 }
@@ -1160,7 +1214,23 @@ function openBookingModal(booking = null, defaults = null) {
 
         // Populate correct Payment Type
         if (bookingPaymentTypeInput) {
-            bookingPaymentTypeInput.value = isBlock ? 'Efectivo' : (booking.tipo_pago || 'Efectivo');
+            const rawPaymentType = isBlock ? 'Efectivo' : (booking.tipo_pago || 'Efectivo');
+            if (rawPaymentType.startsWith('Dividido')) {
+                bookingPaymentTypeInput.value = 'Dividido';
+                if (splitPaymentRow) splitPaymentRow.classList.remove('hidden');
+                const split = parseSplitPayment(rawPaymentType);
+                if (split) {
+                    if (splitEfectivoInput) splitEfectivoInput.value = split.efectivo.toFixed(2);
+                    if (splitYapeInput) splitYapeInput.value = split.yape.toFixed(2);
+                } else {
+                    const total = updateModalCalculatedTotal();
+                    if (splitEfectivoInput) splitEfectivoInput.value = (total / 2).toFixed(2);
+                    if (splitYapeInput) splitYapeInput.value = (total / 2).toFixed(2);
+                }
+            } else {
+                bookingPaymentTypeInput.value = rawPaymentType;
+                if (splitPaymentRow) splitPaymentRow.classList.add('hidden');
+            }
         }
     } else {
         // New Mode
@@ -1186,6 +1256,9 @@ function openBookingModal(booking = null, defaults = null) {
         // Reset Payment Type to default Yape
         if (bookingPaymentTypeInput) {
             bookingPaymentTypeInput.value = 'Yape';
+        }
+        if (splitPaymentRow) {
+            splitPaymentRow.classList.add('hidden');
         }
 
         // Reset toggles to default false
@@ -1236,6 +1309,7 @@ function openBookingModal(booking = null, defaults = null) {
     // Call the dependency rule to disable/select sport based on the current court value
     handleCourtSportDependency();
 
+    updateModalCalculatedTotal();
     openModal(modalBooking);
     lucide.createIcons(); // Refresh modal icons
 }
@@ -1420,6 +1494,76 @@ function parseTimeToMinutes(timeStr) {
     return hours * 60 + minutes;
 }
 
+function parseSplitPayment(tipoPagoStr) {
+    if (!tipoPagoStr || !tipoPagoStr.startsWith('Dividido')) {
+        return null;
+    }
+    const efectivoMatch = tipoPagoStr.match(/Efectivo\s*S\/\.\s*([\d.]+)/i);
+    const yapeMatch = tipoPagoStr.match(/Yape\s*S\/\.\s*([\d.]+)/i);
+    
+    if (efectivoMatch || yapeMatch) {
+        return {
+            efectivo: efectivoMatch ? parseFloat(efectivoMatch[1]) : 0,
+            yape: yapeMatch ? parseFloat(yapeMatch[1]) : 0
+        };
+    }
+    return null;
+}
+
+function updateModalCalculatedTotal() {
+    const isBlock = bookingIsBlockInput ? bookingIsBlockInput.checked : false;
+    
+    if (isBlock) {
+        if (bookingTotalContainer) bookingTotalContainer.style.display = 'none';
+        return 0;
+    }
+    if (bookingTotalContainer) bookingTotalContainer.style.display = 'flex';
+
+    const court = bookingCourtInput.value;
+    let courtRate = 0;
+    if (court === 'Grande' || court === 'Cancha Grande') {
+        courtRate = parseFloat(localStorage.getItem('canchapro_rate_grande_poli') || '30');
+    } else if (court === 'Pequeña' || court === 'Cancha Pequeña') {
+        courtRate = parseFloat(localStorage.getItem('canchapro_rate_pequena_poli') || '30');
+    } else if (court === 'Cancha de Vóley') {
+        courtRate = parseFloat(localStorage.getItem('canchapro_rate_voley_poli') || '30');
+    }
+
+    const pelotaRate = parseFloat(localStorage.getItem('canchapro_rate_pelota_poli') || '5');
+    const chalecoRate = parseFloat(localStorage.getItem('canchapro_rate_chaleco_poli') || '5');
+
+    const startTime = bookingStartTimeInput.value;
+    const endTime = bookingEndTimeInput.value;
+
+    let start = startTime ? parseTimeToMinutes(startTime) : 0;
+    let end = endTime ? parseTimeToMinutes(endTime) : 0;
+    if (end <= start && start > 0 && end > 0) {
+        end += 1440;
+    }
+    const durationHours = (start > 0 && end > 0) ? (end - start) / 60 : 0;
+
+    const pelotaVal = bookingPelotaInput.value === 'true';
+    const chalecoVal = bookingChalecoInput.value === 'true';
+
+    const courtIncome = durationHours * courtRate;
+    const pelotaIncome = pelotaVal ? pelotaRate : 0;
+    const chalecoIncome = chalecoVal ? chalecoRate : 0;
+    const total = courtIncome + pelotaIncome + chalecoIncome;
+
+    if (bookingTotalValue) {
+        bookingTotalValue.textContent = `S/. ${total.toFixed(2)}`;
+    }
+
+    // Keep split payment Yape up to date if they change the total
+    if (bookingPaymentTypeInput && bookingPaymentTypeInput.value === 'Dividido' && splitEfectivoInput && splitYapeInput) {
+        const cashVal = parseFloat(splitEfectivoInput.value) || 0;
+        const yapeVal = Math.max(0, total - cashVal);
+        splitYapeInput.value = yapeVal.toFixed(2);
+    }
+
+    return total;
+}
+
 // Handle saving a booking (Create or Update)
 async function handleSaveBooking(e) {
     e.preventDefault();
@@ -1476,6 +1620,23 @@ async function handleSaveBooking(e) {
         chaleco = false;
         medio = '-';
         tipo_pago = 'Efectivo';
+    } else if (tipo_pago === 'Dividido') {
+        if (splitEfectivoInput && splitYapeInput) {
+            const cashVal = parseFloat(splitEfectivoInput.value) || 0;
+            const yapeVal = parseFloat(splitYapeInput.value) || 0;
+            const calculatedTotal = updateModalCalculatedTotal();
+            const sum = cashVal + yapeVal;
+            
+            if (Math.abs(sum - calculatedTotal) > 0.05) {
+                showBookingError(`El monto ingresado (Efectivo S/. ${cashVal.toFixed(2)} + Yape S/. ${yapeVal.toFixed(2)} = S/. ${sum.toFixed(2)}) no coincide con el total calculado (S/. ${calculatedTotal.toFixed(2)}).`);
+                if (btnSave) {
+                    btnSave.disabled = false;
+                    btnSave.textContent = 'Guardar Reserva';
+                }
+                return;
+            }
+            tipo_pago = `Dividido: Efectivo S/. ${cashVal.toFixed(2)} / Yape S/. ${yapeVal.toFixed(2)}`;
+        }
     }
 
     // 1. Validation for empty inputs
@@ -1778,6 +1939,11 @@ Registrado por: ${advisorText}`;
         }
     }
 
+    let tipoPagoText = bookingPaymentTypeInput ? bookingPaymentTypeInput.value : 'Efectivo';
+    if (tipoPagoText === 'Dividido') {
+        tipoPagoText = 'Dividido';
+    }
+
     const message = `*RESERVA DE CANCHA POLIDEPORTIV0*
 
 Nombre del cliente: ${clientName}
@@ -1787,6 +1953,7 @@ Fecha: ${dateText}
 Hora: ${timeText} ${timeEmoji}
 Pelota: ${pelotaText}
 Chalecos: ${chalecoText}
+Tipo de pago: ${tipoPagoText}
 Medio: ${medioText}
 Asesor(a): ${advisorText}
 
@@ -3055,7 +3222,25 @@ function updateStatsDashboard() {
         metrics.Extras.today.income += inc.pelotaIncome + inc.chalecoIncome;
 
         const payType = e.tipo_pago || 'Efectivo';
-        if (payType === 'Yape') {
+        if (payType.startsWith('Dividido')) {
+            const split = parseSplitPayment(payType);
+            if (split) {
+                if (split.yape > 0) {
+                    metrics.Yape.today.count++;
+                    metrics.Yape.today.income += split.yape;
+                }
+                if (split.efectivo > 0) {
+                    metrics.Efectivo.today.count++;
+                    metrics.Efectivo.today.income += split.efectivo;
+                }
+            } else {
+                const half = inc.total / 2;
+                metrics.Yape.today.count++;
+                metrics.Yape.today.income += half;
+                metrics.Efectivo.today.count++;
+                metrics.Efectivo.today.income += half;
+            }
+        } else if (payType === 'Yape') {
             metrics.Yape.today.count++;
             metrics.Yape.today.income += inc.total;
         } else {
@@ -3086,7 +3271,25 @@ function updateStatsDashboard() {
         metrics.Extras.week.income += inc.pelotaIncome + inc.chalecoIncome;
 
         const payType = e.tipo_pago || 'Efectivo';
-        if (payType === 'Yape') {
+        if (payType.startsWith('Dividido')) {
+            const split = parseSplitPayment(payType);
+            if (split) {
+                if (split.yape > 0) {
+                    metrics.Yape.week.count++;
+                    metrics.Yape.week.income += split.yape;
+                }
+                if (split.efectivo > 0) {
+                    metrics.Efectivo.week.count++;
+                    metrics.Efectivo.week.income += split.efectivo;
+                }
+            } else {
+                const half = inc.total / 2;
+                metrics.Yape.week.count++;
+                metrics.Yape.week.income += half;
+                metrics.Efectivo.week.count++;
+                metrics.Efectivo.week.income += half;
+            }
+        } else if (payType === 'Yape') {
             metrics.Yape.week.count++;
             metrics.Yape.week.income += inc.total;
         } else {
@@ -3117,7 +3320,25 @@ function updateStatsDashboard() {
         metrics.Extras.month.income += inc.pelotaIncome + inc.chalecoIncome;
 
         const payType = e.tipo_pago || 'Efectivo';
-        if (payType === 'Yape') {
+        if (payType.startsWith('Dividido')) {
+            const split = parseSplitPayment(payType);
+            if (split) {
+                if (split.yape > 0) {
+                    metrics.Yape.month.count++;
+                    metrics.Yape.month.income += split.yape;
+                }
+                if (split.efectivo > 0) {
+                    metrics.Efectivo.month.count++;
+                    metrics.Efectivo.month.income += split.efectivo;
+                }
+            } else {
+                const half = inc.total / 2;
+                metrics.Yape.month.count++;
+                metrics.Yape.month.income += half;
+                metrics.Efectivo.month.count++;
+                metrics.Efectivo.month.income += half;
+            }
+        } else if (payType === 'Yape') {
             metrics.Yape.month.count++;
             metrics.Yape.month.income += inc.total;
         } else {
