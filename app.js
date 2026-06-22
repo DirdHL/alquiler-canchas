@@ -855,6 +855,12 @@ function setupEventListeners() {
             splitEfectivoInput.value = cashVal.toFixed(2);
         });
     }
+
+    if (bookingDniInput) {
+        bookingDniInput.addEventListener('input', function () {
+            this.value = this.value.replace(/[^0-9]/g, '');
+        });
+    }
 }
 
 function toggleBlockFields(isBlock) {
