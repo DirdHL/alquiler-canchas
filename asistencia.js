@@ -14,14 +14,12 @@ let adminAuthCallback = null;
 // Employee emojis mapping helper
 function getEmployeeNameWithEmoji(name) {
     const emojiMap = {
-        'Ana': '🌸',
-        'Jonathan': '💙',
-        'Ximena': '🌸',
-        'Rogger': '☀️',
-        'Angelica': '💛',
-        'Alison': '🌈',
-        'Vicky': '🌸',
-        'Admin': '👑'
+        'Ana': '​​🌸​​',
+        'Jonathan': '​​​🦉​​​​​',
+        'Ximena': '😤​',
+        'Rogger': '🚬​🗿',
+        'Angelica': '​😨​​',
+        'Alison': '​​​🌈​​'
     };
     const emoji = emojiMap[name] || '';
     return emoji ? `${name} ${emoji}` : name;
@@ -130,7 +128,7 @@ document.addEventListener('DOMContentLoaded', () => {
 function startClock() {
     const updateTime = () => {
         const now = new Date();
-        
+
         // Time HH:MM:SS
         const hours = String(now.getHours()).padStart(2, '0');
         const minutes = String(now.getMinutes()).padStart(2, '0');
@@ -273,7 +271,7 @@ async function fetchAttendanceRecords() {
                 .select('*')
                 .order('date', { ascending: false })
                 .order('check_in', { ascending: false });
-            
+
             if (error) throw error;
             allAttendanceRecords = data || [];
 
@@ -284,9 +282,9 @@ async function fetchAttendanceRecords() {
                     .select('name')
                     .eq('is_active', true)
                     .order('name', { ascending: true });
-                
+
                 if (empError) throw empError;
-                
+
                 if (empData && empData.length > 0) {
                     activeEmployeesList = empData.map(e => e.name);
                 } else {
@@ -337,7 +335,7 @@ function loadActiveEmployeesFromLocal() {
 // Refresh employee names dynamically (combines active + historical records)
 function refreshEmployeeList() {
     const recordNames = new Set(allAttendanceRecords.map(r => r.employee_name).filter(name => name && name !== 'Todos'));
-    
+
     // Also include active workers
     activeEmployeesList.forEach(name => recordNames.add(name));
 
@@ -361,7 +359,7 @@ function populateEmployeeDropdowns() {
         option.textContent = getEmployeeNameWithEmoji(name);
         employeeSelect.appendChild(option);
     });
-    
+
     // Admin option to register new worker
     const optAdd = document.createElement('option');
     optAdd.value = '_add_new_';
@@ -412,7 +410,7 @@ function populateEmployeeDropdowns() {
 function populateMonthFilter() {
     const currentSelMonth = filterMonth.value;
     const months = new Set();
-    
+
     // Add current month always
     const today = new Date();
     const currentYearMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
@@ -430,17 +428,17 @@ function populateMonthFilter() {
 
     // Sort months descending
     const sortedMonths = Array.from(months).sort().reverse();
-    
+
     filterMonth.innerHTML = '';
     sortedMonths.forEach(ym => {
         const option = document.createElement('option');
         option.value = ym;
-        
+
         const [year, month] = ym.split('-');
         const dateObj = new Date(year, month - 1, 1);
         const monthName = dateObj.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
         option.textContent = monthName.charAt(0).toUpperCase() + monthName.slice(1);
-        
+
         filterMonth.appendChild(option);
     });
 
@@ -469,7 +467,7 @@ function saveLocalAttendance(list) {
 // Dynamic state box updates when employee is selected
 async function handleEmployeeChange() {
     selectedEmployeeName = employeeSelect.value;
-    
+
     // Add new worker logic (admin auth guarded)
     if (selectedEmployeeName === '_add_new_') {
         const pwd = prompt("Ingrese la contraseña de administrador para registrar un nuevo trabajador:");
@@ -485,14 +483,14 @@ async function handleEmployeeChange() {
                     })
                     .filter(word => word.length > 0)
                     .join(' ');
-                
+
                 if (!activeEmployeesList.includes(cleanName)) {
                     if (dbMode === 'supabase' && supabaseClient) {
                         try {
                             const { error: insErr } = await supabaseClient
                                 .from('personal_asistencia')
                                 .insert([{ name: cleanName, is_active: true }]);
-                            
+
                             if (insErr) {
                                 // Try updating if it was inactive previously
                                 const { error: updErr } = await supabaseClient
@@ -509,14 +507,14 @@ async function handleEmployeeChange() {
                         saveNewEmployeeLocal(cleanName);
                     }
                 }
-                
+
                 // Reload data and dropdowns
                 await fetchAttendanceRecords();
-                
+
                 // Select newly registered worker
                 employeeSelect.value = cleanName;
                 selectedEmployeeName = cleanName;
-                
+
                 await addHistoryEntry('crear', `registró al nuevo trabajador: ${cleanName}`);
             } else {
                 employeeSelect.value = '';
@@ -542,7 +540,7 @@ async function handleEmployeeChange() {
 
             const listStr = activeEmployeesList.join(', ');
             const nameToDelete = prompt(`Trabajadores eliminables:\n[ ${listStr} ]\n\nEscriba el nombre exacto del trabajador que desea eliminar:`);
-            
+
             if (nameToDelete) {
                 const cleanName = nameToDelete.trim();
                 if (activeEmployeesList.includes(cleanName)) {
@@ -552,7 +550,7 @@ async function handleEmployeeChange() {
                                 .from('personal_asistencia')
                                 .update({ is_active: false })
                                 .eq('name', cleanName);
-                            
+
                             if (delErr) throw delErr;
                         } catch (err) {
                             console.warn("Could not deactivate employee in Supabase, updating locally:", err.message);
@@ -561,10 +559,10 @@ async function handleEmployeeChange() {
                     } else {
                         deleteEmployeeLocal(cleanName);
                     }
-                    
+
                     // Reload data and dropdowns
                     await fetchAttendanceRecords();
-                    
+
                     employeeSelect.value = '';
                     selectedEmployeeName = '';
                     await addHistoryEntry('eliminar', `eliminó al trabajador: ${cleanName}`);
@@ -637,9 +635,9 @@ async function handleEmployeeChange() {
     // Find active shift or shift status today
     const todayStr = getLocalDateString(new Date());
     const employeeShiftsToday = allAttendanceRecords.filter(r => r.employee_name === selectedEmployeeName && r.date === todayStr && r.type === 'Trabajo');
-    
+
     const activeShift = employeeShiftsToday.find(r => r.check_in && !r.check_out);
-    
+
     // Check if early start checkbox should be shown
     const now = new Date();
     const currentHour = now.getHours();
@@ -678,9 +676,9 @@ async function handleEmployeeChange() {
             earlyStartCheckbox.removeAttribute('data-target-time');
         }
     }
-    
+
     btnToggleAttendance.disabled = false;
-    
+
     if (activeShift) {
         // Shift in progress -> Action: CHECK OUT
         if (lunchToggleGroup) {
@@ -738,11 +736,11 @@ async function handleToggleAttendance() {
     if (!selectedEmployeeName) return;
 
     btnToggleAttendance.disabled = true;
-    
+
     const now = new Date();
     const todayStr = getLocalDateString(now);
     const timeStr = getLocalTimeString(now);
-    
+
     const employeeShiftsToday = allAttendanceRecords.filter(r => r.employee_name === selectedEmployeeName && r.date === todayStr && r.type === 'Trabajo');
     const activeShift = employeeShiftsToday.find(r => r.check_in && !r.check_out);
 
@@ -752,21 +750,21 @@ async function handleToggleAttendance() {
             const checkInTime = activeShift.check_in;
             const roundedTimeStr = roundCheckoutTime(timeStr);
             const diffHours = calculateDurationInHours(activeShift.date, checkInTime, todayStr, roundedTimeStr);
-            
+
             // Check checkbox status (default to true if not available)
             const tookLunch = lunchCheckbox ? lunchCheckbox.checked : true;
-            
+
             // Deduct 1 hour for lunch if shift duration is > 5 hours AND they took lunch
             const lunchDeducted = diffHours > 5 && tookLunch;
             const finalHours = lunchDeducted ? Math.max(0, diffHours - 1) : diffHours;
-            
+
             let checkoutNotes = `Salida registrada automáticamente a las ${roundedTimeStr.substring(0, 5)}`;
             if (lunchDeducted) {
                 checkoutNotes += ' (Descuento 1h almuerzo)';
             } else if (diffHours > 5 && !tookLunch) {
                 checkoutNotes += ' (Sin almuerzo)';
             }
-            
+
             const updatedShift = {
                 ...activeShift,
                 check_out: roundedTimeStr,
@@ -783,7 +781,7 @@ async function handleToggleAttendance() {
                         notes: updatedShift.notes
                     })
                     .eq('id', activeShift.id);
-                
+
                 if (error) throw error;
             } else {
                 let localList = getLocalAttendance();
@@ -797,9 +795,9 @@ async function handleToggleAttendance() {
             // CHECK IN OPERATION
             let checkInTime = timeStr;
             let checkInNotes = `Entrada registrada automáticamente a las ${timeStr.substring(0, 5)}`;
-            
+
             const isEarlyStart = earlyStartToggleGroup && earlyStartToggleGroup.style.display !== 'none' && earlyStartCheckbox && earlyStartCheckbox.checked;
-            
+
             if (isEarlyStart) {
                 const targetTime = earlyStartCheckbox.getAttribute('data-target-time');
                 if (targetTime) {
@@ -823,7 +821,7 @@ async function handleToggleAttendance() {
                 const { error } = await supabaseClient
                     .from('asistencias')
                     .insert([newShift]);
-                
+
                 if (error) throw error;
             } else {
                 const localList = getLocalAttendance();
@@ -836,7 +834,7 @@ async function handleToggleAttendance() {
 
         // Fetch latest
         await fetchAttendanceRecords();
-        
+
         // Refresh display
         handleEmployeeChange();
 
@@ -880,9 +878,9 @@ function updateEmployeeStats() {
     const mondayStr = getLocalDateString(monday);
     const sundayStr = getLocalDateString(sunday);
 
-    const weekRecords = allAttendanceRecords.filter(r => 
-        r.employee_name === selectedName && 
-        r.date >= mondayStr && 
+    const weekRecords = allAttendanceRecords.filter(r =>
+        r.employee_name === selectedName &&
+        r.date >= mondayStr &&
         r.date <= sundayStr
     );
 
@@ -919,8 +917,8 @@ function updateEmployeeStats() {
 
     // --- 2. MONTHLY ACCUMULATED STATS ---
     const selectedMonth = filterMonth.value; // e.g. "YYYY-MM"
-    const monthRecords = allAttendanceRecords.filter(r => 
-        r.employee_name === selectedName && 
+    const monthRecords = allAttendanceRecords.filter(r =>
+        r.employee_name === selectedName &&
         r.date.startsWith(selectedMonth)
     );
 
@@ -949,40 +947,40 @@ function updateEmployeeStats() {
     let monthlyOvertime = 0;
     const employeeAllRecords = allAttendanceRecords.filter(r => r.employee_name === selectedName);
     const uniqueMondays = new Set();
-    
+
     employeeAllRecords.forEach(r => {
         if (!r.date) return;
         const parts = r.date.split('-');
         if (parts.length !== 3) return;
-        
+
         const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
         const { monday, sunday } = getMondayAndSundayOfDate(d);
         const sundayStr = getLocalDateString(sunday);
-        
+
         if (sundayStr.startsWith(selectedMonth)) {
             uniqueMondays.add(getLocalDateString(monday));
         }
     });
-    
+
     uniqueMondays.forEach(mondayStr => {
         const mondayParts = mondayStr.split('-');
         const monDate = new Date(Number(mondayParts[0]), Number(mondayParts[1]) - 1, Number(mondayParts[2]));
         const sunDate = new Date(monDate.getTime());
         sunDate.setDate(monDate.getDate() + 6);
-        
+
         const sunStr = getLocalDateString(sunDate);
-        
-        const weekRecords = allAttendanceRecords.filter(r => 
-            r.employee_name === selectedName && 
-            r.date >= mondayStr && 
+
+        const weekRecords = allAttendanceRecords.filter(r =>
+            r.employee_name === selectedName &&
+            r.date >= mondayStr &&
             r.date <= sunStr
         );
-        
+
         let weekTotal = 0;
         weekRecords.forEach(wr => {
             weekTotal += getRealHoursCredited(wr);
         });
-        
+
         if (weekTotal > 48) {
             monthlyOvertime += (weekTotal - 48);
         }
@@ -990,11 +988,11 @@ function updateEmployeeStats() {
 
     const expectedHours = getExpectedHoursForMonth(selectedMonth);
     const hoursOwed = Math.max(0, expectedHours - totalMonthHours);
-    
+
     const today = new Date();
     const [year, month] = selectedMonth.split('-').map(Number);
     const isCurrentMonth = (today.getFullYear() === year && today.getMonth() === (month - 1));
-    
+
     if (labelRequiredHours) {
         labelRequiredHours.textContent = isCurrentMonth ? 'Horas Requeridas (al día de hoy):' : 'Horas Requeridas:';
     }
@@ -1054,13 +1052,13 @@ function renderAttendanceTable() {
         const dateFormatted = formatDateDDMMYYYY(r.date);
         const inFormatted = r.check_in ? r.check_in.substring(0, 5) : '--:--';
         const outFormatted = r.check_out ? r.check_out.substring(0, 5) : '--:--';
-        
+
         let typeBadgeClass = 'status-badge';
         if (r.type === 'Trabajo') typeBadgeClass += ' presente';
         else if (r.type === 'Feriado') typeBadgeClass += ' feriado';
         else if (r.type === 'Permiso') typeBadgeClass += ' permiso';
         else if (r.type === 'Falta') typeBadgeClass += ' falta';
-        
+
         const typeLabel = r.type === 'Trabajo' ? 'Trabajo Presencial' : (r.type === 'Falta' ? 'Falta / Inasistencia' : r.type);
 
         // Calculate actual hours and see if lunch was deducted
@@ -1132,17 +1130,17 @@ function openAdminRegisterModal() {
     adminRegisterHours.value = "8.0";
     adminRegisterHours.disabled = false;
     adminRegisterError.style.display = 'none';
-    
+
     // Handle conditional fields
     toggleAdminEmployeeSelect();
-    
+
     openModal(modalAdminRegister);
 }
 
 function toggleAdminEmployeeSelect() {
     const type = adminRegisterType.value;
     const hoursLabel = document.querySelector('label[for="adminRegisterHours"]');
-    
+
     if (type === 'Feriado') {
         adminEmployeeSelectGroup.style.display = 'none';
         adminEmployeeSelect.required = false;
@@ -1174,7 +1172,7 @@ async function handleAdminRegisterSubmit(e) {
     const isFalta = type === 'Falta';
     const hours = isFalta ? 0 : Number(adminRegisterHours.value);
     const notes = adminRegisterNotes.value.trim();
-    
+
     if (!date || isNaN(hours) || (hours <= 0 && !isFalta)) {
         adminRegisterError.textContent = '⚠️ Complete todos los campos con valores válidos.';
         adminRegisterError.style.display = 'block';
@@ -1183,7 +1181,7 @@ async function handleAdminRegisterSubmit(e) {
 
     try {
         const recordsToInsert = [];
-        
+
         if (type === 'Feriado') {
             // Option 1: Insert record for "Todos"
             // Option 2: Insert individual record for every active employee so it displays in their metrics
@@ -1224,7 +1222,7 @@ async function handleAdminRegisterSubmit(e) {
             const { error } = await supabaseClient
                 .from('asistencias')
                 .insert(recordsToInsert);
-            
+
             if (error) throw error;
         } else {
             const localList = getLocalAttendance();
@@ -1243,7 +1241,7 @@ async function handleAdminRegisterSubmit(e) {
         } else {
             detailsLog = `registró permiso para ${adminEmployeeSelect.value} del ${formatDateDDMMYYYY(date)}: ${notes || 'Permiso'}`;
         }
-        
+
         await addHistoryEntry('crear', detailsLog);
 
         closeModal(modalAdminRegister);
@@ -1260,7 +1258,7 @@ async function handleAdminRegisterSubmit(e) {
 async function handleDeleteRecord(id) {
     // Requires admin authentication
     const sessionAuth = sessionStorage.getItem('canchapro_admin_authenticated');
-    
+
     const executeDelete = async () => {
         if (!confirm("¿Estás seguro de que deseas eliminar este registro de asistencia?")) {
             return;
@@ -1275,7 +1273,7 @@ async function handleDeleteRecord(id) {
                     .from('asistencias')
                     .delete()
                     .eq('id', id);
-                
+
                 if (error) throw error;
             } else {
                 let localList = getLocalAttendance();
@@ -1376,7 +1374,7 @@ function setupEventListeners() {
 
     // Employee selection changes
     employeeSelect.addEventListener('change', handleEmployeeChange);
-    
+
     // Trigger marker entry/exit button
     btnToggleAttendance.addEventListener('click', handleToggleAttendance);
 
@@ -1451,13 +1449,13 @@ function roundCheckoutTime(timeStr) {
     if (!timeStr) return timeStr;
     const parts = timeStr.split(':');
     if (parts.length < 2) return timeStr;
-    
+
     let hour = parseInt(parts[0], 10);
     let min = parseInt(parts[1], 10);
-    
+
     // Si la hora original es >= 14 (2 PM) o si estamos entre 13:55 y 13:59 (que redondea a 14)
     const isAfternoon = (hour >= 14) || (hour === 13 && min >= 55);
-    
+
     if (isAfternoon) {
         if (min >= 55) {
             hour = (hour + 1) % 24;
@@ -1466,22 +1464,22 @@ function roundCheckoutTime(timeStr) {
             min = 0;
         }
     }
-    
+
     const hStr = String(hour).padStart(2, '0');
     const mStr = String(min).padStart(2, '0');
     const sStr = parts[2] ? '00' : '';
-    
+
     return sStr ? `${hStr}:${mStr}:${sStr}` : `${hStr}:${mStr}`;
 }
 
 function calculateDurationInHours(startDateStr, startTimeStr, endDateStr, endTimeStr) {
     const startObj = new Date(`${startDateStr}T${startTimeStr}`);
     const endObj = new Date(`${endDateStr}T${endTimeStr}`);
-    
+
     // Difference in milliseconds
     const diffMs = endObj - startObj;
     if (diffMs < 0) return 0;
-    
+
     // Convert to hours
     return diffMs / (1000 * 60 * 60);
 }
@@ -1489,7 +1487,7 @@ function calculateDurationInHours(startDateStr, startTimeStr, endDateStr, endTim
 function formatHoursText(hoursDecimal) {
     const hours = Math.floor(hoursDecimal);
     const minutes = Math.round((hoursDecimal - hours) * 60);
-    
+
     let text = '';
     if (hours > 0) text += `${hours} h `;
     if (minutes > 0 || hours === 0) text += `${minutes} min`;
@@ -1506,7 +1504,7 @@ function formatDateDDMMYYYY(dateStr) {
 }
 
 function generateUUID() {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
         var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
         return v.toString(16);
     });
@@ -1525,10 +1523,10 @@ function getExpectedHoursForMonth(yearMonthStr) {
     const today = new Date();
     const [year, month] = yearMonthStr.split('-').map(Number);
     const jsMonth = month - 1;
-    
+
     const isCurrentMonth = (today.getFullYear() === year && today.getMonth() === jsMonth);
     const lastDay = isCurrentMonth ? today.getDate() : new Date(year, month, 0).getDate();
-    
+
     let workingDays = 0;
     for (let day = 1; day <= lastDay; day++) {
         const date = new Date(year, jsMonth, day);
@@ -1545,7 +1543,7 @@ function getRealHoursCredited(r) {
     if (r.type !== 'Trabajo' || !r.check_in || !r.check_out) {
         return Number(r.hours_credited || 0);
     }
-    
+
     // Si la nota indica expresamente que no almorzó, no se descuenta
     if (r.notes && (r.notes.includes('Sin almuerzo') || r.notes.includes('Sin refrigerio') || r.notes.includes('no almorzó'))) {
         return Number(r.hours_credited || 0);
@@ -1553,7 +1551,7 @@ function getRealHoursCredited(r) {
 
     const elapsed = calculateDurationInHours(r.date, r.check_in, r.date, r.check_out);
     const savedHours = Number(r.hours_credited || 0);
-    
+
     // If the saved hours are equal to the elapsed hours (within rounding error),
     // and the elapsed time is greater than 5 hours, we dynamically deduct 1 hour.
     if (elapsed > 5 && Math.abs(savedHours - elapsed) < 0.05) {
