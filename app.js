@@ -1486,8 +1486,8 @@ function updateModalCalculatedTotal() {
     const chalecoVal = bookingChalecoInput.value === 'true';
 
     const courtIncome = durationHours * courtRate;
-    const pelotaIncome = pelotaVal ? (pelotaRate * durationHours) : 0;
-    const chalecoIncome = chalecoVal ? (chalecoRate * durationHours) : 0;
+    const pelotaIncome = pelotaVal ? pelotaRate : 0;
+    const chalecoIncome = chalecoVal ? chalecoRate : 0;
     const total = courtIncome + pelotaIncome + chalecoIncome;
 
     if (bookingTotalValue) {
@@ -2981,8 +2981,8 @@ function getEventIncome(e) {
     const durationHours = (end - start) / 60;
 
     const courtIncome = durationHours * courtRate;
-    const pelotaIncome = (e.pelota === true || e.pelota === 'true') ? (pelotaRate * durationHours) : 0;
-    const chalecoIncome = (e.chaleco === true || e.chaleco === 'true') ? (chalecoRate * durationHours) : 0;
+    const pelotaIncome = (e.pelota === true || e.pelota === 'true') ? pelotaRate : 0;
+    const chalecoIncome = (e.chaleco === true || e.chaleco === 'true') ? chalecoRate : 0;
 
     return {
         durationHours,

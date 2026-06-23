@@ -567,7 +567,8 @@ body.no-scroll {
 }
 
 /* Make grid lines highly visible in dark mode */
-.fc-theme-standard td, .fc-theme-standard th {
+.fc-theme-standard td,
+.fc-theme-standard th {
     border: 1px solid rgba(255, 255, 255, 0.22) !important;
 }
 
@@ -591,7 +592,8 @@ body.no-scroll {
 }
 
 .fc .fc-col-header-cell.fc-day-today a {
-    color: #10b981 !important; /* Today text color */
+    color: #10b981 !important;
+    /* Today text color */
 }
 
 .fc .fc-toolbar {
@@ -661,7 +663,8 @@ body.no-scroll {
 
 /* Today and Selected: Keep today's text color green/mint to show it is Today, but show selected blue border and background */
 .fc .fc-col-header-cell.fc-day-today.fc-day-selected a {
-    color: #10b981 !important; /* Keep it emerald green */
+    color: #10b981 !important;
+    /* Keep it emerald green */
 }
 
 /* Highlight Selected Column Grid (Daygrid and Timegrid) */
@@ -727,11 +730,13 @@ body.no-scroll {
 }
 
 .event-sport-futbol {
-    border-left: 5px solid #10b981 !important; /* Verde para Fútbol */
+    border-left: 5px solid #10b981 !important;
+    /* Verde para Fútbol */
 }
 
 .event-sport-voley {
-    border-left: 5px solid #f59e0b !important; /* Naranja/Ámbar para Vóley */
+    border-left: 5px solid #f59e0b !important;
+    /* Naranja/Ámbar para Vóley */
 }
 
 /* Modals & Dialogs */
@@ -1379,7 +1384,8 @@ body.no-scroll {
         right: 20px;
         height: 50px;
         padding: 0 18px;
-        border-radius: 25px; /* Pill shape */
+        border-radius: 25px;
+        /* Pill shape */
         z-index: 90;
         display: flex;
         align-items: center;
@@ -1407,9 +1413,11 @@ body.no-scroll {
         0% {
             box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4), 0 0 0 0 rgba(16, 185, 129, 0.7);
         }
+
         70% {
             box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4), 0 0 0 10px rgba(16, 185, 129, 0);
         }
+
         100% {
             box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4), 0 0 0 0 rgba(16, 185, 129, 0);
         }
@@ -1715,9 +1723,11 @@ body.no-scroll {
 
 /* Event style for locks / blocks */
 .event-sport-bloqueo {
-    background: linear-gradient(135deg, #4b5563, #374151) !important; /* Gris oscuro para bloqueos */
+    background: linear-gradient(135deg, #4b5563, #374151) !important;
+    /* Gris oscuro para bloqueos */
     color: #e5e7eb !important;
-    border-left: 5px solid #ef4444 !important; /* Borde rojo para llamar la atención */
+    border-left: 5px solid #ef4444 !important;
+    /* Borde rojo para llamar la atención */
     opacity: 0.9;
 }
 
@@ -1727,6 +1737,7 @@ body.no-scroll {
     gap: 8px;
     width: 100%;
 }
+
 .time-spinner-wrapper {
     display: flex;
     align-items: center;
@@ -1738,11 +1749,13 @@ body.no-scroll {
     width: 60%;
     transition: var(--transition-smooth);
 }
+
 .time-spinner-wrapper:focus-within {
     border-color: var(--primary);
     box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
     background: rgba(15, 23, 42, 0.8);
 }
+
 .time-spinner-wrapper select,
 .time-spinner-wrapper input {
     background: transparent !important;
@@ -1760,13 +1773,17 @@ body.no-scroll {
     appearance: none;
     box-shadow: none !important;
 }
+
 .time-spinner-wrapper input::-webkit-calendar-picker-indicator {
     display: none !important;
 }
+
 select option {
-    background-color: #0f172a !important; /* slate-900 */
+    background-color: #0f172a !important;
+    /* slate-900 */
     color: #ffffff !important;
 }
+
 .time-separator {
     color: var(--text-muted);
     font-weight: 700;
@@ -1774,14 +1791,18 @@ select option {
     font-size: 15px;
     user-select: none;
 }
+
 .ampm-wrapper {
     width: 40%;
 }
+
 .ampm-select {
     cursor: pointer;
     font-weight: 600 !important;
-    padding-left: 14px !important; /* Overrides absolute icon padding since there is no icon here */
+    padding-left: 14px !important;
+    /* Overrides absolute icon padding since there is no icon here */
 }
+
 .time-spinner-wrapper svg.time-icon {
     position: static !important;
     margin-right: 8px;
@@ -1983,25 +2004,25 @@ select option {
     }
 
     /* Target the container of text and time toggle buttons inside the tab */
-    #tabAvailabilityContent > div:first-of-type {
+    #tabAvailabilityContent>div:first-of-type {
         flex-direction: column !important;
         align-items: stretch !important;
         gap: 10px !important;
     }
 
-    #tabAvailabilityContent > div:first-of-type > span {
+    #tabAvailabilityContent>div:first-of-type>span {
         text-align: center;
         font-size: 12px !important;
     }
 
-    #tabAvailabilityContent > div:first-of-type > div {
+    #tabAvailabilityContent>div:first-of-type>div {
         display: flex;
         width: 100%;
         gap: 4px !important;
         padding: 3px !important;
     }
 
-    #tabAvailabilityContent > div:first-of-type > div .btn-toggle-hours {
+    #tabAvailabilityContent>div:first-of-type>div .btn-toggle-hours {
         flex: 1;
         text-align: center;
         padding: 6px 10px !important;
@@ -2011,7 +2032,8 @@ select option {
 
     /* Table horizontal scroll styling to ensure columns are clean & readable, never squished */
     .availability-table {
-        min-width: 560px !important; /* Forces scroll container to act, keeping cells spacious */
+        min-width: 560px !important;
+        /* Forces scroll container to act, keeping cells spacious */
     }
 
     .availability-table th {
@@ -2049,11 +2071,11 @@ select option {
     .calendar-card {
         padding: 10px !important;
     }
-    
+
     .summary-header-container h3 {
         font-size: 14px !important;
     }
-    
+
     .summary-tabs .tab-btn {
         font-size: 11px !important;
         gap: 4px !important;
@@ -2065,11 +2087,13 @@ select option {
     .time-spinner-wrapper {
         padding: 0 6px !important;
     }
+
     .time-spinner-wrapper select,
     .time-spinner-wrapper input {
         font-size: 13px !important;
         width: 26px !important;
     }
+
     .time-separator {
         font-size: 13px !important;
         margin: 0 1px !important;
@@ -2080,6 +2104,7 @@ select option {
    Color-only Grid Dashboard for Mobile (600px and below)
    ========================================== */
 @media (max-width: 600px) {
+
     /* Prevent table horizontal scrolling by forcing it to fit 100% of container */
     .availability-table {
         min-width: 100% !important;
@@ -2100,17 +2125,19 @@ select option {
         font-size: 0 !important;
         text-align: center !important;
     }
+
     .availability-table th#courtHeader1::after {
         content: 'Grande';
         font-size: 10px !important;
         color: var(--text-secondary);
         font-weight: 700;
     }
-    
+
     .availability-table th#courtHeader2 {
         font-size: 0 !important;
         text-align: center !important;
     }
+
     .availability-table th#courtHeader2::after {
         content: 'Pequeña';
         font-size: 10px !important;
@@ -2122,6 +2149,7 @@ select option {
         font-size: 0 !important;
         text-align: center !important;
     }
+
     .availability-table th#courtHeader3::after {
         content: 'Vóley';
         font-size: 10px !important;
@@ -2141,10 +2169,12 @@ select option {
 
     /* Simplify the "Available Slot" button (+ Reservar) */
     .availability-slot-btn {
-        font-size: 0 !important; /* Hide long button text */
+        font-size: 0 !important;
+        /* Hide long button text */
         height: 26px;
         padding: 0 !important;
-        background: #10b981 !important; /* Solid vibrant emerald green */
+        background: #10b981 !important;
+        /* Solid vibrant emerald green */
         border: none !important;
         color: white !important;
         display: flex !important;
@@ -2153,11 +2183,12 @@ select option {
         border-radius: 4px;
         box-shadow: 0 1px 3px rgba(16, 185, 129, 0.2);
     }
-    
+
     .availability-slot-btn svg {
-        display: none !important; /* Hide plus icon to prevent mismatch spacing */
+        display: none !important;
+        /* Hide plus icon to prevent mismatch spacing */
     }
-    
+
     /* Default: display a simple plus sign */
     .availability-slot-btn::after {
         content: '+';
@@ -2170,16 +2201,19 @@ select option {
     .availability-slot-btn[data-free="2"]::after {
         content: '+2';
     }
+
     .availability-slot-btn[data-free="3"]::after {
         content: '+3';
     }
+
     .availability-slot-btn[data-free="4"]::after {
         content: '+4';
     }
 
     /* Simplify the Booked badge (Occupied slot) */
     .availability-booked-badge {
-        font-size: 0 !important; /* Hide client names */
+        font-size: 0 !important;
+        /* Hide client names */
         height: 26px;
         padding: 0 !important;
         display: flex !important;
@@ -2192,17 +2226,20 @@ select option {
 
     /* Turn badges into solid color blocks matching each court category */
     .availability-booked-badge.court-grande {
-        background: #4f46e5 !important; /* Indigo-600 */
+        background: #4f46e5 !important;
+        /* Indigo-600 */
         box-shadow: 0 1px 3px rgba(79, 70, 229, 0.2);
     }
-    
+
     .availability-booked-badge.court-pequena {
-        background: #db2777 !important; /* Pink-600 */
+        background: #db2777 !important;
+        /* Pink-600 */
         box-shadow: 0 1px 3px rgba(219, 39, 119, 0.2);
     }
 
     .availability-booked-badge.court-voley {
-        background: #d97706 !important; /* Amber-600 */
+        background: #d97706 !important;
+        /* Amber-600 */
         box-shadow: 0 1px 3px rgba(217, 119, 6, 0.2);
     }
 
@@ -2220,10 +2257,12 @@ select option {
 
     /* Simplify Blocked badges */
     .availability-blocked-badge {
-        font-size: 0 !important; /* Hide reason text */
+        font-size: 0 !important;
+        /* Hide reason text */
         height: 26px;
         padding: 0 !important;
-        background: #dc2626 !important; /* Solid Red-600 */
+        background: #dc2626 !important;
+        /* Solid Red-600 */
         border: none !important;
         display: flex !important;
         align-items: center;

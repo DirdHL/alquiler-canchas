@@ -6,16 +6,22 @@
 
 :root {
     /* Mockup-perfect Color Palette */
-    --bg-primary: #ffeef4; 
+    --bg-primary: #ffeef4;
     --bg-secondary: #fff5f8;
-    --bg-card: rgba(255, 255, 255, 0.85); /* Glassmorphic white card */
-    --border-color: #ffccd8; /* Soft pink border */
+    --bg-card: rgba(255, 255, 255, 0.85);
+    /* Glassmorphic white card */
+    --border-color: #ffccd8;
+    /* Soft pink border */
 
-    --text-primary: #830b42; /* Deep berry for high readability */
-    --text-secondary: #b81d66; /* Hot pink */
-    --text-muted: #db2777; /* Soft pink */
+    --text-primary: #830b42;
+    /* Deep berry for high readability */
+    --text-secondary: #b81d66;
+    /* Hot pink */
+    --text-muted: #db2777;
+    /* Soft pink */
 
-    --primary: #ff3385; /* Vibrant pink */
+    --primary: #ff3385;
+    /* Vibrant pink */
     --primary-hover: #e61a6b;
     --primary-glow: rgba(255, 51, 133, 0.2);
 
@@ -61,13 +67,13 @@ body {
     left: -100px;
     width: 650px;
     height: 450px;
-    background: linear-gradient(135deg, 
-        rgba(255, 94, 151, 0.08) 0%,
-        rgba(251, 146, 60, 0.08) 20%,
-        rgba(250, 204, 21, 0.06) 40%,
-        rgba(74, 222, 128, 0.06) 60%,
-        rgba(96, 165, 250, 0.06) 80%,
-        rgba(192, 132, 252, 0.08) 100%);
+    background: linear-gradient(135deg,
+            rgba(255, 94, 151, 0.08) 0%,
+            rgba(251, 146, 60, 0.08) 20%,
+            rgba(250, 204, 21, 0.06) 40%,
+            rgba(74, 222, 128, 0.06) 60%,
+            rgba(96, 165, 250, 0.06) 80%,
+            rgba(192, 132, 252, 0.08) 100%);
     filter: blur(70px);
     border-radius: 50%;
     z-index: -2;
@@ -114,21 +120,24 @@ body {
 .logo-main-title {
     font-size: 18px;
     font-weight: 800;
-    color: #ff3385; /* Hot pink */
+    color: #ff3385;
+    /* Hot pink */
     line-height: 1.1;
 }
 
 .logo-sub-title {
     font-size: 14px;
     font-weight: 700;
-    color: #6c5ce7; /* Indigo/purple */
+    color: #6c5ce7;
+    /* Indigo/purple */
     line-height: 1.1;
 }
 
 .logo-office-lbl {
     font-size: 10px;
     font-weight: 700;
-    color: #a4b0be; /* Gray */
+    color: #a4b0be;
+    /* Gray */
     letter-spacing: 1.5px;
     margin-top: 2px;
     line-height: 1;
@@ -204,7 +213,8 @@ body {
 }
 
 /* Stat Cards in sidebar */
-.stats-card, .user-profile-card {
+.stats-card,
+.user-profile-card {
     background: #fff5f8 !important;
     border: 1.5px solid #ffccd8 !important;
 }
@@ -230,7 +240,9 @@ body {
 }
 
 /* General Card enhancements with Rainbow Top Border */
-.clock-card, .progress-card, .calendar-card {
+.clock-card,
+.progress-card,
+.calendar-card {
     position: relative;
     overflow: hidden;
     background: var(--bg-card) !important;
@@ -238,7 +250,9 @@ body {
     box-shadow: 0 8px 24px rgba(255, 105, 180, 0.04) !important;
 }
 
-.clock-card::before, .progress-card::before, .calendar-card::before {
+.clock-card::before,
+.progress-card::before,
+.calendar-card::before {
     content: '';
     position: absolute;
     top: 0;
@@ -252,8 +266,13 @@ body {
 }
 
 @keyframes rainbow-shift {
-    0% { background-position: 0% 50%; }
-    100% { background-position: 200% 50%; }
+    0% {
+        background-position: 0% 50%;
+    }
+
+    100% {
+        background-position: 200% 50%;
+    }
 }
 
 /* Header Top Right Sun & Rainbow SVG Illustration */
@@ -293,13 +312,19 @@ body {
 }
 
 @keyframes spin-slow {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
 }
 
 /* Clock Display styles (Vibrant Sunrise/Sunset theme) */
 .live-time-display {
-    background: #fff5f8 !important; /* Soft white/pinkish */
+    background: #fff5f8 !important;
+    /* Soft white/pinkish */
     border: 1.5px solid #ffccd8 !important;
     box-shadow: 0 4px 15px rgba(255, 105, 180, 0.05) !important;
     padding: 16px;
@@ -307,7 +332,8 @@ body {
 }
 
 .live-time-display .time {
-    color: #ff007f !important; /* Vibrant magenta */
+    color: #ff007f !important;
+    /* Vibrant magenta */
     font-size: 40px !important;
     font-weight: 800 !important;
     text-shadow: none !important;
@@ -322,17 +348,20 @@ body {
 }
 
 /* Input and Select visibility updates for light mode readability */
-select, input, textarea {
+select,
+input,
+textarea {
     background: #ffffff !important;
     border: 1.5px solid #ffccd8 !important;
     color: var(--text-primary) !important;
-    box-shadow: inset 0 1px 3px rgba(0,0,0,0.02) !important;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.02) !important;
     border-radius: 8px !important;
 }
 
-select:focus, input:focus {
+select:focus,
+input:focus {
     border-color: var(--primary) !important;
-    box-shadow: 0 0 0 3px rgba(255, 51, 133, 0.1), inset 0 1px 3px rgba(0,0,0,0.02) !important;
+    box-shadow: 0 0 0 3px rgba(255, 51, 133, 0.1), inset 0 1px 3px rgba(0, 0, 0, 0.02) !important;
 }
 
 select option {
@@ -359,7 +388,8 @@ select option {
 }
 
 .attendance-table td:first-child strong {
-    color: #ff007f !important; /* Names in hot pink */
+    color: #ff007f !important;
+    /* Names in hot pink */
 }
 
 .attendance-table tbody tr:hover {
@@ -368,16 +398,19 @@ select option {
 
 /* Destacar marcaciones del día de hoy */
 .attendance-table tbody tr.today-record-row {
-    background: #ffe3ec !important; /* Rosado más cálido y visible */
+    background: #ffe3ec !important;
+    /* Rosado más cálido y visible */
     font-weight: 500;
 }
 
 .attendance-table tbody tr.today-record-row td {
-    border-bottom: 1px solid #ffa3c0 !important; /* Borde inferior más marcado */
+    border-bottom: 1px solid #ffa3c0 !important;
+    /* Borde inferior más marcado */
 }
 
 .attendance-table tbody tr.today-record-row:hover {
-    background: #ffd2e2 !important; /* Hover ligeramente más oscuro */
+    background: #ffd2e2 !important;
+    /* Hover ligeramente más oscuro */
 }
 
 /* Modal theme styling */
@@ -478,8 +511,8 @@ select option {
 .status-badge.presente {
     background: rgba(255, 255, 255, 0.9) !important;
     border: 2px solid transparent !important;
-    background-image: linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.9)), 
-                      linear-gradient(90deg, #ff007f, #ffaa00, #00ffaa, #00aaff, #aa00ff) !important;
+    background-image: linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.9)),
+        linear-gradient(90deg, #ff007f, #ffaa00, #00ffaa, #00aaff, #aa00ff) !important;
     background-origin: border-box !important;
     background-clip: padding-box, border-box !important;
     color: #333333 !important;
@@ -563,7 +596,8 @@ select option {
 /* Layout Grid for Attendance Dashboard */
 .attendance-layout {
     display: grid;
-    grid-template-columns: 1fr; /* Default stacked layout */
+    grid-template-columns: 1fr;
+    /* Default stacked layout */
     gap: 24px;
     align-items: start;
     width: 100%;
@@ -571,7 +605,8 @@ select option {
 
 @media (min-width: 1200px) {
     .attendance-layout {
-        grid-template-columns: 380px 1fr; /* Side-by-side on desktops */
+        grid-template-columns: 380px 1fr;
+        /* Side-by-side on desktops */
     }
 }
 
@@ -829,7 +864,7 @@ select option {
     font-size: 14px;
 }
 
-.attendance-table th, 
+.attendance-table th,
 .attendance-table td {
     padding: 12px 16px;
     border-bottom: 1px solid var(--border-color);
@@ -901,6 +936,7 @@ select option {
 
 /* Responsive adjustments for tablet and mobile devices */
 @media (max-width: 992px) {
+
     /* Header layout stacking */
     .app-header {
         flex-direction: column;
@@ -908,7 +944,7 @@ select option {
         gap: 16px;
         padding-bottom: 12px;
     }
-    
+
     .app-header .btn {
         width: 100%;
         justify-content: center;
@@ -917,7 +953,7 @@ select option {
     .header-title h1 {
         font-size: 22px;
     }
-    
+
     .header-title p {
         font-size: 12px;
     }
@@ -928,19 +964,20 @@ select option {
     }
 
     /* Turn table into stacked card list */
-    .attendance-table, 
-    .attendance-table thead, 
-    .attendance-table tbody, 
-    .attendance-table th, 
-    .attendance-table td, 
+    .attendance-table,
+    .attendance-table thead,
+    .attendance-table tbody,
+    .attendance-table th,
+    .attendance-table td,
     .attendance-table tr {
         display: block;
     }
-    
+
     .attendance-table thead {
-        display: none; /* Hide header columns */
+        display: none;
+        /* Hide header columns */
     }
-    
+
     .attendance-table tr {
         margin-bottom: 16px;
         background: rgba(255, 255, 255, 0.02);
@@ -949,7 +986,7 @@ select option {
         padding: 12px 16px;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
-    
+
     .attendance-table td {
         border: none;
         border-bottom: 1px solid rgba(255, 255, 255, 0.04);
@@ -961,13 +998,13 @@ select option {
         font-size: 13px;
         width: 100%;
     }
-    
+
     .attendance-table td:last-child {
         border-bottom: none;
         justify-content: space-between;
         padding-top: 12px;
     }
-    
+
     /* Display the data-label custom labels */
     .attendance-table td::before {
         content: attr(data-label);
@@ -978,7 +1015,7 @@ select option {
         letter-spacing: 0.5px;
         float: left;
     }
-    
+
     /* Filter Bar Stacking */
     .filter-bar {
         flex-direction: column;
@@ -986,32 +1023,33 @@ select option {
         gap: 12px;
         padding: 12px;
     }
-    
+
     .filter-bar .filter-input-group {
         width: 100%;
     }
 }
 
 @media (max-width: 480px) {
+
     /* Stack the weekly progress metric boxes */
     .metrics-row {
         grid-template-columns: 1fr;
         gap: 8px;
     }
-    
+
     .metric-box {
         padding: 10px 16px;
         display: flex;
         justify-content: space-between;
         align-items: center;
     }
-    
+
     .metric-box .lbl {
         margin-top: 0;
         order: 1;
         font-size: 12px;
     }
-    
+
     .metric-box .val {
         order: 2;
         font-size: 16px;
@@ -1145,7 +1183,15 @@ select option {
 }
 
 @keyframes rainbow-btn-glow {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
+    0% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
+
+    100% {
+        background-position: 0% 50%;
+    }
 }
