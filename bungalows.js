@@ -83,17 +83,28 @@ function setupEventListeners() {
         openModal('modalUserOnboarding');
     });
 
+    // En DNI solo se pueden poner numeros
+    const bookingDni = document.getElementById('bookingDni');
+    if (bookingDni) {
+        bookingDni.addEventListener('input', function () {
+            this.value = this.value.replace(/[^0-9]/g, '');
+        });
+    }
+
     // Dynamic field change triggers for calculations
     const calcFields = [
         'bookingCheckIn', 'bookingCheckOut', 'bookingHorario',
-        'bookingAdults', 'bookingNinosGratis', 'bookingNinosPagantes',
+        'bookingAdicionales', 'bookingNinoPequeno',
         'bookingHorasExtras', 'bookingAdicionalHoras',
         'bookingCuatrimoto', 'bookingCuatrimotoMonto',
         'bookingTotal', 'bookingAdelanto'
     ];
     calcFields.forEach(id => {
-        document.getElementById(id).addEventListener('input', runDynamicCalculations);
-        document.getElementById(id).addEventListener('change', runDynamicCalculations);
+        const el = document.getElementById(id);
+        if (el) {
+            el.addEventListener('input', runDynamicCalculations);
+            el.addEventListener('change', runDynamicCalculations);
+        }
     });
 
     // Handle ATV count change to pre-populate ATV price
@@ -381,9 +392,10 @@ function openBookingEditModal(booking) {
     document.getElementById('bookingHorario').value = booking.horario;
     document.getElementById('bookingCheckIn').value = booking.fecha_ingreso;
     document.getElementById('bookingCheckOut').value = booking.fecha_salida;
-    document.getElementById('bookingAdults').value = booking.adultos;
-    document.getElementById('bookingNinosGratis').value = booking.ninos_gratis;
-    document.getElementById('bookingNinosPagantes').value = booking.ninos_pagantes;
+    const totalGuests = (booking.adultos || 4) + (booking.ninos_pagantes || 0);
+    const adicionales = Math.max(0, totalGuests - 4);
+    document.getElementById('bookingAdicionales').value = adicionales;
+    document.getElementById('bookingNinoPequeno').checked = (booking.ninos_gratis || 0) > 0;
     document.getElementById('bookingHorasExtras').value = booking.horas_extras;
     document.getElementById('bookingAdicionalHoras').value = booking.adicional_horas;
     document.getElementById('bookingCuatrimoto').value = booking.alquiler_cuatrimoto;
@@ -547,9 +559,7 @@ function runDynamicCalculations() {
     const checkOut = document.getElementById('bookingCheckOut').value;
     const horario = document.getElementById('bookingHorario').value;
 
-    const adults = parseInt(document.getElementById('bookingAdults').value) || 0;
-    const ninosGratis = parseInt(document.getElementById('bookingNinosGratis').value) || 0;
-    const ninosPagantes = parseInt(document.getElementById('bookingNinosPagantes').value) || 0;
+    const adicionales = parseInt(document.getElementById('bookingAdicionales').value) || 0;
 
     const extraHours = parseInt(document.getElementById('bookingHorasExtras').value) || 0;
     const extraHoursPrice = parseFloat(document.getElementById('bookingAdicionalHoras').value) || 0;
@@ -565,12 +575,8 @@ function runDynamicCalculations() {
 
     // 3. Guests Occupancy Math
     // Standard capacity: 4 people.
-    // 1 child under 7 is free (doesn't count toward the capacity).
-    // The rest (Adults + remaining free kids > 1 + pagantes) counts toward capacity.
-    const freeKidsOverLimit = Math.max(0, ninosGratis - 1);
-    const totalCountForCapacity = adults + freeKidsOverLimit + ninosPagantes;
-    const extraGuests = Math.max(0, totalCountForCapacity - 4);
-    const guestsFee = extraGuests * EXTRA_GUEST_FEE * nights;
+    // Additional guests are charged S/. 35 each per night.
+    const guestsFee = adicionales * EXTRA_GUEST_FEE * nights;
 
     // 4. Extras (Hours + Cuatrimotos)
     // Note: extraHoursPrice is the total extra hours amount already entered by the user
@@ -786,17 +792,17 @@ async function handleSaveBooking(e) {
         payload.dni_cliente = document.getElementById('bookingDni').value.trim();
         const phoneInput = document.getElementById('bookingPhone');
         payload.telefono_cliente = phoneInput ? phoneInput.value.trim() : '';
-        payload.adultos = parseInt(document.getElementById('bookingAdults').value) || 4;
-        payload.ninos_gratis = parseInt(document.getElementById('bookingNinosGratis').value) || 0;
-        payload.ninos_pagantes = parseInt(document.getElementById('bookingNinosPagantes').value) || 0;
+        const adicionales = parseInt(document.getElementById('bookingAdicionales').value) || 0;
+        const ninoPequeno = document.getElementById('bookingNinoPequeno').checked;
+
+        payload.adultos = 4 + adicionales;
+        payload.ninos_gratis = ninoPequeno ? 1 : 0;
+        payload.ninos_pagantes = 0;
         payload.precio_base = calculateBasePrice(checkIn, checkOut, horario);
         
         // Calculate guests fee
         const nights = calculateNights(checkIn, checkOut, horario);
-        const freeKidsOverLimit = Math.max(0, payload.ninos_gratis - 1);
-        const totalCapacityCount = payload.adultos + freeKidsOverLimit + payload.ninos_pagantes;
-        const extraGuests = Math.max(0, totalCapacityCount - 4);
-        payload.adicional_personas = extraGuests * EXTRA_GUEST_FEE * nights;
+        payload.adicional_personas = adicionales * EXTRA_GUEST_FEE * nights;
 
         payload.horas_extras = parseInt(document.getElementById('bookingHorasExtras').value) || 0;
         payload.adicional_horas = parseFloat(document.getElementById('bookingAdicionalHoras').value) || 0;
@@ -1049,7 +1055,7 @@ function updateDailySummaryList() {
                         <i data-lucide="calendar"></i> ${checkInFormatted} al ${checkOutFormatted}
                     </span>
                     <span class="summary-detail-tag">
-                        <i data-lucide="users"></i> ${b.adultos} Ad. / ${b.ninos_gratis + b.ninos_pagantes} Ni.
+                        <i data-lucide="users"></i> ${b.adultos || 4} pers.${b.ninos_gratis ? ' + 1 niño gratis' : ''}
                     </span>
                     ${b.alquiler_cuatrimoto > 0 ? `
                         <span class="summary-detail-tag" style="color: #f59e0b; font-weight: 600;">
@@ -1128,8 +1134,10 @@ function copyReservationDetails() {
     const checkIn = document.getElementById('bookingCheckIn').value;
     const checkOut = document.getElementById('bookingCheckOut').value;
     const horario = document.getElementById('bookingHorario').value;
-    const adults = document.getElementById('bookingAdults').value;
-    const kids = parseInt(document.getElementById('bookingNinosGratis').value || 0) + parseInt(document.getElementById('bookingNinosPagantes').value || 0);
+    const adicionales = parseInt(document.getElementById('bookingAdicionales').value) || 0;
+    const ninoPequeno = document.getElementById('bookingNinoPequeno').checked;
+    const totalPers = 4 + adicionales;
+    const ninoPequenoStr = ninoPequeno ? ' (+ 1 niño pequeño gratis)' : '';
 
     const total = parseFloat(document.getElementById('bookingTotal').value) || 0;
     const paymentType = document.getElementById('bookingPaymentType').value;
@@ -1147,7 +1155,7 @@ function copyReservationDetails() {
     msg += `📅 *Fecha Ingreso:* ${formattedIn}\n`;
     msg += `📅 *Fecha Salida:* ${formattedOut}\n`;
     msg += `⏰ *Turno:* ${horario}\n`;
-    msg += `👥 *Ocupantes:* ${adults} adultos / ${kids} niños\n`;
+    msg += `👥 *Ocupantes:* ${totalPers} personas${ninoPequenoStr}\n`;
     
     if (cuatrimotos > 0) {
         msg += `🏍️ *Cuatrimotos:* ${cuatrimotos} alquilada(s)\n`;
