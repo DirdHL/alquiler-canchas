@@ -1047,7 +1047,10 @@ function renderAttendanceTable() {
         return;
     }
 
+    const todayStr = getLocalDateString(new Date());
     attendanceTableBody.innerHTML = filtered.map(r => {
+        const isToday = r.date === todayStr;
+        const rowClass = isToday ? 'class="today-record-row"' : '';
         const dateFormatted = formatDateDDMMYYYY(r.date);
         const inFormatted = r.check_in ? r.check_in.substring(0, 5) : '--:--';
         const outFormatted = r.check_out ? r.check_out.substring(0, 5) : '--:--';
@@ -1067,7 +1070,7 @@ function renderAttendanceTable() {
         const lunchIcon = lunchDeducted ? ` <span style="color: #fbbf24; font-size: 11px; cursor: help;" title="Se descontó 1 hora de almuerzo (turno > 5h)">🍴 1h</span>` : '';
 
         return `
-            <tr>
+            <tr ${rowClass}>
                 <td data-label="Colaborador"><strong>${escapeHTML(getEmployeeNameWithEmoji(r.employee_name))}</strong></td>
                 <td data-label="Fecha">${dateFormatted}</td>
                 <td data-label="Entrada">${inFormatted}</td>

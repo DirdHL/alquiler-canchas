@@ -366,6 +366,20 @@ select option {
     background: rgba(255, 51, 133, 0.02) !important;
 }
 
+/* Destacar marcaciones del día de hoy */
+.attendance-table tbody tr.today-record-row {
+    background: #ffe3ec !important; /* Rosado más cálido y visible */
+    font-weight: 500;
+}
+
+.attendance-table tbody tr.today-record-row td {
+    border-bottom: 1px solid #ffa3c0 !important; /* Borde inferior más marcado */
+}
+
+.attendance-table tbody tr.today-record-row:hover {
+    background: #ffd2e2 !important; /* Hover ligeramente más oscuro */
+}
+
 /* Modal theme styling */
 .modal-backdrop {
     background: rgba(131, 11, 66, 0.3) !important;
