@@ -130,3 +130,60 @@ https://XXXXXXXXXXXXXXXX.supabase.co
 1. **Comparte el proyecto**: Solo necesitas enviarles la carpeta del proyecto (`alquiler-canchas`) que contiene los archivos `index.html`, `style.css` y `app.js`. Puedes comprimirla en un archivo ZIP y enviársela por WhatsApp, correo, o subirla a GitHub Pages.
 2. **Ingresar credenciales**: Tus compañeras solo deben abrir el archivo `index.html` en su computadora, hacer clic en **"Configurar Base de Datos"** y pegar la **misma URL** y **Legacy Anon Key** (`eyJ...`) que obtuviste en el Paso 3.
 3. ¡Todo se sincronizará automáticamente! Si una de ellas registra una reserva, la verás aparecer en tu pantalla al instante en tiempo real sin necesidad de recargar la página.
+
+---
+
+## 🏡 Paso Especial: Configurar Base de Datos para Bungalows
+
+Para activar el nuevo sistema de reservas de **Bungalows**, debes crear la tabla correspondiente en tu base de datos de Supabase. Sigue estos pasos:
+
+1. Entra a tu proyecto en el panel de [Supabase](https://supabase.com/).
+2. En el menú lateral izquierdo, haz clic en **"SQL Editor"** (`>_`).
+3. Haz clic en **"+ New query"** (Nueva Consulta) para abrir una pestaña limpia.
+4. Copia y pega el siguiente código SQL:
+
+```sql
+-- 1. Crear tabla para registrar las reservas de los bungalows
+CREATE TABLE IF NOT EXISTS reservas_bungalows (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  bungalow_numero INT NOT NULL,            -- 1 al 6
+  nombre_cliente TEXT NOT NULL,
+  dni_cliente TEXT,
+  telefono_cliente TEXT,
+  fecha_ingreso DATE NOT NULL,             -- Check-in
+  fecha_salida DATE NOT NULL,              -- Check-out
+  horario TEXT NOT NULL,                   -- 'Full Day' o 'Día y Noche'
+  adultos INT DEFAULT 4,
+  ninos_gratis INT DEFAULT 0,              -- Menores de 7 años
+  ninos_pagantes INT DEFAULT 0,            -- Otros menores
+  precio_base DECIMAL(10,2) NOT NULL,      -- S/. 160 o S/. 180 (según día de la semana)
+  adicional_personas DECIMAL(10,2) DEFAULT 0.00, -- Cargo por la 5ta persona
+  horas_extras INT DEFAULT 0,
+  adicional_horas DECIMAL(10,2) DEFAULT 0.00,    -- Cargo por horas adicionales
+  alquiler_cuatrimoto INT DEFAULT 0,       -- Cantidad de cuatrimotos alquiladas (0, 1 o 2)
+  cuatrimoto_monto DECIMAL(10,2) DEFAULT 0.00,   -- Cargo por cuatrimoto
+  monto_total DECIMAL(10,2) NOT NULL,      -- Calculado automáticamente, pero editable
+  monto_adelanto DECIMAL(10,2) DEFAULT 0.00,
+  tipo_pago TEXT DEFAULT 'Efectivo',       -- Yape, Efectivo, Dividido
+  monto_efectivo DECIMAL(10,2) DEFAULT 0.00, -- Para pagos divididos
+  monto_yape DECIMAL(10,2) DEFAULT 0.00,     -- Para pagos divididos
+  medio_contacto TEXT DEFAULT 'WhatsApp',  -- Facebook, TikTok, WhatsApp, etc.
+  estado_reserva TEXT DEFAULT 'Confirmado', -- Confirmado, Cancelado, Completado, Bloqueado
+  notas TEXT,
+  asesor_registro TEXT,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Habilitar RLS (Row Level Security) obligatorio en Supabase
+ALTER TABLE reservas_bungalows ENABLE ROW LEVEL SECURITY;
+
+-- Crear regla de acceso público
+CREATE POLICY "Acceso publico reservas_bungalows" ON reservas_bungalows FOR ALL USING (true) WITH CHECK (true);
+
+-- Habilitar tiempo real
+ALTER PUBLICATION supabase_realtime ADD TABLE reservas_bungalows;
+```
+
+5. Haz clic en **"Run"** (o presiona `Ctrl + Enter`).
+6. Deberías ver el mensaje **"Success. No rows returned"**. ¡Tu sistema de bungalows ya está listo para sincronizar con la nube!
+

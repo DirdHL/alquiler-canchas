@@ -89,6 +89,10 @@
                     style="background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.3); color: #10b981; text-decoration: none; display: flex; align-items: center; gap: 8px;">
                     <i data-lucide="building" style="width: 16px; height: 16px;"></i> Polideportivo Huaral-Huando
                 </a>
+                <a href="bungalows.html" class="btn btn-secondary btn-sm btn-sidebar-action"
+                    style="background: rgba(245, 158, 11, 0.1); border-color: rgba(245, 158, 11, 0.3); color: #f59e0b; text-decoration: none; display: flex; align-items: center; gap: 8px; margin-top: 8px;">
+                    <i data-lucide="home" style="width: 16px; height: 16px;"></i> Alquiler de Bungalows
+                </a>
             </nav>
 
             <div class="stats-card">
@@ -164,12 +168,14 @@
 
             <!-- Resumen Diario -->
             <div class="calendar-card" style="margin-top: 24px;">
-                <div class="summary-header-container" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+                <div class="summary-header-container"
+                    style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
                     <h3 style="display: flex; align-items: center; gap: 8px; margin: 0; font-size: 16px;">
                         <i data-lucide="list-todo" style="color: var(--primary);"></i>
                         Resumen y Disponibilidad - <span id="summaryDateLabel">Cargando...</span>
                     </h3>
-                    <div class="summary-tabs" style="display: flex; gap: 8px; background: rgba(255, 255, 255, 0.03); padding: 4px; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+                    <div class="summary-tabs"
+                        style="display: flex; gap: 8px; background: rgba(255, 255, 255, 0.03); padding: 4px; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
                         <button type="button" class="tab-btn active" id="btnTabReservations">
                             <i data-lucide="calendar"></i> Lista de Reservas
                         </button>
@@ -178,7 +184,7 @@
                         </button>
                     </div>
                 </div>
-                
+
                 <!-- Tab: Lista de Reservas -->
                 <div class="summary-tab-content" id="tabReservationsContent">
                     <div class="summary-list" id="dailySummaryList">
@@ -188,8 +194,10 @@
 
                 <!-- Tab: Mapa de Disponibilidad -->
                 <div class="summary-tab-content" id="tabAvailabilityContent" style="display: none;">
-                    <div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
-                        <div style="display: flex; gap: 6px; background: rgba(255, 255, 255, 0.03); padding: 3px; border-radius: 6px; border: 1px solid var(--border-color);">
+                    <div
+                        style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
+                        <div
+                            style="display: flex; gap: 6px; background: rgba(255, 255, 255, 0.03); padding: 3px; border-radius: 6px; border: 1px solid var(--border-color);">
                             <button type="button" class="btn-toggle-hours active" id="btnHoursPico">
                                 Tarde/Noche
                             </button>
@@ -198,13 +206,22 @@
                             </button>
                         </div>
                     </div>
-                    <div class="availability-grid-wrapper" style="overflow-x: auto; max-height: 480px; overflow-y: auto; border-radius: var(--radius-md); border: 1px solid var(--border-color); background: rgba(255, 255, 255, 0.01);">
-                        <table class="availability-table" style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
+                    <div class="availability-grid-wrapper"
+                        style="overflow-x: auto; max-height: 480px; overflow-y: auto; border-radius: var(--radius-md); border: 1px solid var(--border-color); background: rgba(255, 255, 255, 0.01);">
+                        <table class="availability-table"
+                            style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
                             <thead>
-                                <tr style="position: sticky; top: 0; background: #1e293b; border-bottom: 1px solid var(--border-color); z-index: 5;">
-                                    <th style="padding: 10px 16px; color: var(--text-secondary); font-weight: 700; width: 140px;">Hora</th>
-                                    <th id="courtHeader1" style="padding: 10px 16px; color: var(--text-secondary); font-weight: 700; text-align: center;">Cancha Grande</th>
-                                    <th id="courtHeader2" style="padding: 10px 16px; color: var(--text-secondary); font-weight: 700; text-align: center;">Cancha Pequeña</th>
+                                <tr
+                                    style="position: sticky; top: 0; background: #1e293b; border-bottom: 1px solid var(--border-color); z-index: 5;">
+                                    <th
+                                        style="padding: 10px 16px; color: var(--text-secondary); font-weight: 700; width: 140px;">
+                                        Hora</th>
+                                    <th id="courtHeader1"
+                                        style="padding: 10px 16px; color: var(--text-secondary); font-weight: 700; text-align: center;">
+                                        Cancha Grande</th>
+                                    <th id="courtHeader2"
+                                        style="padding: 10px 16px; color: var(--text-secondary); font-weight: 700; text-align: center;">
+                                        Cancha Pequeña</th>
                                 </tr>
                             </thead>
                             <tbody id="availabilityTableBody">
@@ -258,7 +275,8 @@
                         <label for="bookingDni">DNI </label>
                         <div class="input-wrapper">
                             <i data-lucide="credit-card"></i>
-                            <input type="text" id="bookingDni" placeholder="Ej. 12345678" maxlength="12" inputmode="numeric" pattern="[0-9]*">
+                            <input type="text" id="bookingDni" placeholder="Ej. 12345678" maxlength="12"
+                                inputmode="numeric" pattern="[0-9]*">
                         </div>
                     </div>
 
@@ -319,9 +337,11 @@
                             <div class="time-select-row">
                                 <div class="time-spinner-wrapper">
                                     <i data-lucide="clock" class="time-icon"></i>
-                                    <input type="text" id="startHourSelect" placeholder="HH" maxlength="2" required autocomplete="off">
+                                    <input type="text" id="startHourSelect" placeholder="HH" maxlength="2" required
+                                        autocomplete="off">
                                     <span class="time-separator">:</span>
-                                    <input type="text" id="startMinSelect" placeholder="MM" maxlength="2" required autocomplete="off">
+                                    <input type="text" id="startMinSelect" placeholder="MM" maxlength="2" required
+                                        autocomplete="off">
                                 </div>
                                 <div class="input-wrapper ampm-wrapper">
                                     <select id="startAmpmSelect" class="ampm-select" required>
@@ -336,9 +356,11 @@
                             <div class="time-select-row">
                                 <div class="time-spinner-wrapper">
                                     <i data-lucide="clock" class="time-icon"></i>
-                                    <input type="text" id="endHourSelect" placeholder="HH" maxlength="2" required autocomplete="off">
+                                    <input type="text" id="endHourSelect" placeholder="HH" maxlength="2" required
+                                        autocomplete="off">
                                     <span class="time-separator">:</span>
-                                    <input type="text" id="endMinSelect" placeholder="MM" maxlength="2" required autocomplete="off">
+                                    <input type="text" id="endMinSelect" placeholder="MM" maxlength="2" required
+                                        autocomplete="off">
                                 </div>
                                 <div class="input-wrapper ampm-wrapper">
                                     <select id="endAmpmSelect" class="ampm-select" required>
@@ -379,7 +401,8 @@
                     </div>
 
                     <!-- Split Payment Row -->
-                    <div class="form-row hidden" id="splitPaymentRow" style="margin-top: 12px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: var(--radius-sm);">
+                    <div class="form-row hidden" id="splitPaymentRow"
+                        style="margin-top: 12px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: var(--radius-sm);">
                         <div class="form-group" style="margin-bottom: 0;">
                             <label for="splitEfectivo">Monto Efectivo (S/.) *</label>
                             <div class="input-wrapper">
@@ -421,9 +444,12 @@
                     </div>
 
                     <!-- Dynamic Booking Total Container -->
-                    <div class="form-group" id="bookingTotalContainer" style="margin-top: 12px; margin-bottom: 12px; background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.2); padding: 12px; border-radius: var(--radius-sm); display: flex; flex-direction: row; justify-content: space-between; align-items: center;">
-                        <span style="font-weight: 600; color: var(--text-secondary); font-size: 13px;">Precio Total Calculado:</span>
-                        <span id="bookingTotalValue" style="font-weight: 700; color: var(--primary); font-size: 16px;">S/. 0.00</span>
+                    <div class="form-group" id="bookingTotalContainer"
+                        style="margin-top: 12px; margin-bottom: 12px; background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.2); padding: 12px; border-radius: var(--radius-sm); display: flex; flex-direction: row; justify-content: space-between; align-items: center;">
+                        <span style="font-weight: 600; color: var(--text-secondary); font-size: 13px;">Precio Total
+                            Calculado:</span>
+                        <span id="bookingTotalValue"
+                            style="font-weight: 700; color: var(--primary); font-size: 16px;">S/. 0.00</span>
                     </div>
 
                     <div class="form-error" id="bookingError"></div>

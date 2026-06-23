@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bungalows de Tomayquichua - Sistema de Reservas</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Outfit:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- FullCalendar CSS & JS -->
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/locales/es.global.min.js"></script>
+    <!-- Supabase JS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="bungalows.css">
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Sidebar Backdrop for Mobile -->
+        <div class="sidebar-backdrop-overlay" id="sidebarBackdrop"></div>
+
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="logo-area">
+                <div class="logo-title">
+                    <i data-lucide="leaf" class="logo-icon"
+                        style="color: var(--primary); filter: drop-shadow(0 0 8px var(--primary-glow));"></i>
+                    <h2>Bungalow <span>de Tomayquichua</span><span class="logo-subtitle">Casa Campo</span></h2>
+                </div>
+                <button class="btn-close-sidebar" id="btnCloseSidebar">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+
+            <div class="status-indicator-card">
+                <div class="status-header">
+                    <span class="status-dot disconnected" id="statusDot"></span>
+                    <span class="status-text" id="statusText">Modo Sin Conexión (Local)</span>
+                </div>
+                <p class="status-desc" id="statusDesc">Accede con las credenciales de la base de datos para sincronizar
+                    con los demás asesores.</p>
+                <button class="btn btn-secondary btn-sm" id="btnOpenSettings">
+                    <i data-lucide="database"></i> Ingresar Credenciales
+                </button>
+            </div>
+
+            <nav class="nav-filters">
+                <h3>Filtrar por Bungalow</h3>
+                <div class="filter-group">
+                    <label class="filter-item">
+                        <input type="checkbox" id="filterB1" checked>
+                        <span class="custom-checkbox color-b1"></span>
+                        Bungalow 1
+                    </label>
+                    <label class="filter-item">
+                        <input type="checkbox" id="filterB2" checked>
+                        <span class="custom-checkbox color-b2"></span>
+                        Bungalow 2
+                    </label>
+                    <label class="filter-item">
+                        <input type="checkbox" id="filterB3" checked>
+                        <span class="custom-checkbox color-b3"></span>
+                        Bungalow 3
+                    </label>
+                    <label class="filter-item">
+                        <input type="checkbox" id="filterB4" checked>
+                        <span class="custom-checkbox color-b4"></span>
+                        Bungalow 4
+                    </label>
+                    <label class="filter-item">
+                        <input type="checkbox" id="filterB5" checked>
+                        <span class="custom-checkbox color-b5"></span>
+                        Bungalow 5
+                    </label>
+                    <label class="filter-item">
+                        <input type="checkbox" id="filterB6" checked>
+                        <span class="custom-checkbox color-b6"></span>
+                        Bungalow 6
+                    </label>
+                </div>
+
+                <h3>Opciones</h3>
+                <button class="btn btn-secondary btn-sm btn-sidebar-action" id="btnOpenHistory"
+                    style="margin-bottom: 8px;">
+                    <i data-lucide="history"></i> Historial de Cambios
+                </button>
+
+                <h3>Otras Sedes</h3>
+                <a href="index.html" class="btn btn-secondary btn-sm btn-sidebar-action"
+                    style="background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.3); color: #10b981; text-decoration: none; display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                    <i data-lucide="calendar" style="width: 16px; height: 16px;"></i> Canchas (Los Pinos)
+                </a>
+                <a href="polideportivo.html" class="btn btn-secondary btn-sm btn-sidebar-action"
+                    style="background: rgba(139, 92, 246, 0.1); border-color: rgba(139, 92, 246, 0.3); color: #a78bfa; text-decoration: none; display: flex; align-items: center; gap: 8px;">
+                    <i data-lucide="building" style="width: 16px; height: 16px;"></i> Polideportivo Huaral
+                </a>
+            </nav>
+
+            <div class="stats-card">
+                <h3>Resumen de Hoy</h3>
+                <div class="stat-item">
+                    <span class="stat-label">Bungalows Ocupados</span>
+                    <span class="stat-value" id="statTodayOccupied">0 / 6</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Ingresos de Hoy</span>
+                    <span class="stat-value" id="statTodayIncome">S/. 0.00</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Reservas del Mes</span>
+                    <span class="stat-value" id="statMonthReservations">0</span>
+                </div>
+            </div>
+
+            <div class="stats-card">
+                <h3 style="display: flex; align-items: center; gap: 6px; margin-bottom: 8px;">
+                    <i data-lucide="line-chart" style="width: 16px; height: 16px; color: var(--primary);"></i>
+                    Finanzas
+                </h3>
+                <button class="btn btn-secondary btn-sm btn-sidebar-action" id="btnOpenStats"
+                    style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; margin: 0;">
+                    <i data-lucide="lock" style="width: 14px; height: 14px;"></i> Ver Estadísticas
+                </button>
+            </div>
+
+            <!-- User Profile Card -->
+            <div class="user-profile-card">
+                <div class="user-info">
+                    <div class="user-avatar">
+                        <i data-lucide="user"></i>
+                    </div>
+                    <div class="user-details">
+                        <span class="user-label">Operador Activo</span>
+                        <span class="user-name" id="displayUserName">Invitado</span>
+                    </div>
+                </div>
+                <button class="btn-edit-user" id="btnEditUser" title="Cambiar Nombre">
+                    <i data-lucide="pencil"></i>
+                </button>
+            </div>
+
+            <footer class="sidebar-footer">
+                <p>Bungalows de Tomayquichua &copy; 2026</p>
+                <p class="footer-note">Desarrollado por Rogger Dird Huaicama Lacerna</p>
+            </footer>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="app-header">
+                <div class="header-left">
+                    <button class="btn btn-secondary btn-menu" id="btnToggleSidebar">
+                        <i data-lucide="menu"></i>
+                    </button>
+                    <div class="header-title">
+                        <h1>Calendario de Bungalows</h1>
+                        <p>Gestione el hospedaje, tarifas de fin de semana, turnos y alquiler de cuatrimotos.</p>
+                    </div>
+                </div>
+                <button class="btn btn-primary" id="btnNewReservation">
+                    <i data-lucide="plus"></i> <span class="btn-text">Nueva Reserva</span>
+                </button>
+            </header>
+
+            <!-- Calendar Container -->
+            <div class="calendar-card">
+                <div id="calendar"></div>
+            </div>
+
+            <!-- Resumen Diario de Bungalows -->
+            <div class="calendar-card" style="margin-top: 24px;">
+                <div class="summary-header-container"
+                    style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+                    <h3 style="display: flex; align-items: center; gap: 8px; margin: 0; font-size: 16px;">
+                        <i data-lucide="list-todo" style="color: var(--primary);"></i>
+                        Huéspedes para Hoy - <span id="summaryDateLabel">Cargando...</span>
+                    </h3>
+                </div>
+
+                <div class="summary-list" id="dailySummaryList">
+                    <!-- Se llenará dinámicamente -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Booking Modal -->
+    <div class="modal-backdrop" id="modalBooking">
+        <div class="modal-card modal-lg">
+            <div class="modal-header">
+                <h3 id="modalTitle">Nueva Reserva de Bungalow</h3>
+                <button class="btn-close" id="btnCloseBooking"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="formBooking">
+                    <input type="hidden" id="bookingId">
+
+                    <!-- Maintenance Mode / Block -->
+                    <div class="form-group" style="margin-bottom: 16px;">
+                        <label class="checkbox-container"
+                            style="display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;">
+                            <input type="checkbox" id="bookingIsBlock"
+                                style="width: 18px; height: 18px; cursor: pointer;">
+                            <span style="font-weight: 600; color: #f87171;">🔒 ¿Bloquear Bungalow (Fuera de Servicio /
+                                Mantenimiento)?</span>
+                        </label>
+                    </div>
+
+                    <!-- Client Information -->
+                    <div class="form-group" id="groupClientInfo">
+                        <label for="bookingName">Nombre del Cliente *</label>
+                        <div class="input-wrapper">
+                            <i data-lucide="user"></i>
+                            <input type="text" id="bookingName" required placeholder="Nombre completo del huésped">
+                        </div>
+                    </div>
+
+                    <div class="form-row" id="rowClientDetails">
+                        <div class="form-group">
+                            <label for="bookingDni">DNI</label>
+                            <div class="input-wrapper">
+                                <i data-lucide="credit-card"></i>
+                                <input type="text" id="bookingDni" placeholder="Ej. 12345678" maxlength="12"
+                                    inputmode="numeric" pattern="[0-9]*">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="bookingPhone">Celular</label>
+                            <div class="input-wrapper">
+                                <i data-lucide="phone"></i>
+                                <input type="tel" id="bookingPhone" placeholder="Ej. 987654321">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bungalow Selection & Schedule -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="bookingBungalow">Bungalow *</label>
+                            <div class="input-wrapper">
+                                <i data-lucide="home"></i>
+                                <select id="bookingBungalow" required>
+                                    <option value="1">Bungalow 1</option>
+                                    <option value="2">Bungalow 2</option>
+                                    <option value="3">Bungalow 3</option>
+                                    <option value="4">Bungalow 4</option>
+                                    <option value="5">Bungalow 5</option>
+                                    <option value="6">Bungalow 6</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="bookingHorario">Horario / Turno *</label>
+                            <div class="input-wrapper">
+                                <i data-lucide="clock"></i>
+                                <select id="bookingHorario" required>
+                                    <option value="Día y Noche" selected>Día y Noche (3:00 PM - 12:00 PM del día sgte)
+                                    </option>
+                                    <option value="Full Day">Full Day (9:00 AM - 6:00 PM del mismo día)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Dates selection -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="bookingCheckIn">Fecha de Ingreso *</label>
+                            <div class="input-wrapper">
+                                <i data-lucide="calendar-days"></i>
+                                <input type="date" id="bookingCheckIn" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="bookingCheckOut">Fecha de Salida *</label>
+                            <div class="input-wrapper">
+                                <i data-lucide="calendar-check"></i>
+                                <input type="date" id="bookingCheckOut" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Occupancy: Adults and Kids -->
+                    <div class="form-row" id="rowOccupancy">
+                        <div class="form-group">
+                            <label for="bookingAdults">Adultos *</label>
+                            <div class="input-wrapper">
+                                <i data-lucide="users"></i>
+                                <input type="number" id="bookingAdults" min="1" max="10" value="4" required>
+                            </div>
+                            <small class="text-secondary">Estándar: 4. El 5to adulto paga S/. 35 adicional.</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="bookingNinosGratis">Niños < 7 años (Gratis)</label>
+                                    <div class="input-wrapper">
+                                        <i data-lucide="baby"></i>
+                                        <input type="number" id="bookingNinosGratis" min="0" max="1" value="0">
+                                    </div>
+                                    <small class="text-secondary">.</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="bookingNinosPagantes">Otros Niños / Mayores 7</label>
+                            <div class="input-wrapper">
+                                <i data-lucide="smile"></i>
+                                <input type="number" id="bookingNinosPagantes" min="0" max="10" value="0">
+                            </div>
+                            <small class="text-secondary">No exonerados del pago extra.</small>
+                        </div>
+                    </div>
+
+                    <!-- Extras: Hours and Cuatrimotos -->
+                    <div class="form-row" id="rowExtras">
+                        <div class="form-group">
+                            <label for="bookingHorasExtras">Horas Adicionales</label>
+                            <div class="input-wrapper">
+                                <i data-lucide="plus-circle"></i>
+                                <input type="number" id="bookingHorasExtras" min="0" value="0">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="bookingAdicionalHoras">Monto por Horas Extras (S/.)</label>
+                            <div class="input-wrapper">
+                                <i data-lucide="banknote"></i>
+                                <input type="number" id="bookingAdicionalHoras" min="0" value="0" step="any">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-row" id="rowCuatrimoto">
+                        <div class="form-group">
+                            <label for="bookingCuatrimoto">Alquiler de Cuatrimotos</label>
+                            <div class="input-wrapper">
+                                <i data-lucide="activity"></i>
+                                <select id="bookingCuatrimoto">
+                                    <option value="0" selected>0 cuatrimotos</option>
+                                    <option value="1">1 cuatrimoto</option>
+                                    <option value="2">2 cuatrimotos</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="bookingCuatrimotoMonto">Monto Alquiler Cuatrimoto (S/.)</label>
+                            <div class="input-wrapper">
+                                <i data-lucide="banknote"></i>
+                                <input type="number" id="bookingCuatrimotoMonto" min="0" value="0" step="any">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Payment Information -->
+                    <div class="form-row" id="rowMedioPago">
+                        <div class="form-group">
+                            <label for="bookingSource">Medio de Contacto *</label>
+                            <div class="input-wrapper">
+                                <i data-lucide="share-2"></i>
+                                <select id="bookingSource" required>
+                                    <option value="Facebook">Facebook</option>
+                                    <option value="TikTok">TikTok</option>
+                                    <option value="Instagram">Instagram</option>
+                                    <option value="WhatsApp" selected>WhatsApp</option>
+                                    <option value="Cliente frecuente">Cliente frecuente</option>
+                                    <option value="Recomendación">Recomendación</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="bookingPaymentType">Tipo de Pago *</label>
+                            <div class="input-wrapper">
+                                <i data-lucide="wallet"></i>
+                                <select id="bookingPaymentType" required>
+                                    <option value="Yape">Yape</option>
+                                    <option value="Efectivo">Efectivo</option>
+                                    <option value="Dividido">Dividido (Yape + Efectivo)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Split Payment Row -->
+                    <div class="form-row hidden" id="splitPaymentRow"
+                        style="margin-top: 12px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: var(--radius-sm);">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="splitEfectivo">Monto Efectivo (S/.) *</label>
+                            <div class="input-wrapper">
+                                <i data-lucide="banknote"></i>
+                                <input type="number" id="splitEfectivo" placeholder="0.00" min="0" step="any">
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="splitYape">Monto Yape (S/.) *</label>
+                            <div class="input-wrapper">
+                                <i data-lucide="smartphone"></i>
+                                <input type="number" id="splitYape" placeholder="0.00" min="0" step="any">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group hidden" id="customSourceGroup">
+                        <label for="bookingSourceCustom">Escribe el Nombre del Medio *</label>
+                        <div class="input-wrapper">
+                            <i data-lucide="pencil"></i>
+                            <input type="text" id="bookingSourceCustom" placeholder="Nombre del nuevo medio...">
+                        </div>
+                    </div>
+
+                    <!-- Operator Session -->
+                    <div class="form-group">
+                        <label for="bookingNotes">Asesor *</label>
+                        <div class="input-wrapper">
+                            <i data-lucide="user-check"></i>
+                            <select id="bookingNotes" required>
+                                <option value="Rogger">Rogger</option>
+                                <option value="Dird">Dird</option>
+                                <option value="Victoria">Victoria</option>
+                                <option value="Otro">Otro Asesor...</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group hidden" id="customAsesorGroup">
+                        <label for="bookingNotesCustom">Escribe el Nombre del Asesor *</label>
+                        <div class="input-wrapper">
+                            <i data-lucide="pencil"></i>
+                            <input type="text" id="bookingNotesCustom" placeholder="Nombre del nuevo asesor...">
+                        </div>
+                    </div>
+
+                    <!-- Notes/Comments -->
+                    <div class="form-group">
+                        <label for="bookingComment">Comentarios / Observaciones</label>
+                        <textarea id="bookingComment" placeholder="Información adicional de la reserva..." rows="3"
+                            style="width: 100%; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--border-color); border-radius: var(--radius-sm); color: white; padding: 10px; font-family: var(--font-sans);"></textarea>
+                    </div>
+
+                    <!-- Cost Breakdown Display -->
+                    <div
+                        style="background: rgba(245, 158, 11, 0.05); border: 1px solid rgba(245, 158, 11, 0.2); padding: 15px; border-radius: var(--radius-md); margin-top: 16px; display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; font-size: 13px;">
+                        <div>
+                            <span class="text-secondary" style="display: block;">Precio Base:</span>
+                            <span id="breakdownBase" style="font-weight: 700; font-size: 15px;">S/. 0.00</span>
+                        </div>
+                        <div>
+                            <span class="text-secondary" style="display: block;">Adicional Huéspedes:</span>
+                            <span id="breakdownGuests" style="font-weight: 700; font-size: 15px;">S/. 0.00</span>
+                        </div>
+                        <div>
+                            <span class="text-secondary" style="display: block;">Extras (Horas/Motos):</span>
+                            <span id="breakdownExtras" style="font-weight: 700; font-size: 15px;">S/. 0.00</span>
+                        </div>
+                        <div style="border-left: 1px solid rgba(245, 158, 11, 0.2); padding-left: 12px;">
+                            <span class="text-secondary" style="display: block;">Adelanto:</span>
+                            <span id="breakdownAdvance" style="font-weight: 700; font-size: 15px; color: #fbbf24;">S/.
+                                0.00</span>
+                        </div>
+                        <div>
+                            <span class="text-secondary" style="display: block;">Saldo Pendiente:</span>
+                            <span id="breakdownRemaining" style="font-weight: 700; font-size: 15px; color: #ef4444;">S/.
+                                0.00</span>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Booking Total Container -->
+                    <div class="form-row" style="margin-top: 16px; align-items: center;">
+                        <div class="form-group" style="flex: 2; margin-bottom: 0;">
+                            <label for="bookingTotal">Total a Pagar (S/.) *</label>
+                            <div class="input-wrapper"
+                                style="background: rgba(245, 158, 11, 0.1); border-color: rgba(245, 158, 11, 0.4);">
+                                <i data-lucide="banknote" style="color: var(--primary);"></i>
+                                <input type="number" id="bookingTotal" required placeholder="0.00" min="0" step="any"
+                                    style="font-size: 16px; font-weight: 700; color: var(--primary);">
+                            </div>
+                            <small class="text-secondary">El total se auto-calcula pero puedes editarlo manualmente si
+                                es necesario.</small>
+                        </div>
+                        <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                            <label for="bookingAdelanto">Monto de Adelanto (S/.)</label>
+                            <div class="input-wrapper">
+                                <i data-lucide="smartphone"></i>
+                                <input type="number" id="bookingAdelanto" min="0" value="0" step="any">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-error" id="bookingError" style="margin-top: 12px;"></div>
+
+                    <div class="modal-actions" style="margin-top: 20px;">
+                        <div class="left-actions">
+                            <button type="button" class="btn btn-danger btn-delete hidden" id="btnDeleteBooking">
+                                <i data-lucide="trash-2"></i> Eliminar
+                            </button>
+                            <button type="button" class="btn btn-copy-reservation" id="btnCopyReservation"
+                                style="background: #25d366; color: white;">
+                                <i data-lucide="copy"></i> Copiar Detalles
+                            </button>
+                        </div>
+                        <div class="right-actions">
+                            <button type="submit" class="btn btn-primary" id="btnSaveBooking">Guardar Reserva</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal-backdrop" id="modalSettings">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>Configuración de Supabase</h3>
+                <button class="btn-close" id="btnCloseSettings"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <p class="settings-intro">Ingresa la URL y la Key de Supabase para activar la sincronización en tiempo
+                    real.</p>
+                <form id="formSettings">
+                    <div class="form-group">
+                        <label for="supabaseUrl">URL del Proyecto Supabase</label>
+                        <div class="input-wrapper">
+                            <i data-lucide="link-2"></i>
+                            <input type="url" id="supabaseUrl" placeholder="https://xxxxxx.supabase.co" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="supabaseKey">Clave Anon (Legacy Anon Key)</label>
+                        <div class="input-wrapper">
+                            <i data-lucide="key-round"></i>
+                            <input type="password" id="supabaseKey" placeholder="eyJhbGciOiJI..." required>
+                        </div>
+                    </div>
+                    <div class="settings-actions"
+                        style="margin-top: 20px; display: flex; gap: 12px; justify-content: flex-end;">
+                        <button type="button" class="btn btn-secondary" id="btnTestSupabase">Probar Conexión</button>
+                        <button type="submit" class="btn btn-primary">Guardar Credenciales</button>
+                    </div>
+                    <div class="settings-feedback" id="settingsFeedback" style="margin-top: 12px;"></div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- History Modal -->
+    <div class="modal-backdrop" id="modalHistory">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 style="display: flex; align-items: center; gap: 8px;">
+                    <i data-lucide="history" style="color: var(--primary);"></i> Historial de Actividad
+                </h3>
+                <button class="btn-close" id="btnCloseHistory"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body" style="padding-top: 16px;">
+                <div class="activity-list" id="activityList">
+                    <p class="no-activity">No hay actividad registrada en esta sesión.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Onboarding Modal (Active Operator) -->
+    <div class="modal-backdrop" id="modalUserOnboarding">
+        <div class="modal-card modal-sm" style="max-width: 380px;">
+            <div class="modal-header">
+                <h3>Identificación de Operador</h3>
+            </div>
+            <div class="modal-body">
+                <p class="settings-intro" style="margin-bottom: 16px;">Ingresa tu nombre o alias para registrar el
+                    historial de cambios en el sistema.</p>
+                <form id="formUserOnboarding">
+                    <div class="form-group">
+                        <label for="onboardingName">Nombre / Alias *</label>
+                        <div class="input-wrapper">
+                            <i data-lucide="user"></i>
+                            <input type="text" id="onboardingName" required placeholder="Nombre o alias de operador"
+                                maxlength="25">
+                        </div>
+                    </div>
+                    <div class="modal-actions" style="margin-top: 16px;">
+                        <button type="submit" class="btn btn-primary" style="width: 100%">Continuar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Password Modal (Restricted Access) -->
+    <div class="modal-backdrop" id="modalStatsAuth">
+        <div class="modal-card modal-sm" style="max-width: 380px;">
+            <div class="modal-header">
+                <h3 style="display: flex; align-items: center; gap: 8px; margin: 0;">
+                    <i data-lucide="lock" style="color: var(--danger);"></i> Acceso Restringido
+                </h3>
+                <button class="btn-close" id="btnCloseStatsAuth"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <p class="settings-intro" style="margin-bottom: 16px; font-size: 13px; color: var(--text-secondary);">
+                    Ingrese la contraseña de administrador</p>
+                <form id="formStatsAuth">
+                    <div class="form-group">
+                        <label for="statsPassword">Contraseña *</label>
+                        <div class="input-wrapper">
+                            <i data-lucide="key-round"></i>
+                            <input type="password" id="statsPassword" required placeholder="••••••••">
+                        </div>
+                    </div>
+                    <div class="form-error" id="statsAuthError"
+                        style="display: none; color: var(--danger); margin-bottom: 12px; font-size: 13px;"></div>
+                    <div class="modal-actions" style="margin-top: 16px;">
+                        <button type="submit" class="btn btn-primary" style="width: 100%">Desbloquear</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Dashboard Modal -->
+    <div class="modal-backdrop" id="modalStats">
+        <div class="modal-card modal-lg" style="max-width: 800px;">
+            <div class="modal-header">
+                <h3 style="display: flex; align-items: center; gap: 8px; margin: 0;">
+                    <i data-lucide="line-chart" style="color: var(--primary);"></i> Estadísticas y Finanzas de Bungalows
+                </h3>
+                <button class="btn-close" id="btnCloseStatsModal"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body" style="padding: 24px;">
+                <div class="stats-tabs"
+                    style="display: flex; gap: 12px; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+                    <button class="tab-btn active" data-tab="tab-report"
+                        style="background: none; border: none; color: var(--primary); font-weight: 600; cursor: pointer; padding: 6px 12px; border-bottom: 2px solid var(--primary); font-size: 14px;">
+                        Reporte de Ventas
+                    </button>
+                    <button class="tab-btn" data-tab="tab-ocupacion"
+                        style="background: none; border: none; color: var(--text-secondary); font-weight: 500; cursor: pointer; padding: 6px 12px; font-size: 14px;">
+                        Ocupación
+                    </button>
+                    <button class="tab-btn" data-tab="tab-clientes"
+                        style="background: none; border: none; color: var(--text-secondary); font-weight: 500; cursor: pointer; padding: 6px 12px; font-size: 14px;">
+                        Clientes
+                    </button>
+                </div>
+
+                <!-- Tab content: Report -->
+                <div class="tab-content active" id="tab-report">
+                    <div
+                        style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px;">
+                        <div
+                            style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px;">
+                            <span style="font-size: 12px; color: var(--text-muted); text-transform: uppercase;">Ganancia
+                                Estimada del Mes</span>
+                            <div id="statsIncomeMonth"
+                                style="font-size: 24px; font-weight: 700; color: #34d399; margin-top: 6px;">S/. 0.00
+                            </div>
+                            <span id="statsCountMonth" style="font-size: 12px; color: var(--text-secondary);">0
+                                reservas</span>
+                        </div>
+                        <div
+                            style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px;">
+                            <span style="font-size: 12px; color: var(--text-muted); text-transform: uppercase;">Cobrado
+                                en Yape</span>
+                            <div id="statsYapeMonth"
+                                style="font-size: 24px; font-weight: 700; color: #60a5fa; margin-top: 6px;">S/. 0.00
+                            </div>
+                        </div>
+                        <div
+                            style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px;">
+                            <span style="font-size: 12px; color: var(--text-muted); text-transform: uppercase;">Cobrado
+                                en Efectivo</span>
+                            <div id="statsEfectivoMonth"
+                                style="font-size: 24px; font-weight: 700; color: #fbbf24; margin-top: 6px;">S/. 0.00
+                            </div>
+                        </div>
+                    </div>
+
+                    <div
+                        style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: var(--radius-md); overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 14px;"
+                            id="tableStatsReport">
+                            <thead>
+                                <tr
+                                    style="border-bottom: 1px solid var(--border-color); background: rgba(255, 255, 255, 0.03);">
+                                    <th style="padding: 12px 16px; color: var(--text-secondary);">Bungalow</th>
+                                    <th style="padding: 12px 16px; color: var(--text-secondary);">Total Reservas</th>
+                                    <th style="padding: 12px 16px; color: var(--text-secondary);">Ingreso Estimado</th>
+                                    <th style="padding: 12px 16px; color: var(--text-secondary);">Motos Alquiladas</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Se llenará dinámicamente -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Tab content: Ocupación -->
+                <div class="tab-content" id="tab-ocupacion" style="display: none;">
+                    <p style="color: var(--text-secondary); margin-bottom: 16px;">Grado de ocupación por cada Bungalow
+                        este mes:</p>
+                    <div id="ocupacionContainer" style="display: flex; flex-direction: column; gap: 16px;">
+                        <!-- Se llenará dinámicamente con barras de progreso -->
+                    </div>
+                </div>
+
+                <!-- Tab content: Clientes -->
+                <div class="tab-content" id="tab-clientes" style="display: none;">
+                    <div
+                        style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: var(--radius-md); overflow-x: auto; max-height: 300px;">
+                        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 14px;"
+                            id="tableStatsClients">
+                            <thead>
+                                <tr
+                                    style="border-bottom: 1px solid var(--border-color); background: rgba(255, 255, 255, 0.03);">
+                                    <th style="padding: 12px 16px; color: var(--text-secondary);">Nombre</th>
+                                    <th style="padding: 12px 16px; color: var(--text-secondary);">DNI</th>
+                                    <th style="padding: 12px 16px; color: var(--text-secondary);">Celular</th>
+                                    <th style="padding: 12px 16px; color: var(--text-secondary);">Nro Reservas</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Se llenará dinámicamente -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script triggers and main logic -->
+    <script src="bungalows.js"></script>
+</body>
+
+</html>

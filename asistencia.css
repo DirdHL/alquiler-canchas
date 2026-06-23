@@ -1208,6 +1208,9 @@ select option {
     vertical-align: -0.15em;
     margin-right: 8px;
 }
+
 @keyframes spinner-spin {
-    to { transform: rotate(360deg); }
+    to {
+        transform: rotate(360deg);
+    }
 }

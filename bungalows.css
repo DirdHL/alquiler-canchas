@@ -1,0 +1,551 @@
+/* =============================================================
+   Bungalows Booking System Stylesheet - Tomayquichua Theme Style
+   Theme: Nature Warm Cream, Forest Green & Sandy-Gold accents
+   ============================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Outfit:wght@300;400;500;600;700&display=swap');
+
+:root {
+    /* Color Palette */
+    --bg-primary: #fbf9f3;          /* Warm Cream / Sand Paper */
+    --bg-secondary: #f2ebe0;        /* Slightly darker warm cream */
+    --bg-card: #ffffff;             /* Solid white cards */
+    --border-color: #dfd5c4;        /* Soft sand-gold border */
+    
+    --text-primary: #19321f;        /* Deep Forest Green (almost black) */
+    --text-secondary: #5e5142;      /* Warm Walnut Brown */
+    --text-muted: #8e7d69;          /* Earthy beige-brown */
+
+    --primary: #1c3d25;             /* Majestic Forest Green */
+    --primary-hover: #122919;
+    --primary-glow: rgba(28, 61, 37, 0.12);
+    
+    --accent: #a4763c;              /* Warm Sandy-Gold */
+    --accent-hover: #8f622f;
+    --danger: #9c2a2a;              /* Earthy crimson red */
+    --danger-hover: #7d2020;
+
+    --font-sans: 'Outfit', sans-serif;
+    --font-serif: 'Playfair Display', serif;
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+    --radius-xl: 20px;
+
+    --transition-smooth: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    --blur-strength: 8px;
+}
+
+/* Base Body Styles */
+body {
+    background: radial-gradient(circle at 50% 0%, #faf6ec 0%, #f1e9db 70%) !important;
+    color: var(--text-primary) !important;
+    font-family: var(--font-sans) !important;
+}
+
+/* App Layout */
+.app-container {
+    background-color: var(--bg-primary);
+}
+
+/* Sidebar Styles Overrides (Nature Style) */
+.sidebar {
+    background: #f2ebe0 !important;
+    border-right: 1px solid var(--border-color) !important;
+    backdrop-filter: none !important;
+    box-shadow: 2px 0 12px rgba(62, 53, 43, 0.04) !important;
+}
+
+/* Sidebar Headings */
+.sidebar h2 {
+    font-family: var(--font-serif) !important;
+    font-weight: 700 !important;
+    color: var(--primary) !important;
+    font-size: 21px !important;
+    letter-spacing: -0.2px !important;
+}
+
+.sidebar h2 span {
+    font-family: var(--font-sans) !important;
+    font-weight: 300 !important;
+    color: var(--accent) !important;
+    font-size: 0.9em;
+    display: inline-block;
+    margin-left: 3px;
+}
+
+.logo-area h2 .logo-subtitle {
+    font-family: var(--font-sans) !important;
+    background: rgba(164, 118, 60, 0.12) !important;
+    border: 1px solid rgba(164, 118, 60, 0.3) !important;
+    color: var(--accent) !important;
+    box-shadow: none !important;
+}
+
+.logo-icon {
+    color: var(--primary) !important;
+}
+
+/* Status indicator card */
+.status-indicator-card {
+    background: rgba(255, 255, 255, 0.5) !important;
+    border: 1px solid var(--border-color) !important;
+}
+
+.status-dot.disconnected {
+    background-color: var(--accent) !important;
+    color: var(--accent) !important;
+}
+
+.status-desc {
+    color: var(--text-secondary) !important;
+}
+
+.btn-secondary {
+    background: #ffffff !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border-color) !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.btn-secondary:hover {
+    background: #fdfbf7 !important;
+    border-color: var(--accent) !important;
+    color: var(--accent) !important;
+}
+
+/* Sidebar Nav links */
+.nav-filters h3 {
+    color: var(--text-muted) !important;
+    font-weight: 700 !important;
+    font-size: 11px !important;
+    border-bottom: 1px solid rgba(223, 213, 196, 0.5);
+    padding-bottom: 4px;
+    margin-top: 10px;
+}
+
+.filter-item {
+    color: var(--text-secondary) !important;
+}
+
+.filter-item:hover {
+    color: var(--primary) !important;
+}
+
+.custom-checkbox {
+    border: 2px solid var(--text-muted) !important;
+}
+
+/* Sidebar action buttons */
+.btn-sidebar-action {
+    background: rgba(255, 255, 255, 0.5) !important;
+    color: var(--text-secondary) !important;
+    border: 1px solid var(--border-color) !important;
+}
+
+.btn-sidebar-action:hover {
+    background: #ffffff !important;
+    color: var(--primary) !important;
+    border-color: var(--primary) !important;
+    transform: translateY(-1px);
+}
+
+/* Stats and user profile card in sidebar */
+.stats-card {
+    background: rgba(255, 255, 255, 0.5) !important;
+    border: 1px solid var(--border-color) !important;
+}
+
+.stats-card h3 {
+    color: var(--text-secondary) !important;
+    font-family: var(--font-serif) !important;
+    font-size: 14px !important;
+    border-bottom: 1px dotted var(--border-color);
+    padding-bottom: 4px;
+}
+
+.stat-item {
+    border-bottom: 1px solid rgba(223, 213, 196, 0.3) !important;
+}
+
+.stat-label {
+    color: var(--text-muted) !important;
+}
+
+.stat-value {
+    color: var(--text-primary) !important;
+}
+
+.user-profile-card {
+    background: rgba(255, 255, 255, 0.6) !important;
+    border: 1px solid var(--border-color) !important;
+}
+
+.user-name {
+    color: var(--text-primary) !important;
+}
+
+.user-label {
+    color: var(--text-muted) !important;
+}
+
+/* =============================================================
+   Main Content Area
+   ============================================================= */
+.main-content {
+    background: radial-gradient(circle at 50% 0%, #FAF6EE 0%, #F5EFEB 100%) !important;
+    padding: 30px 40px !important;
+}
+
+.app-header h1 {
+    font-family: var(--font-serif) !important;
+    font-weight: 700 !important;
+    color: var(--primary) !important;
+    font-size: 32px !important;
+    letter-spacing: -0.5px;
+    position: relative;
+}
+
+.app-header h1::after {
+    content: '';
+    display: block;
+    width: 60px;
+    height: 2px;
+    background: var(--accent);
+    margin-top: 6px;
+}
+
+.app-header p {
+    color: var(--text-secondary) !important;
+    font-size: 14px !important;
+    margin-top: 4px;
+}
+
+/* Primary Nature Button styling */
+.btn-primary {
+    background: var(--primary) !important;
+    color: #ffffff !important;
+    border: 1px solid var(--primary) !important;
+    border-radius: var(--radius-md) !important;
+    font-family: var(--font-sans) !important;
+    font-weight: 600 !important;
+    box-shadow: 0 4px 10px rgba(28, 61, 37, 0.15) !important;
+}
+
+.btn-primary:hover {
+    background: var(--primary-hover) !important;
+    border-color: var(--primary-hover) !important;
+    transform: translateY(-1.5px);
+    box-shadow: 0 6px 14px rgba(28, 61, 37, 0.25) !important;
+}
+
+/* =============================================================
+   Calendar Container (Clean Light Theme)
+   ============================================================= */
+.calendar-card {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: var(--radius-lg) !important;
+    box-shadow: 0 8px 30px rgba(62, 53, 43, 0.05) !important;
+    color: var(--text-primary) !important;
+    padding: 24px !important;
+}
+
+/* FullCalendar styling overrides */
+.fc {
+    --fc-page-bg-color: #ffffff !important;
+    --fc-neutral-bg-color: #faf8f5 !important;
+    --fc-today-bg-color: rgba(164, 118, 60, 0.06) !important;
+    --fc-border-color: #e8e2d5 !important;
+}
+
+.fc-theme-standard td,
+.fc-theme-standard th {
+    border: 1px solid #e8e2d5 !important;
+}
+
+.fc th {
+    background-color: var(--primary) !important;
+    color: #ffffff !important;
+    font-family: var(--font-sans) !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    font-size: 13px !important;
+    padding: 10px 0 !important;
+}
+
+.fc .fc-daygrid-day-number {
+    color: var(--text-secondary) !important;
+    font-family: var(--font-sans) !important;
+    font-weight: 600 !important;
+    padding: 6px !important;
+}
+
+.fc .fc-daygrid-day.fc-day-today .fc-daygrid-day-number {
+    color: var(--accent) !important;
+    font-weight: 700 !important;
+    background: rgba(164, 118, 60, 0.1) !important;
+    border-radius: 4px;
+    padding: 2px 6px;
+    margin: 4px;
+}
+
+/* Today column cell highlights */
+.fc .fc-col-header-cell.fc-day-today {
+    background: var(--primary-hover) !important;
+    border-bottom: 2px solid var(--accent) !important;
+}
+
+.fc .fc-col-header-cell.fc-day-today a {
+    color: #ffffff !important;
+}
+
+/* Navigation headers toolbar */
+.fc .fc-toolbar-title {
+    font-family: var(--font-serif) !important;
+    color: var(--primary) !important;
+    font-weight: 700 !important;
+    font-size: 22px !important;
+}
+
+.fc .fc-button-primary {
+    background: #ffffff !important;
+    border: 1px solid var(--border-color) !important;
+    color: var(--text-primary) !important;
+    font-family: var(--font-sans) !important;
+    font-weight: 600 !important;
+}
+
+.fc .fc-button-primary:hover {
+    background: #faf6ee !important;
+    border-color: var(--accent) !important;
+    color: var(--accent) !important;
+}
+
+.fc .fc-button-primary:not(:disabled).fc-button-active {
+    background: var(--primary) !important;
+    border-color: var(--primary) !important;
+    color: #ffffff !important;
+}
+
+/* Custom Calendar Event Blocks (Rustic organic look) */
+.fc-event {
+    border-radius: 4px !important;
+    padding: 3px 6px !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08) !important;
+}
+
+.fc-event-main {
+    color: #ffffff !important;
+    font-weight: 600 !important;
+    font-size: 11px !important;
+}
+
+/* Nature Palette for Events */
+.event-bungalow-1 { background: linear-gradient(135deg, #2d5a27, #1f421a) !important; } /* Sage */
+.event-bungalow-2 { background: linear-gradient(135deg, #a4763c, #8b602d) !important; } /* Terracotta Gold */
+.event-bungalow-3 { background: linear-gradient(135deg, #3d5a80, #293d56) !important; } /* Slate Blue */
+.event-bungalow-4 { background: linear-gradient(135deg, #a06a6a, #805252) !important; } /* Rosewood */
+.event-bungalow-5 { background: linear-gradient(135deg, #6b5b95, #4f4270) !important; } /* Muted Grape */
+.event-bungalow-6 { background: linear-gradient(135deg, #4f6d7a, #38515c) !important; } /* Pine Ocean */
+.event-bungalow-blocked { background: linear-gradient(135deg, #78716c, #57534e) !important; } /* Stone Gray */
+
+/* =============================================================
+   Huéspedes para Hoy section
+   ============================================================= */
+.summary-item-card {
+    background: #ffffff !important;
+    border: 1px solid var(--border-color) !important;
+    box-shadow: 0 2px 8px rgba(62, 53, 43, 0.03) !important;
+    color: var(--text-primary) !important;
+}
+
+.summary-item-card:hover {
+    background: #FAF7F0 !important;
+    border-color: var(--accent) !important;
+    box-shadow: 0 4px 15px rgba(164, 118, 60, 0.12) !important;
+}
+
+.summary-item-time {
+    color: var(--accent) !important;
+}
+
+.summary-item-client {
+    font-family: var(--font-serif) !important;
+    font-weight: 700 !important;
+    color: var(--primary) !important;
+}
+
+.summary-item-details {
+    color: var(--text-secondary) !important;
+}
+
+/* Badges for Bungalows */
+.bungalow-badge-1 { background: rgba(45, 90, 39, 0.12) !important; color: #2d5a27 !important; border: 1px solid rgba(45, 90, 39, 0.25) !important; }
+.bungalow-badge-2 { background: rgba(164, 118, 60, 0.12) !important; color: #a4763c !important; border: 1px solid rgba(164, 118, 60, 0.25) !important; }
+.bungalow-badge-3 { background: rgba(61, 90, 128, 0.12) !important; color: #3d5a80 !important; border: 1px solid rgba(61, 90, 128, 0.25) !important; }
+.bungalow-badge-4 { background: rgba(160, 106, 106, 0.12) !important; color: #a06a6a !important; border: 1px solid rgba(160, 106, 106, 0.25) !important; }
+.bungalow-badge-5 { background: rgba(107, 91, 149, 0.12) !important; color: #6b5b95 !important; border: 1px solid rgba(107, 91, 149, 0.25) !important; }
+.bungalow-badge-6 { background: rgba(79, 109, 122, 0.12) !important; color: #4f6d7a !important; border: 1px solid rgba(79, 109, 122, 0.25) !important; }
+.bungalow-badge-blocked { background: rgba(120, 113, 108, 0.12) !important; color: #78716c !important; border: 1px solid rgba(120, 113, 108, 0.25) !important; }
+
+/* Filter items checkmarks */
+.filter-item input:checked+.custom-checkbox.color-b1 { background: #2d5a27; border-color: #2d5a27; }
+.filter-item input:checked+.custom-checkbox.color-b2 { background: #a4763c; border-color: #a4763c; }
+.filter-item input:checked+.custom-checkbox.color-b3 { background: #3d5a80; border-color: #3d5a80; }
+.filter-item input:checked+.custom-checkbox.color-b4 { background: #a06a6a; border-color: #a06a6a; }
+.filter-item input:checked+.custom-checkbox.color-b5 { background: #6b5b95; border-color: #6b5b95; }
+.filter-item input:checked+.custom-checkbox.color-b6 { background: #4f6d7a; border-color: #4f6d7a; }
+
+/* =============================================================
+   Modals & Popups (Nature Theme Style)
+   ============================================================= */
+.modal-backdrop {
+    background: rgba(45, 38, 30, 0.6) !important;
+}
+
+.modal-card {
+    background: #ffffff !important;
+    border: 1px solid var(--border-color) !important;
+    box-shadow: 0 16px 40px rgba(62, 53, 43, 0.15) !important;
+    color: var(--text-primary) !important;
+}
+
+.modal-header {
+    border-bottom: 1px solid var(--border-color) !important;
+    background: #faf7f1;
+}
+
+.modal-header h3 {
+    font-family: var(--font-serif) !important;
+    color: var(--primary) !important;
+    font-weight: 700 !important;
+    font-size: 20px !important;
+}
+
+.modal-body label {
+    color: var(--text-secondary) !important;
+    font-weight: 600 !important;
+    font-size: 13px !important;
+    margin-bottom: 4px;
+}
+
+/* Input Fields and Selects (Rustic Light Theme) */
+.modal-body input[type="text"],
+.modal-body input[type="tel"],
+.modal-body input[type="number"],
+.modal-body input[type="date"],
+.modal-body select,
+.modal-body textarea {
+    background: #ffffff !important;
+    border: 1px solid var(--border-color) !important;
+    color: var(--text-primary) !important;
+    border-radius: var(--radius-sm) !important;
+    font-family: var(--font-sans) !important;
+    padding: 8px 12px 8px 12px; /* Removed !important to allow overrides */
+    transition: var(--transition-smooth) !important;
+}
+
+/* Specific selector for inputs inside .input-wrapper to clear absolute icons */
+.modal-body .input-wrapper input,
+.modal-body .input-wrapper select,
+.modal-body .input-wrapper textarea {
+    padding: 8px 12px 8px 42px !important; /* High specificity with !important */
+}
+
+.modal-body input:focus,
+.modal-body select:focus,
+.modal-body textarea:focus {
+    border-color: var(--accent) !important;
+    box-shadow: 0 0 0 3px rgba(164, 118, 60, 0.1) !important;
+    background: #fffdfb !important;
+}
+
+/* Remove double borders and backgrounds from the wrapper itself */
+.input-wrapper {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    width: 100%;
+}
+
+.input-wrapper:focus-within {
+    border: none !important;
+    box-shadow: none !important;
+}
+
+.input-wrapper input {
+    color: var(--text-primary) !important;
+}
+
+.input-wrapper svg {
+    color: var(--text-muted) !important;
+}
+
+/* Helpers & small text */
+.text-secondary {
+    color: var(--text-muted) !important;
+}
+
+.rule-helper {
+    color: var(--accent) !important;
+}
+
+/* Dynamic total container in Modal */
+#bookingTotal {
+    font-family: var(--font-sans) !important;
+}
+
+#bookingTotalContainer {
+    background: rgba(28, 61, 37, 0.05) !important;
+    border: 1px solid rgba(28, 61, 37, 0.2) !important;
+}
+
+/* Modal Actions buttons */
+.btn-delete {
+    background: var(--danger) !important;
+    color: white !important;
+}
+
+.btn-delete:hover {
+    background: var(--danger-hover) !important;
+}
+
+/* Activity history list */
+.activity-list p {
+    border-bottom: 1px solid rgba(223, 213, 196, 0.4) !important;
+    color: var(--text-secondary) !important;
+}
+
+/* Admin Stats Panel tab links */
+.stats-tabs button {
+    font-family: var(--font-sans) !important;
+    font-weight: 500 !important;
+    color: var(--text-secondary) !important;
+}
+
+.stats-tabs button.active {
+    color: var(--primary) !important;
+    border-bottom: 2px solid var(--primary) !important;
+    font-weight: 700 !important;
+}
+
+/* Table Stats style */
+#tableStatsReport, #tableStatsClients {
+    background: #ffffff !important;
+    color: var(--text-primary) !important;
+}
+
+#tableStatsReport th, #tableStatsClients th {
+    background: #faf7f1 !important;
+    color: var(--text-secondary) !important;
+    border-bottom: 2px solid var(--border-color) !important;
+}
+
+#tableStatsReport tr, #tableStatsClients tr {
+    border-bottom: 1px solid var(--border-color) !important;
+}
+
+#tableStatsReport td, #tableStatsClients td {
+    color: var(--text-primary) !important;
+}

@@ -35,7 +35,6 @@ function getEmployeeNameWithEmoji(name) {
             return `${name} ${emojiMap[key]}`;
         }
     }
-
     return name;
 }
 
