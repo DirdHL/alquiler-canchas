@@ -873,21 +873,21 @@ function updateEmployeeStats() {
         // Reset metrics UI
         progressPercentageText.textContent = '0%';
         goalProgressBar.style.width = '0%';
-        progressCurrentText.textContent = '0.0 h acumuladas';
-        metricWorkedHours.textContent = '0.0';
-        if (metricJustifiedHours) metricJustifiedHours.textContent = '0.0';
-        if (metricOwedHours) metricOwedHours.textContent = '48.0';
+        progressCurrentText.textContent = '0 h acumuladas esta semana';
+        metricWorkedHours.textContent = '0';
+        if (metricJustifiedHours) metricJustifiedHours.textContent = '0';
+        if (metricOwedHours) metricOwedHours.textContent = '48';
 
         // Reset monthly detailed metrics
-        if (statsWorkedHours) statsWorkedHours.textContent = '0.0 h';
-        if (statsJustifiedHours) statsJustifiedHours.textContent = '0.0 h';
-        if (statsTotalMonthHours) statsTotalMonthHours.textContent = '0.0 h';
-        if (statsRequiredHours) statsRequiredHours.textContent = '0.0 h';
-        if (statsOwedHours) statsOwedHours.textContent = '0.0 h';
+        if (statsWorkedHours) statsWorkedHours.textContent = '0 h';
+        if (statsJustifiedHours) statsJustifiedHours.textContent = '0 h';
+        if (statsTotalMonthHours) statsTotalMonthHours.textContent = '0 h';
+        if (statsRequiredHours) statsRequiredHours.textContent = '0 h';
+        if (statsOwedHours) statsOwedHours.textContent = '0 h';
         if (labelRequiredHours) labelRequiredHours.textContent = 'Horas Requeridas:';
         if (statsDaysWorked) statsDaysWorked.textContent = '0 días';
         if (statsDaysJustified) statsDaysJustified.textContent = '0 días';
-        if (statsMonthlyOvertime) statsMonthlyOvertime.textContent = '0.0 h';
+        if (statsMonthlyOvertime) statsMonthlyOvertime.textContent = '0 h';
         return;
     }
 
@@ -921,10 +921,10 @@ function updateEmployeeStats() {
 
     progressPercentageText.textContent = `${percent.toFixed(0)}%`;
     goalProgressBar.style.width = `${percent}%`;
-    progressCurrentText.textContent = `${weeklyTotal.toFixed(1)} h acumuladas esta semana`;
-    if (metricWorkedHours) metricWorkedHours.textContent = weeklyWorked.toFixed(1);
-    if (metricJustifiedHours) metricJustifiedHours.textContent = weeklyJustified.toFixed(1);
-    if (metricOwedHours) metricOwedHours.textContent = weeklyOwed.toFixed(1);
+    progressCurrentText.textContent = `${formatHoursToHHMM(weeklyTotal, true)} acumuladas esta semana`;
+    if (metricWorkedHours) metricWorkedHours.textContent = formatHoursToHHMM(weeklyWorked, false);
+    if (metricJustifiedHours) metricJustifiedHours.textContent = formatHoursToHHMM(weeklyJustified, false);
+    if (metricOwedHours) metricOwedHours.textContent = formatHoursToHHMM(weeklyOwed, false);
 
     if (percent < 30) {
         goalProgressBar.style.background = 'var(--progress-low, #ff758c)';
@@ -1016,17 +1016,17 @@ function updateEmployeeStats() {
         labelRequiredHours.textContent = isCurrentMonth ? 'Horas Requeridas (al día de hoy):' : 'Horas Requeridas:';
     }
     if (statsRequiredHours) {
-        statsRequiredHours.textContent = `${expectedHours.toFixed(1)} h`;
+        statsRequiredHours.textContent = formatHoursToHHMM(expectedHours, true);
     }
     if (statsOwedHours) {
-        statsOwedHours.textContent = `${hoursOwed.toFixed(1)} h`;
+        statsOwedHours.textContent = formatHoursToHHMM(hoursOwed, true);
     }
-    if (statsWorkedHours) statsWorkedHours.textContent = `${workedHours.toFixed(1)} h`;
-    if (statsJustifiedHours) statsJustifiedHours.textContent = `${justifiedHours.toFixed(1)} h`;
-    if (statsTotalMonthHours) statsTotalMonthHours.textContent = `${totalMonthHours.toFixed(1)} h`;
+    if (statsWorkedHours) statsWorkedHours.textContent = formatHoursToHHMM(workedHours, true);
+    if (statsJustifiedHours) statsJustifiedHours.textContent = formatHoursToHHMM(justifiedHours, true);
+    if (statsTotalMonthHours) statsTotalMonthHours.textContent = formatHoursToHHMM(totalMonthHours, true);
     if (statsDaysWorked) statsDaysWorked.textContent = `${daysWorked} ${daysWorked === 1 ? 'día' : 'días'}`;
     if (statsDaysJustified) statsDaysJustified.textContent = `${daysJustified} ${daysJustified === 1 ? 'día' : 'días'}`;
-    if (statsMonthlyOvertime) statsMonthlyOvertime.textContent = `${monthlyOvertime.toFixed(1)} h`;
+    if (statsMonthlyOvertime) statsMonthlyOvertime.textContent = formatHoursToHHMM(monthlyOvertime, true);
 }
 
 // Render Attendance list Table
@@ -1093,7 +1093,7 @@ function renderAttendanceTable() {
                 <td data-label="Fecha">${dateDisplay}</td>
                 <td data-label="Entrada">${inFormatted}</td>
                 <td data-label="Salida">${outFormatted}</td>
-                <td data-label="Horas Abonadas" style="font-weight: 600;">${realHours.toFixed(1)} h${lunchIcon}</td>
+                <td data-label="Horas Abonadas" style="font-weight: 600;">${formatHoursToHHMM(realHours, true)}${lunchIcon}</td>
                 <td data-label="Tipo"><span class="${typeBadgeClass}">${typeLabel}</span></td>
                 <td data-label="Notas" style="font-size: 12px; color: var(--text-secondary); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHTML(r.notes || '')}">
                     ${escapeHTML(r.notes || '')}
@@ -1509,6 +1509,21 @@ function formatHoursText(hoursDecimal) {
     if (hours > 0) text += `${hours} h `;
     if (minutes > 0 || hours === 0) text += `${minutes} min`;
     return text.trim();
+}
+
+function formatHoursToHHMM(hoursDecimal, includeSuffix = true) {
+    if (hoursDecimal === null || hoursDecimal === undefined || isNaN(hoursDecimal)) {
+        return includeSuffix ? '0 h' : '0';
+    }
+    const totalMinutes = Math.round(hoursDecimal * 60);
+    const h = Math.floor(totalMinutes / 60);
+    const m = totalMinutes % 60;
+    
+    if (m === 0) {
+        return includeSuffix ? `${h} h` : `${h}`;
+    } else {
+        return includeSuffix ? `${h}:${String(m).padStart(2, '0')} h` : `${h}:${String(m).padStart(2, '0')}`;
+    }
 }
 
 function formatDateDDMMYYYY(dateStr) {
