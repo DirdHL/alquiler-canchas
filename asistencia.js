@@ -1472,14 +1472,11 @@ function roundCheckoutTime(timeStr) {
     let hour = parseInt(parts[0], 10);
     let min = parseInt(parts[1], 10);
 
-    // Si la hora original es >= 14 (2 PM) o si estamos entre 13:55 y 13:59 (que redondea a 14)
-    const isAfternoon = (hour >= 14) || (hour === 13 && min >= 55);
+    // Solo aplica para salidas a partir de las 14:00 (2 PM) en adelante
+    const isAfternoon = (hour >= 14);
 
     if (isAfternoon) {
-        if (min >= 55) {
-            hour = (hour + 1) % 24;
-            min = 0;
-        } else if (min <= 5) {
+        if (min > 0 && min <= 5) {
             min = 0;
         }
     }
