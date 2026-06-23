@@ -8,7 +8,7 @@
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <!-- Supabase JS CDN -->
@@ -29,27 +29,53 @@
 
         <!-- Sidebar -->
         <aside class="sidebar" id="sidebar">
-            <div class="logo-area">
-                <div class="logo-title">
-                    <i data-lucide="sun" class="logo-icon logo-sun-animate" style="color: var(--sun-gold);"></i>
-                    <h2>Nuevo<span>Horizonte</span><span class="logo-subtitle"
-                            style="background: rgba(255, 94, 151, 0.12); border-color: rgba(255, 94, 151, 0.3); color: var(--primary);">Personal</span>
-                    </h2>
+            <div class="logo-area-custom">
+                <div class="logo-sun-container">
+                    <!-- Cute Smiling Sun SVG -->
+                    <svg viewBox="0 0 100 100" class="logo-sun-svg">
+                        <g stroke="#ff9f1c" stroke-width="6" stroke-linecap="round" class="sun-rays">
+                            <line x1="50" y1="8" x2="50" y2="18" />
+                            <line x1="50" y1="82" x2="50" y2="92" />
+                            <line x1="8" y1="50" x2="18" y2="50" />
+                            <line x1="82" y1="50" x2="92" y2="50" />
+                            <line x1="20" y1="20" x2="28" y2="28" />
+                            <line x1="72" y1="72" x2="80" y2="80" />
+                            <line x1="20" y1="80" x2="28" y2="72" />
+                            <line x1="72" y1="20" x2="80" y2="28" />
+                        </g>
+                        <circle cx="50" cy="50" r="24" fill="#ffd166" stroke="#ff9f1c" stroke-width="4" />
+                        <circle cx="42" cy="46" r="3" fill="#830b42" />
+                        <circle cx="58" cy="46" r="3" fill="#830b42" />
+                        <circle cx="37" cy="53" r="2.5" fill="#ff70a6" />
+                        <circle cx="63" cy="53" r="2.5" fill="#ff70a6" />
+                        <path d="M 43,54 A 8,8 0 0,0 57,54" fill="none" stroke="#830b42" stroke-width="3.5" stroke-linecap="round" />
+                    </svg>
+                </div>
+                <div class="logo-text-container">
+                    <div class="logo-main-title">Asistencias</div>
+                    <div class="logo-sub-title">Nuevo Horizonte</div>
+                    <div class="logo-office-lbl">OFICINA</div>
+                    <div class="logo-badge">PERSONAL</div>
                 </div>
                 <button class="btn-close-sidebar" id="btnCloseSidebar">
                     <i data-lucide="x"></i>
                 </button>
             </div>
 
-            <!-- Supabase Status Indicators -->
+            <!-- Supabase Status Indicators (Mockup style) -->
             <div class="status-indicator-card">
-                <div class="status-header">
-                    <span class="status-dot disconnected" id="statusDot"></span>
-                    <span class="status-text" id="statusText">Modo Sin Conexión (Local)</span>
+                <div class="status-header-custom">
+                    <div class="status-cloud-icon-container">
+                        <i data-lucide="cloud" class="status-cloud-icon"></i>
+                        <i data-lucide="arrow-up" class="status-arrow-icon"></i>
+                    </div>
+                    <span class="status-title-text" id="statusText">Conectado a la Nube (Supabase)</span>
                 </div>
-                <p class="status-desc" id="statusDesc">Cargando conexión con la base de datos...</p>
+                <div class="status-desc-custom">
+                    <span class="status-dot connected" id="statusDot"></span>
+                    <span class="status-desc-text" id="statusDesc">Las asistencias están sincronizadas con la nube en tiempo real.</span>
+                </div>
             </div>
-
 
             <!-- Quick Info Card -->
             <div class="stats-card">
@@ -82,6 +108,63 @@
                 </button>
             </div>
 
+            <!-- Sidebar bottom landscape SVG illustration -->
+            <div class="sidebar-bottom-illustration">
+                <svg viewBox="0 0 280 180" xmlns="http://www.w3.org/2000/svg" class="sidebar-svg">
+                    <!-- Rainbow -->
+                    <g fill="none" stroke-width="6" opacity="0.9">
+                        <path d="M 30,180 A 100,100 0 0,1 230,180" stroke="#ff007f" />
+                        <path d="M 36,180 A 94,94 0 0,1 224,180" stroke="#ff7f00" />
+                        <path d="M 42,180 A 88,88 0 0,1 218,180" stroke="#ffee00" />
+                        <path d="M 48,180 A 82,82 0 0,1 212,180" stroke="#00ff7f" />
+                        <path d="M 54,180 A 76,76 0 0,1 206,180" stroke="#007fff" />
+                        <path d="M 60,180 A 70,70 0 0,1 200,180" stroke="#7f00ff" />
+                    </g>
+                    <!-- Sun -->
+                    <g transform="translate(195, 100)">
+                        <g stroke="#ff9f1c" stroke-width="4" stroke-linecap="round" class="sun-rays">
+                            <line x1="0" y1="-28" x2="0" y2="-38" />
+                            <line x1="20" y1="-20" x2="27" y2="-27" />
+                            <line x1="28" y1="0" x2="38" y2="0" />
+                            <line x1="20" y1="20" x2="27" y2="27" />
+                            <line x1="0" y1="28" x2="0" y2="38" />
+                            <line x1="-20" y1="20" x2="-27" y2="27" />
+                            <line x1="-28" y1="0" x2="-38" y2="0" />
+                            <line x1="-20" y1="-20" x2="-27" y2="-27" />
+                        </g>
+                        <circle cx="0" cy="0" r="22" fill="#ffd166" stroke="#ff9f1c" stroke-width="3" />
+                        <!-- Face -->
+                        <circle cx="-8" cy="-4" r="2.5" fill="#830b42" />
+                        <circle cx="8" cy="-4" r="2.5" fill="#830b42" />
+                        <circle cx="-13" cy="2" r="2" fill="#ff70a6" opacity="0.8" />
+                        <circle cx="13" cy="2" r="2" fill="#ff70a6" opacity="0.8" />
+                        <path d="M -7,4 A 7,7 0 0,0 7,4" fill="none" stroke="#830b42" stroke-width="2.5" stroke-linecap="round" />
+                    </g>
+                    <!-- Hills -->
+                    <path d="M -20,180 Q 80,120 180,160 Q 240,140 300,180 Z" fill="#9fe2bf" opacity="0.8" />
+                    <path d="M 60,180 Q 150,110 240,150 Q 270,140 300,180 Z" fill="#75cf9f" />
+                    <!-- Flowers -->
+                    <!-- Red Flower 1 -->
+                    <circle cx="40" cy="150" r="4" fill="#ff2a85" />
+                    <circle cx="44" cy="146" r="4" fill="#ff2a85" />
+                    <circle cx="48" cy="150" r="4" fill="#ff2a85" />
+                    <circle cx="44" cy="154" r="4" fill="#ff2a85" />
+                    <circle cx="44" cy="150" r="2.5" fill="#ffee00" />
+                    <!-- Yellow Flower 2 -->
+                    <circle cx="110" cy="140" r="3" fill="#ffee00" />
+                    <circle cx="113" cy="137" r="3" fill="#ffee00" />
+                    <circle cx="116" cy="140" r="3" fill="#ffee00" />
+                    <circle cx="113" cy="143" r="3" fill="#ffee00" />
+                    <circle cx="113" cy="140" r="2" fill="#ff2a85" />
+                    <!-- Pink Flower 3 -->
+                    <circle cx="230" cy="160" r="4.5" fill="#ff85a2" />
+                    <circle cx="235" cy="156" r="4.5" fill="#ff85a2" />
+                    <circle cx="240" cy="160" r="4.5" fill="#ff85a2" />
+                    <circle cx="235" cy="164" r="4.5" fill="#ff85a2" />
+                    <circle cx="235" cy="160" r="3" fill="#ffee00" />
+                </svg>
+            </div>
+
             <footer class="sidebar-footer">
                 <p>Nuevo Horizonte &copy; 2026</p>
                 <p class="footer-note">Desarrollado por Rogger Dird Huaicama Lacerna</p>
@@ -90,6 +173,44 @@
 
         <!-- Main Content -->
         <main class="main-content">
+            <!-- Header Top Right Sun & Rainbow SVG Illustration -->
+            <div class="header-top-illustration">
+                <svg viewBox="0 0 350 200" xmlns="http://www.w3.org/2000/svg" class="header-banner-svg">
+                    <!-- Rainbow -->
+                    <g fill="none" stroke-width="12" opacity="0.9">
+                        <path d="M -50,150 A 240,240 0 0,1 300,-50" stroke="#ff007f" />
+                        <path d="M -40,155 A 228,228 0 0,1 295,-45" stroke="#ff7f00" />
+                        <path d="M -30,160 A 216,216 0 0,1 290,-40" stroke="#ffee00" />
+                        <path d="M -20,165 A 204,204 0 0,1 285,-35" stroke="#00ff7f" />
+                        <path d="M -10,170 A 192,192 0 0,1 280,-30" stroke="#007fff" />
+                        <path d="M 0,175 A 180,180 0 0,1 275,-25" stroke="#7f00ff" />
+                    </g>
+                    <!-- Smiling Sun -->
+                    <g transform="translate(200, 85)">
+                        <g stroke="#ff9f1c" stroke-width="5" stroke-linecap="round" class="sun-rays-rotate">
+                            <line x1="0" y1="-38" x2="0" y2="-52" />
+                            <line x1="27" y1="-27" x2="37" y2="-37" />
+                            <line x1="38" y1="0" x2="52" y2="0" />
+                            <line x1="27" y1="27" x2="37" y2="37" />
+                            <line x1="0" y1="38" x2="0" y2="52" />
+                            <line x1="-27" y1="27" x2="-37" y2="-37" />
+                            <line x1="-38" y1="0" x2="-52" y2="0" />
+                            <line x1="-27" y1="-27" x2="-37" y2="-37" />
+                        </g>
+                        <circle cx="0" cy="0" r="32" fill="#ffd166" stroke="#ff9f1c" stroke-width="4" />
+                        <!-- Face -->
+                        <circle cx="-10" cy="-6" r="3.5" fill="#830b42" />
+                        <circle cx="10" cy="-6" r="3.5" fill="#830b42" />
+                        <circle cx="-16" cy="2" r="3" fill="#ff70a6" opacity="0.8" />
+                        <circle cx="16" cy="2" r="3" fill="#ff70a6" opacity="0.8" />
+                        <path d="M -9,5 A 9,9 0 0,0 9,5" fill="none" stroke="#830b42" stroke-width="3" stroke-linecap="round" />
+                    </g>
+                    <!-- Clouds -->
+                    <path d="M 20,130 A 25,25 0 0,1 60,110 A 35,35 0 0,1 120,100 A 30,30 0 0,1 170,120 A 20,20 0 0,1 190,140 L 20,140 Z" fill="#ffffff" opacity="0.95" />
+                    <path d="M 120,160 A 25,25 0 0,1 150,130 A 40,40 0 0,1 220,120 A 35,35 0 0,1 280,140 A 25,25 0 0,1 310,165 L 120,165 Z" fill="#ffffff" />
+                </svg>
+            </div>
+
             <header class="app-header">
                 <div class="header-left">
                     <button class="btn btn-secondary btn-menu" id="btnToggleSidebar">
@@ -97,9 +218,9 @@
                     </button>
                     <div class="header-title">
                         <h1>
+                            <i data-lucide="sparkles" style="color: var(--sun-gold); width: 22px; height: 22px; vertical-align: middle; margin-right: 4px;"></i>
                             <span class="rainbow-text">Control de Asistencias de Oficina</span>
-                            <i data-lucide="sun" class="sun-header-spin" style="color: var(--sun-gold); width: 26px; height: 26px; vertical-align: middle; margin-left: 6px;"></i>
-                            <i data-lucide="rainbow" style="color: var(--primary); width: 26px; height: 26px; vertical-align: middle; margin-left: 4px;"></i>
+                            <i data-lucide="sparkles" style="color: var(--sun-gold); width: 22px; height: 22px; vertical-align: middle; margin-left: 4px;"></i>
                         </h1>
                         <p>Registro de horas trabajadas y cumplimiento del límite semanal del personal.</p>
                     </div>
@@ -118,8 +239,8 @@
                     <!-- Clock Card -->
                     <div class="clock-card">
                         <h3
-                            style="margin: 0; color: var(--text-secondary); font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">
-                            Hora de la Oficina</h3>
+                            style="margin: 0; color: var(--primary); font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                            ☀️ HORA DE LA OFICINA ☀️</h3>
                         <div class="live-time-display">
                             <div class="time" id="liveClock">00:00:00</div>
                             <div class="date" id="liveDate">Cargando fecha...</div>
@@ -177,7 +298,7 @@
                         </div>
  
                         <!-- Big action button -->
-                        <button class="btn btn-primary" id="btnToggleAttendance"
+                <button class="btn btn-primary" id="btnToggleAttendance"
                             style="width: 100%; height: 50px; font-size: 16px; background: var(--primary); box-shadow: 0 4px 14px var(--primary-glow);"
                             disabled>
                             <i data-lucide="fingerprint"></i> Marcar Asistencia
@@ -187,9 +308,9 @@
                     <!-- Progress Card -->
                     <div class="progress-card">
                         <div class="goal-header">
-                            <h3 id="progressEmployeeTitle">Progreso de Horas</h3>
+                            <h3 id="progressEmployeeTitle" style="display: flex; align-items: center; gap: 6px;">⭐ Progreso de Horas</h3>
                             <span class="goal-pct" id="progressPercentageText"
-                                style="font-weight: 700; color: #10b981;">0%</span>
+                                style="font-weight: 700; color: var(--primary);">0%</span>
                         </div>
                         <div class="goal-progress-container">
                             <div class="goal-progress-bar" id="goalProgressBar"></div>
@@ -201,15 +322,18 @@
 
                         <div class="metrics-row">
                             <div class="metric-box">
+                                <div style="font-size: 20px; margin-bottom: 2px;">☀️</div>
                                 <div class="val" id="metricWorkedHours">0.0</div>
                                 <div class="lbl">Presenciales</div>
                             </div>
                             <div class="metric-box">
-                                <div class="val" id="metricJustifiedHours" style="color: #c084fc;">0.0</div>
+                                <div style="font-size: 20px; margin-bottom: 2px;">🌈</div>
+                                <div class="val" id="metricJustifiedHours" style="color: var(--primary);">0.0</div>
                                 <div class="lbl">Justificadas</div>
                             </div>
                             <div class="metric-box">
-                                <div class="val" id="metricOwedHours" style="color: #f87171;">48.0</div>
+                                <div style="font-size: 20px; margin-bottom: 2px;">⭐</div>
+                                <div class="val" id="metricOwedHours" style="color: #f59e0b;">48.0</div>
                                 <div class="lbl">Se Deben</div>
                             </div>
                         </div>
@@ -245,8 +369,8 @@
                 <!-- Right Column: Filters and Table -->
                 <div class="calendar-card" style="min-height: auto;">
                     <div class="activity-header" style="margin-bottom: 16px;">
-                        <h3 style="display: flex; align-items: center; gap: 8px;">
-                            <i data-lucide="list-checks" style="color: #818cf8;"></i>
+                        <h3 style="display: flex; align-items: center; gap: 8px; color: var(--primary);">
+                            <i data-lucide="rainbow" style="color: var(--primary);"></i>
                             Historial de Marcaciones
                         </h3>
                     </div>
@@ -280,7 +404,7 @@
                                     <th>Horas Abonadas</th>
                                     <th>Tipo</th>
                                     <th>Notas</th>
-                                    <th style="width: 80px; text-align: center;">Acción</th>
+                                    <th style="width: 100px; text-align: center; color: #ffee00 !important;">⭐ Acción</th>
                                 </tr>
                             </thead>
                             <tbody id="attendanceTableBody">
@@ -293,6 +417,45 @@
                             </tbody>
                         </table>
                     </div>
+                </div>
+            </div>
+
+            <!-- Footer motivational banner with cursive style -->
+            <div class="footer-banner-container">
+                <div class="footer-sun-illus">
+                    <svg viewBox="0 0 100 100" class="footer-sun-svg">
+                        <g stroke="#ff9f1c" stroke-width="5" stroke-linecap="round">
+                            <line x1="50" y1="10" x2="50" y2="22" />
+                            <line x1="50" y1="78" x2="50" y2="90" />
+                            <line x1="10" y1="50" x2="22" y2="50" />
+                            <line x1="78" y1="50" x2="90" y2="50" />
+                            <line x1="22" y1="22" x2="31" y2="31" />
+                            <line x1="69" y1="69" x2="78" y2="78" />
+                            <line x1="22" y1="78" x2="31" y2="69" />
+                            <line x1="69" y1="22" x2="78" y2="31" />
+                        </g>
+                        <circle cx="50" cy="50" r="22" fill="#ffd166" stroke="#ff9f1c" stroke-width="3" />
+                        <circle cx="43" cy="46" r="2.5" fill="#830b42" />
+                        <circle cx="57" cy="46" r="2.5" fill="#830b42" />
+                        <circle cx="38" cy="52" r="2" fill="#ff70a6" opacity="0.8" />
+                        <circle cx="62" cy="52" r="2" fill="#ff70a6" opacity="0.8" />
+                        <path d="M 44,53 A 7,7 0 0,0 56,53" fill="none" stroke="#830b42" stroke-width="2.5" stroke-linecap="round" />
+                    </svg>
+                </div>
+                <div class="footer-banner-text">
+                    ¡Cada asistencia cuenta, seguimos construyendo un <span class="cursive-highlight">Nuevo Horizonte!</span> 🌈 ✨
+                </div>
+                <div class="footer-rainbow-illus">
+                    <svg viewBox="0 0 120 80" class="footer-rainbow-svg">
+                        <g fill="none" stroke-width="5" stroke-linecap="round">
+                            <path d="M 10,70 A 50,50 0 0,1 110,70" stroke="#ff007f" />
+                            <path d="M 15,70 A 45,45 0 0,1 105,70" stroke="#ff7f00" />
+                            <path d="M 20,70 A 40,40 0 0,1 100,70" stroke="#ffee00" />
+                            <path d="M 25,70 A 35,35 0 0,1 95,70" stroke="#00ff7f" />
+                            <path d="M 30,70 A 30,30 0 0,1 90,70" stroke="#007fff" />
+                            <path d="M 35,70 A 25,25 0 0,1 85,70" stroke="#7f00ff" />
+                        </g>
+                    </svg>
                 </div>
             </div>
         </main>

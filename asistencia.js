@@ -11,6 +11,22 @@ let selectedEmployeeName = '';
 let realtimeChannel = null;
 let adminAuthCallback = null;
 
+// Employee emojis mapping helper
+function getEmployeeNameWithEmoji(name) {
+    const emojiMap = {
+        'Ana': '🌸',
+        'Jonathan': '💙',
+        'Ximena': '🌸',
+        'Rogger': '☀️',
+        'Angelica': '💛',
+        'Alison': '🌈',
+        'Vicky': '🌸',
+        'Admin': '👑'
+    };
+    const emoji = emojiMap[name] || '';
+    return emoji ? `${name} ${emoji}` : name;
+}
+
 // DOM Elements
 const statusDot = document.getElementById('statusDot');
 const statusText = document.getElementById('statusText');
@@ -123,7 +139,7 @@ function startClock() {
 
         // Date Spanish
         const options = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
-        liveDate.textContent = now.toLocaleDateString('es-ES', options);
+        liveDate.textContent = `🌸 ${now.toLocaleDateString('es-ES', options)} 🌸`;
     };
 
     updateTime();
@@ -342,7 +358,7 @@ function populateEmployeeDropdowns() {
     activeEmployees.forEach(name => {
         const option = document.createElement('option');
         option.value = name;
-        option.textContent = name;
+        option.textContent = getEmployeeNameWithEmoji(name);
         employeeSelect.appendChild(option);
     });
     
@@ -367,7 +383,7 @@ function populateEmployeeDropdowns() {
     employeeList.forEach(name => {
         const option = document.createElement('option');
         option.value = name;
-        option.textContent = name;
+        option.textContent = getEmployeeNameWithEmoji(name);
         filterEmployee.appendChild(option);
     });
 
@@ -376,7 +392,7 @@ function populateEmployeeDropdowns() {
     activeEmployees.forEach(name => {
         const option = document.createElement('option');
         option.value = name;
-        option.textContent = name;
+        option.textContent = getEmployeeNameWithEmoji(name);
         adminEmployeeSelect.appendChild(option);
     });
 
@@ -734,7 +750,8 @@ async function handleToggleAttendance() {
         if (activeShift) {
             // CHECK OUT OPERATION
             const checkInTime = activeShift.check_in;
-            const diffHours = calculateDurationInHours(activeShift.date, checkInTime, todayStr, timeStr);
+            const roundedTimeStr = roundCheckoutTime(timeStr);
+            const diffHours = calculateDurationInHours(activeShift.date, checkInTime, todayStr, roundedTimeStr);
             
             // Check checkbox status (default to true if not available)
             const tookLunch = lunchCheckbox ? lunchCheckbox.checked : true;
@@ -743,7 +760,7 @@ async function handleToggleAttendance() {
             const lunchDeducted = diffHours > 5 && tookLunch;
             const finalHours = lunchDeducted ? Math.max(0, diffHours - 1) : diffHours;
             
-            let checkoutNotes = `Salida registrada automáticamente a las ${timeStr.substring(0, 5)}`;
+            let checkoutNotes = `Salida registrada automáticamente a las ${roundedTimeStr.substring(0, 5)}`;
             if (lunchDeducted) {
                 checkoutNotes += ' (Descuento 1h almuerzo)';
             } else if (diffHours > 5 && !tookLunch) {
@@ -752,7 +769,7 @@ async function handleToggleAttendance() {
             
             const updatedShift = {
                 ...activeShift,
-                check_out: timeStr,
+                check_out: roundedTimeStr,
                 hours_credited: Number(finalHours.toFixed(2)),
                 notes: checkoutNotes
             };
@@ -833,7 +850,7 @@ async function handleToggleAttendance() {
 // Calculate hours stats for selected employee (Weekly progress + Monthly stats)
 function updateEmployeeStats() {
     const selectedName = selectedEmployeeName || employeeSelect.value;
-    progressEmployeeTitle.textContent = selectedName ? `Progreso de ${selectedName}` : 'Progreso de Horas';
+    progressEmployeeTitle.textContent = selectedName ? `Progreso de ${getEmployeeNameWithEmoji(selectedName)}` : 'Progreso de Horas';
 
     if (!selectedName) {
         // Reset metrics UI
@@ -1051,7 +1068,7 @@ function renderAttendanceTable() {
 
         return `
             <tr>
-                <td data-label="Colaborador"><strong>${escapeHTML(r.employee_name)}</strong></td>
+                <td data-label="Colaborador"><strong>${escapeHTML(getEmployeeNameWithEmoji(r.employee_name))}</strong></td>
                 <td data-label="Fecha">${dateFormatted}</td>
                 <td data-label="Entrada">${inFormatted}</td>
                 <td data-label="Salida">${outFormatted}</td>
@@ -1425,6 +1442,33 @@ function getMondayAndSundayOfDate(d) {
     sunday.setHours(23, 59, 59, 999);
 
     return { monday, sunday };
+}
+
+function roundCheckoutTime(timeStr) {
+    if (!timeStr) return timeStr;
+    const parts = timeStr.split(':');
+    if (parts.length < 2) return timeStr;
+    
+    let hour = parseInt(parts[0], 10);
+    let min = parseInt(parts[1], 10);
+    
+    // Si la hora original es >= 14 (2 PM) o si estamos entre 13:55 y 13:59 (que redondea a 14)
+    const isAfternoon = (hour >= 14) || (hour === 13 && min >= 55);
+    
+    if (isAfternoon) {
+        if (min >= 55) {
+            hour = (hour + 1) % 24;
+            min = 0;
+        } else if (min <= 5) {
+            min = 0;
+        }
+    }
+    
+    const hStr = String(hour).padStart(2, '0');
+    const mStr = String(min).padStart(2, '0');
+    const sStr = parts[2] ? '00' : '';
+    
+    return sStr ? `${hStr}:${mStr}:${sStr}` : `${hStr}:${mStr}`;
 }
 
 function calculateDurationInHours(startDateStr, startTimeStr, endDateStr, endTimeStr) {
