@@ -15,7 +15,7 @@ let activeOperator = 'Invitado';
 // Constants
 const PRICE_WEEKDAY = 160.00; // Lun-Jue
 const PRICE_WEEKEND = 180.00; // Vie-Dom
-const EXTRA_GUEST_FEE = 30.00; // Costo por 5to adulto o extra
+const EXTRA_GUEST_FEE = 35.00; // Costo por 5to adulto o extra (actualizado a S/. 35)
 
 // Initialize Page
 document.addEventListener('DOMContentLoaded', async () => {
@@ -365,7 +365,8 @@ function openBookingEditModal(booking) {
     // Load inputs
     document.getElementById('bookingName').value = booking.nombre_cliente || '';
     document.getElementById('bookingDni').value = booking.dni_cliente || '';
-    document.getElementById('bookingPhone').value = booking.telefono_cliente || '';
+    const phoneInput = document.getElementById('bookingPhone');
+    if (phoneInput) phoneInput.value = booking.telefono_cliente || '';
     document.getElementById('bookingBungalow').value = booking.bungalow_numero;
     document.getElementById('bookingHorario').value = booking.horario;
     document.getElementById('bookingCheckIn').value = booking.fecha_ingreso;
@@ -528,6 +529,7 @@ function runDynamicCalculations() {
         breakdownAdvance.textContent = 'S/. 0.00';
         breakdownRemaining.textContent = 'S/. 0.00';
         totalInput.value = 0;
+        adelantoInput.value = 0;
         return;
     }
 
@@ -544,8 +546,6 @@ function runDynamicCalculations() {
     
     const cuatrimotosCount = parseInt(document.getElementById('bookingCuatrimoto').value) || 0;
     const cuatrimotosMonto = parseFloat(document.getElementById('bookingCuatrimotoMonto').value) || 0;
-
-    const adelanto = parseFloat(adelantoInput.value) || 0;
 
     // 1. Calculate Nights/Days
     const nights = calculateNights(checkIn, checkOut, horario);
@@ -576,7 +576,9 @@ function runDynamicCalculations() {
     }
 
     const finalTotal = parseFloat(totalInput.value) || 0;
-    const remaining = finalTotal - adelanto;
+    const adelanto = finalTotal; // Siempre se paga completo por adelantado
+    adelantoInput.value = finalTotal.toFixed(2);
+    const remaining = 0;
 
     // Render Display Elements
     breakdownBase.textContent = `S/. ${basePrice.toFixed(2)}`;
@@ -585,11 +587,7 @@ function runDynamicCalculations() {
     breakdownAdvance.textContent = `S/. ${adelanto.toFixed(2)}`;
     
     breakdownRemaining.textContent = `S/. ${remaining.toFixed(2)}`;
-    if (remaining > 0) {
-        breakdownRemaining.style.color = '#ef4444'; // Red
-    } else {
-        breakdownRemaining.style.color = '#34d399'; // Green/Mint
-    }
+    breakdownRemaining.style.color = '#34d399'; // Green/Mint
 
     // Auto-balance split payments if active
     if (document.getElementById('bookingPaymentType').value === 'Dividido') {
@@ -764,7 +762,8 @@ async function handleSaveBooking(e) {
     } else {
         payload.nombre_cliente = document.getElementById('bookingName').value.trim();
         payload.dni_cliente = document.getElementById('bookingDni').value.trim();
-        payload.telefono_cliente = document.getElementById('bookingPhone').value.trim();
+        const phoneInput = document.getElementById('bookingPhone');
+        payload.telefono_cliente = phoneInput ? phoneInput.value.trim() : '';
         payload.adultos = parseInt(document.getElementById('bookingAdults').value) || 4;
         payload.ninos_gratis = parseInt(document.getElementById('bookingNinosGratis').value) || 0;
         payload.ninos_pagantes = parseInt(document.getElementById('bookingNinosPagantes').value) || 0;
@@ -1018,11 +1017,6 @@ function updateDailySummaryList() {
                 </div>
             `;
         } else {
-            const unpaid = b.monto_total - b.monto_adelanto;
-            const statusLabel = unpaid > 0 
-                ? `<span style="color: #ef4444; font-weight: 700; background: rgba(239, 68, 68, 0.1); padding: 2px 6px; border-radius: 4px;">Debe: S/. ${unpaid.toFixed(2)}</span>`
-                : `<span style="color: #34d399; font-weight: 700; background: rgba(52, 211, 153, 0.1); padding: 2px 6px; border-radius: 4px;">PAGADO</span>`;
-
             card.innerHTML = `
                 <div class="summary-item-header">
                     <span class="summary-item-time">${b.horario}</span>
@@ -1044,7 +1038,6 @@ function updateDailySummaryList() {
                 </div>
                 <div class="summary-item-header" style="margin-top: 6px; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 8px;">
                     <span style="font-size: 11px; color: var(--text-muted);">Asesor: ${b.asesor_registro}</span>
-                    ${statusLabel}
                 </div>
             `;
         }
@@ -1118,8 +1111,6 @@ function copyReservationDetails() {
     const kids = parseInt(document.getElementById('bookingNinosGratis').value || 0) + parseInt(document.getElementById('bookingNinosPagantes').value || 0);
 
     const total = parseFloat(document.getElementById('bookingTotal').value) || 0;
-    const adelanto = parseFloat(document.getElementById('bookingAdelanto').value) || 0;
-    const saldo = total - adelanto;
     const paymentType = document.getElementById('bookingPaymentType').value;
     const source = document.getElementById('bookingSource').value;
     
@@ -1144,9 +1135,7 @@ function copyReservationDetails() {
         msg += `⏰ *Horas extras:* ${horasExtras} hora(s)\n`;
     }
 
-    msg += `\n💵 *Monto Total:* S/. ${total.toFixed(2)}\n`;
-    msg += `💸 *Monto Adelanto:* S/. ${adelanto.toFixed(2)}\n`;
-    msg += `💰 *Saldo Pendiente:* S/. ${saldo.toFixed(2)}\n`;
+    msg += `\n💵 *Monto Total (Cancelado):* S/. ${total.toFixed(2)}\n`;
     msg += `💳 *Método de Pago:* ${paymentType}\n`;
     msg += `ℹ️ *Canal:* ${source}\n\n`;
     msg += `¡Te esperamos! Sigue con Bungalows de Tomayquichua ✨`;
@@ -1204,9 +1193,9 @@ function loadStatsDashboard() {
 
     // 2. Calculations
     let totalRevenue = 0;
-    let yapeTotal = 0;
-    let efectivoTotal = 0;
-    
+    let depositoTotal = 0;
+    let otrosTotal = 0;
+
     // Per bungalow stats map
     const bungalowStats = {
         1: { count: 0, revenue: 0, motos: 0, daysOccupied: 0 },
@@ -1224,13 +1213,13 @@ function loadStatsDashboard() {
         totalRevenue += b.monto_total;
         
         // Split payment calculations
-        if (b.tipo_pago === 'Yape') {
-            yapeTotal += b.monto_total;
-        } else if (b.tipo_pago === 'Efectivo') {
-            efectivoTotal += b.monto_total;
+        if (b.tipo_pago === 'Depósito') {
+            depositoTotal += b.monto_total;
+        } else if (b.tipo_pago === 'Yape' || b.tipo_pago === 'Efectivo') {
+            otrosTotal += b.monto_total;
         } else if (b.tipo_pago === 'Dividido') {
-            yapeTotal += b.monto_yape || 0;
-            efectivoTotal += b.monto_efectivo || 0;
+            depositoTotal += b.monto_efectivo || 0;
+            otrosTotal += b.monto_yape || 0;
         }
 
         // Bungalow specific stats
@@ -1262,8 +1251,8 @@ function loadStatsDashboard() {
     // Populate Top overview cards
     document.getElementById('statsIncomeMonth').textContent = `S/. ${totalRevenue.toFixed(2)}`;
     document.getElementById('statsCountMonth').textContent = `${monthBookings.length} reservas registradas`;
-    document.getElementById('statsYapeMonth').textContent = `S/. ${yapeTotal.toFixed(2)}`;
-    document.getElementById('statsEfectivoMonth').textContent = `S/. ${efectivoTotal.toFixed(2)}`;
+    document.getElementById('statsDepositoMonth').textContent = `S/. ${depositoTotal.toFixed(2)}`;
+    document.getElementById('statsOtrosMonth').textContent = `S/. ${otrosTotal.toFixed(2)}`;
 
     // Populate Report Table
     const tableBody = document.querySelector('#tableStatsReport tbody');

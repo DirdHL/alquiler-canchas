@@ -17,10 +17,10 @@ function getEmployeeNameWithEmoji(name) {
     const emojiMap = {
         'Ana': '🌸',
         'Jonathan': '🦉',
-        'Ximena': '😤',
+        'Ximena': '👹',
         'Rogger': '🚬🗿',
-        'Angelica': '😨',
-        'Alison': '🌈'
+        'Angelica': '🎀',
+        'Alison': '🦋🌙'
     };
 
     // Try exact match first

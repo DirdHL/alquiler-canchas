@@ -446,11 +446,13 @@ body {
     transition: var(--transition-smooth) !important;
 }
 
-/* Specific selector for inputs inside .input-wrapper to clear absolute icons */
-.modal-body .input-wrapper input,
+.modal-body .input-wrapper input[type="text"],
+.modal-body .input-wrapper input[type="tel"],
+.modal-body .input-wrapper input[type="number"],
+.modal-body .input-wrapper input[type="date"],
 .modal-body .input-wrapper select,
 .modal-body .input-wrapper textarea {
-    padding: 8px 12px 8px 42px !important; /* High specificity with !important */
+    padding: 8px 12px 8px 42px !important;
 }
 
 .modal-body input:focus,

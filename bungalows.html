@@ -224,20 +224,13 @@
                         </div>
                     </div>
 
-                    <div class="form-row" id="rowClientDetails">
+                    <div class="form-row" id="rowClientDetails" style="grid-template-columns: 1fr;">
                         <div class="form-group">
                             <label for="bookingDni">DNI</label>
                             <div class="input-wrapper">
                                 <i data-lucide="credit-card"></i>
                                 <input type="text" id="bookingDni" placeholder="Ej. 12345678" maxlength="12"
                                     inputmode="numeric" pattern="[0-9]*">
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label for="bookingPhone">Celular</label>
-                            <div class="input-wrapper">
-                                <i data-lucide="phone"></i>
-                                <input type="tel" id="bookingPhone" placeholder="Ej. 987654321">
                             </div>
                         </div>
                     </div>
@@ -377,9 +370,9 @@
                             <div class="input-wrapper">
                                 <i data-lucide="wallet"></i>
                                 <select id="bookingPaymentType" required>
+                                    <option value="Depósito" selected>Depósito</option>
                                     <option value="Yape">Yape</option>
-                                    <option value="Efectivo">Efectivo</option>
-                                    <option value="Dividido">Dividido (Yape + Efectivo)</option>
+                                    <option value="Dividido">Dividido (Depósito + Yape)</option>
                                 </select>
                             </div>
                         </div>
@@ -389,7 +382,7 @@
                     <div class="form-row hidden" id="splitPaymentRow"
                         style="margin-top: 12px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: var(--radius-sm);">
                         <div class="form-group" style="margin-bottom: 0;">
-                            <label for="splitEfectivo">Monto Efectivo (S/.) *</label>
+                            <label for="splitEfectivo">Monto Depósito (S/.) *</label>
                             <div class="input-wrapper">
                                 <i data-lucide="banknote"></i>
                                 <input type="number" id="splitEfectivo" placeholder="0.00" min="0" step="any">
@@ -455,12 +448,12 @@
                             <span class="text-secondary" style="display: block;">Extras (Horas/Motos):</span>
                             <span id="breakdownExtras" style="font-weight: 700; font-size: 15px;">S/. 0.00</span>
                         </div>
-                        <div style="border-left: 1px solid rgba(245, 158, 11, 0.2); padding-left: 12px;">
+                        <div style="display: none; border-left: 1px solid rgba(245, 158, 11, 0.2); padding-left: 12px;">
                             <span class="text-secondary" style="display: block;">Adelanto:</span>
                             <span id="breakdownAdvance" style="font-weight: 700; font-size: 15px; color: #fbbf24;">S/.
                                 0.00</span>
                         </div>
-                        <div>
+                        <div style="display: none;">
                             <span class="text-secondary" style="display: block;">Saldo Pendiente:</span>
                             <span id="breakdownRemaining" style="font-weight: 700; font-size: 15px; color: #ef4444;">S/.
                                 0.00</span>
@@ -468,8 +461,8 @@
                     </div>
 
                     <!-- Dynamic Booking Total Container -->
-                    <div class="form-row" style="margin-top: 16px; align-items: center;">
-                        <div class="form-group" style="flex: 2; margin-bottom: 0;">
+                    <div style="margin-top: 16px;">
+                        <div class="form-group" style="margin-bottom: 0;">
                             <label for="bookingTotal">Total a Pagar (S/.) *</label>
                             <div class="input-wrapper"
                                 style="background: rgba(245, 158, 11, 0.1); border-color: rgba(245, 158, 11, 0.4);">
@@ -480,7 +473,7 @@
                             <small class="text-secondary">El total se auto-calcula pero puedes editarlo manualmente si
                                 es necesario.</small>
                         </div>
-                        <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                        <div class="form-group hidden" style="margin-bottom: 0;">
                             <label for="bookingAdelanto">Monto de Adelanto (S/.)</label>
                             <div class="input-wrapper">
                                 <i data-lucide="smartphone"></i>
@@ -662,16 +655,15 @@
                         <div
                             style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px;">
                             <span style="font-size: 12px; color: var(--text-muted); text-transform: uppercase;">Cobrado
-                                en Yape</span>
-                            <div id="statsYapeMonth"
+                                en Depósito</span>
+                            <div id="statsDepositoMonth"
                                 style="font-size: 24px; font-weight: 700; color: #60a5fa; margin-top: 6px;">S/. 0.00
                             </div>
                         </div>
                         <div
                             style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px;">
-                            <span style="font-size: 12px; color: var(--text-muted); text-transform: uppercase;">Cobrado
-                                en Efectivo</span>
-                            <div id="statsEfectivoMonth"
+                            <span style="font-size: 12px; color: var(--text-muted); text-transform: uppercase;">Yape / Otros Pagos</span>
+                            <div id="statsOtrosMonth"
                                 style="font-size: 24px; font-weight: 700; color: #fbbf24; margin-top: 6px;">S/. 0.00
                             </div>
                         </div>
