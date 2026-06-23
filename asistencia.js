@@ -1069,6 +1069,7 @@ function renderAttendanceTable() {
         const isToday = r.date === todayStr;
         const rowClass = isToday ? 'class="today-record-row"' : '';
         const dateFormatted = formatDateDDMMYYYY(r.date);
+        const dateDisplay = isToday ? `${dateFormatted} <span class="today-tag">Hoy</span>` : dateFormatted;
         const inFormatted = r.check_in ? r.check_in.substring(0, 5) : '--:--';
         const outFormatted = r.check_out ? r.check_out.substring(0, 5) : '--:--';
 
@@ -1089,7 +1090,7 @@ function renderAttendanceTable() {
         return `
             <tr ${rowClass}>
                 <td data-label="Colaborador"><strong>${escapeHTML(getEmployeeNameWithEmoji(r.employee_name))}</strong></td>
-                <td data-label="Fecha">${dateFormatted}</td>
+                <td data-label="Fecha">${dateDisplay}</td>
                 <td data-label="Entrada">${inFormatted}</td>
                 <td data-label="Salida">${outFormatted}</td>
                 <td data-label="Horas Abonadas" style="font-weight: 600;">${realHours.toFixed(1)} h${lunchIcon}</td>

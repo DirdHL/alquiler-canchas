@@ -398,19 +398,39 @@ select option {
 
 /* Destacar marcaciones del día de hoy */
 .attendance-table tbody tr.today-record-row {
-    background: #ffe3ec !important;
-    /* Rosado más cálido y visible */
-    font-weight: 500;
+    background: #ffeef4 !important; /* Soft distinct warm rose pink */
+    font-weight: 600 !important;
 }
 
 .attendance-table tbody tr.today-record-row td {
-    border-bottom: 1px solid #ffa3c0 !important;
-    /* Borde inferior más marcado */
+    border-bottom: 1.5px solid #ffb3d1 !important; /* Marked bottom border */
+    border-top: 1.5px solid #ffd6e8 !important; /* Top border too */
+}
+
+.attendance-table tbody tr.today-record-row td:first-child {
+    border-left: 5px solid #ff007f !important; /* Strong pink stripe on left edge */
 }
 
 .attendance-table tbody tr.today-record-row:hover {
-    background: #ffd2e2 !important;
-    /* Hover ligeramente más oscuro */
+    background: #ffdceb !important;
+}
+
+/* Today Tag Badge */
+.today-tag {
+    background: linear-gradient(135deg, #ff007f, #ff5e97) !important;
+    color: white !important;
+    font-size: 10px !important;
+    font-weight: 700 !important;
+    padding: 2px 6px !important;
+    border-radius: 4px !important;
+    margin-left: 8px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    box-shadow: 0 2px 4px rgba(255, 0, 127, 0.25) !important;
+    vertical-align: middle !important;
+    line-height: 1 !important;
 }
 
 /* Modal theme styling */
