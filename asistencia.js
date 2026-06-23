@@ -768,7 +768,9 @@ async function handleToggleAttendance() {
             // CHECK OUT OPERATION
             const checkInTime = activeShift.check_in;
             const roundedTimeStr = roundCheckoutTime(timeStr);
-            const diffHours = calculateDurationInHours(activeShift.date, checkInTime, todayStr, roundedTimeStr);
+            const inTimeHHMM = checkInTime.substring(0, 5);
+            const outTimeHHMM = roundedTimeStr.substring(0, 5);
+            const diffHours = calculateDurationInHours(activeShift.date, inTimeHHMM, todayStr, outTimeHHMM);
 
             // Check checkbox status (default to true if not available)
             const tookLunch = lunchCheckbox ? lunchCheckbox.checked : true;
@@ -1577,19 +1579,17 @@ function getRealHoursCredited(r) {
     }
 
     // Si la nota indica expresamente que no almorzó, no se descuenta
-    if (r.notes && (r.notes.includes('Sin almuerzo') || r.notes.includes('Sin refrigerio') || r.notes.includes('no almorzó'))) {
-        return Number(r.hours_credited || 0);
-    }
+    const noLunch = r.notes && (r.notes.includes('Sin almuerzo') || r.notes.includes('Sin refrigerio') || r.notes.includes('no almorzó'));
 
-    const elapsed = calculateDurationInHours(r.date, r.check_in, r.date, r.check_out);
-    const savedHours = Number(r.hours_credited || 0);
+    // Usamos solo las horas y minutos (HH:MM) para evitar diferencias de segundos
+    const inTime = r.check_in.substring(0, 5);
+    const outTime = r.check_out.substring(0, 5);
+    const elapsed = calculateDurationInHours(r.date, inTime, r.date, outTime);
 
-    // If the saved hours are equal to the elapsed hours (within rounding error),
-    // and the elapsed time is greater than 5 hours, we dynamically deduct 1 hour.
-    if (elapsed > 5 && Math.abs(savedHours - elapsed) < 0.05) {
+    if (elapsed > 5 && !noLunch) {
         return Math.max(0, elapsed - 1);
     }
-    return savedHours;
+    return elapsed;
 }
 
 // Expose handleDeleteRecord globally for inline onclick
