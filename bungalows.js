@@ -308,6 +308,11 @@ function openBookingModal(dateStr = null) {
     document.getElementById('btnDeleteBooking').classList.add('hidden');
     document.getElementById('bookingIsBlock').checked = false;
 
+    // Clear error
+    const errorEl = document.getElementById('bookingError');
+    errorEl.textContent = '';
+    errorEl.style.display = 'none';
+
     // Reset visibility variables
     document.getElementById('groupClientInfo').style.display = 'block';
     document.getElementById('rowClientDetails').style.display = 'flex';
@@ -361,6 +366,11 @@ function openBookingEditModal(booking) {
 
     const isBlock = booking.estado_reserva === 'Bloqueado';
     document.getElementById('bookingIsBlock').checked = isBlock;
+
+    // Clear error
+    const errorEl = document.getElementById('bookingError');
+    errorEl.textContent = '';
+    errorEl.style.display = 'none';
 
     // Load inputs
     document.getElementById('bookingName').value = booking.nombre_cliente || '';
@@ -704,7 +714,9 @@ function saveLocalBookingsFallback() {
 // ----------------------------------------------------
 async function handleSaveBooking(e) {
     e.preventDefault();
-    document.getElementById('bookingError').textContent = '';
+    const errorEl = document.getElementById('bookingError');
+    errorEl.textContent = '';
+    errorEl.style.display = 'none';
 
     const id = document.getElementById('bookingId').value;
     const isBlock = document.getElementById('bookingIsBlock').checked;
@@ -714,9 +726,19 @@ async function handleSaveBooking(e) {
     const horario = document.getElementById('bookingHorario').value;
 
     // Check collisions / overlaps
-    const collides = checkBookingCollision(id, bungalow, checkIn, checkOut, horario);
-    if (collides) {
-        document.getElementById('bookingError').textContent = '⚠️ Conflicto de Fechas: El Bungalow seleccionado ya cuenta con una reserva en ese rango de fechas y horario.';
+    const conflictingBooking = checkBookingCollision(id, bungalow, checkIn, checkOut, horario);
+    if (conflictingBooking) {
+        const clientName = conflictingBooking.estado_reserva === 'Bloqueado'
+            ? 'Mantenimiento / Bloqueado'
+            : conflictingBooking.nombre_cliente;
+
+        const dateIn = new Date(conflictingBooking.fecha_ingreso + 'T00:00:00');
+        const dateOut = new Date(conflictingBooking.fecha_salida + 'T00:00:00');
+        const fechaInFormatted = dateIn.toLocaleDateString('es-PE', { day: 'numeric', month: 'short' });
+        const fechaOutFormatted = dateOut.toLocaleDateString('es-PE', { day: 'numeric', month: 'short' });
+
+        errorEl.innerHTML = `⚠️ <strong>Conflicto de Reserva:</strong> El Bungalow ${bungalow} ya está ocupado por <strong>${clientName}</strong> (${conflictingBooking.horario}) del ${fechaInFormatted} al ${fechaOutFormatted}.`;
+        errorEl.style.display = 'block';
         return;
     }
 
@@ -805,7 +827,8 @@ async function handleSaveBooking(e) {
             if (error) throw error;
         } catch (err) {
             console.error("Error al guardar en Supabase:", err);
-            document.getElementById('bookingError').textContent = 'Error al sincronizar con el servidor: ' + err.message;
+            errorEl.textContent = 'Error al sincronizar con el servidor: ' + err.message;
+            errorEl.style.display = 'block';
             return;
         }
     } else {
@@ -860,36 +883,34 @@ async function handleDeleteBooking() {
 
 // Collision Check logic
 function checkBookingCollision(id, bungalow, checkIn, checkOut, horario) {
-    const startNew = new Date(checkIn + 'T00:00:00');
-    const endNew = new Date(checkOut + 'T00:00:00');
+    function getBookingInterval(checkInStr, checkOutStr, horarioStr) {
+        let start, end;
+        if (horarioStr === 'Full Day') {
+            // Full Day: 9:00 AM to 6:00 PM on check-in day
+            start = new Date(checkInStr + 'T09:00:00');
+            end = new Date(checkInStr + 'T18:00:00');
+        } else {
+            // Día y Noche: 3:00 PM on check-in day to 12:00 PM on check-out day
+            start = new Date(checkInStr + 'T15:00:00');
+            end = new Date(checkOutStr + 'T12:00:00');
+        }
+        return { start, end };
+    }
 
-    return bookings.some(b => {
+    const newInterval = getBookingInterval(checkIn, checkOut, horario);
+
+    return bookings.find(b => {
         // Exclude the current booking itself if editing
         if (b.id === id) return false;
         
         // Only check same bungalow
         if (b.bungalow_numero !== bungalow) return false;
 
-        const startOld = new Date(b.fecha_ingreso + 'T00:00:00');
-        const endOld = new Date(b.fecha_salida + 'T00:00:00');
+        const oldInterval = getBookingInterval(b.fecha_ingreso, b.fecha_salida, b.horario);
 
-        // Date overlap check
-        // Formule: (StartA <= EndB) and (EndA >= StartB)
-        const dateOverlap = (startNew < endOld) && (endNew > startOld);
-        
-        if (dateOverlap) {
-            // Overlap check for horario/shift:
-            // Full Day: 9am - 6pm
-            // Dia y Noche: 3pm - 12pm
-            // If they are on the same day, they only collide if:
-            // 1. One is Dia y Noche (starts 3pm) and another is Full Day (ends 6pm) on the same day:
-            //    Yes! 3pm to 6pm is an overlap.
-            // 2. Both are Full Day: Yes.
-            // 3. Both are Dia y Noche: Yes.
-            
-            return true;
-        }
-        return false;
+        // Date overlap check: (StartA < EndB) and (EndA > StartB)
+        const overlaps = (newInterval.start < oldInterval.end) && (newInterval.end > oldInterval.start);
+        return overlaps;
     });
 }
 
@@ -927,7 +948,7 @@ function initCalendar() {
                     id: b.id,
                     title: title,
                     start: b.fecha_ingreso,
-                    end: b.horario === 'Full Day' ? b.fecha_ingreso : exclusiveCheckOutStr,
+                    end: exclusiveCheckOutStr,
                     allDay: true,
                     className: isBlocked ? 'event-bungalow-blocked' : `event-bungalow-${b.bungalow_numero}`,
                     extendedProps: b
