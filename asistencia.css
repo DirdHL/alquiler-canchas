@@ -1195,3 +1195,19 @@ select option {
         background-position: 0% 50%;
     }
 }
+
+/* Spinner for loading states */
+.spinner-inline {
+    display: inline-block;
+    width: 1.1em;
+    height: 1.1em;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: spinner-spin 0.75s linear infinite;
+    vertical-align: -0.15em;
+    margin-right: 8px;
+}
+@keyframes spinner-spin {
+    to { transform: rotate(360deg); }
+}

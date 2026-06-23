@@ -735,14 +735,20 @@ async function handleEmployeeChange() {
 async function handleToggleAttendance() {
     if (!selectedEmployeeName) return;
 
-    btnToggleAttendance.disabled = true;
-
     const now = new Date();
     const todayStr = getLocalDateString(now);
     const timeStr = getLocalTimeString(now);
 
     const employeeShiftsToday = allAttendanceRecords.filter(r => r.employee_name === selectedEmployeeName && r.date === todayStr && r.type === 'Trabajo');
     const activeShift = employeeShiftsToday.find(r => r.check_in && !r.check_out);
+
+    // Set loading state on the button to give visual feedback while querying Supabase
+    btnToggleAttendance.disabled = true;
+    if (activeShift) {
+        btnToggleAttendance.innerHTML = '<span class="spinner-inline"></span> Guardando salida...';
+    } else {
+        btnToggleAttendance.innerHTML = '<span class="spinner-inline"></span> Guardando entrada...';
+    }
 
     try {
         if (activeShift) {
@@ -841,7 +847,7 @@ async function handleToggleAttendance() {
     } catch (err) {
         console.error("Error registering attendance:", err);
         alert("Ocurrió un error al guardar en la base de datos: " + err.message);
-        btnToggleAttendance.disabled = false;
+        handleEmployeeChange();
     }
 }
 
