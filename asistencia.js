@@ -13,16 +13,30 @@ let adminAuthCallback = null;
 
 // Employee emojis mapping helper
 function getEmployeeNameWithEmoji(name) {
+    if (!name) return '';
     const emojiMap = {
-        'Ana': '​​🌸​​',
-        'Jonathan': '​​​🦉​​​​​',
-        'Ximena': '😤​',
-        'Rogger': '🚬​🗿',
-        'Angelica': '​😨​​',
-        'Alison': '​​​🌈​​'
+        'Ana': '🌸',
+        'Jonathan': '🦉',
+        'Ximena': '😤',
+        'Rogger': '🚬🗿',
+        'Angelica': '😨',
+        'Alison': '🌈'
     };
-    const emoji = emojiMap[name] || '';
-    return emoji ? `${name} ${emoji}` : name;
+
+    // Try exact match first
+    if (emojiMap[name]) {
+        return `${name} ${emojiMap[name]}`;
+    }
+
+    // Try case-insensitive partial match (so full names like "Ana Maria" or "Jonathan Silva" still match)
+    const lowerName = name.toLowerCase();
+    for (const key in emojiMap) {
+        if (lowerName.includes(key.toLowerCase())) {
+            return `${name} ${emojiMap[key]}`;
+        }
+    }
+
+    return name;
 }
 
 // DOM Elements
