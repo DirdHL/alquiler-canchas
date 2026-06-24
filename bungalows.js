@@ -11,6 +11,7 @@ let calendar = null;
 // Application State
 let bookings = [];
 let activeOperator = 'Invitado';
+let activeAdvisorsList = [];
 
 // Constants
 const PRICE_WEEKDAY = 160.00; // Lun-Jue
@@ -96,7 +97,6 @@ function setupEventListeners() {
         'bookingCheckIn', 'bookingCheckOut', 'bookingHorario',
         'bookingAdicionales', 'bookingNinoPequeno',
         'bookingHorasExtras', 'bookingAdicionalHoras',
-        'bookingCuatrimoto', 'bookingCuatrimotoMonto',
         'bookingTotal', 'bookingAdelanto'
     ];
     calcFields.forEach(id => {
@@ -107,21 +107,12 @@ function setupEventListeners() {
         }
     });
 
-    // Handle ATV count change to pre-populate ATV price
-    document.getElementById('bookingCuatrimoto').addEventListener('change', (e) => {
-        const count = parseInt(e.target.value) || 0;
-        const priceInput = document.getElementById('bookingCuatrimotoMonto');
-        // Pre-fill with S/. 50 per ATV, editable
-        priceInput.value = count * 50;
-        runDynamicCalculations();
-    });
-
     // Handle schedule change (Full Day vs Dia y Noche)
     document.getElementById('bookingHorario').addEventListener('change', (e) => {
         const horario = e.target.value;
         const checkIn = document.getElementById('bookingCheckIn').value;
         const checkOutInput = document.getElementById('bookingCheckOut');
-        
+
         if (horario === 'Full Day') {
             // Full Day check-out is the same day
             if (checkIn) {
@@ -145,7 +136,7 @@ function setupEventListeners() {
         const checkIn = e.target.value;
         const horario = document.getElementById('bookingHorario').value;
         const checkOutInput = document.getElementById('bookingCheckOut');
-        
+
         if (checkIn) {
             if (horario === 'Full Day') {
                 checkOutInput.value = checkIn;
@@ -187,18 +178,16 @@ function setupEventListeners() {
         }
     });
 
-    document.getElementById('bookingNotes').addEventListener('change', (e) => {
-        const customGroup = document.getElementById('customAsesorGroup');
-        const customInput = document.getElementById('bookingNotesCustom');
-        if (e.target.value === 'Otro') {
-            customGroup.classList.remove('hidden');
-            customInput.required = true;
-        } else {
-            customGroup.classList.add('hidden');
-            customInput.required = false;
-            customInput.value = '';
-        }
-    });
+    const selectAsesor = document.getElementById('bookingNotes');
+    if (selectAsesor) {
+        selectAsesor.addEventListener('change', async () => {
+            if (selectAsesor.value === '_add_new_') {
+                await handleAddAsesor(selectAsesor);
+            } else if (selectAsesor.value === '_delete_') {
+                await handleDeleteAsesor(selectAsesor);
+            }
+        });
+    }
 
     // Block / Maintenance checkbox handler
     document.getElementById('bookingIsBlock').addEventListener('change', (e) => {
@@ -208,7 +197,6 @@ function setupEventListeners() {
         const rowClientDetails = document.getElementById('rowClientDetails');
         const rowOccupancy = document.getElementById('rowOccupancy');
         const rowExtras = document.getElementById('rowExtras');
-        const rowCuatrimoto = document.getElementById('rowCuatrimoto');
         const rowMedioPago = document.getElementById('rowMedioPago');
         const splitPaymentRow = document.getElementById('splitPaymentRow');
 
@@ -219,10 +207,9 @@ function setupEventListeners() {
             rowClientDetails.style.display = 'none';
             rowOccupancy.style.display = 'none';
             rowExtras.style.display = 'none';
-            rowCuatrimoto.style.display = 'none';
             rowMedioPago.style.display = 'none';
             splitPaymentRow.classList.add('hidden');
-            
+
             // Set prices to 0
             document.getElementById('bookingTotal').value = 0;
             document.getElementById('bookingAdelanto').value = 0;
@@ -233,9 +220,8 @@ function setupEventListeners() {
             rowClientDetails.style.display = 'flex';
             rowOccupancy.style.display = 'flex';
             rowExtras.style.display = 'flex';
-            rowCuatrimoto.style.display = 'flex';
             rowMedioPago.style.display = 'flex';
-            
+
             if (document.getElementById('bookingPaymentType').value === 'Dividido') {
                 splitPaymentRow.classList.remove('hidden');
             }
@@ -329,18 +315,16 @@ function openBookingModal(dateStr = null) {
     document.getElementById('rowClientDetails').style.display = 'flex';
     document.getElementById('rowOccupancy').style.display = 'flex';
     document.getElementById('rowExtras').style.display = 'flex';
-    document.getElementById('rowCuatrimoto').style.display = 'flex';
     document.getElementById('rowMedioPago').style.display = 'flex';
     document.getElementById('splitPaymentRow').classList.add('hidden');
     document.getElementById('customSourceGroup').classList.add('hidden');
-    document.getElementById('customAsesorGroup').classList.add('hidden');
 
     // Prepopulate inputs
     const today = new Date();
     const todayStr = today.toISOString().split('T')[0];
     const checkInVal = dateStr || todayStr;
     document.getElementById('bookingCheckIn').value = checkInVal;
-    
+
     // Trigger schedule logic
     document.getElementById('bookingHorario').value = 'Día y Noche';
     document.getElementById('bookingCheckOut').disabled = false;
@@ -348,22 +332,8 @@ function openBookingModal(dateStr = null) {
     checkInDate.setDate(checkInDate.getDate() + 1);
     document.getElementById('bookingCheckOut').value = checkInDate.toISOString().split('T')[0];
 
-    // Prepopulate operator
-    const savedNotes = document.getElementById('bookingNotes');
-    let hasOperatorOption = false;
-    for (let i = 0; i < savedNotes.options.length; i++) {
-        if (savedNotes.options[i].value === activeOperator) {
-            savedNotes.selectedIndex = i;
-            hasOperatorOption = true;
-            break;
-        }
-    }
-    if (!hasOperatorOption) {
-        savedNotes.value = 'Otro';
-        document.getElementById('customAsesorGroup').classList.remove('hidden');
-        document.getElementById('bookingNotesCustom').value = activeOperator;
-        document.getElementById('bookingNotesCustom').required = true;
-    }
+    // Prepopulate operator dynamically
+    populateAsesoresDropdown('');
 
     runDynamicCalculations();
     openModal('modalBooking');
@@ -398,8 +368,6 @@ function openBookingEditModal(booking) {
     document.getElementById('bookingNinoPequeno').checked = (booking.ninos_gratis || 0) > 0;
     document.getElementById('bookingHorasExtras').value = booking.horas_extras;
     document.getElementById('bookingAdicionalHoras').value = booking.adicional_horas;
-    document.getElementById('bookingCuatrimoto').value = booking.alquiler_cuatrimoto;
-    document.getElementById('bookingCuatrimotoMonto').value = booking.cuatrimoto_monto;
     document.getElementById('bookingTotal').value = booking.monto_total;
     document.getElementById('bookingAdelanto').value = booking.monto_adelanto;
     document.getElementById('bookingPaymentType').value = booking.tipo_pago;
@@ -433,24 +401,8 @@ function openBookingEditModal(booking) {
         document.getElementById('customSourceGroup').classList.add('hidden');
     }
 
-    // Handle operator
-    const notesSelect = document.getElementById('bookingNotes');
-    let hasNotes = false;
-    for (let i = 0; i < notesSelect.options.length; i++) {
-        if (notesSelect.options[i].value === booking.asesor_registro) {
-            notesSelect.selectedIndex = i;
-            hasNotes = true;
-            break;
-        }
-    }
-    if (!hasNotes && booking.asesor_registro) {
-        notesSelect.value = 'Otro';
-        document.getElementById('customAsesorGroup').classList.remove('hidden');
-        document.getElementById('bookingNotesCustom').value = booking.asesor_registro;
-        document.getElementById('bookingNotesCustom').required = true;
-    } else {
-        document.getElementById('customAsesorGroup').classList.add('hidden');
-    }
+    // Handle operator dynamically
+    populateAsesoresDropdown(booking.asesor_registro || '');
 
     // Disable check-out if Full Day
     if (booking.horario === 'Full Day') {
@@ -464,7 +416,6 @@ function openBookingEditModal(booking) {
     const rowClientDetails = document.getElementById('rowClientDetails');
     const rowOccupancy = document.getElementById('rowOccupancy');
     const rowExtras = document.getElementById('rowExtras');
-    const rowCuatrimoto = document.getElementById('rowCuatrimoto');
     const rowMedioPago = document.getElementById('rowMedioPago');
 
     if (isBlock) {
@@ -472,7 +423,6 @@ function openBookingEditModal(booking) {
         rowClientDetails.style.display = 'none';
         rowOccupancy.style.display = 'none';
         rowExtras.style.display = 'none';
-        rowCuatrimoto.style.display = 'none';
         rowMedioPago.style.display = 'none';
         document.getElementById('splitPaymentRow').classList.add('hidden');
     } else {
@@ -480,7 +430,6 @@ function openBookingEditModal(booking) {
         rowClientDetails.style.display = 'flex';
         rowOccupancy.style.display = 'flex';
         rowExtras.style.display = 'flex';
-        rowCuatrimoto.style.display = 'flex';
         rowMedioPago.style.display = 'flex';
     }
 
@@ -505,7 +454,7 @@ function calculateNights(checkInStr, checkOutStr, horario) {
 function calculateBasePrice(checkInStr, checkOutStr, horario) {
     if (!checkInStr || !checkOutStr) return 0;
     const start = new Date(checkInStr + 'T00:00:00');
-    
+
     if (horario === 'Full Day') {
         const dayOfWeek = start.getDay(); // 0 = Sunday, 5 = Friday, 6 = Saturday
         const isWeekend = (dayOfWeek === 0 || dayOfWeek === 5 || dayOfWeek === 6);
@@ -514,14 +463,14 @@ function calculateBasePrice(checkInStr, checkOutStr, horario) {
         const end = new Date(checkOutStr + 'T00:00:00');
         let totalBase = 0;
         let current = new Date(start);
-        
+
         while (current < end) {
             const dayOfWeek = current.getDay();
             const isWeekend = (dayOfWeek === 0 || dayOfWeek === 5 || dayOfWeek === 6);
             totalBase += isWeekend ? PRICE_WEEKEND : PRICE_WEEKDAY;
             current.setDate(current.getDate() + 1);
         }
-        
+
         if (totalBase === 0) {
             const dayOfWeek = start.getDay();
             const isWeekend = (dayOfWeek === 0 || dayOfWeek === 5 || dayOfWeek === 6);
@@ -534,7 +483,7 @@ function calculateBasePrice(checkInStr, checkOutStr, horario) {
 // Main Dynamic Calculation function
 function runDynamicCalculations() {
     const isBlock = document.getElementById('bookingIsBlock').checked;
-    
+
     const breakdownBase = document.getElementById('breakdownBase');
     const breakdownGuests = document.getElementById('breakdownGuests');
     const breakdownExtras = document.getElementById('breakdownExtras');
@@ -563,9 +512,9 @@ function runDynamicCalculations() {
 
     const extraHours = parseInt(document.getElementById('bookingHorasExtras').value) || 0;
     const extraHoursPrice = parseFloat(document.getElementById('bookingAdicionalHoras').value) || 0;
-    
-    const cuatrimotosCount = parseInt(document.getElementById('bookingCuatrimoto').value) || 0;
-    const cuatrimotosMonto = parseFloat(document.getElementById('bookingCuatrimotoMonto').value) || 0;
+
+    const cuatrimotosCount = 0;
+    const cuatrimotosMonto = 0;
 
     // 1. Calculate Nights/Days
     const nights = calculateNights(checkIn, checkOut, horario);
@@ -601,7 +550,7 @@ function runDynamicCalculations() {
     breakdownGuests.textContent = `S/. ${guestsFee.toFixed(2)}`;
     breakdownExtras.textContent = `S/. ${extrasTotal.toFixed(2)}`;
     breakdownAdvance.textContent = `S/. ${adelanto.toFixed(2)}`;
-    
+
     breakdownRemaining.textContent = `S/. ${remaining.toFixed(2)}`;
     breakdownRemaining.style.color = '#34d399'; // Green/Mint
 
@@ -630,12 +579,15 @@ async function initDatabase() {
             if (reachable) {
                 supabaseClient = supabase.createClient(url, key);
                 dbMode = 'supabase';
-                
+
                 const statusDot = document.getElementById('statusDot');
                 statusDot.className = 'status-dot connected';
                 document.getElementById('statusText').textContent = 'Conectado a la Nube (Supabase)';
                 document.getElementById('statusDesc').textContent = 'Las reservas de Bungalows se sincronizan automáticamente en tiempo real.';
-                
+
+                // Fetch active advisors list
+                await fetchAdvisors();
+
                 setupRealtimeListener();
                 return;
             }
@@ -650,6 +602,9 @@ async function initDatabase() {
     statusDot.className = 'status-dot disconnected';
     document.getElementById('statusText').textContent = 'Modo Local (Sin Conexión)';
     document.getElementById('statusDesc').textContent = 'Los datos se guardan en este navegador. Configura la base de datos para compartir con otros asesores.';
+    
+    // Fetch active advisors list
+    fetchAdvisors();
 }
 
 async function checkSupabaseReachable(url) {
@@ -676,6 +631,10 @@ function setupRealtimeListener() {
             console.log("Cambio en base de datos recibido en tiempo real:", payload);
             await fetchBookings();
         })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'personal_asesores' }, async () => {
+            // Refetch active advisors list when it changes
+            await fetchAdvisors();
+        })
         .subscribe();
 }
 
@@ -687,7 +646,7 @@ async function fetchBookings() {
                 .from('reservas_bungalows')
                 .select('*')
                 .order('fecha_ingreso', { ascending: true });
-            
+
             if (error) throw error;
             bookings = data || [];
         } catch (err) {
@@ -755,9 +714,6 @@ async function handleSaveBooking(e) {
     }
 
     let notes = document.getElementById('bookingNotes').value;
-    if (notes === 'Otro') {
-        notes = document.getElementById('bookingNotesCustom').value.trim() || 'Otro';
-    }
 
     const payload = {
         bungalow_numero: bungalow,
@@ -799,15 +755,15 @@ async function handleSaveBooking(e) {
         payload.ninos_gratis = ninoPequeno ? 1 : 0;
         payload.ninos_pagantes = 0;
         payload.precio_base = calculateBasePrice(checkIn, checkOut, horario);
-        
+
         // Calculate guests fee
         const nights = calculateNights(checkIn, checkOut, horario);
         payload.adicional_personas = adicionales * EXTRA_GUEST_FEE * nights;
 
         payload.horas_extras = parseInt(document.getElementById('bookingHorasExtras').value) || 0;
         payload.adicional_horas = parseFloat(document.getElementById('bookingAdicionalHoras').value) || 0;
-        payload.alquiler_cuatrimoto = parseInt(document.getElementById('bookingCuatrimoto').value) || 0;
-        payload.cuatrimoto_monto = parseFloat(document.getElementById('bookingCuatrimotoMonto').value) || 0;
+        payload.alquiler_cuatrimoto = 0;
+        payload.cuatrimoto_monto = 0;
         payload.medio_contacto = source;
     }
 
@@ -908,7 +864,7 @@ function checkBookingCollision(id, bungalow, checkIn, checkOut, horario) {
     return bookings.find(b => {
         // Exclude the current booking itself if editing
         if (b.id === id) return false;
-        
+
         // Only check same bungalow
         if (b.bungalow_numero !== bungalow) return false;
 
@@ -940,10 +896,10 @@ function initCalendar() {
             // Format state bookings into FullCalendar events
             const fcEvents = bookings.map(b => {
                 const isBlocked = b.estado_reserva === 'Bloqueado';
-                let title = isBlocked 
-                    ? `🔒 B${b.bungalow_numero} BLOQUEADO` 
+                let title = isBlocked
+                    ? `🔒 B${b.bungalow_numero} BLOQUEADO`
                     : `B${b.bungalow_numero}: ${b.nombre_cliente} (${b.horario})`;
-                
+
                 // For FullCalendar display, the end date is exclusive.
                 // We add 1 day to the checkout date so it highlights the grid cell correctly.
                 const checkOutDate = new Date(b.fecha_salida + 'T00:00:00');
@@ -978,7 +934,7 @@ function initCalendar() {
             const endStr = endInclusive.toISOString().split('T')[0];
 
             openBookingModal(startStr);
-            
+
             // Check if selection spans multiple days
             if (startStr !== endStr) {
                 document.getElementById('bookingHorario').value = 'Día y Noche';
@@ -1057,11 +1013,6 @@ function updateDailySummaryList() {
                     <span class="summary-detail-tag">
                         <i data-lucide="users"></i> ${b.adultos || 4} pers.${b.ninos_gratis ? ' + 1 niño gratis' : ''}
                     </span>
-                    ${b.alquiler_cuatrimoto > 0 ? `
-                        <span class="summary-detail-tag" style="color: #f59e0b; font-weight: 600;">
-                            <i data-lucide="activity"></i> ${b.alquiler_cuatrimoto} Moto(s)
-                        </span>
-                    ` : ''}
                 </div>
                 <div class="summary-item-header" style="margin-top: 6px; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 8px;">
                     <span style="font-size: 11px; color: var(--text-muted);">Asesor: ${b.asesor_registro}</span>
@@ -1142,8 +1093,7 @@ function copyReservationDetails() {
     const total = parseFloat(document.getElementById('bookingTotal').value) || 0;
     const paymentType = document.getElementById('bookingPaymentType').value;
     const source = document.getElementById('bookingSource').value;
-    
-    const cuatrimotos = parseInt(document.getElementById('bookingCuatrimoto').value) || 0;
+
     const horasExtras = parseInt(document.getElementById('bookingHorasExtras').value) || 0;
 
     const formattedIn = new Date(checkIn + 'T00:00:00').toLocaleDateString('es-PE', { weekday: 'long', day: 'numeric', month: 'long' });
@@ -1156,10 +1106,7 @@ function copyReservationDetails() {
     msg += `📅 *Fecha Salida:* ${formattedOut}\n`;
     msg += `⏰ *Turno:* ${horario}\n`;
     msg += `👥 *Ocupantes:* ${totalPers} personas${ninoPequenoStr}\n`;
-    
-    if (cuatrimotos > 0) {
-        msg += `🏍️ *Cuatrimotos:* ${cuatrimotos} alquilada(s)\n`;
-    }
+
     if (horasExtras > 0) {
         msg += `⏰ *Horas extras:* ${horasExtras} hora(s)\n`;
     }
@@ -1240,7 +1187,7 @@ function loadStatsDashboard() {
 
     monthBookings.forEach(b => {
         totalRevenue += b.monto_total;
-        
+
         // Split payment calculations
         if (b.tipo_pago === 'Depósito') {
             depositoTotal += b.monto_total;
@@ -1257,7 +1204,7 @@ function loadStatsDashboard() {
             bungalowStats[bNo].count++;
             bungalowStats[bNo].revenue += b.monto_total;
             bungalowStats[bNo].motos += b.alquiler_cuatrimoto || 0;
-            
+
             const nights = calculateNights(b.fecha_ingreso, b.fecha_salida, b.horario);
             bungalowStats[bNo].daysOccupied += nights;
         }
@@ -1286,7 +1233,7 @@ function loadStatsDashboard() {
     // Populate Report Table
     const tableBody = document.querySelector('#tableStatsReport tbody');
     tableBody.innerHTML = '';
-    
+
     for (let i = 1; i <= 6; i++) {
         const stats = bungalowStats[i];
         const tr = document.createElement('tr');
@@ -1295,7 +1242,6 @@ function loadStatsDashboard() {
             <td style="padding: 12px 16px; font-weight: 600; color: white;">Bungalow ${i}</td>
             <td style="padding: 12px 16px;">${stats.count} reservas</td>
             <td style="padding: 12px 16px; font-weight: 700; color: #34d399;">S/. ${stats.revenue.toFixed(2)}</td>
-            <td style="padding: 12px 16px;">${stats.motos} moto(s)</td>
         `;
         tableBody.appendChild(tr);
     }
@@ -1309,7 +1255,7 @@ function loadStatsDashboard() {
     for (let i = 1; i <= 6; i++) {
         const stats = bungalowStats[i];
         const percent = Math.min(100, Math.round((stats.daysOccupied / totalDaysInMonth) * 100));
-        
+
         const row = document.createElement('div');
         row.innerHTML = `
             <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px;">
@@ -1326,7 +1272,7 @@ function loadStatsDashboard() {
     // Populate Clients Directory Table
     const tableClientsBody = document.querySelector('#tableStatsClients tbody');
     tableClientsBody.innerHTML = '';
-    
+
     const clientsList = Object.values(clientsMap).sort((a, b) => b.count - a.count);
     if (clientsList.length === 0) {
         tableClientsBody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 20px;">No hay directorio compilado este mes.</td></tr>';
@@ -1373,7 +1319,7 @@ async function handleSaveSettings(e) {
             localStorage.setItem('canchapro_supabase_key', key);
             feedback.textContent = '✅ Credenciales válidas. Conexión establecida.';
             feedback.style.color = '#34d399';
-            
+
             setTimeout(() => {
                 closeModal('modalSettings');
                 // Reboot database connection
@@ -1424,7 +1370,7 @@ const sessionLogs = [];
 function logSessionActivity(msg) {
     const time = new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     sessionLogs.unshift({ time, msg });
-    
+
     // Add to local audit log table if in Supabase
     saveAuditTrailToDb(msg);
 }
@@ -1446,7 +1392,7 @@ async function saveAuditTrailToDb(actionDetails) {
 function openHistoryModal() {
     const container = document.getElementById('activityList');
     container.innerHTML = '';
-    
+
     if (sessionLogs.length === 0) {
         container.innerHTML = '<p class="no-activity">No hay actividad registrada en esta sesión.</p>';
     } else {
@@ -1460,4 +1406,258 @@ function openHistoryModal() {
         });
     }
     openModal('modalHistory');
+}
+
+// Helper to transform any name to Title Case (Initial Uppercase, rest lowercase)
+function formatAsesorName(name) {
+    if (!name) return '';
+    return name.trim().split(/\s+/).map(word => {
+        if (!word) return '';
+        return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    }).filter(word => word.length > 0).join(' ');
+}
+
+// Helper to populate the dropdown of advisors
+function populateAsesoresDropdown(selectedValue = '') {
+    const select = document.getElementById('bookingNotes');
+    if (!select) return;
+
+    // Clear dropdown
+    select.innerHTML = '';
+
+    // Add placeholder option
+    const optPlaceholder = document.createElement('option');
+    optPlaceholder.value = '';
+    optPlaceholder.textContent = 'Seleccionar asesor...';
+    optPlaceholder.disabled = true;
+    optPlaceholder.selected = !selectedValue;
+    select.appendChild(optPlaceholder);
+
+    // Add active advisors to select
+    activeAdvisorsList.forEach(advisor => {
+        const option = document.createElement('option');
+        option.value = advisor;
+        option.textContent = advisor;
+        select.appendChild(option);
+    });
+
+    // Admin option to register new advisor
+    const optAdd = document.createElement('option');
+    optAdd.value = '_add_new_';
+    optAdd.textContent = '➕ Agregar nuevo asesor...';
+    optAdd.style.fontWeight = '600';
+    optAdd.style.color = 'var(--primary)';
+    select.appendChild(optAdd);
+
+    // Admin option to delete an advisor
+    const optDel = document.createElement('option');
+    optDel.value = '_delete_';
+    optDel.textContent = '➖ Eliminar asesor...';
+    optDel.style.fontWeight = '600';
+    optDel.style.color = 'var(--danger)';
+    select.appendChild(optDel);
+
+
+
+    const formattedSelectedValue = formatAsesorName(selectedValue);
+
+    if (formattedSelectedValue && !activeAdvisorsList.includes(formattedSelectedValue) && formattedSelectedValue !== '_add_new_' && formattedSelectedValue !== '_delete_') {
+        // If the saved value is not in our active list, it means it's a custom value
+        const optionCustom = document.createElement('option');
+        optionCustom.value = formattedSelectedValue;
+        optionCustom.textContent = formattedSelectedValue;
+        select.appendChild(optionCustom);
+        select.value = formattedSelectedValue;
+    } else if (formattedSelectedValue && activeAdvisorsList.includes(formattedSelectedValue)) {
+        select.value = formattedSelectedValue;
+    } else {
+        select.value = '';
+    }
+}
+
+async function fetchAdvisors() {
+    if (dbMode === 'supabase' && supabaseClient) {
+        try {
+            const { data: advData, error: advError } = await supabaseClient
+                .from('personal_asesores')
+                .select('name')
+                .eq('is_active', true)
+                .order('name', { ascending: true });
+
+            if (advError) throw advError;
+
+            if (advData && advData.length > 0) {
+                activeAdvisorsList = advData.map(a => a.name);
+            } else {
+                loadActiveAdvisorsFromLocal();
+            }
+        } catch (err) {
+            console.warn("Table personal_asesores not found or failed, using localStorage fallback:", err.message);
+            loadActiveAdvisorsFromLocal();
+        }
+    } else {
+        loadActiveAdvisorsFromLocal();
+    }
+    // Repopulate active select if open/needed
+    const select = document.getElementById('bookingNotes');
+    if (select) {
+        // Save current selection to restore
+        const currentVal = select.value;
+        populateAsesoresDropdown(currentVal);
+    }
+}
+
+function loadActiveAdvisorsFromLocal() {
+    try {
+        let savedCustom = localStorage.getItem('canchapro_custom_asesores');
+        if (savedCustom === null) {
+            const defaults = new Set(['Dird']);
+            if (typeof bookings !== 'undefined' && bookings.length > 0) {
+                bookings.forEach(b => {
+                    if (b.asesor_registro && b.asesor_registro.trim() && b.asesor_registro !== 'Otro') {
+                        defaults.add(formatAsesorName(b.asesor_registro));
+                    }
+                });
+            }
+            const defaultsArr = Array.from(defaults).sort();
+            localStorage.setItem('canchapro_custom_asesores', JSON.stringify(defaultsArr));
+            activeAdvisorsList = defaultsArr;
+        } else {
+            activeAdvisorsList = JSON.parse(savedCustom);
+        }
+    } catch (e) {
+        console.warn("Error loading custom advisors from local:", e);
+        activeAdvisorsList = ['Dird'];
+    }
+}
+
+function saveNewAdvisorLocal(cleanName) {
+    let customNames = [];
+    try {
+        const savedCustom = localStorage.getItem('canchapro_custom_asesores');
+        if (savedCustom) {
+            customNames = JSON.parse(savedCustom);
+        } else {
+            customNames = ['Dird'];
+        }
+    } catch (e) {
+        console.warn(e);
+    }
+    if (!customNames.includes(cleanName)) {
+        customNames.push(cleanName);
+        localStorage.setItem('canchapro_custom_asesores', JSON.stringify(customNames));
+    }
+}
+
+function deleteAdvisorLocal(cleanName) {
+    let customNames = [];
+    try {
+        const savedCustom = localStorage.getItem('canchapro_custom_asesores');
+        if (savedCustom) {
+            customNames = JSON.parse(savedCustom);
+        } else {
+            customNames = ['Dird'];
+        }
+    } catch (e) {
+        console.warn(e);
+    }
+    customNames = customNames.filter(name => name !== cleanName);
+    localStorage.setItem('canchapro_custom_asesores', JSON.stringify(customNames));
+}
+
+async function handleAddAsesor(selectAsesor) {
+    const pwd = prompt("Ingrese la contraseña de administrador para registrar un nuevo asesor:");
+    if (pwd === 'Reservasupabase') {
+        const newName = prompt("Ingrese el nombre completo del nuevo asesor:");
+        if (newName && newName.trim()) {
+            const cleanName = formatAsesorName(newName);
+
+            if (!activeAdvisorsList.includes(cleanName)) {
+                if (dbMode === 'supabase' && supabaseClient) {
+                    try {
+                        const { error: insErr } = await supabaseClient
+                            .from('personal_asesores')
+                            .insert([{ name: cleanName, is_active: true }]);
+
+                        if (insErr) {
+                            const { error: updErr } = await supabaseClient
+                                .from('personal_asesores')
+                                .update({ is_active: true })
+                                .eq('name', cleanName);
+                            if (updErr) throw updErr;
+                        }
+                    } catch (err) {
+                        console.warn("Could not save new advisor to Supabase, saving locally:", err.message);
+                        saveNewAdvisorLocal(cleanName);
+                    }
+                } else {
+                    saveNewAdvisorLocal(cleanName);
+                }
+            }
+
+            await fetchAdvisors();
+            selectAsesor.value = cleanName;
+
+            if (typeof logSessionActivity === 'function') {
+                logSessionActivity(`registró al nuevo asesor: ${cleanName}`);
+            }
+            alert(`El asesor "${cleanName}" fue registrado correctamente.`);
+        } else {
+            selectAsesor.value = '';
+        }
+    } else {
+        if (pwd !== null) alert("Contraseña incorrecta o cancelado.");
+        selectAsesor.value = '';
+    }
+}
+
+async function handleDeleteAsesor(selectAsesor) {
+    const pwd = prompt("Ingrese la contraseña de administrador para eliminar un asesor:");
+    if (pwd === 'Reservasupabase') {
+        if (activeAdvisorsList.length === 0) {
+            alert("No hay asesores guardados para eliminar.");
+            selectAsesor.value = '';
+            return;
+        }
+
+        const listStr = activeAdvisorsList.join(', ');
+        const nameToDelete = prompt(`Asesores eliminables:\n[ ${listStr} ]\n\nEscriba el nombre exacto del asesor que desea eliminar:`);
+
+        if (nameToDelete) {
+            const cleanName = nameToDelete.trim();
+            if (activeAdvisorsList.includes(cleanName)) {
+                if (dbMode === 'supabase' && supabaseClient) {
+                    try {
+                        const { error: delErr } = await supabaseClient
+                            .from('personal_asesores')
+                            .update({ is_active: false })
+                            .eq('name', cleanName);
+
+                        if (delErr) throw delErr;
+                    } catch (err) {
+                        console.warn("Could not deactivate advisor in Supabase, updating locally:", err.message);
+                        deleteAdvisorLocal(cleanName);
+                    }
+                } else {
+                    deleteAdvisorLocal(cleanName);
+                }
+
+                await fetchAdvisors();
+                selectAsesor.value = '';
+                alert(`El asesor "${cleanName}" fue eliminado correctamente.`);
+
+                if (typeof logSessionActivity === 'function') {
+                    logSessionActivity(`eliminó al asesor: ${cleanName}`);
+                }
+            } else {
+                alert(`El nombre "${cleanName}" no coincide con ningún asesor de la lista.`);
+                selectAsesor.value = '';
+            }
+        } else {
+            selectAsesor.value = '';
+        }
+    } else {
+        if (pwd !== null) alert("Contraseña incorrecta o cancelado.");
+        selectAsesor.value = '';
+    }
 }

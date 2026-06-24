@@ -163,7 +163,7 @@
                     </button>
                     <div class="header-title">
                         <h1>Calendario de Bungalows</h1>
-                        <p>Gestione el hospedaje, tarifas de fin de semana, turnos y alquiler de cuatrimotos.</p>
+                        <p>Gestione el hospedaje, tarifas de fin de semana y turnos.</p>
                     </div>
                 </div>
                 <button class="btn btn-primary" id="btnNewReservation">
@@ -290,17 +290,21 @@
                                 <i data-lucide="users"></i>
                                 <input type="number" id="bookingAdicionales" min="0" max="10" value="0">
                             </div>
-                            <small class="text-secondary">Capacidad estándar: 4 personas. Adicionales pagan S/. 35 c/u por noche.</small>
+                            <small class="text-secondary">Capacidad estándar: 4 personas. Adicionales pagan S/. 35 c/u
+                                por noche.</small>
                         </div>
-                        <div class="form-group" style="display: flex; flex-direction: column; justify-content: space-between;">
+                        <div class="form-group"
+                            style="display: flex; flex-direction: column; justify-content: space-between;">
                             <label>Niño Pequeño Gratis</label>
                             <label class="checkbox-container"
                                 style="display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; padding: 10px 0;">
                                 <input type="checkbox" id="bookingNinoPequeno"
                                     style="width: 18px; height: 18px; cursor: pointer;">
-                                <span style="font-weight: 500; color: var(--text-secondary);">¿Lleva 1 niño < 7 años gratis?</span>
+                                <span style="font-weight: 500; color: var(--text-secondary);">¿Lleva 1 niño < 7 años
+                                        gratis?</span>
                             </label>
-                            <small class="text-secondary">Se acepta como máximo un niño menor de 7 años gratis por reserva.</small>
+                            <small class="text-secondary">Se acepta como máximo un niño menor de 7 años gratis por
+                                reserva.</small>
                         </div>
                     </div>
 
@@ -318,27 +322,6 @@
                             <div class="input-wrapper">
                                 <i data-lucide="banknote"></i>
                                 <input type="number" id="bookingAdicionalHoras" min="0" value="0" step="any">
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="form-row" id="rowCuatrimoto">
-                        <div class="form-group">
-                            <label for="bookingCuatrimoto">Alquiler de Cuatrimotos</label>
-                            <div class="input-wrapper">
-                                <i data-lucide="activity"></i>
-                                <select id="bookingCuatrimoto">
-                                    <option value="0" selected>0 cuatrimotos</option>
-                                    <option value="1">1 cuatrimoto</option>
-                                    <option value="2">2 cuatrimotos</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label for="bookingCuatrimotoMonto">Monto Alquiler Cuatrimoto (S/.)</label>
-                            <div class="input-wrapper">
-                                <i data-lucide="banknote"></i>
-                                <input type="number" id="bookingCuatrimotoMonto" min="0" value="0" step="any">
                             </div>
                         </div>
                     </div>
@@ -405,18 +388,8 @@
                         <div class="input-wrapper">
                             <i data-lucide="user-check"></i>
                             <select id="bookingNotes" required>
-                                <option value="Rogger">Rogger</option>
-                                <option value="Dird">Dird</option>
-                                <option value="Victoria">Victoria</option>
-                                <option value="Otro">Otro Asesor...</option>
+                                <!-- Se llenará dinámicamente -->
                             </select>
-                        </div>
-                    </div>
-                    <div class="form-group hidden" id="customAsesorGroup">
-                        <label for="bookingNotesCustom">Escribe el Nombre del Asesor *</label>
-                        <div class="input-wrapper">
-                            <i data-lucide="pencil"></i>
-                            <input type="text" id="bookingNotesCustom" placeholder="Nombre del nuevo asesor...">
                         </div>
                     </div>
 
@@ -656,7 +629,8 @@
                         </div>
                         <div
                             style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px;">
-                            <span style="font-size: 12px; color: var(--text-muted); text-transform: uppercase;">Yape / Otros Pagos</span>
+                            <span style="font-size: 12px; color: var(--text-muted); text-transform: uppercase;">Yape /
+                                Otros Pagos</span>
                             <div id="statsOtrosMonth"
                                 style="font-size: 24px; font-weight: 700; color: #fbbf24; margin-top: 6px;">S/. 0.00
                             </div>
@@ -673,7 +647,6 @@
                                     <th style="padding: 12px 16px; color: var(--text-secondary);">Bungalow</th>
                                     <th style="padding: 12px 16px; color: var(--text-secondary);">Total Reservas</th>
                                     <th style="padding: 12px 16px; color: var(--text-secondary);">Ingreso Estimado</th>
-                                    <th style="padding: 12px 16px; color: var(--text-secondary);">Motos Alquiladas</th>
                                 </tr>
                             </thead>
                             <tbody>

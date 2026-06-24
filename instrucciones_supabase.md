@@ -187,3 +187,33 @@ ALTER PUBLICATION supabase_realtime ADD TABLE reservas_bungalows;
 5. Haz clic en **"Run"** (o presiona `Ctrl + Enter`).
 6. Deberías ver el mensaje **"Success. No rows returned"**. ¡Tu sistema de bungalows ya está listo para sincronizar con la nube!
 
+---
+
+## 👤 Paso Extra: Configurar Tabla de Asesores (Opcional)
+
+Para poder sincronizar la lista de asesores activos en tiempo real entre múltiples dispositivos usando Supabase, crea la tabla de asesores ejecutando el siguiente código SQL:
+
+1. Ve a **SQL Editor** (`>_`) en Supabase.
+2. Abre una pestaña nueva (**+ New query**).
+3. Pega y ejecuta el siguiente bloque SQL:
+
+```sql
+-- 1. Crear tabla para registrar asesores
+CREATE TABLE IF NOT EXISTS personal_asesores (
+  name TEXT PRIMARY KEY,
+  is_active BOOLEAN DEFAULT true
+);
+
+-- Habilitar RLS (Row Level Security) obligatorio en Supabase
+ALTER TABLE personal_asesores ENABLE ROW LEVEL SECURITY;
+
+-- Crear regla de acceso público
+CREATE POLICY "Acceso publico personal_asesores" ON personal_asesores FOR ALL USING (true) WITH CHECK (true);
+
+-- Habilitar tiempo real
+ALTER PUBLICATION supabase_realtime ADD TABLE personal_asesores;
+```
+
+4. Haz clic en **"Run"**. Si todo sale bien, la lista de asesores se almacenará en la nube en lugar de solo en la memoria del navegador.
+
+
