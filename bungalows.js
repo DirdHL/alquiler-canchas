@@ -1456,17 +1456,32 @@ function updateAvailabilityGrid() {
                     } else {
                         // Classify the day
                         let label = '';
+                        const startHour = b.horario === 'Full Day' ? '9:00 AM' : '3:00 PM';
+                        let endHour = b.horario === 'Full Day' ? '6:00 PM' : '12:00 PM';
+                        if (b.horario !== 'Full Day' && (b.horas_extras || 0) > 0) {
+                            let hh = 12 + b.horas_extras;
+                            let daysOverflow = Math.floor(hh / 24);
+                            hh = hh % 24;
+                            let ampm = hh >= 12 ? 'PM' : 'AM';
+                            let displayHr = hh % 12;
+                            displayHr = displayHr ? displayHr : 12;
+                            endHour = `${displayHr}:00 ${ampm}`;
+                            if (daysOverflow > 0) {
+                                endHour += ` (+${daysOverflow}d)`;
+                            }
+                        }
+
                         if (D === b.fecha_ingreso && D === b.fecha_salida) {
-                            label = `☀️ Full: ${b.nombre_cliente}`;
+                            label = `☀️ Full (${startHour} - ${endHour}): ${b.nombre_cliente}`;
                         } else if (D === b.fecha_ingreso) {
-                            label = `🌇 Ingreso: ${b.nombre_cliente}`;
+                            label = `🌇 Ingreso (${startHour}): ${b.nombre_cliente}`;
                         } else if (D === b.fecha_salida) {
-                            label = `🌅 Salida: ${b.nombre_cliente}`;
+                            label = `🌅 Salida (${endHour}): ${b.nombre_cliente}`;
                         } else {
                             label = `👤 Hospedado: ${b.nombre_cliente}`;
                         }
                         
-                        html += `<span class="availability-booked-badge bungalow-${bNum}" onclick="openBookingEditModalById('${b.id}')" title="${escapeHTML(b.nombre_cliente)} (${b.horario})" style="margin-bottom: 4px; display: block;">${escapeHTML(label)}</span>`;
+                        html += `<span class="availability-booked-badge bungalow-${bNum}" onclick="openBookingEditModalById('${b.id}')" title="${escapeHTML(b.nombre_cliente)} (${b.horario}) | Ingreso: ${startHour} - Salida: ${endHour}" style="margin-bottom: 4px; display: block;">${escapeHTML(label)}</span>`;
                     }
                 });
             }
