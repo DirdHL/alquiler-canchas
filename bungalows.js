@@ -1054,6 +1054,11 @@ function initCalendar() {
             center: 'title',
             right: 'dayGridMonth,listMonth'
         },
+        buttonText: {
+            today: 'Hoy',
+            month: 'Mes',
+            list: 'Lista'
+        },
         editable: false,
         selectable: true,
         events: function (info, successCallback, failureCallback) {
