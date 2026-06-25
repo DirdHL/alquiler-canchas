@@ -951,3 +951,45 @@ body {
     border-color: var(--accent) !important;
     color: var(--accent) !important;
 }
+
+/* Responsive Overrides for Availability Toolbar and Legend */
+@media (max-width: 768px) {
+    .availability-toolbar {
+        flex-direction: column;
+        align-items: stretch !important;
+        gap: 12px;
+        padding: 12px !important;
+    }
+    
+    .availability-toolbar > div {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+    }
+    
+    .availability-toolbar label {
+        font-size: 12px;
+    }
+    
+    .availability-toolbar input[type="date"] {
+        width: 125px !important;
+        font-size: 12px !important;
+    }
+    
+    .availability-toolbar .btn {
+        padding: 5px 10px !important;
+        font-size: 12px !important;
+        height: 32px !important;
+    }
+    
+    .availability-legend-container {
+        gap: 6px !important;
+        padding: 8px 10px !important;
+    }
+    
+    .legend-item {
+        font-size: 10px !important;
+        padding: 4px 8px !important;
+    }
+}

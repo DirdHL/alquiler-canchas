@@ -402,7 +402,7 @@ function handleOnboarding(e) {
 function toggleSidebar() {
     const sidebar = document.getElementById('sidebar');
     const backdrop = document.getElementById('sidebarBackdrop');
-    sidebar.classList.toggle('active');
+    sidebar.classList.toggle('open');
     backdrop.classList.toggle('active');
 }
 
