@@ -739,3 +739,215 @@ body {
     color: var(--text-muted) !important;
     text-decoration: line-through !important;
 }
+
+/* =============================================================
+   Modernized Availability Table, Legend, and Cards Overrides
+   ============================================================= */
+.availability-table {
+    min-width: 950px;
+    border-collapse: separate !important;
+    border-spacing: 0;
+}
+
+.availability-table th {
+    background: var(--bg-secondary) !important;
+    color: var(--text-primary) !important;
+    font-family: var(--font-sans);
+    font-weight: 600 !important;
+    text-transform: none !important;
+    font-size: 13px !important;
+    border-bottom: 2px solid var(--border-color) !important;
+    border-right: 1px solid rgba(223, 213, 196, 0.4) !important;
+    padding: 10px 16px !important;
+}
+
+.availability-table th:last-child {
+    border-right: none !important;
+}
+
+.availability-table td {
+    border-bottom: 1px solid rgba(223, 213, 196, 0.4) !important;
+    border-right: 1px solid rgba(223, 213, 196, 0.4) !important;
+    padding: 8px 10px !important;
+    background: #ffffff !important;
+    vertical-align: top !important;
+}
+
+.availability-table td:last-child {
+    border-right: none !important;
+}
+
+.availability-table td:first-child {
+    background: #faf7f1 !important;
+    font-weight: 600 !important;
+    color: var(--text-secondary) !important;
+}
+
+/* Legend Container Styling */
+.availability-legend-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 16px;
+    background: #ffffff;
+    padding: 10px 14px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 4px 12px rgba(62, 53, 43, 0.02);
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    background: var(--bg-primary);
+    padding: 6px 12px;
+    border-radius: 20px;
+    border: 1px solid rgba(223, 213, 196, 0.6);
+}
+
+/* New Planner Card Style for Bookings */
+.availability-card {
+    padding: 8px 10px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: var(--transition-smooth);
+    text-align: left;
+    box-shadow: 0 2px 4px rgba(62, 53, 43, 0.04);
+    margin-bottom: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+}
+
+.availability-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(62, 53, 43, 0.08);
+}
+
+.availability-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    opacity: 0.85;
+}
+
+.availability-card-title {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.availability-card-time {
+    font-size: 9px;
+    font-weight: 600;
+    background: rgba(255, 255, 255, 0.4);
+    padding: 2px 5px;
+    border-radius: 4px;
+}
+
+.availability-card-client {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Color bindings for Cards in Nature Theme */
+.availability-card.bungalow-1 { background: rgba(45, 90, 39, 0.07); border: 1px solid rgba(45, 90, 39, 0.35); color: #2d5a27; }
+.availability-card.bungalow-1:hover { background: rgba(45, 90, 39, 0.15); border-color: #2d5a27; }
+
+.availability-card.bungalow-2 { background: rgba(164, 118, 60, 0.07); border: 1px solid rgba(164, 118, 60, 0.35); color: #a4763c; }
+.availability-card.bungalow-2:hover { background: rgba(164, 118, 60, 0.15); border-color: #a4763c; }
+
+.availability-card.bungalow-3 { background: rgba(61, 90, 128, 0.07); border: 1px solid rgba(61, 90, 128, 0.35); color: #3d5a80; }
+.availability-card.bungalow-3:hover { background: rgba(61, 90, 128, 0.15); border-color: #3d5a80; }
+
+.availability-card.bungalow-4 { background: rgba(160, 106, 106, 0.07); border: 1px solid rgba(160, 106, 106, 0.35); color: #a06a6a; }
+.availability-card.bungalow-4:hover { background: rgba(160, 106, 106, 0.15); border-color: #a06a6a; }
+
+.availability-card.bungalow-5 { background: rgba(107, 91, 149, 0.07); border: 1px solid rgba(107, 91, 149, 0.35); color: #6b5b95; }
+.availability-card.bungalow-5:hover { background: rgba(107, 91, 149, 0.15); border-color: #6b5b95; }
+
+.availability-card.bungalow-6 { background: rgba(79, 109, 122, 0.07); border: 1px solid rgba(79, 109, 122, 0.35); color: #4f6d7a; }
+.availability-card.bungalow-6:hover { background: rgba(79, 109, 122, 0.15); border-color: #4f6d7a; }
+
+/* Maintenance Block Cards */
+.availability-card.blocked-card {
+    background: rgba(156, 42, 42, 0.06);
+    border: 1px solid rgba(156, 42, 42, 0.3);
+    color: #9c2a2a;
+}
+.availability-card.blocked-card:hover {
+    background: rgba(156, 42, 42, 0.12);
+    border-color: #9c2a2a;
+}
+.availability-card.blocked-card .availability-card-client {
+    color: #9c2a2a;
+}
+
+/* Datepicker & Controls Toolbar for Availability Map */
+.availability-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    background: #ffffff;
+    padding: 10px 14px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 4px 12px rgba(62, 53, 43, 0.02);
+}
+
+.availability-toolbar label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.availability-toolbar input[type="date"] {
+    padding: 6px 12px 6px 36px !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: var(--radius-sm) !important;
+    font-size: 13px !important;
+    font-family: var(--font-sans) !important;
+    color: var(--text-primary) !important;
+    background: var(--bg-primary) !important;
+    height: 32px !important;
+    width: 140px !important;
+    line-height: normal !important;
+}
+
+.availability-toolbar .btn {
+    padding: 6px 12px !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    border-radius: var(--radius-sm) !important;
+    height: 32px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-color) !important;
+    color: var(--text-primary) !important;
+    cursor: pointer;
+    transition: var(--transition-smooth);
+}
+
+.availability-toolbar .btn:hover {
+    background: rgba(164, 118, 60, 0.08) !important;
+    border-color: var(--accent) !important;
+    color: var(--accent) !important;
+}

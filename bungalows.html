@@ -191,28 +191,74 @@
                     </h3>
                     <div class="summary-tabs"
                         style="display: flex; gap: 8px; background: rgba(255, 255, 255, 0.03); padding: 4px; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
-                        <button type="button" class="tab-btn active" id="btnTabReservations">
+                        <button type="button" class="tab-btn" id="btnTabReservations">
                             <i data-lucide="calendar"></i> Lista de Huéspedes
                         </button>
-                        <button type="button" class="tab-btn" id="btnTabAvailability">
+                        <button type="button" class="tab-btn active" id="btnTabAvailability">
                             <i data-lucide="layout-grid"></i> Mapa de Disponibilidad
                         </button>
                     </div>
                 </div>
 
                 <!-- Tab: Lista de Reservas -->
-                <div class="summary-tab-content" id="tabReservationsContent">
+                <div class="summary-tab-content" id="tabReservationsContent" style="display: none;">
                     <div class="summary-list" id="dailySummaryList">
                         <!-- Se llenará dinámicamente -->
                     </div>
                 </div>
 
                 <!-- Tab: Mapa de Disponibilidad -->
-                <div class="summary-tab-content" id="tabAvailabilityContent" style="display: none;">
+                <div class="summary-tab-content" id="tabAvailabilityContent">
+                    <!-- Control de Fecha para el Mapa -->
+                    <div class="availability-toolbar">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <label for="gridDatePicker">Ver desde:</label>
+                            <div class="input-wrapper" style="margin-bottom: 0; width: auto; display: inline-block; position: relative;">
+                                <i data-lucide="calendar" style="width: 16px; height: 16px; position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none;"></i>
+                                <input type="date" id="gridDatePicker">
+                            </div>
+                            <button type="button" class="btn btn-secondary" id="btnGridToday">
+                                Hoy
+                            </button>
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <button type="button" class="btn btn-secondary" id="btnGridPrevWeek" title="Semana anterior">
+                                <i data-lucide="chevron-left" style="width: 16px; height: 16px;"></i> Anterior
+                            </button>
+                            <button type="button" class="btn btn-secondary" id="btnGridNextWeek" title="Semana siguiente">
+                                Siguiente <i data-lucide="chevron-right" style="width: 16px; height: 16px;"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Legend -->
+                    <div class="availability-legend-container">
+                        <div class="legend-item">
+                            <span>🌇</span>
+                            <span><strong>Ingreso:</strong> 3:00 PM</span>
+                        </div>
+                        <div class="legend-item">
+                            <span>🌅</span>
+                            <span><strong>Salida:</strong> 12:00 PM</span>
+                        </div>
+                        <div class="legend-item">
+                            <span>👤</span>
+                            <span><strong>Hospedado:</strong> Ocupado</span>
+                        </div>
+                        <div class="legend-item">
+                            <span>☀️</span>
+                            <span><strong>Full Day:</strong> 9 AM - 6 PM</span>
+                        </div>
+                        <div class="legend-item">
+                            <span>🔒</span>
+                            <span><strong>Bloqueo:</strong> Mantenimiento</span>
+                        </div>
+                    </div>
+
                     <div class="availability-grid-wrapper"
                         style="overflow-x: auto; max-height: 480px; overflow-y: auto; border-radius: var(--radius-md); border: 1px solid var(--border-color); background: rgba(255, 255, 255, 0.01);">
                         <table class="availability-table"
-                            style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
+                            style="min-width: 950px; border-collapse: collapse; text-align: left; font-size: 13px;">
                             <thead>
                                 <tr
                                     style="position: sticky; top: 0; background: #f2ebe0; border-bottom: 1px solid var(--border-color); z-index: 5;">

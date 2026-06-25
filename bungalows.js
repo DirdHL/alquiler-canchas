@@ -335,6 +335,54 @@ function setupEventListeners() {
             runDynamicCalculations();
         });
     }
+
+    // Availability grid controls
+    const gridDatePicker = document.getElementById('gridDatePicker');
+    if (gridDatePicker) {
+        gridDatePicker.addEventListener('change', (e) => {
+            const newDateVal = e.target.value;
+            if (newDateVal) {
+                selectedDate = new Date(newDateVal + 'T00:00:00');
+                if (calendar) calendar.gotoDate(selectedDate);
+                updateDailySummaryList();
+                updateAvailabilityGrid();
+            }
+        });
+    }
+
+    const btnGridToday = document.getElementById('btnGridToday');
+    if (btnGridToday) {
+        btnGridToday.addEventListener('click', () => {
+            selectedDate = new Date();
+            if (calendar) calendar.gotoDate(selectedDate);
+            updateDailySummaryList();
+            updateAvailabilityGrid();
+        });
+    }
+
+    const btnGridPrevWeek = document.getElementById('btnGridPrevWeek');
+    if (btnGridPrevWeek) {
+        btnGridPrevWeek.addEventListener('click', () => {
+            const activeDate = getActiveDate();
+            activeDate.setDate(activeDate.getDate() - 7);
+            selectedDate = new Date(activeDate);
+            if (calendar) calendar.gotoDate(selectedDate);
+            updateDailySummaryList();
+            updateAvailabilityGrid();
+        });
+    }
+
+    const btnGridNextWeek = document.getElementById('btnGridNextWeek');
+    if (btnGridNextWeek) {
+        btnGridNextWeek.addEventListener('click', () => {
+            const activeDate = getActiveDate();
+            activeDate.setDate(activeDate.getDate() + 7);
+            selectedDate = new Date(activeDate);
+            if (calendar) calendar.gotoDate(selectedDate);
+            updateDailySummaryList();
+            updateAvailabilityGrid();
+        });
+    }
 }
 
 // Onboarding Form Handler
@@ -1387,6 +1435,16 @@ function updateAvailabilityGrid() {
     if (!tabAvailabilityContent || tabAvailabilityContent.style.display === 'none') return;
 
     const activeDate = getActiveDate();
+    
+    // Sync datepicker value
+    const gridDatePicker = document.getElementById('gridDatePicker');
+    if (gridDatePicker) {
+        const y = activeDate.getFullYear();
+        const m = String(activeDate.getMonth() + 1).padStart(2, '0');
+        const d = String(activeDate.getDate()).padStart(2, '0');
+        gridDatePicker.value = `${y}-${m}-${d}`;
+    }
+
     const yr = activeDate.getFullYear();
     const mo = activeDate.getMonth();
     const dy = activeDate.getDate();
@@ -1452,10 +1510,15 @@ function updateAvailabilityGrid() {
                         } else if (blockReason.startsWith('🔒 Bloqueo:')) {
                             blockReason = blockReason.replace('🔒 Bloqueo:', '');
                         }
-                        html += `<span class="availability-blocked-badge" onclick="openBookingEditModalById('${b.id}')" title="🔒 Bloqueo: ${escapeHTML(blockReason)}" style="margin-bottom: 4px; display: block;">🔒 ${escapeHTML(blockReason)}</span>`;
+                        html += `
+                        <div class="availability-card blocked-card" onclick="openBookingEditModalById('${b.id}')" title="🔒 Bloqueo: ${escapeHTML(blockReason)}">
+                            <div class="availability-card-header">
+                                <span class="availability-card-title">🔒 Bloqueo</span>
+                            </div>
+                            <div class="availability-card-client">${escapeHTML(blockReason)}</div>
+                        </div>`;
                     } else {
                         // Classify the day
-                        let label = '';
                         const startHour = b.horario === 'Full Day' ? '9:00 AM' : '3:00 PM';
                         let endHour = b.horario === 'Full Day' ? '6:00 PM' : '12:00 PM';
                         if (b.horario !== 'Full Day' && (b.horas_extras || 0) > 0) {
@@ -1471,17 +1534,36 @@ function updateAvailabilityGrid() {
                             }
                         }
 
+                        let statusText = '';
+                        let statusEmoji = '';
+                        let timeText = '';
+
                         if (D === b.fecha_ingreso && D === b.fecha_salida) {
-                            label = `☀️ Full (${startHour} - ${endHour}): ${b.nombre_cliente}`;
+                            statusText = 'Full Day';
+                            statusEmoji = '☀️';
+                            timeText = `${startHour} - ${endHour}`;
                         } else if (D === b.fecha_ingreso) {
-                            label = `🌇 Ingreso (${startHour}): ${b.nombre_cliente}`;
+                            statusText = 'Ingreso';
+                            statusEmoji = '🌇';
+                            timeText = startHour;
                         } else if (D === b.fecha_salida) {
-                            label = `🌅 Salida (${endHour}): ${b.nombre_cliente}`;
+                            statusText = 'Salida';
+                            statusEmoji = '🌅';
+                            timeText = endHour;
                         } else {
-                            label = `👤 Hospedado: ${b.nombre_cliente}`;
+                            statusText = 'Hospedado';
+                            statusEmoji = '👤';
+                            timeText = 'Todo el día';
                         }
                         
-                        html += `<span class="availability-booked-badge bungalow-${bNum}" onclick="openBookingEditModalById('${b.id}')" title="${escapeHTML(b.nombre_cliente)} (${b.horario}) | Ingreso: ${startHour} - Salida: ${endHour}" style="margin-bottom: 4px; display: block;">${escapeHTML(label)}</span>`;
+                        html += `
+                        <div class="availability-card bungalow-${bNum}" onclick="openBookingEditModalById('${b.id}')" title="${escapeHTML(b.nombre_cliente)} (${b.horario}) | Ingreso: ${startHour} - Salida: ${endHour}">
+                            <div class="availability-card-header">
+                                <span class="availability-card-title">${statusEmoji} ${statusText}</span>
+                                <span class="availability-card-time">${timeText}</span>
+                            </div>
+                            <div class="availability-card-client">${escapeHTML(b.nombre_cliente)}</div>
+                        </div>`;
                     }
                 });
             }
@@ -1503,8 +1585,6 @@ function updateAvailabilityGrid() {
                 html += `<button type="button" class="availability-slot-btn" onclick="openBookingFromGrid('${slot.dateStr}', ${bNum})">
                     <i data-lucide="plus" style="width: 11px; height: 11px;"></i> + Reservar
                 </button>`;
-            } else if (overlaps.length === 0) {
-                html += `<div style="font-size: 10px; color: var(--danger); font-weight: 700; text-align: center; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px;">🔴 Completo</div>`;
             }
 
             html += `</td>`;
