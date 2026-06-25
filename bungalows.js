@@ -240,6 +240,19 @@ function setupEventListeners() {
         });
     });
 
+    // Custom Bungalow Checkbox Grid Selection & Sincronización (Selección Múltiple)
+    const chkList = document.querySelectorAll('input[name="bungalowSelect"]');
+    chkList.forEach(chk => {
+        chk.addEventListener('change', function () {
+            // Obtener todos los seleccionados
+            const selected = Array.from(document.querySelectorAll('input[name="bungalowSelect"]:checked')).map(c => c.value);
+            // Sincronizar el select oculto con el primer valor seleccionado (o vacío si ninguno)
+            document.getElementById('bookingBungalow').value = selected.length > 0 ? selected[0] : '';
+            // Forzar recálculo financiero
+            runDynamicCalculations();
+        });
+    });
+
     // Modal Stats Tab triggers
     const tabButtons = document.querySelectorAll('.stats-tabs .tab-btn');
     tabButtons.forEach(btn => {
@@ -305,6 +318,23 @@ function openBookingModal(dateStr = null) {
     document.getElementById('btnDeleteBooking').classList.add('hidden');
     document.getElementById('bookingIsBlock').checked = false;
 
+    // Reset custom checkboxes selection
+    const chkList = document.querySelectorAll('input[name="bungalowSelect"]');
+    chkList.forEach(chk => {
+        chk.checked = false;
+        chk.disabled = false;
+        const card = chk.closest('.bungalow-card');
+        if (card) {
+            card.classList.remove('disabled');
+            const statusBadge = card.querySelector('.bungalow-status');
+            if (statusBadge) {
+                statusBadge.textContent = 'Disponible';
+                statusBadge.className = 'bungalow-status available';
+            }
+        }
+    });
+    document.getElementById('bookingBungalow').value = '';
+
     // Clear error
     const errorEl = document.getElementById('bookingError');
     errorEl.textContent = '';
@@ -359,6 +389,14 @@ function openBookingEditModal(booking) {
     const phoneInput = document.getElementById('bookingPhone');
     if (phoneInput) phoneInput.value = booking.telefono_cliente || '';
     document.getElementById('bookingBungalow').value = booking.bungalow_numero;
+
+    // Set matching checkbox in grid
+    const bungalowNo = booking.bungalow_numero;
+    const chkList = document.querySelectorAll('input[name="bungalowSelect"]');
+    chkList.forEach(chk => {
+        chk.checked = (parseInt(chk.value) === bungalowNo);
+    });
+
     document.getElementById('bookingHorario').value = booking.horario;
     document.getElementById('bookingCheckIn').value = booking.fecha_ingreso;
     document.getElementById('bookingCheckOut').value = booking.fecha_salida;
@@ -516,11 +554,15 @@ function runDynamicCalculations() {
     const cuatrimotosCount = 0;
     const cuatrimotosMonto = 0;
 
+    // Obtener cantidad de bungalows seleccionados
+    const selectedBungalows = Array.from(document.querySelectorAll('input[name="bungalowSelect"]:checked')).map(c => parseInt(c.value));
+    const numBungalows = Math.max(1, selectedBungalows.length);
+
     // 1. Calculate Nights/Days
     const nights = calculateNights(checkIn, checkOut, horario);
 
-    // 2. Base Price
-    const basePrice = calculateBasePrice(checkIn, checkOut, horario);
+    // 2. Base Price (Multiplicado por cantidad de bungalows)
+    const basePrice = calculateBasePrice(checkIn, checkOut, horario) * numBungalows;
 
     // 3. Guests Occupancy Math
     // Standard capacity: 4 people.
@@ -562,6 +604,59 @@ function runDynamicCalculations() {
             splitEfectivo.value = (finalTotal / 2).toFixed(2);
             splitYape.value = (finalTotal / 2).toFixed(2);
         }
+    }
+
+    // Call bungalow availability check dynamically
+    updateBungalowAvailability();
+}
+
+// ----------------------------------------------------
+// Calculations Engine Helpers: Availability check
+// ----------------------------------------------------
+function updateBungalowAvailability() {
+    const bookingId = document.getElementById('bookingId').value;
+    const checkIn = document.getElementById('bookingCheckIn').value;
+    const checkOut = document.getElementById('bookingCheckOut').value;
+    const horario = document.getElementById('bookingHorario').value;
+
+    const chkList = document.querySelectorAll('input[name="bungalowSelect"]');
+    const hasDates = checkIn && checkOut && horario;
+
+    chkList.forEach(chk => {
+        const bungalowNo = parseInt(chk.value);
+        const card = chk.closest('.bungalow-card');
+        const statusBadge = card.querySelector('.bungalow-status');
+
+        if (hasDates) {
+            const conflict = checkBookingCollision(bookingId, bungalowNo, checkIn, checkOut, horario);
+            if (conflict) {
+                card.classList.add('disabled');
+                chk.disabled = true;
+                statusBadge.textContent = 'Ocupado';
+                statusBadge.className = 'bungalow-status occupied';
+                
+                // If it was checked and it is now conflicting, uncheck it
+                if (chk.checked) {
+                    chk.checked = false;
+                    document.getElementById('bookingBungalow').value = '';
+                }
+            } else {
+                card.classList.remove('disabled');
+                chk.disabled = false;
+                statusBadge.textContent = 'Disponible';
+                statusBadge.className = 'bungalow-status available';
+            }
+        } else {
+            card.classList.remove('disabled');
+            chk.disabled = false;
+            statusBadge.textContent = 'Disponible';
+            statusBadge.className = 'bungalow-status available';
+        }
+    });
+
+    // Make sure Lucide icons are refreshed/rendered for the check icons inside custom checkbox boxes
+    if (window.lucide && typeof lucide.createIcons === 'function') {
+        lucide.createIcons();
     }
 }
 
@@ -685,13 +780,25 @@ async function handleSaveBooking(e) {
 
     const id = document.getElementById('bookingId').value;
     const isBlock = document.getElementById('bookingIsBlock').checked;
-    const bungalow = parseInt(document.getElementById('bookingBungalow').value);
     const checkIn = document.getElementById('bookingCheckIn').value;
     const checkOut = document.getElementById('bookingCheckOut').value;
     const horario = document.getElementById('bookingHorario').value;
 
-    // Check collisions / overlaps
-    const conflictingBooking = checkBookingCollision(id, bungalow, checkIn, checkOut, horario);
+    // Obtener todos los bungalows seleccionados
+    const selectedBungalows = Array.from(document.querySelectorAll('input[name="bungalowSelect"]:checked')).map(c => parseInt(c.value));
+    if (selectedBungalows.length === 0) {
+        errorEl.textContent = '⚠️ Por favor, seleccione al menos un Bungalow.';
+        errorEl.style.display = 'block';
+        return;
+    }
+
+    // Check collisions / overlaps for all selected bungalows
+    let conflictingBooking = null;
+    for (const bNo of selectedBungalows) {
+        conflictingBooking = checkBookingCollision(id, bNo, checkIn, checkOut, horario);
+        if (conflictingBooking) break;
+    }
+
     if (conflictingBooking) {
         const clientName = conflictingBooking.estado_reserva === 'Bloqueado'
             ? 'Mantenimiento / Bloqueado'
@@ -702,12 +809,12 @@ async function handleSaveBooking(e) {
         const fechaInFormatted = dateIn.toLocaleDateString('es-PE', { day: 'numeric', month: 'short' });
         const fechaOutFormatted = dateOut.toLocaleDateString('es-PE', { day: 'numeric', month: 'short' });
 
-        errorEl.innerHTML = `⚠️ <strong>Conflicto de Reserva:</strong> El Bungalow ${bungalow} ya está ocupado por <strong>${clientName}</strong> (${conflictingBooking.horario}) del ${fechaInFormatted} al ${fechaOutFormatted}.`;
+        errorEl.innerHTML = `⚠️ <strong>Conflicto de Reserva:</strong> El Bungalow ${conflictingBooking.bungalow_numero} ya está ocupado por <strong>${clientName}</strong> (${conflictingBooking.horario}) del ${fechaInFormatted} al ${fechaOutFormatted}.`;
         errorEl.style.display = 'block';
         return;
     }
 
-    // Build data payload
+    // Build data payloads
     let source = document.getElementById('bookingSource').value;
     if (source === 'Otro') {
         source = document.getElementById('bookingSourceCustom').value.trim() || 'Otro';
@@ -715,78 +822,120 @@ async function handleSaveBooking(e) {
 
     let notes = document.getElementById('bookingNotes').value;
 
-    const payload = {
-        bungalow_numero: bungalow,
-        fecha_ingreso: checkIn,
-        fecha_salida: checkOut,
-        horario: horario,
-        estado_reserva: isBlock ? 'Bloqueado' : 'Confirmado',
-        notas: document.getElementById('bookingComment').value.trim(),
-        asesor_registro: notes,
-        monto_total: parseFloat(document.getElementById('bookingTotal').value) || 0,
-        monto_adelanto: parseFloat(document.getElementById('bookingAdelanto').value) || 0,
-        tipo_pago: document.getElementById('bookingPaymentType').value,
-        monto_efectivo: parseFloat(document.getElementById('splitEfectivo').value) || 0,
-        monto_yape: parseFloat(document.getElementById('splitYape').value) || 0
-    };
+    const totalCalculado = parseFloat(document.getElementById('bookingTotal').value) || 0;
+    const splitEfectivoTotal = parseFloat(document.getElementById('splitEfectivo').value) || 0;
+    const splitYapeTotal = parseFloat(document.getElementById('splitYape').value) || 0;
 
-    if (isBlock) {
-        payload.nombre_cliente = 'Mantenimiento';
-        payload.dni_cliente = '';
-        payload.telefono_cliente = '';
-        payload.adultos = 0;
-        payload.ninos_gratis = 0;
-        payload.ninos_pagantes = 0;
-        payload.precio_base = 0;
-        payload.adicional_personas = 0;
-        payload.horas_extras = 0;
-        payload.adicional_horas = 0;
-        payload.alquiler_cuatrimoto = 0;
-        payload.cuatrimoto_monto = 0;
-    } else {
-        payload.nombre_cliente = document.getElementById('bookingName').value.trim();
-        payload.dni_cliente = document.getElementById('bookingDni').value.trim();
-        const phoneInput = document.getElementById('bookingPhone');
-        payload.telefono_cliente = phoneInput ? phoneInput.value.trim() : '';
-        const adicionales = parseInt(document.getElementById('bookingAdicionales').value) || 0;
-        const ninoPequeno = document.getElementById('bookingNinoPequeno').checked;
+    const adicionales = parseInt(document.getElementById('bookingAdicionales').value) || 0;
+    const ninoPequeno = document.getElementById('bookingNinoPequeno').checked;
+    const extraHours = parseInt(document.getElementById('bookingHorasExtras').value) || 0;
+    const extraHoursPrice = parseFloat(document.getElementById('bookingAdicionalHoras').value) || 0;
 
-        payload.adultos = 4 + adicionales;
-        payload.ninos_gratis = ninoPequeno ? 1 : 0;
-        payload.ninos_pagantes = 0;
-        payload.precio_base = calculateBasePrice(checkIn, checkOut, horario);
+    const nights = calculateNights(checkIn, checkOut, horario);
+    const extrasTotal = extraHoursPrice;
 
-        // Calculate guests fee
-        const nights = calculateNights(checkIn, checkOut, horario);
-        payload.adicional_personas = adicionales * EXTRA_GUEST_FEE * nights;
+    // Helper to generate the payload for a single bungalow
+    function getPayloadForBungalow(bNo, index) {
+        const payload = {
+            bungalow_numero: bNo,
+            fecha_ingreso: checkIn,
+            fecha_salida: checkOut,
+            horario: horario,
+            estado_reserva: isBlock ? 'Bloqueado' : 'Confirmado',
+            notas: document.getElementById('bookingComment').value.trim(),
+            asesor_registro: notes,
+            tipo_pago: document.getElementById('bookingPaymentType').value,
+            medio_contacto: source
+        };
 
-        payload.horas_extras = parseInt(document.getElementById('bookingHorasExtras').value) || 0;
-        payload.adicional_horas = parseFloat(document.getElementById('bookingAdicionalHoras').value) || 0;
-        payload.alquiler_cuatrimoto = 0;
-        payload.cuatrimoto_monto = 0;
-        payload.medio_contacto = source;
+        if (isBlock) {
+            payload.nombre_cliente = 'Mantenimiento';
+            payload.dni_cliente = '';
+            payload.telefono_cliente = '';
+            payload.adultos = 0;
+            payload.ninos_gratis = 0;
+            payload.ninos_pagantes = 0;
+            payload.precio_base = 0;
+            payload.adicional_personas = 0;
+            payload.horas_extras = 0;
+            payload.adicional_horas = 0;
+            payload.alquiler_cuatrimoto = 0;
+            payload.cuatrimoto_monto = 0;
+            payload.monto_total = 0;
+            payload.monto_adelanto = 0;
+            payload.monto_efectivo = 0;
+            payload.monto_yape = 0;
+        } else {
+            payload.nombre_cliente = document.getElementById('bookingName').value.trim();
+            payload.dni_cliente = document.getElementById('bookingDni').value.trim();
+            const phoneInput = document.getElementById('bookingPhone');
+            payload.telefono_cliente = phoneInput ? phoneInput.value.trim() : '';
+
+            // Main reservation gets additional guests/children, standard ones get base capacity
+            payload.adultos = 4 + (index === 0 ? adicionales : 0);
+            payload.ninos_gratis = (index === 0 && ninoPequeno) ? 1 : 0;
+            payload.ninos_pagantes = 0;
+            payload.precio_base = calculateBasePrice(checkIn, checkOut, horario);
+            payload.adicional_personas = (index === 0 ? adicionales * EXTRA_GUEST_FEE * nights : 0);
+            payload.horas_extras = (index === 0 ? extraHours : 0);
+            payload.adicional_horas = (index === 0 ? extraHoursPrice : 0);
+            payload.alquiler_cuatrimoto = 0;
+            payload.cuatrimoto_monto = 0;
+
+            const singleTotal = payload.precio_base + payload.adicional_personas + payload.adicional_horas;
+            payload.monto_total = singleTotal;
+            payload.monto_adelanto = singleTotal;
+
+            if (payload.tipo_pago === 'Dividido') {
+                if (totalCalculado > 0) {
+                    payload.monto_efectivo = splitEfectivoTotal * (singleTotal / totalCalculado);
+                    payload.monto_yape = splitYapeTotal * (singleTotal / totalCalculado);
+                } else {
+                    payload.monto_efectivo = 0;
+                    payload.monto_yape = 0;
+                }
+            } else {
+                payload.monto_efectivo = 0;
+                payload.monto_yape = 0;
+            }
+        }
+        return payload;
     }
 
     if (dbMode === 'supabase' && supabaseClient) {
         try {
-            let error;
             if (id) {
-                // Update
-                const { error: err } = await supabaseClient
+                // Modo Edición:
+                // 1. Actualizar la reserva existente con el primer bungalow
+                const firstPayload = getPayloadForBungalow(selectedBungalows[0], 0);
+                const { error: updErr } = await supabaseClient
                     .from('reservas_bungalows')
-                    .update(payload)
+                    .update(firstPayload)
                     .eq('id', id);
-                error = err;
-                logSessionActivity(`Reserva ${id} actualizada para: ${payload.nombre_cliente}`);
+                if (updErr) throw updErr;
+                logSessionActivity(`Reserva ${id} actualizada para: ${firstPayload.nombre_cliente}`);
+
+                // 2. Si hay más de un bungalow, insertar los adicionales como nuevos
+                if (selectedBungalows.length > 1) {
+                    const extraPayloads = [];
+                    for (let i = 1; i < selectedBungalows.length; i++) {
+                        extraPayloads.push(getPayloadForBungalow(selectedBungalows[i], i));
+                    }
+                    const { error: insErr } = await supabaseClient
+                        .from('reservas_bungalows')
+                        .insert(extraPayloads);
+                    if (insErr) throw insErr;
+                    logSessionActivity(`Creadas ${extraPayloads.length} reservas adicionales por edición de grupo.`);
+                }
             } else {
-                // Insert
-                const { error: err } = await supabaseClient
+                // Modo Creación: Insertar todos los bungalows seleccionados
+                const payloads = selectedBungalows.map((bNo, idx) => getPayloadForBungalow(bNo, idx));
+                const { error: insErr } = await supabaseClient
                     .from('reservas_bungalows')
-                    .insert([payload]);
-                error = err;
-                logSessionActivity(`Nueva reserva creada para: ${payload.nombre_cliente}`);
+                    .insert(payloads);
+                if (insErr) throw insErr;
+                logSessionActivity(`Nuevas reservas creadas para: ${payloads[0].nombre_cliente} en bungalows [${selectedBungalows.join(', ')}]`);
             }
-            if (error) throw error;
         } catch (err) {
             console.error("Error al guardar en Supabase:", err);
             errorEl.textContent = 'Error al sincronizar con el servidor: ' + err.message;
@@ -794,18 +943,33 @@ async function handleSaveBooking(e) {
             return;
         }
     } else {
-        // Local Save
+        // Local Save Fallback
         if (id) {
+            // Modo Edición:
+            // 1. Actualizar la reserva actual
             const index = bookings.findIndex(b => b.id === id);
             if (index !== -1) {
-                bookings[index] = { ...bookings[index], ...payload };
+                const firstPayload = getPayloadForBungalow(selectedBungalows[0], 0);
+                bookings[index] = { ...bookings[index], ...firstPayload };
+                logSessionActivity(`Reserva local ${id} editada.`);
             }
-            logSessionActivity(`Reserva local ${id} editada.`);
+
+            // 2. Insertar bungalows adicionales
+            for (let i = 1; i < selectedBungalows.length; i++) {
+                const extraPayload = getPayloadForBungalow(selectedBungalows[i], i);
+                extraPayload.id = 'local_' + Date.now() + '_' + i;
+                extraPayload.created_at = new Date().toISOString();
+                bookings.push(extraPayload);
+            }
         } else {
-            payload.id = 'local_' + Date.now();
-            payload.created_at = new Date().toISOString();
-            bookings.push(payload);
-            logSessionActivity(`Nueva reserva local creada para: ${payload.nombre_cliente}`);
+            // Modo Creación:
+            selectedBungalows.forEach((bNo, idx) => {
+                const payload = getPayloadForBungalow(bNo, idx);
+                payload.id = 'local_' + Date.now() + '_' + idx;
+                payload.created_at = new Date().toISOString();
+                bookings.push(payload);
+            });
+            logSessionActivity(`Nuevas reservas locales creadas para: ${selectedBungalows.join(', ')}`);
         }
         saveLocalBookingsFallback();
     }

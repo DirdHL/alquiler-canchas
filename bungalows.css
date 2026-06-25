@@ -551,3 +551,130 @@ body {
 #tableStatsReport td, #tableStatsClients td {
     color: var(--text-primary) !important;
 }
+
+/* =============================================================
+   Custom Bungalows Grid & Checkbox Options
+   ============================================================= */
+.bungalows-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 12px;
+    margin-top: 8px;
+    width: 100%;
+}
+
+.bungalow-card {
+    position: relative;
+}
+
+.bungalow-card input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.bungalow-card-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #ffffff !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: var(--radius-md) !important;
+    padding: 10px 12px !important;
+    cursor: pointer;
+    user-select: none;
+    transition: var(--transition-smooth);
+    margin-bottom: 0 !important;
+    font-weight: 500 !important;
+}
+
+.bungalow-card:hover:not(.disabled) .bungalow-card-label {
+    border-color: var(--accent) !important;
+    background: rgba(164, 118, 60, 0.04) !important;
+}
+
+/* Checked state */
+.bungalow-card input[type="checkbox"]:checked + .bungalow-card-label {
+    border-color: var(--primary) !important;
+    background: rgba(28, 61, 37, 0.05) !important;
+    box-shadow: 0 0 0 3px rgba(28, 61, 37, 0.08) !important;
+}
+
+.bungalow-card-label .checkbox-box {
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--text-muted) !important;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition-smooth);
+    background: #ffffff !important;
+    flex-shrink: 0;
+}
+
+.bungalow-card-label .checkbox-box svg {
+    width: 12px;
+    height: 12px;
+    color: transparent !important;
+    transition: var(--transition-smooth);
+    stroke-width: 3;
+}
+
+.bungalow-card input[type="checkbox"]:checked + .bungalow-card-label .checkbox-box {
+    border-color: var(--primary) !important;
+    background: var(--primary) !important;
+}
+
+.bungalow-card input[type="checkbox"]:checked + .bungalow-card-label .checkbox-box svg {
+    color: #ffffff !important;
+}
+
+.bungalow-card .bungalow-name {
+    font-weight: 600 !important;
+    color: var(--text-primary) !important;
+    font-size: 13px !important;
+    flex-grow: 1;
+}
+
+.bungalow-card .bungalow-status {
+    font-size: 10px !important;
+    font-weight: 700 !important;
+    padding: 2px 6px !important;
+    border-radius: 4px !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.2px;
+}
+
+.bungalow-card .bungalow-status.available {
+    background: rgba(45, 90, 39, 0.1) !important;
+    color: #2d5a27 !important;
+}
+
+.bungalow-card .bungalow-status.occupied {
+    background: rgba(156, 42, 42, 0.1) !important;
+    color: #9c2a2a !important;
+}
+
+/* Disabled/Occupied state style */
+.bungalow-card.disabled {
+    cursor: not-allowed !important;
+}
+
+.bungalow-card.disabled .bungalow-card-label {
+    background: #f4efdf !important;
+    border-color: #dfd5c4 !important;
+    opacity: 0.6 !important;
+    cursor: not-allowed !important;
+}
+
+.bungalow-card.disabled .checkbox-box {
+    background: #e8e2d5 !important;
+    border-color: #c4b9a8 !important;
+}
+
+.bungalow-card.disabled .bungalow-name {
+    color: var(--text-muted) !important;
+    text-decoration: line-through !important;
+}

@@ -238,20 +238,6 @@
                     <!-- Bungalow Selection & Schedule -->
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="bookingBungalow">Bungalow *</label>
-                            <div class="input-wrapper">
-                                <i data-lucide="home"></i>
-                                <select id="bookingBungalow" required>
-                                    <option value="1">Bungalow 1</option>
-                                    <option value="2">Bungalow 2</option>
-                                    <option value="3">Bungalow 3</option>
-                                    <option value="4">Bungalow 4</option>
-                                    <option value="5">Bungalow 5</option>
-                                    <option value="6">Bungalow 6</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="form-group">
                             <label for="bookingHorario">Horario / Turno *</label>
                             <div class="input-wrapper">
                                 <i data-lucide="clock"></i>
@@ -262,6 +248,70 @@
                                 </select>
                             </div>
                         </div>
+                    </div>
+
+                    <!-- Bungalow Selection Checklist -->
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600;">Número de Bungalows *</label>
+                        <div class="bungalows-grid">
+                            <div class="bungalow-card" data-bungalow="1">
+                                <input type="checkbox" id="chkBungalow1" name="bungalowSelect" value="1">
+                                <label for="chkBungalow1" class="bungalow-card-label">
+                                    <span class="checkbox-box"><i data-lucide="check"></i></span>
+                                    <span class="bungalow-name">Bungalow 1</span>
+                                    <span class="bungalow-status available">Disponible</span>
+                                </label>
+                            </div>
+                            <div class="bungalow-card" data-bungalow="2">
+                                <input type="checkbox" id="chkBungalow2" name="bungalowSelect" value="2">
+                                <label for="chkBungalow2" class="bungalow-card-label">
+                                    <span class="checkbox-box"><i data-lucide="check"></i></span>
+                                    <span class="bungalow-name">Bungalow 2</span>
+                                    <span class="bungalow-status available">Disponible</span>
+                                </label>
+                            </div>
+                            <div class="bungalow-card" data-bungalow="3">
+                                <input type="checkbox" id="chkBungalow3" name="bungalowSelect" value="3">
+                                <label for="chkBungalow3" class="bungalow-card-label">
+                                    <span class="checkbox-box"><i data-lucide="check"></i></span>
+                                    <span class="bungalow-name">Bungalow 3</span>
+                                    <span class="bungalow-status available">Disponible</span>
+                                </label>
+                            </div>
+                            <div class="bungalow-card" data-bungalow="4">
+                                <input type="checkbox" id="chkBungalow4" name="bungalowSelect" value="4">
+                                <label for="chkBungalow4" class="bungalow-card-label">
+                                    <span class="checkbox-box"><i data-lucide="check"></i></span>
+                                    <span class="bungalow-name">Bungalow 4</span>
+                                    <span class="bungalow-status available">Disponible</span>
+                                </label>
+                            </div>
+                            <div class="bungalow-card" data-bungalow="5">
+                                <input type="checkbox" id="chkBungalow5" name="bungalowSelect" value="5">
+                                <label for="chkBungalow5" class="bungalow-card-label">
+                                    <span class="checkbox-box"><i data-lucide="check"></i></span>
+                                    <span class="bungalow-name">Bungalow 5</span>
+                                    <span class="bungalow-status available">Disponible</span>
+                                </label>
+                            </div>
+                            <div class="bungalow-card" data-bungalow="6">
+                                <input type="checkbox" id="chkBungalow6" name="bungalowSelect" value="6">
+                                <label for="chkBungalow6" class="bungalow-card-label">
+                                    <span class="checkbox-box"><i data-lucide="check"></i></span>
+                                    <span class="bungalow-name">Bungalow 6</span>
+                                    <span class="bungalow-status available">Disponible</span>
+                                </label>
+                            </div>
+                        </div>
+                        <select id="bookingBungalow" required style="position: absolute; opacity: 0; width: 1px; height: 1px; pointer-events: none;">
+                            <option value="">Seleccione...</option>
+                            <option value="1">Bungalow 1</option>
+                            <option value="2">Bungalow 2</option>
+                            <option value="3">Bungalow 3</option>
+                            <option value="4">Bungalow 4</option>
+                            <option value="5">Bungalow 5</option>
+                            <option value="6">Bungalow 6</option>
+                        </select>
                     </div>
 
                     <!-- Dates selection -->
