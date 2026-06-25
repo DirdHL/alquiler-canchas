@@ -13,6 +13,7 @@ let bookings = [];
 let activeOperator = 'Invitado';
 let activeAdvisorsList = [];
 let isTotalManuallyEdited = false;
+let selectedDate = new Date();
 
 // Constants
 const PRICE_WEEKDAY = 160.00; // Lun-Jue
@@ -204,6 +205,7 @@ function setupEventListeners() {
         if (isBlock) {
             nameField.value = 'Mantenimiento / Fuera de Servicio';
             nameField.required = false;
+            document.getElementById('bookingDni').required = false;
             groupClientInfo.style.display = 'none';
             rowClientDetails.style.display = 'none';
             rowOccupancy.style.display = 'none';
@@ -218,6 +220,7 @@ function setupEventListeners() {
         } else {
             nameField.value = '';
             nameField.required = true;
+            document.getElementById('bookingDni').required = true;
             groupClientInfo.style.display = 'block';
             rowClientDetails.style.display = 'flex';
             rowOccupancy.style.display = 'flex';
@@ -238,9 +241,35 @@ function setupEventListeners() {
             if (calendar) {
                 calendar.refetchEvents();
                 updateDailySummaryList();
+                updateAvailabilityGrid();
             }
         });
     });
+
+    // Daily Summary Tabs switching (same as polideportivo)
+    const btnTabReservations = document.getElementById('btnTabReservations');
+    const btnTabAvailability = document.getElementById('btnTabAvailability');
+    const tabReservationsContent = document.getElementById('tabReservationsContent');
+    const tabAvailabilityContent = document.getElementById('tabAvailabilityContent');
+
+    if (btnTabReservations && btnTabAvailability) {
+        btnTabReservations.addEventListener('click', () => {
+            btnTabReservations.classList.add('active');
+            btnTabAvailability.classList.remove('active');
+            if (tabReservationsContent) tabReservationsContent.style.display = 'block';
+            if (tabAvailabilityContent) tabAvailabilityContent.style.display = 'none';
+        });
+
+        btnTabAvailability.addEventListener('click', () => {
+            btnTabAvailability.classList.add('active');
+            btnTabReservations.classList.remove('active');
+            if (tabReservationsContent) tabReservationsContent.style.display = 'none';
+            if (tabAvailabilityContent) {
+                tabAvailabilityContent.style.display = 'block';
+                updateAvailabilityGrid();
+            }
+        });
+    }
 
     // Custom Bungalow Checkbox Grid Selection & Sincronización (Selección Múltiple)
     const chkList = document.querySelectorAll('input[name="bungalowSelect"]');
@@ -250,6 +279,8 @@ function setupEventListeners() {
             const selected = Array.from(document.querySelectorAll('input[name="bungalowSelect"]:checked')).map(c => c.value);
             // Sincronizar el select oculto con el primer valor seleccionado (o vacío si ninguno)
             document.getElementById('bookingBungalow').value = selected.length > 0 ? selected[0] : '';
+            // Actualizar límite de niños
+            updateNinosLimit();
             // Forzar recálculo financiero
             runDynamicCalculations();
         });
@@ -338,6 +369,27 @@ function closeModal(id) {
     document.body.classList.remove('no-scroll');
 }
 
+// Update limit for kids under 7 based on selected bungalows
+function updateNinosLimit() {
+    const selectedCount = document.querySelectorAll('input[name="bungalowSelect"]:checked').length;
+    const ninosInput = document.getElementById('bookingNinoPequeno');
+    if (ninosInput) {
+        const maxVal = Math.max(1, selectedCount);
+        ninosInput.max = maxVal;
+        
+        // Clamp current value if it exceeds maxVal
+        const currentVal = parseInt(ninosInput.value) || 0;
+        if (currentVal > maxVal) {
+            ninosInput.value = maxVal;
+        }
+
+        const helpEl = document.getElementById('bookingNinosHelp');
+        if (helpEl) {
+            helpEl.textContent = `Máximo ${maxVal} niño(s) (${selectedCount} bungalow(s) seleccionado(s)).`;
+        }
+    }
+}
+
 // Open booking modal in CREATE mode
 function openBookingModal(dateStr = null) {
     isTotalManuallyEdited = false;
@@ -365,6 +417,7 @@ function openBookingModal(dateStr = null) {
     });
     document.getElementById('bookingBungalow').value = '';
     document.getElementById('bookingPendiente').value = '';
+    updateNinosLimit();
 
     // Clear error
     const errorEl = document.getElementById('bookingError');
@@ -379,6 +432,8 @@ function openBookingModal(dateStr = null) {
     document.getElementById('rowMedioPago').style.display = 'flex';
     document.getElementById('splitPaymentRow').classList.add('hidden');
     document.getElementById('customSourceGroup').classList.add('hidden');
+    document.getElementById('bookingName').required = true;
+    document.getElementById('bookingDni').required = true;
 
     // Prepopulate inputs
     const today = new Date();
@@ -428,13 +483,15 @@ function openBookingEditModal(booking) {
         chk.checked = (parseInt(chk.value) === bungalowNo);
     });
 
+    updateNinosLimit();
+
     document.getElementById('bookingHorario').value = booking.horario;
     document.getElementById('bookingCheckIn').value = booking.fecha_ingreso;
     document.getElementById('bookingCheckOut').value = booking.fecha_salida;
     const totalGuests = (booking.adultos || 4) + (booking.ninos_pagantes || 0);
     const adicionales = Math.max(0, totalGuests - 4);
     document.getElementById('bookingAdicionales').value = adicionales;
-    document.getElementById('bookingNinoPequeno').checked = (booking.ninos_gratis || 0) > 0;
+    document.getElementById('bookingNinoPequeno').value = booking.ninos_gratis || 0;
     document.getElementById('bookingHorasExtras').value = booking.horas_extras;
     document.getElementById('bookingAdicionalHoras').value = booking.adicional_horas;
     document.getElementById('bookingTotal').value = booking.monto_total;
@@ -453,18 +510,22 @@ function openBookingEditModal(booking) {
 
     // Handle source of contact
     const sourceSelect = document.getElementById('bookingSource');
+    let medio = booking.medio_contacto || '';
+    if (medio === 'WhatsApp') {
+        medio = 'Estado WSP';
+    }
     let hasSource = false;
     for (let i = 0; i < sourceSelect.options.length; i++) {
-        if (sourceSelect.options[i].value === booking.medio_contacto) {
+        if (sourceSelect.options[i].value === medio) {
             sourceSelect.selectedIndex = i;
             hasSource = true;
             break;
         }
     }
-    if (!hasSource && booking.medio_contacto) {
+    if (!hasSource && medio) {
         sourceSelect.value = 'Otro';
         document.getElementById('customSourceGroup').classList.remove('hidden');
-        document.getElementById('bookingSourceCustom').value = booking.medio_contacto;
+        document.getElementById('bookingSourceCustom').value = medio;
         document.getElementById('bookingSourceCustom').required = true;
     } else {
         document.getElementById('customSourceGroup').classList.add('hidden');
@@ -494,12 +555,16 @@ function openBookingEditModal(booking) {
         rowExtras.style.display = 'none';
         rowMedioPago.style.display = 'none';
         document.getElementById('splitPaymentRow').classList.add('hidden');
+        document.getElementById('bookingName').required = false;
+        document.getElementById('bookingDni').required = false;
     } else {
         groupClientInfo.style.display = 'block';
         rowClientDetails.style.display = 'flex';
         rowOccupancy.style.display = 'flex';
         rowExtras.style.display = 'flex';
         rowMedioPago.style.display = 'flex';
+        document.getElementById('bookingName').required = true;
+        document.getElementById('bookingDni').required = true;
     }
 
     // Determinar si el total guardado es un total editado manualmente (descuento/acuerdo)
@@ -627,7 +692,7 @@ function runDynamicCalculations() {
 
     const finalTotal = parseFloat(totalInput.value) || 0;
     const pendienteInput = document.getElementById('bookingPendiente');
-    
+
     let adelantoVal = parseFloat(adelantoInput.value);
     let pendienteVal = parseFloat(pendienteInput.value);
 
@@ -692,6 +757,7 @@ function updateBungalowAvailability() {
     const checkIn = document.getElementById('bookingCheckIn').value;
     const checkOut = document.getElementById('bookingCheckOut').value;
     const horario = document.getElementById('bookingHorario').value;
+    const extraHours = parseInt(document.getElementById('bookingHorasExtras').value) || 0;
 
     const chkList = document.querySelectorAll('input[name="bungalowSelect"]');
     const hasDates = checkIn && checkOut && horario;
@@ -702,13 +768,13 @@ function updateBungalowAvailability() {
         const statusBadge = card.querySelector('.bungalow-status');
 
         if (hasDates) {
-            const conflict = checkBookingCollision(bookingId, bungalowNo, checkIn, checkOut, horario);
+            const conflict = checkBookingCollision(bookingId, bungalowNo, checkIn, checkOut, horario, extraHours);
             if (conflict) {
                 card.classList.add('disabled');
                 chk.disabled = true;
                 statusBadge.textContent = 'Ocupado';
                 statusBadge.className = 'bungalow-status occupied';
-                
+
                 // If it was checked and it is now conflicting, uncheck it
                 if (chk.checked) {
                     chk.checked = false;
@@ -771,7 +837,7 @@ async function initDatabase() {
     statusDot.className = 'status-dot disconnected';
     document.getElementById('statusText').textContent = 'Modo Local (Sin Conexión)';
     document.getElementById('statusDesc').textContent = 'Los datos se guardan en este navegador. Configura la base de datos para compartir con otros asesores.';
-    
+
     // Fetch active advisors list
     fetchAdvisors();
 }
@@ -831,6 +897,7 @@ async function fetchBookings() {
         calendar.refetchEvents();
     }
     updateDailySummaryList();
+    updateAvailabilityGrid();
     updateDashboardStats();
 }
 
@@ -866,10 +933,12 @@ async function handleSaveBooking(e) {
         return;
     }
 
+    const extraHours = parseInt(document.getElementById('bookingHorasExtras').value) || 0;
+
     // Check collisions / overlaps for all selected bungalows
     let conflictingBooking = null;
     for (const bNo of selectedBungalows) {
-        conflictingBooking = checkBookingCollision(id, bNo, checkIn, checkOut, horario);
+        conflictingBooking = checkBookingCollision(id, bNo, checkIn, checkOut, horario, extraHours);
         if (conflictingBooking) break;
     }
 
@@ -902,8 +971,7 @@ async function handleSaveBooking(e) {
     const splitYapeTotal = parseFloat(document.getElementById('splitYape').value) || 0;
 
     const adicionales = parseInt(document.getElementById('bookingAdicionales').value) || 0;
-    const ninoPequeno = document.getElementById('bookingNinoPequeno').checked;
-    const extraHours = parseInt(document.getElementById('bookingHorasExtras').value) || 0;
+    const ninoPequeno = parseInt(document.getElementById('bookingNinoPequeno').value) || 0;
     const extraHoursPrice = parseFloat(document.getElementById('bookingAdicionalHoras').value) || 0;
 
     const nights = calculateNights(checkIn, checkOut, horario);
@@ -948,7 +1016,7 @@ async function handleSaveBooking(e) {
 
             // Main reservation gets additional guests/children, standard ones get base capacity
             payload.adultos = 4 + (index === 0 ? adicionales : 0);
-            payload.ninos_gratis = (index === 0 && ninoPequeno) ? 1 : 0;
+            payload.ninos_gratis = (index < ninoPequeno) ? 1 : 0;
             payload.ninos_pagantes = 0;
             payload.precio_base = calculateBasePrice(checkIn, checkOut, horario);
             payload.adicional_personas = (index === 0 ? adicionales * EXTRA_GUEST_FEE * nights : 0);
@@ -959,7 +1027,7 @@ async function handleSaveBooking(e) {
 
             const singleTotal = payload.precio_base + payload.adicional_personas + payload.adicional_horas;
             payload.monto_total = singleTotal;
-            
+
             if (totalCalculado > 0) {
                 payload.monto_adelanto = adelantoTotal * (singleTotal / totalCalculado);
             } else {
@@ -1087,23 +1155,29 @@ async function handleDeleteBooking() {
     await fetchBookings();
 }
 
-// Collision Check logic
-function checkBookingCollision(id, bungalow, checkIn, checkOut, horario) {
-    function getBookingInterval(checkInStr, checkOutStr, horarioStr) {
-        let start, end;
-        if (horarioStr === 'Full Day') {
-            // Full Day: 9:00 AM to 6:00 PM on check-in day
-            start = new Date(checkInStr + 'T09:00:00');
-            end = new Date(checkInStr + 'T18:00:00');
-        } else {
-            // Día y Noche: 3:00 PM on check-in day to 12:00 PM on check-out day
-            start = new Date(checkInStr + 'T15:00:00');
-            end = new Date(checkOutStr + 'T12:00:00');
-        }
-        return { start, end };
+// Global helper to get the precise start and end datetimes for a booking, including extra hours
+function getBookingInterval(checkInStr, checkOutStr, horarioStr, extraHours = 0) {
+    let start, end;
+    if (horarioStr === 'Full Day') {
+        // Full Day: 9:00 AM to 6:00 PM on check-in day
+        start = new Date(checkInStr + 'T09:00:00');
+        end = new Date(checkInStr + 'T18:00:00');
+    } else {
+        // Día y Noche: 3:00 PM on check-in day to 12:00 PM on check-out day
+        start = new Date(checkInStr + 'T15:00:00');
+        end = new Date(checkOutStr + 'T12:00:00');
     }
+    
+    if (extraHours > 0) {
+        end.setHours(end.getHours() + extraHours);
+    }
+    
+    return { start, end };
+}
 
-    const newInterval = getBookingInterval(checkIn, checkOut, horario);
+// Collision Check logic
+function checkBookingCollision(id, bungalow, checkIn, checkOut, horario, extraHours = 0) {
+    const newInterval = getBookingInterval(checkIn, checkOut, horario, extraHours);
 
     return bookings.find(b => {
         // Exclude the current booking itself if editing
@@ -1112,7 +1186,7 @@ function checkBookingCollision(id, bungalow, checkIn, checkOut, horario) {
         // Only check same bungalow
         if (b.bungalow_numero !== bungalow) return false;
 
-        const oldInterval = getBookingInterval(b.fecha_ingreso, b.fecha_salida, b.horario);
+        const oldInterval = getBookingInterval(b.fecha_ingreso, b.fecha_salida, b.horario, b.horas_extras || 0);
 
         // Date overlap check: (StartA < EndB) and (EndA > StartB)
         const overlaps = (newInterval.start < oldInterval.end) && (newInterval.end > oldInterval.start);
@@ -1141,6 +1215,14 @@ function initCalendar() {
         },
         editable: false,
         selectable: true,
+        datesSet: function (info) {
+            const currentCalendar = info.view.calendar;
+            if (currentCalendar) {
+                selectedDate = currentCalendar.getDate();
+            }
+            updateDailySummaryList();
+            updateAvailabilityGrid();
+        },
         events: function (info, successCallback, failureCallback) {
             // Format state bookings into FullCalendar events
             const fcEvents = bookings.map(b => {
@@ -1182,6 +1264,11 @@ function initCalendar() {
             endInclusive.setDate(endInclusive.getDate() - 1);
             const endStr = endInclusive.toISOString().split('T')[0];
 
+            // Set active date
+            selectedDate = new Date(startStr + 'T00:00:00');
+            updateDailySummaryList();
+            updateAvailabilityGrid();
+
             openBookingModal(startStr);
 
             // Check if selection spans multiple days
@@ -1204,26 +1291,38 @@ function initCalendar() {
 // Update "Huéspedes para Hoy" Resumen Diario
 function updateDailySummaryList() {
     const listEl = document.getElementById('dailySummaryList');
+    if (!listEl) return;
     listEl.innerHTML = '';
 
-    const today = new Date();
-    const todayStr = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
-    document.getElementById('summaryDateLabel').textContent = today.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
+    const activeDate = getActiveDate();
+    const year = activeDate.getFullYear();
+    const month = String(activeDate.getMonth() + 1).padStart(2, '0');
+    const day = String(activeDate.getDate()).padStart(2, '0');
+    const activeDateStr = `${year}-${month}-${day}`;
 
-    // Find bookings that cover today
+    // Display long formatted day in header
+    const labelOptions = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+    const formattedLabel = activeDate.toLocaleDateString('es-ES', labelOptions);
+    const summaryDateLabel = document.getElementById('summaryDateLabel');
+    if (summaryDateLabel) {
+        summaryDateLabel.textContent = formattedLabel.charAt(0).toUpperCase() + formattedLabel.slice(1);
+    }
+
+    // Find bookings that cover the activeDate
     const activeToday = bookings.filter(b => {
         // Filter by checkbox filters
-        if (!document.getElementById(`filterB${b.bungalow_numero}`).checked) return false;
+        const filterEl = document.getElementById(`filterB${b.bungalow_numero}`);
+        if (filterEl && !filterEl.checked) return false;
 
         const start = new Date(b.fecha_ingreso + 'T00:00:00');
         const end = new Date(b.fecha_salida + 'T00:00:00');
-        const current = new Date(todayStr + 'T00:00:00');
+        const current = new Date(activeDateStr + 'T00:00:00');
 
         return (current >= start && current <= end);
     });
 
     if (activeToday.length === 0) {
-        listEl.innerHTML = '<p class="no-activity" style="width: 100%; text-align: center; color: var(--text-muted); padding: 20px;">No hay huéspedes registrados en bungalows para hoy.</p>';
+        listEl.innerHTML = '<p class="no-activity" style="width: 100%; text-align: center; color: var(--text-muted); padding: 20px;">No hay huéspedes registrados en bungalows para este día.</p>';
         return;
     }
 
@@ -1260,7 +1359,7 @@ function updateDailySummaryList() {
                         <i data-lucide="calendar"></i> ${checkInFormatted} al ${checkOutFormatted}
                     </span>
                     <span class="summary-detail-tag">
-                        <i data-lucide="users"></i> ${b.adultos || 4} pers.${b.ninos_gratis ? ' + 1 niño gratis' : ''}
+                        <i data-lucide="users"></i> ${b.adultos || 4} pers.${b.ninos_gratis ? ` + ${b.ninos_gratis} niño(s)` : ''}
                     </span>
                 </div>
                 <div class="summary-item-header" style="margin-top: 6px; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 8px;">
@@ -1274,7 +1373,171 @@ function updateDailySummaryList() {
         listEl.appendChild(card);
     });
 
-    lucide.createIcons();
+    if (window.lucide) lucide.createIcons();
+}
+
+function getActiveDate() {
+    return selectedDate || new Date();
+}
+
+// Render interactive bungalow availability grid (7-day view starting on calendar active date)
+function updateAvailabilityGrid() {
+    if (!calendar) return;
+    const tabAvailabilityContent = document.getElementById('tabAvailabilityContent');
+    if (!tabAvailabilityContent || tabAvailabilityContent.style.display === 'none') return;
+
+    const activeDate = getActiveDate();
+    const yr = activeDate.getFullYear();
+    const mo = activeDate.getMonth();
+    const dy = activeDate.getDate();
+
+    // Generate 7 consecutive days starting from activeDate
+    const daysToShow = 7;
+    const dateSlots = [];
+    for (let i = 0; i < daysToShow; i++) {
+        const d = new Date(yr, mo, dy + i);
+        const yStr = d.getFullYear();
+        const mStr = String(d.getMonth() + 1).padStart(2, '0');
+        const dStr = String(d.getDate()).padStart(2, '0');
+        const dateStr = `${yStr}-${mStr}-${dStr}`;
+
+        const formattedDayName = d.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' });
+        dateSlots.push({
+            dateStr: dateStr,
+            displayDate: formattedDayName.charAt(0).toUpperCase() + formattedDayName.slice(1)
+        });
+    }
+
+    const bungalows = [1, 2, 3, 4, 5, 6];
+
+    let html = '';
+    dateSlots.forEach(slot => {
+        html += `<tr>`;
+        html += `<td style="padding: 10px 16px; font-weight: 600; color: var(--text-primary); border-bottom: 1px solid var(--border-color);">${slot.displayDate}</td>`;
+
+        bungalows.forEach(bNum => {
+            const filterEl = document.getElementById(`filterB${bNum}`);
+            const isFilterChecked = filterEl ? filterEl.checked : true;
+            
+            html += `<td style="padding: 6px 8px; border-bottom: 1px solid var(--border-color); vertical-align: top; text-align: center; ${isFilterChecked ? '' : 'opacity: 0.4; pointer-events: none;'}">`;
+
+            // Find all close/relevant bookings for this bungalow on this date (within 2 days window)
+            const D = slot.dateStr;
+            const relevantBookings = bookings.filter(b => {
+                if (b.bungalow_numero !== bNum) return false;
+                const bStart = new Date(b.fecha_ingreso + 'T00:00:00');
+                const bEnd = new Date(b.fecha_salida + 'T00:00:00');
+                const gridDate = new Date(D + 'T00:00:00');
+                const twoDaysBefore = new Date(gridDate.getTime() - 2 * 24 * 60 * 60 * 1000);
+                const twoDaysAfter = new Date(gridDate.getTime() + 2 * 24 * 60 * 60 * 1000);
+                return bStart <= twoDaysAfter && bEnd >= twoDaysBefore;
+            });
+
+            // Determine if a booking actually overlaps with date D on a time level
+            const dateStart = new Date(D + 'T00:00:00');
+            const dateEnd = new Date(new Date(D + 'T00:00:00').getTime() + 24 * 60 * 60 * 1000);
+            
+            const overlaps = relevantBookings.filter(b => {
+                const interval = getBookingInterval(b.fecha_ingreso, b.fecha_salida, b.horario, b.horas_extras || 0);
+                return interval.start < dateEnd && interval.end > dateStart;
+            });
+
+            if (overlaps.length > 0) {
+                overlaps.forEach(b => {
+                    const isBlocked = b.estado_reserva === 'Bloqueado';
+                    if (isBlocked) {
+                        let blockReason = b.nombre_cliente || 'Mantenimiento';
+                        if (blockReason.startsWith('🔒 Bloqueo: ')) {
+                            blockReason = blockReason.replace('🔒 Bloqueo: ', '');
+                        } else if (blockReason.startsWith('🔒 Bloqueo:')) {
+                            blockReason = blockReason.replace('🔒 Bloqueo:', '');
+                        }
+                        html += `<span class="availability-blocked-badge" onclick="openBookingEditModalById('${b.id}')" title="🔒 Bloqueo: ${escapeHTML(blockReason)}" style="margin-bottom: 4px; display: block;">🔒 ${escapeHTML(blockReason)}</span>`;
+                    } else {
+                        // Classify the day
+                        let label = '';
+                        if (D === b.fecha_ingreso && D === b.fecha_salida) {
+                            label = `☀️ Full: ${b.nombre_cliente}`;
+                        } else if (D === b.fecha_ingreso) {
+                            label = `🌇 Ingreso: ${b.nombre_cliente}`;
+                        } else if (D === b.fecha_salida) {
+                            label = `🌅 Salida: ${b.nombre_cliente}`;
+                        } else {
+                            label = `👤 Hospedado: ${b.nombre_cliente}`;
+                        }
+                        
+                        html += `<span class="availability-booked-badge bungalow-${bNum}" onclick="openBookingEditModalById('${b.id}')" title="${escapeHTML(b.nombre_cliente)} (${b.horario})" style="margin-bottom: 4px; display: block;">${escapeHTML(label)}</span>`;
+                    }
+                });
+            }
+
+            // Check if afternoon/night is available to show quick booking button
+            // Afternoon/night is free if a standard check-in (starts D T15:00:00, ends D+1 T12:00:00) 
+            // does NOT collide with any existing bookings.
+            const newCheckInStart = new Date(D + 'T15:00:00');
+            const nextDay = new Date(new Date(D + 'T00:00:00').getTime() + 24 * 60 * 60 * 1000);
+            const nextDayStr = nextDay.getFullYear() + '-' + String(nextDay.getMonth() + 1).padStart(2, '0') + '-' + String(nextDay.getDate()).padStart(2, '0');
+            const newCheckInEnd = new Date(nextDayStr + 'T12:00:00');
+
+            const isOccupiedForCheckIn = relevantBookings.some(b => {
+                const oldInterval = getBookingInterval(b.fecha_ingreso, b.fecha_salida, b.horario, b.horas_extras || 0);
+                return newCheckInStart < oldInterval.end && newCheckInEnd > oldInterval.start;
+            });
+
+            if (!isOccupiedForCheckIn) {
+                html += `<button type="button" class="availability-slot-btn" onclick="openBookingFromGrid('${slot.dateStr}', ${bNum})">
+                    <i data-lucide="plus" style="width: 11px; height: 11px;"></i> + Reservar
+                </button>`;
+            } else if (overlaps.length === 0) {
+                html += `<div style="font-size: 10px; color: var(--danger); font-weight: 700; text-align: center; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px;">🔴 Completo</div>`;
+            }
+
+            html += `</td>`;
+        });
+
+        html += `</tr>`;
+    });
+
+    const tbody = document.getElementById('availabilityTableBody');
+    if (tbody) {
+        tbody.innerHTML = html;
+        if (window.lucide) lucide.createIcons();
+    }
+}
+
+// Global functions for availability grid actions
+window.openBookingFromGrid = function (dateStr, bungalowNum) {
+    openBookingModal(dateStr);
+    
+    // Check the checkbox for the selected bungalow
+    const chkList = document.querySelectorAll('input[name="bungalowSelect"]');
+    chkList.forEach(chk => {
+        chk.checked = (parseInt(chk.value) === bungalowNum);
+    });
+    
+    // Sync the hidden select
+    document.getElementById('bookingBungalow').value = bungalowNum;
+    
+    // Update limit and calculations
+    updateNinosLimit();
+    runDynamicCalculations();
+};
+
+window.openBookingEditModalById = function (id) {
+    const booking = bookings.find(b => b.id === id || String(b.id) === String(id));
+    if (booking) {
+        openBookingEditModal(booking);
+    }
+};
+
+function escapeHTML(str) {
+    if (!str) return '';
+    return str
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 }
 
 // Update Dashboard Sidebar stats
@@ -1329,41 +1592,89 @@ function copyReservationDetails() {
         return;
     }
 
-    const bungalow = document.getElementById('bookingBungalow').value;
+    const selectedBungalows = Array.from(document.querySelectorAll('input[name="bungalowSelect"]:checked'))
+        .map(c => c.value)
+        .sort((a, b) => parseInt(a) - parseInt(b));
+    
+    let bungalowStr = "";
+    if (selectedBungalows.length > 0) {
+        const formatted = selectedBungalows.map(num => `N° ${num}`);
+        if (formatted.length === 1) {
+            bungalowStr = formatted[0];
+        } else if (formatted.length === 2) {
+            bungalowStr = `${formatted[0]} y ${formatted[1]}`;
+        } else {
+            const allButLast = formatted.slice(0, -1).join(', ');
+            const last = formatted[formatted.length - 1];
+            bungalowStr = `${allButLast} y ${last}`;
+        }
+    } else {
+        const fallbackVal = document.getElementById('bookingBungalow').value;
+        bungalowStr = fallbackVal ? `N° ${fallbackVal}` : '';
+    }
+
     const name = document.getElementById('bookingName').value.trim();
     const checkIn = document.getElementById('bookingCheckIn').value;
     const checkOut = document.getElementById('bookingCheckOut').value;
     const horario = document.getElementById('bookingHorario').value;
     const adicionales = parseInt(document.getElementById('bookingAdicionales').value) || 0;
-    const ninoPequeno = document.getElementById('bookingNinoPequeno').checked;
-    const totalPers = 4 + adicionales;
-    const ninoPequenoStr = ninoPequeno ? ' (+ 1 niño pequeño gratis)' : '';
+    const ninos = parseInt(document.getElementById('bookingNinoPequeno').value) || 0;
 
     const total = parseFloat(document.getElementById('bookingTotal').value) || 0;
+    const adelanto = parseFloat(document.getElementById('bookingAdelanto').value) || 0;
+    const pendiente = parseFloat(document.getElementById('bookingPendiente').value) || 0;
     const paymentType = document.getElementById('bookingPaymentType').value;
     const source = document.getElementById('bookingSource').value;
 
     const horasExtras = parseInt(document.getElementById('bookingHorasExtras').value) || 0;
+    const dni = document.getElementById('bookingDni') ? document.getElementById('bookingDni').value.trim() : '';
 
-    const formattedIn = new Date(checkIn + 'T00:00:00').toLocaleDateString('es-PE', { weekday: 'long', day: 'numeric', month: 'long' });
-    const formattedOut = new Date(checkOut + 'T00:00:00').toLocaleDateString('es-PE', { weekday: 'long', day: 'numeric', month: 'long' });
+    const dateInObj = new Date(checkIn + 'T00:00:00');
+    let weekdayIn = dateInObj.toLocaleDateString('es-PE', { weekday: 'long' });
+    weekdayIn = weekdayIn.charAt(0).toUpperCase() + weekdayIn.slice(1);
+    const dayIn = String(dateInObj.getDate()).padStart(2, '0');
+    const monthIn = String(dateInObj.getMonth() + 1).padStart(2, '0');
+    const yearIn = String(dateInObj.getFullYear()).slice(-2);
+    const formattedIn = `${weekdayIn} ${dayIn}/${monthIn}/${yearIn}`;
 
-    let msg = `🏡 *RESERVA DE BUNGALOW DE TOMAYQUICHUA* 🏡\n\n`;
-    msg += `👤 *Huésped:* ${name}\n`;
-    msg += `🔢 *Bungalow:* N° ${bungalow}\n`;
+    const dateOutObj = new Date(checkOut + 'T00:00:00');
+    let weekdayOut = dateOutObj.toLocaleDateString('es-PE', { weekday: 'long' });
+    weekdayOut = weekdayOut.charAt(0).toUpperCase() + weekdayOut.slice(1);
+    const dayOut = String(dateOutObj.getDate()).padStart(2, '0');
+    const monthOut = String(dateOutObj.getMonth() + 1).padStart(2, '0');
+    const yearOut = String(dateOutObj.getFullYear()).slice(-2);
+    const formattedOut = `${weekdayOut} ${dayOut}/${monthOut}/${yearOut}`;
+
+    let msg = `🏡 *RESERVA DE BUNGALOW* 🏡\n\n`;
+    msg += `*Cliente:* ${name}\n`;
+    if (dni) {
+        msg += `*DNI:* ${dni}\n`;
+    }
+    msg += `*Bungalow${selectedBungalows.length > 1 ? 's' : ''}:* ${bungalowStr}\n`;
     msg += `📅 *Fecha Ingreso:* ${formattedIn}\n`;
-    msg += `📅 *Fecha Salida:* ${formattedOut}\n`;
-    msg += `⏰ *Turno:* ${horario}\n`;
-    msg += `👥 *Ocupantes:* ${totalPers} personas${ninoPequenoStr}\n`;
+    msg += `🏁 *Fecha Salida:* ${formattedOut}\n`;
+    msg += `*Horario:* ${horario}\n`;
 
-    if (horasExtras > 0) {
-        msg += `⏰ *Horas extras:* ${horasExtras} hora(s)\n`;
+    if (adicionales > 0) {
+        msg += `*Personas adicionales:* ${adicionales}\n`;
+    }
+    if (ninos > 0) {
+        msg += `*Menores:* ${ninos}\n`;
     }
 
-    msg += `\n💵 *Monto Total (Cancelado):* S/. ${total.toFixed(2)}\n`;
-    msg += `💳 *Método de Pago:* ${paymentType}\n`;
-    msg += `ℹ️ *Canal:* ${source}\n\n`;
-    msg += `¡Te esperamos! Sigue con Bungalows de Tomayquichua ✨`;
+    if (horasExtras > 0) {
+        msg += `*Horas extras:* ${horasExtras} hora(s)\n`;
+    }
+
+    msg += `*Método de Pago:* ${paymentType}\n`;
+    msg += `*Medio:* ${source}\n`;
+
+    msg += `\n*Monto Adelantado:* S/. ${adelanto.toFixed(2)}\n`;
+    if (pendiente > 0) {
+        msg += `*Saldo pendiente por cancelar S/. ${pendiente.toFixed(2)}, para permitir ingreso*\n`;
+    }
+
+    msg += `\n*¡Te esperamos!* ✨`;
 
     navigator.clipboard.writeText(msg).then(() => {
         alert("¡Detalles de reserva copiados al portapapeles! Listo para pegar en WhatsApp.");

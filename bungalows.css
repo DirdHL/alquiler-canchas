@@ -397,6 +397,67 @@ body {
 .filter-item input:checked+.custom-checkbox.color-b5 { background: #6b5b95; border-color: #6b5b95; }
 .filter-item input:checked+.custom-checkbox.color-b6 { background: #4f6d7a; border-color: #4f6d7a; }
 
+/* Availability grid badges specific to each Bungalow */
+.availability-booked-badge.bungalow-1 {
+    background: rgba(45, 90, 39, 0.12) !important;
+    border: 1px solid rgba(45, 90, 39, 0.4) !important;
+    color: #2d5a27 !important;
+}
+.availability-booked-badge.bungalow-1:hover {
+    background: rgba(45, 90, 39, 0.22) !important;
+    border-color: #2d5a27 !important;
+}
+
+.availability-booked-badge.bungalow-2 {
+    background: rgba(164, 118, 60, 0.12) !important;
+    border: 1px solid rgba(164, 118, 60, 0.4) !important;
+    color: #a4763c !important;
+}
+.availability-booked-badge.bungalow-2:hover {
+    background: rgba(164, 118, 60, 0.22) !important;
+    border-color: #a4763c !important;
+}
+
+.availability-booked-badge.bungalow-3 {
+    background: rgba(61, 90, 128, 0.12) !important;
+    border: 1px solid rgba(61, 90, 128, 0.4) !important;
+    color: #3d5a80 !important;
+}
+.availability-booked-badge.bungalow-3:hover {
+    background: rgba(61, 90, 128, 0.22) !important;
+    border-color: #3d5a80 !important;
+}
+
+.availability-booked-badge.bungalow-4 {
+    background: rgba(160, 106, 106, 0.12) !important;
+    border: 1px solid rgba(160, 106, 106, 0.4) !important;
+    color: #a06a6a !important;
+}
+.availability-booked-badge.bungalow-4:hover {
+    background: rgba(160, 106, 106, 0.22) !important;
+    border-color: #a06a6a !important;
+}
+
+.availability-booked-badge.bungalow-5 {
+    background: rgba(107, 91, 149, 0.12) !important;
+    border: 1px solid rgba(107, 91, 149, 0.4) !important;
+    color: #6b5b95 !important;
+}
+.availability-booked-badge.bungalow-5:hover {
+    background: rgba(107, 91, 149, 0.22) !important;
+    border-color: #6b5b95 !important;
+}
+
+.availability-booked-badge.bungalow-6 {
+    background: rgba(79, 109, 122, 0.12) !important;
+    border: 1px solid rgba(79, 109, 122, 0.4) !important;
+    color: #4f6d7a !important;
+}
+.availability-booked-badge.bungalow-6:hover {
+    background: rgba(79, 109, 122, 0.22) !important;
+    border-color: #4f6d7a !important;
+}
+
 /* =============================================================
    Modals & Popups (Nature Theme Style)
    ============================================================= */
