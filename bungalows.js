@@ -12,6 +12,7 @@ let calendar = null;
 let bookings = [];
 let activeOperator = 'Invitado';
 let activeAdvisorsList = [];
+let isTotalManuallyEdited = false;
 
 // Constants
 const PRICE_WEEKDAY = 160.00; // Lun-Jue
@@ -97,7 +98,7 @@ function setupEventListeners() {
         'bookingCheckIn', 'bookingCheckOut', 'bookingHorario',
         'bookingAdicionales', 'bookingNinoPequeno',
         'bookingHorasExtras', 'bookingAdicionalHoras',
-        'bookingTotal', 'bookingAdelanto'
+        'bookingTotal', 'bookingAdelanto', 'bookingPendiente'
     ];
     calcFields.forEach(id => {
         const el = document.getElementById(id);
@@ -213,6 +214,7 @@ function setupEventListeners() {
             // Set prices to 0
             document.getElementById('bookingTotal').value = 0;
             document.getElementById('bookingAdelanto').value = 0;
+            document.getElementById('bookingPendiente').value = 0;
         } else {
             nameField.value = '';
             nameField.required = true;
@@ -275,6 +277,33 @@ function setupEventListeners() {
             document.getElementById(targetTab).style.display = 'block';
         });
     });
+
+    // Restablecer el bloqueo de total manual si cambian fechas, horario o bungalows
+    const resetFields = ['bookingCheckIn', 'bookingCheckOut', 'bookingHorario'];
+    resetFields.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.addEventListener('change', () => {
+                isTotalManuallyEdited = false;
+            });
+        }
+    });
+
+    const bungalowSelects = document.querySelectorAll('input[name="bungalowSelect"]');
+    bungalowSelects.forEach(chk => {
+        chk.addEventListener('change', () => {
+            isTotalManuallyEdited = false;
+        });
+    });
+
+    // Detectar edición manual del total
+    const totalInputEl = document.getElementById('bookingTotal');
+    if (totalInputEl) {
+        totalInputEl.addEventListener('input', () => {
+            isTotalManuallyEdited = true;
+            runDynamicCalculations();
+        });
+    }
 }
 
 // Onboarding Form Handler
@@ -311,6 +340,7 @@ function closeModal(id) {
 
 // Open booking modal in CREATE mode
 function openBookingModal(dateStr = null) {
+    isTotalManuallyEdited = false;
     const form = document.getElementById('formBooking');
     form.reset();
     document.getElementById('bookingId').value = '';
@@ -334,6 +364,7 @@ function openBookingModal(dateStr = null) {
         }
     });
     document.getElementById('bookingBungalow').value = '';
+    document.getElementById('bookingPendiente').value = '';
 
     // Clear error
     const errorEl = document.getElementById('bookingError');
@@ -471,6 +502,19 @@ function openBookingEditModal(booking) {
         rowMedioPago.style.display = 'flex';
     }
 
+    // Determinar si el total guardado es un total editado manualmente (descuento/acuerdo)
+    const calcBase = calculateBasePrice(booking.fecha_ingreso, booking.fecha_salida, booking.horario);
+    const nights = calculateNights(booking.fecha_ingreso, booking.fecha_salida, booking.horario);
+    const calcGuests = adicionales * EXTRA_GUEST_FEE * nights;
+    const calcExtras = booking.adicional_horas || 0;
+    const expectedCalculatedTotal = calcBase + calcGuests + calcExtras;
+
+    if (Math.abs(booking.monto_total - expectedCalculatedTotal) > 0.01) {
+        isTotalManuallyEdited = true;
+    } else {
+        isTotalManuallyEdited = false;
+    }
+
     runDynamicCalculations();
     openModal('modalBooking');
 }
@@ -577,15 +621,45 @@ function runDynamicCalculations() {
     const calculatedTotal = basePrice + guestsFee + extrasTotal;
 
     // Update form Total value ONLY if it's not manually overwritten or if it's a new calculate
-    // We let the input change trigger, but if the user has active focus on bookingTotal, don't overwrite it immediately
-    if (document.activeElement !== totalInput) {
+    if (!isTotalManuallyEdited && document.activeElement !== totalInput) {
         totalInput.value = calculatedTotal.toFixed(2);
     }
 
     const finalTotal = parseFloat(totalInput.value) || 0;
-    const adelanto = finalTotal; // Siempre se paga completo por adelantado
-    adelantoInput.value = finalTotal.toFixed(2);
-    const remaining = 0;
+    const pendienteInput = document.getElementById('bookingPendiente');
+    
+    let adelantoVal = parseFloat(adelantoInput.value);
+    let pendienteVal = parseFloat(pendienteInput.value);
+
+    // If both are empty, NaN, or 0, keep them at 0
+    const isAdelantoZeroOrEmpty = isNaN(adelantoVal) || adelantoVal === 0 || adelantoInput.value === '';
+    const isPendienteZeroOrEmpty = isNaN(pendienteVal) || pendienteVal === 0 || pendienteInput.value === '';
+
+    if (document.activeElement === pendienteInput) {
+        if (isNaN(pendienteVal)) pendienteVal = 0;
+        adelantoVal = Math.max(0, finalTotal - pendienteVal);
+        adelantoInput.value = adelantoVal.toFixed(2);
+    } else if (document.activeElement === adelantoInput) {
+        if (isNaN(adelantoVal)) adelantoVal = 0;
+        pendienteVal = Math.max(0, finalTotal - adelantoVal);
+        pendienteInput.value = pendienteVal.toFixed(2);
+    } else {
+        if (isAdelantoZeroOrEmpty && isPendienteZeroOrEmpty) {
+            adelantoVal = 0;
+            pendienteVal = 0;
+        } else {
+            if (isNaN(adelantoVal)) adelantoVal = 0;
+            if (adelantoVal > finalTotal) {
+                adelantoVal = finalTotal;
+            }
+            pendienteVal = Math.max(0, finalTotal - adelantoVal);
+        }
+        adelantoInput.value = adelantoVal.toFixed(2);
+        pendienteInput.value = pendienteVal.toFixed(2);
+    }
+
+    const adelanto = adelantoVal;
+    const remaining = pendienteVal;
 
     // Render Display Elements
     breakdownBase.textContent = `S/. ${basePrice.toFixed(2)}`;
@@ -594,7 +668,7 @@ function runDynamicCalculations() {
     breakdownAdvance.textContent = `S/. ${adelanto.toFixed(2)}`;
 
     breakdownRemaining.textContent = `S/. ${remaining.toFixed(2)}`;
-    breakdownRemaining.style.color = '#34d399'; // Green/Mint
+    breakdownRemaining.style.color = remaining > 0 ? '#ef4444' : '#34d399'; // Green/Mint
 
     // Auto-balance split payments if active
     if (document.getElementById('bookingPaymentType').value === 'Dividido') {
@@ -823,6 +897,7 @@ async function handleSaveBooking(e) {
     let notes = document.getElementById('bookingNotes').value;
 
     const totalCalculado = parseFloat(document.getElementById('bookingTotal').value) || 0;
+    const adelantoTotal = parseFloat(document.getElementById('bookingAdelanto').value) || 0;
     const splitEfectivoTotal = parseFloat(document.getElementById('splitEfectivo').value) || 0;
     const splitYapeTotal = parseFloat(document.getElementById('splitYape').value) || 0;
 
@@ -884,7 +959,12 @@ async function handleSaveBooking(e) {
 
             const singleTotal = payload.precio_base + payload.adicional_personas + payload.adicional_horas;
             payload.monto_total = singleTotal;
-            payload.monto_adelanto = singleTotal;
+            
+            if (totalCalculado > 0) {
+                payload.monto_adelanto = adelantoTotal * (singleTotal / totalCalculado);
+            } else {
+                payload.monto_adelanto = 0;
+            }
 
             if (payload.tipo_pago === 'Dividido') {
                 if (totalCalculado > 0) {
