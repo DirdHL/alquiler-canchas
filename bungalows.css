@@ -939,15 +939,16 @@ body {
     align-items: center !important;
     justify-content: center !important;
     gap: 6px !important;
-    background: rgba(255, 255, 255, 0.05);
+    background: #ffffff !important;
     border: 1px solid var(--border-color) !important;
     color: var(--text-primary) !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
     cursor: pointer;
     transition: var(--transition-smooth);
 }
 
 .availability-toolbar .btn:hover {
-    background: rgba(164, 118, 60, 0.08) !important;
+    background: #fdfbf7 !important;
     border-color: var(--accent) !important;
     color: var(--accent) !important;
 }
@@ -992,4 +993,78 @@ body {
         font-size: 10px !important;
         padding: 4px 8px !important;
     }
+
+    /* Mobile availability table styles */
+    .availability-table {
+        min-width: 600px !important;
+    }
+    
+    .availability-table th, 
+    .availability-table td {
+        padding: 6px 4px !important;
+        font-size: 11px !important;
+    }
+
+    .availability-table th {
+        font-size: 11px !important;
+        padding: 8px 4px !important;
+    }
+    
+    .availability-table td:first-child {
+        font-size: 11px !important;
+        white-space: nowrap;
+    }
+
+    .availability-slot-btn {
+        padding: 4px 4px !important;
+        font-size: 9px !important;
+        gap: 2px !important;
+    }
+    
+    .availability-slot-btn svg {
+        width: 9px !important;
+        height: 9px !important;
+    }
+    
+    .availability-card {
+        padding: 4px 6px !important;
+        gap: 3px !important;
+        border-radius: 4px !important;
+    }
+    
+    .availability-card-header {
+        font-size: 8px !important;
+        gap: 2px !important;
+    }
+    
+    .availability-card-title {
+        font-size: 8px !important;
+    }
+    
+    .availability-card-time {
+        font-size: 8px !important;
+        padding: 1px 3px !important;
+    }
+    
+    .availability-card-client {
+        font-size: 10px !important;
+        font-weight: 600 !important;
+    }
+}
+
+/* Custom Slot Reservation Button for Bungalows Theme */
+.availability-slot-btn {
+    background: rgba(45, 90, 39, 0.05) !important;
+    border: 1px dashed rgba(45, 90, 39, 0.3) !important;
+    color: #2d5a27 !important;
+    font-weight: 600 !important;
+    transition: var(--transition-smooth) !important;
+}
+
+.availability-slot-btn:hover {
+    background: var(--primary) !important;
+    border-style: solid !important;
+    border-color: var(--primary) !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 8px var(--primary-glow) !important;
 }

@@ -1459,10 +1459,13 @@ function updateAvailabilityGrid() {
         const dStr = String(d.getDate()).padStart(2, '0');
         const dateStr = `${yStr}-${mStr}-${dStr}`;
 
-        const formattedDayName = d.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' });
+        const dayName = d.toLocaleDateString('es-ES', { weekday: 'short' }).replace('.', '');
+        const dayNum = String(d.getDate()).padStart(2, '0');
+        const monthNum = String(d.getMonth() + 1).padStart(2, '0');
+        const displayDate = `${dayName.charAt(0).toUpperCase() + dayName.slice(1)} ${dayNum}/${monthNum}`;
         dateSlots.push({
             dateStr: dateStr,
-            displayDate: formattedDayName.charAt(0).toUpperCase() + formattedDayName.slice(1)
+            displayDate: displayDate
         });
     }
 

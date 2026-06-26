@@ -1462,9 +1462,8 @@ function checkOverlaps(id, court, date, startTime, endTime) {
         capacity = 4;
     }
 
-    // Count overlapping bookings for the same court category
-    let overlapCount = 0;
-    const overlappingDetails = [];
+    // Collect overlapping bookings for the same court category
+    const overlappingEvents = [];
 
     for (const event of allEvents) {
         // Skip current event if editing
@@ -1480,16 +1479,47 @@ function checkOverlaps(id, court, date, startTime, endTime) {
                     let targetCourtName = court === 'Todas' ? 'Todas las Canchas' : court;
                     return `Conflicto de horario: Hay un bloqueo o reserva activa (${event.name} en ${eventCourtName}) que interfiere con este bloqueo/reserva total en ${targetCourtName} (${event.date} ${event.start_time} - ${event.end_time}).`;
                 }
-                overlapCount++;
-                overlappingDetails.push(`${event.name} (${event.date} ${event.start_time} - ${event.end_time})`);
+                overlappingEvents.push({ event, start: existStart, end: existEnd });
             }
         }
     }
 
-    // Block only if we have exceeded the physical capacity of courts
-    if (overlapCount >= capacity) {
-        return `Conflicto de horario: Las ${capacity} canchas del tipo "${court}" ya están reservadas en este horario por:\n` +
-            overlappingDetails.join(', ');
+    // If total overlapping events is less than capacity, it's physically impossible to exceed capacity at any point.
+    if (overlappingEvents.length >= capacity) {
+        // Find all critical points (instants of time when bookings start or end)
+        // within the new booking's interval [newStart, newEnd]
+        const timePointsMap = new Map();
+        timePointsMap.set(newStart.getTime(), newStart);
+        timePointsMap.set(newEnd.getTime(), newEnd);
+
+        for (const e of overlappingEvents) {
+            if (e.start > newStart && e.start < newEnd) {
+                timePointsMap.set(e.start.getTime(), e.start);
+            }
+            if (e.end > newStart && e.end < newEnd) {
+                timePointsMap.set(e.end.getTime(), e.end);
+            }
+        }
+
+        // Sort unique time points chronologically
+        const sortedTimes = Array.from(timePointsMap.values()).sort((a, b) => a - b);
+
+        // Check each sub-interval
+        for (let i = 0; i < sortedTimes.length - 1; i++) {
+            const tStart = sortedTimes[i];
+            const tEnd = sortedTimes[i + 1];
+            // Get midpoint of this sub-interval
+            const tMid = new Date((tStart.getTime() + tEnd.getTime()) / 2);
+
+            // Find all events active at tMid
+            const activeAtMid = overlappingEvents.filter(e => e.start <= tMid && tMid < e.end);
+
+            if (activeAtMid.length >= capacity) {
+                const overlappingDetails = activeAtMid.map(e => `${e.event.name} (${e.event.date} ${e.event.start_time} - ${e.event.end_time})`);
+                return `Conflicto de horario: Las ${capacity} canchas del tipo "${court}" ya están reservadas en este horario por:\n` +
+                    overlappingDetails.join(', ');
+            }
+        }
     }
 
     return null; // No conflict, capacity is not exceeded!
