@@ -1829,15 +1829,20 @@ function loadStatsDashboard() {
     let totalRevenue = 0;
     let depositoTotal = 0;
     let otrosTotal = 0;
+    let totalDayNightCount = 0;
+    let totalDayNightRevenue = 0;
+    let totalFullDayCount = 0;
+    let totalFullDayRevenue = 0;
+    let totalExtrasRevenue = 0;
 
     // Per bungalow stats map
     const bungalowStats = {
-        1: { count: 0, revenue: 0, motos: 0, daysOccupied: 0 },
-        2: { count: 0, revenue: 0, motos: 0, daysOccupied: 0 },
-        3: { count: 0, revenue: 0, motos: 0, daysOccupied: 0 },
-        4: { count: 0, revenue: 0, motos: 0, daysOccupied: 0 },
-        5: { count: 0, revenue: 0, motos: 0, daysOccupied: 0 },
-        6: { count: 0, revenue: 0, motos: 0, daysOccupied: 0 }
+        1: { count: 0, revenue: 0, daysOccupied: 0, dayNightCount: 0, dayNightRevenue: 0, fullDayCount: 0, fullDayRevenue: 0, extras: 0 },
+        2: { count: 0, revenue: 0, daysOccupied: 0, dayNightCount: 0, dayNightRevenue: 0, fullDayCount: 0, fullDayRevenue: 0, extras: 0 },
+        3: { count: 0, revenue: 0, daysOccupied: 0, dayNightCount: 0, dayNightRevenue: 0, fullDayCount: 0, fullDayRevenue: 0, extras: 0 },
+        4: { count: 0, revenue: 0, daysOccupied: 0, dayNightCount: 0, dayNightRevenue: 0, fullDayCount: 0, fullDayRevenue: 0, extras: 0 },
+        5: { count: 0, revenue: 0, daysOccupied: 0, dayNightCount: 0, dayNightRevenue: 0, fullDayCount: 0, fullDayRevenue: 0, extras: 0 },
+        6: { count: 0, revenue: 0, daysOccupied: 0, dayNightCount: 0, dayNightRevenue: 0, fullDayCount: 0, fullDayRevenue: 0, extras: 0 }
     };
 
     // Client counts map
@@ -1856,12 +1861,33 @@ function loadStatsDashboard() {
             otrosTotal += b.monto_yape || 0;
         }
 
+        // Schedule & extras split
+        const isFullDay = b.horario === 'Full Day';
+        const extrasAmount = (b.adicional_personas || 0) + (b.adicional_horas || 0);
+
+        if (isFullDay) {
+            totalFullDayCount++;
+            totalFullDayRevenue += b.monto_total;
+        } else {
+            totalDayNightCount++;
+            totalDayNightRevenue += b.monto_total;
+        }
+        totalExtrasRevenue += extrasAmount;
+
         // Bungalow specific stats
         const bNo = b.bungalow_numero;
         if (bungalowStats[bNo]) {
             bungalowStats[bNo].count++;
             bungalowStats[bNo].revenue += b.monto_total;
-            bungalowStats[bNo].motos += b.alquiler_cuatrimoto || 0;
+            bungalowStats[bNo].extras += extrasAmount;
+
+            if (isFullDay) {
+                bungalowStats[bNo].fullDayCount++;
+                bungalowStats[bNo].fullDayRevenue += b.monto_total;
+            } else {
+                bungalowStats[bNo].dayNightCount++;
+                bungalowStats[bNo].dayNightRevenue += b.monto_total;
+            }
 
             const nights = calculateNights(b.fecha_ingreso, b.fecha_salida, b.horario);
             bungalowStats[bNo].daysOccupied += nights;
@@ -1888,6 +1914,13 @@ function loadStatsDashboard() {
     document.getElementById('statsDepositoMonth').textContent = `S/. ${depositoTotal.toFixed(2)}`;
     document.getElementById('statsOtrosMonth').textContent = `S/. ${otrosTotal.toFixed(2)}`;
 
+    // Set new DOM elements
+    document.getElementById('statsDayNightCount').textContent = totalDayNightCount;
+    document.getElementById('statsDayNightRevenue').textContent = `S/. ${totalDayNightRevenue.toFixed(2)}`;
+    document.getElementById('statsFullDayCount').textContent = totalFullDayCount;
+    document.getElementById('statsFullDayRevenue').textContent = `S/. ${totalFullDayRevenue.toFixed(2)}`;
+    document.getElementById('statsExtrasMonth').textContent = `S/. ${totalExtrasRevenue.toFixed(2)}`;
+
     // Populate Report Table
     const tableBody = document.querySelector('#tableStatsReport tbody');
     tableBody.innerHTML = '';
@@ -1899,6 +1932,9 @@ function loadStatsDashboard() {
         tr.innerHTML = `
             <td style="padding: 12px 16px; font-weight: 600; color: white;">Bungalow ${i}</td>
             <td style="padding: 12px 16px;">${stats.count} reservas</td>
+            <td style="padding: 12px 16px; color: #a78bfa;">${stats.dayNightCount} res. (S/. ${stats.dayNightRevenue.toFixed(2)})</td>
+            <td style="padding: 12px 16px; color: #fbbf24;">${stats.fullDayCount} res. (S/. ${stats.fullDayRevenue.toFixed(2)})</td>
+            <td style="padding: 12px 16px; color: #22d3ee;">S/. ${stats.extras.toFixed(2)}</td>
             <td style="padding: 12px 16px; font-weight: 700; color: #34d399;">S/. ${stats.revenue.toFixed(2)}</td>
         `;
         tableBody.appendChild(tr);
