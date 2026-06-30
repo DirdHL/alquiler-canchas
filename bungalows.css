@@ -1276,12 +1276,22 @@ body {
     .calendar-card {
         padding: 8px !important;
         border-radius: var(--radius-sm) !important;
-        overflow-x: auto !important; /* Enable horizontal scrolling for calendar */
+        /* No overflow here - handled by .calendar-scroll-wrapper */
+        overflow: visible !important;
+    }
+
+    /* Dedicated horizontal scroll container for the calendar */
+    .calendar-scroll-wrapper {
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
         -webkit-overflow-scrolling: touch;
+        touch-action: pan-x;
+        width: 100%;
     }
 
     #calendar {
-        min-width: 750px !important; /* Force a minimum width on FullCalendar so it overflows and scrolls */
+        min-width: 700px; /* Force calendar to overflow so scroll wrapper activates */
+        touch-action: pan-x; /* Allow horizontal swipe through FullCalendar's event layer */
     }
 
     /* Stack calendar toolbar vertically on small screens */
@@ -1308,5 +1318,43 @@ body {
 
     .availability-table td {
         padding: 6px 4px !important;
+    }
+
+    /* Custom Webkit scrollbar styles for mobile */
+    .calendar-card::-webkit-scrollbar,
+    .availability-grid-wrapper::-webkit-scrollbar,
+    .summary-list::-webkit-scrollbar {
+        height: 6px !important;
+        display: block !important;
+    }
+    .calendar-card::-webkit-scrollbar-track,
+    .availability-grid-wrapper::-webkit-scrollbar-track,
+    .summary-list::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.05) !important;
+        border-radius: 4px !important;
+    }
+    .calendar-card::-webkit-scrollbar-thumb,
+    .availability-grid-wrapper::-webkit-scrollbar-thumb,
+    .summary-list::-webkit-scrollbar-thumb {
+        background: var(--accent) !important;
+        border-radius: 4px !important;
+    }
+
+    /* Guest List Horizontal Scroll on Mobile */
+    .summary-list {
+        display: flex !important;
+        overflow-x: auto !important;
+        gap: 12px !important;
+        padding-bottom: 8px !important;
+        -webkit-overflow-scrolling: touch;
+        scroll-snap-type: x mandatory;
+    }
+    .summary-list .summary-item-card {
+        flex: 0 0 280px !important;
+        scroll-snap-align: start;
+        margin-bottom: 4px !important;
+    }
+    .summary-list .no-activity {
+        flex: 0 0 100% !important;
     }
 }
