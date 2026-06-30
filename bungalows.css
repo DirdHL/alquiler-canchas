@@ -51,11 +51,15 @@ body {
     background: radial-gradient(circle at 50% 0%, #faf6ec 0%, #f1e9db 70%) !important;
     color: var(--text-primary) !important;
     font-family: var(--font-sans) !important;
+    /* Permitir scroll horizontal dentro de los contenedores internos */
+    overflow-x: clip !important;
 }
 
 /* App Layout */
 .app-container {
     background-color: var(--bg-primary);
+    /* No bloquear el scroll horizontal de los contenedores internos */
+    overflow-x: clip !important;
 }
 
 /* Sidebar Styles Overrides (Nature Style) */
@@ -1276,8 +1280,8 @@ body {
     .calendar-card {
         padding: 8px !important;
         border-radius: var(--radius-sm) !important;
-        /* No overflow here - handled by .calendar-scroll-wrapper */
-        overflow: visible !important;
+        /* El card clipea el desborde; el wrapper interno scrollea */
+        overflow: hidden !important;
     }
 
     /* Dedicated horizontal scroll container for the calendar */
@@ -1287,11 +1291,26 @@ body {
         -webkit-overflow-scrolling: touch;
         touch-action: pan-x;
         width: 100%;
+        /* Barra delgada visible para que el usuario sepa que puede deslizar */
+        scrollbar-width: thin;
+        scrollbar-color: var(--accent) transparent;
+        padding-bottom: 6px;
+    }
+
+    .calendar-scroll-wrapper::-webkit-scrollbar {
+        height: 5px;
+    }
+    .calendar-scroll-wrapper::-webkit-scrollbar-thumb {
+        background: var(--accent);
+        border-radius: 99px;
+    }
+    .calendar-scroll-wrapper::-webkit-scrollbar-track {
+        background: transparent;
     }
 
     #calendar {
-        min-width: 700px; /* Force calendar to overflow so scroll wrapper activates */
-        touch-action: pan-x; /* Allow horizontal swipe through FullCalendar's event layer */
+        min-width: 700px;
+        touch-action: pan-x;
     }
 
     /* Stack calendar toolbar vertically on small screens */
@@ -1305,7 +1324,7 @@ body {
         font-size: 18px !important;
     }
 
-    /* Force horizontal scroll for availability table, overriding style.css min-width: 100% clash */
+    /* Force horizontal scroll for availability table */
     .availability-grid-wrapper .availability-table {
         min-width: 780px !important;
         table-layout: fixed !important;
@@ -1327,12 +1346,14 @@ body {
         height: 6px !important;
         display: block !important;
     }
+
     .calendar-card::-webkit-scrollbar-track,
     .availability-grid-wrapper::-webkit-scrollbar-track,
     .summary-list::-webkit-scrollbar-track {
         background: rgba(0, 0, 0, 0.05) !important;
         border-radius: 4px !important;
     }
+
     .calendar-card::-webkit-scrollbar-thumb,
     .availability-grid-wrapper::-webkit-scrollbar-thumb,
     .summary-list::-webkit-scrollbar-thumb {
@@ -1349,12 +1370,32 @@ body {
         -webkit-overflow-scrolling: touch;
         scroll-snap-type: x mandatory;
     }
+
     .summary-list .summary-item-card {
         flex: 0 0 280px !important;
         scroll-snap-align: start;
         margin-bottom: 4px !important;
     }
+
     .summary-list .no-activity {
         flex: 0 0 100% !important;
+    }
+}
+
+/* ============================================================
+   Bungalows: Sidebar desliza desde la DERECHA en móvil
+   ============================================================ */
+@media (max-width: 900px) {
+    .sidebar {
+        right: 0 !important;
+        left: auto !important;
+        border-left: 1px solid var(--border-color) !important;
+        border-right: none !important;
+        box-shadow: -10px 0 30px rgba(62, 53, 43, 0.2) !important;
+        transform: translateX(100%) !important;
+    }
+
+    .sidebar.open {
+        transform: translateX(0) !important;
     }
 }
