@@ -1574,7 +1574,7 @@ function updateAvailabilityGrid() {
                             timeText = 'Todo el día';
                         }
 
-                         html += `
+                        html += `
                         <div class="availability-card bungalow-${bNum}" onclick="openBookingEditModalById('${b.id}')" title="${escapeHTML(b.nombre_cliente)} (${b.horario}) | Ingreso: ${startHour} - Salida: ${endHour}">
                             <div class="availability-card-header">
                                 <span class="availability-card-title">${statusEmoji} <span class="grid-status-text">${statusText}</span></span>
