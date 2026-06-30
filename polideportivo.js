@@ -2825,20 +2825,18 @@ async function fetchAndRenderHistory() {
             });
 
             return `
-                <div class="activity-item" style="padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.03);">
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
-                        <div style="display: flex; flex-direction: column; gap: 4px; flex: 1;">
-                            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                                <span style="font-size: 10px; font-weight: 600; text-transform: uppercase; padding: 2px 6px; border-radius: 4px; background: ${badgeBg}; color: ${badgeColor}; border: 1px solid rgba(255,255,255,0.03);">
-                                    ${actionTextLabel}
-                                </span>
-                                <span class="user-highlight" style="font-weight: 600; font-size: 13px; color: var(--text-primary);">${escapeHTML(entry.user_name)}</span>
-                            </div>
-                            <span class="activity-text" style="font-size: 13px; color: var(--text-secondary); line-height: 1.4;">
-                                ${escapeHTML(cleanDetails)}
+                <div class="activity-item" style="margin-bottom: 8px; border-radius: var(--radius-lg); flex-direction: column; align-items: stretch; gap: 8px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                            <span style="font-size: 10px; font-weight: 600; text-transform: uppercase; padding: 2px 6px; border-radius: 6px; background: ${badgeBg}; color: ${badgeColor}; border: 1px solid rgba(255,255,255,0.03);">
+                                ${actionTextLabel}
                             </span>
+                            <span class="user-highlight" style="font-weight: 600; font-size: 13px; color: var(--text-primary);">${escapeHTML(entry.user_name)}</span>
                         </div>
                         <span class="activity-time" style="font-size: 11px; color: var(--text-muted); white-space: nowrap;">${timeAgo}</span>
+                    </div>
+                    <div class="activity-text" style="font-size: 13px; color: var(--text-secondary); line-height: 1.4;">
+                        ${escapeHTML(cleanDetails)}
                     </div>
                 </div>
             `;
