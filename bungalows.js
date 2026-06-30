@@ -918,6 +918,13 @@ function setupRealtimeListener() {
             // Refetch active advisors list when it changes
             await fetchAdvisors();
         })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'historial' }, async () => {
+            // Update history modal if active
+            const modal = document.getElementById('modalHistory');
+            if (modal && modal.classList.contains('active')) {
+                openHistoryModal();
+            }
+        })
         .subscribe();
 }
 
@@ -2150,48 +2157,123 @@ async function testSupabaseConnection() {
 }
 
 // ----------------------------------------------------
-// History logger (session scoped)
+// History logger (session and persistent scoped)
 // ----------------------------------------------------
 const sessionLogs = [];
 function logSessionActivity(msg) {
     const time = new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     sessionLogs.unshift({ time, msg });
 
-    // Add to local audit log table if in Supabase
+    // Add to local/database audit log table
     saveAuditTrailToDb(msg);
 }
 
 async function saveAuditTrailToDb(actionDetails) {
+    const entry = {
+        action: 'bungalows',
+        user_name: activeOperator,
+        details: `[Bungalows] ${actionDetails}`,
+        created_at: new Date().toISOString()
+    };
+
     if (dbMode === 'supabase' && supabaseClient) {
         try {
-            await supabaseClient.from('historial').insert([{
-                action: 'bungalows',
-                user_name: activeOperator,
-                details: actionDetails
-            }]);
+            await supabaseClient.from('historial').insert([entry]);
         } catch (e) {
-            console.warn("Fallo al escribir en tabla historial:", e);
+            console.warn("Fallo al escribir en tabla historial, guardando localmente:", e);
+            saveHistoryEntryLocal(entry);
         }
+    } else {
+        saveHistoryEntryLocal(entry);
     }
 }
 
-function openHistoryModal() {
-    const container = document.getElementById('activityList');
-    container.innerHTML = '';
+function saveHistoryEntryLocal(entry) {
+    let history = getHistoryLocal();
+    history.unshift(entry);
+    if (history.length > 50) history = history.slice(0, 50);
+    localStorage.setItem('canchapro_historial_bungalows', JSON.stringify(history));
+}
 
-    if (sessionLogs.length === 0) {
-        container.innerHTML = '<p class="no-activity">No hay actividad registrada en esta sesión.</p>';
+function getHistoryLocal() {
+    const data = localStorage.getItem('canchapro_historial_bungalows');
+    if (!data) return [];
+    try {
+        const history = JSON.parse(data);
+        const threeDaysAgo = Date.now() - (3 * 24 * 60 * 60 * 1000);
+        return history.filter(e => new Date(e.created_at).getTime() > threeDaysAgo);
+    } catch (e) {
+        return [];
+    }
+}
+
+async function openHistoryModal() {
+    const container = document.getElementById('activityList');
+    container.innerHTML = '<p class="no-activity">Cargando historial...</p>';
+    openModal('modalHistory');
+
+    let entries = [];
+    const threeDaysAgoISO = new Date(Date.now() - (3 * 24 * 60 * 60 * 1000)).toISOString();
+
+    if (dbMode === 'supabase' && supabaseClient) {
+        try {
+            const { data, error } = await supabaseClient
+                .from('historial')
+                .select('*')
+                .gt('created_at', threeDaysAgoISO)
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+            entries = data || [];
+        } catch (e) {
+            console.warn("Fallo al obtener historial de Supabase, usando local:", e);
+            entries = getHistoryLocal();
+        }
     } else {
-        sessionLogs.forEach(log => {
+        entries = getHistoryLocal();
+    }
+
+    // Filter to only include Bungalows logs
+    entries = entries.filter(e => {
+        const d = e.details || '';
+        const act = e.action || '';
+        return act === 'bungalows' || d.startsWith('[Bungalows]');
+    });
+
+    container.innerHTML = '';
+    if (entries.length === 0) {
+        container.innerHTML = '<p class="no-activity">No hay actividad registrada en los últimos 3 días.</p>';
+    } else {
+        entries.forEach(entry => {
             const p = document.createElement('p');
             p.style.fontSize = '13px';
             p.style.borderBottom = '1px solid rgba(255,255,255,0.03)';
             p.style.padding = '8px 0';
-            p.innerHTML = `<span style="color: var(--primary); font-weight:700; margin-right: 8px;">[${log.time}]</span> ${log.msg}`;
+            p.style.display = 'flex';
+            p.style.justifyContent = 'space-between';
+            p.style.alignItems = 'center';
+            p.style.gap = '8px';
+
+            const cleanDetails = (entry.details || '').replace(/^\[Bungalows\]\s*/, '');
+            const timeStr = formatLogTimestamp(entry.created_at);
+
+            p.innerHTML = `
+                <span>${cleanDetails}</span>
+                <span style="font-size: 11px; color: var(--text-muted); white-space: nowrap;">
+                    ${entry.user_name} • ${timeStr}
+                </span>
+            `;
             container.appendChild(p);
         });
     }
-    openModal('modalHistory');
+}
+
+function formatLogTimestamp(isoStr) {
+    if (!isoStr) return '';
+    const d = new Date(isoStr);
+    const datePart = d.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' });
+    const timePart = d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+    return `${datePart} ${timePart}`;
 }
 
 // Helper to transform any name to Title Case (Initial Uppercase, rest lowercase)

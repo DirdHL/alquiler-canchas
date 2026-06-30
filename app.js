@@ -2519,7 +2519,7 @@ async function addHistoryEntry(action, details) {
     const entry = {
         action,
         user_name: userName,
-        details,
+        details: details.startsWith('[Canchas]') ? details : `[Canchas] ${details}`,
         created_at: new Date().toISOString()
     };
 
@@ -2540,12 +2540,15 @@ function saveHistoryEntryLocal(entry) {
     let history = getHistoryLocal();
     history.unshift(entry);
     if (history.length > 50) history = history.slice(0, 50);
-    localStorage.setItem('canchapro_historial', JSON.stringify(history));
+    localStorage.setItem('canchapro_historial_canchas', JSON.stringify(history));
     fetchAndRenderHistory();
 }
 
 function getHistoryLocal() {
-    const data = localStorage.getItem('canchapro_historial');
+    let data = localStorage.getItem('canchapro_historial_canchas');
+    if (!data) {
+        data = localStorage.getItem('canchapro_historial'); // Fallback legacy key
+    }
     if (!data) return [];
     try {
         const history = JSON.parse(data);
@@ -2593,10 +2596,14 @@ async function fetchAndRenderHistory() {
         }
     }
 
-    // Filter out entries that belong to Polideportivo complex or Office Attendance
+    // Filter to only include Canchas logs (and fallback for legacy logs without prefix)
     entries = entries.filter(e => {
         const d = e.details || '';
-        if (d.includes('[Asistencia]')) return false;
+        if (d.startsWith('[Canchas]')) return true;
+        // Legacy logs fallback: exclude other systems
+        const otherPrefixes = ['[Polideportivo]', '[Bungalows]', '[Locales]', '[Asistencia]'];
+        if (otherPrefixes.some(p => d.startsWith(p))) return false;
+        // Also apply the old filter to separate from old polideportivo logs
         const polideportivoCourts = ['Cancha Grande', 'Cancha Pequeña', 'Cancha de Vóley'];
         return !polideportivoCourts.some(court => d.includes(`(${court} -`));
     });
@@ -2697,6 +2704,7 @@ function formatTimeAgo(date) {
 
 function clearHistoryLocal() {
     if (confirm("¿Estás seguro de que deseas limpiar el historial local? Esto no afectará la base de datos Supabase.")) {
+        localStorage.removeItem('canchapro_historial_canchas');
         localStorage.removeItem('canchapro_historial');
         fetchAndRenderHistory();
     }

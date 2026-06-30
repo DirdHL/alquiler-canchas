@@ -36,6 +36,8 @@ function setupEventListeners() {
     document.getElementById('formSettings').addEventListener('submit', handleSaveSettings);
     document.getElementById('formBooking').addEventListener('submit', handleSaveBooking);
     document.getElementById('btnDeleteBooking').addEventListener('click', handleDeleteBooking);
+    document.getElementById('btnOpenHistory').addEventListener('click', openHistoryModal);
+    document.getElementById('btnCloseHistory').addEventListener('click', () => closeModal('modalHistory'));
 
     // Dynamic calculations
     document.getElementById('bookingTotal').addEventListener('input', runDynamicCalculations);
@@ -144,6 +146,12 @@ async function handleSaveBooking(e) {
             bookings.push(payload);
         }
     }
+
+    // Log history
+    const isEdit = !!bookingId;
+    const actionVerb = isEdit ? 'editar' : 'crear';
+    const detailMessage = `${isEdit ? 'Editó' : 'Creó'} reserva para ${payload.nombre_cliente} (${payload.sede} - ${payload.espacio}) el ${payload.fecha_reserva} de ${payload.hora_inicio} a ${payload.hora_fin}`;
+    await addHistoryEntry(actionVerb, detailMessage);
     
     closeModal('modalBooking');
     if (dbMode === 'local') await fetchBookings();
@@ -153,11 +161,20 @@ async function handleDeleteBooking() {
     if (!confirm('¿Estás seguro de eliminar esta reserva?')) return;
     const bookingId = document.getElementById('bookingId').value;
     
+    const targetBooking = bookings.find(b => b.id === bookingId);
+    const clientName = targetBooking ? targetBooking.nombre_cliente : 'Desconocido';
+    const detailStr = targetBooking 
+        ? `Eliminó reserva para ${clientName} (${targetBooking.sede} - ${targetBooking.espacio}) del ${targetBooking.fecha_reserva}`
+        : `Eliminó reserva ID: ${bookingId}`;
+
     if (dbMode === 'supabase' && supabaseClient) {
         await supabaseClient.from('reservas_locales').delete().eq('id', bookingId);
     } else {
         bookings = bookings.filter(b => b.id !== bookingId);
     }
+
+    await addHistoryEntry('eliminar', detailStr);
+
     closeModal('modalBooking');
     if (dbMode === 'local') await fetchBookings();
 }
@@ -254,6 +271,12 @@ async function initDatabase() {
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'reservas_locales' }, payload => {
                     fetchBookings();
                 })
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'historial' }, payload => {
+                    const modal = document.getElementById('modalHistory');
+                    if (modal && modal.classList.contains('active')) {
+                        openHistoryModal();
+                    }
+                })
                 .subscribe();
                 
             document.getElementById('statusDot').className = 'status-dot connected';
@@ -283,4 +306,115 @@ async function fetchBookings() {
         }
     }
     renderCalendarEvents();
+}
+
+// ==========================================
+// HISTORY / LOGGING LOGIC
+// ==========================================
+async function addHistoryEntry(action, details) {
+    const entry = {
+        action,
+        user_name: activeOperator,
+        details: `[Locales] ${details}`,
+        created_at: new Date().toISOString()
+    };
+
+    if (dbMode === 'supabase' && supabaseClient) {
+        try {
+            const { error } = await supabaseClient.from('historial').insert([entry]);
+            if (error) throw error;
+        } catch (e) {
+            console.error("Fallo al guardar log en Supabase, guardando localmente:", e);
+            saveHistoryEntryLocal(entry);
+        }
+    } else {
+        saveHistoryEntryLocal(entry);
+    }
+}
+
+function saveHistoryEntryLocal(entry) {
+    let history = getHistoryLocal();
+    history.unshift(entry);
+    if (history.length > 50) history = history.slice(0, 50);
+    localStorage.setItem('canchapro_historial_locales', JSON.stringify(history));
+}
+
+function getHistoryLocal() {
+    const data = localStorage.getItem('canchapro_historial_locales');
+    if (!data) return [];
+    try {
+        const history = JSON.parse(data);
+        const threeDaysAgo = Date.now() - (3 * 24 * 60 * 60 * 1000);
+        return history.filter(e => new Date(e.created_at).getTime() > threeDaysAgo);
+    } catch (e) {
+        return [];
+    }
+}
+
+async function openHistoryModal() {
+    const container = document.getElementById('activityList');
+    container.innerHTML = '<p class="no-activity">Cargando historial...</p>';
+    openModal('modalHistory');
+
+    let entries = [];
+    const threeDaysAgoISO = new Date(Date.now() - (3 * 24 * 60 * 60 * 1000)).toISOString();
+
+    if (dbMode === 'supabase' && supabaseClient) {
+        try {
+            const { data, error } = await supabaseClient
+                .from('historial')
+                .select('*')
+                .gt('created_at', threeDaysAgoISO)
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+            entries = data || [];
+        } catch (e) {
+            console.warn("Fallo al obtener historial de Supabase, usando local:", e);
+            entries = getHistoryLocal();
+        }
+    } else {
+        entries = getHistoryLocal();
+    }
+
+    // Filter to only include Locales logs
+    entries = entries.filter(e => {
+        const d = e.details || '';
+        return d.startsWith('[Locales]');
+    });
+
+    container.innerHTML = '';
+    if (entries.length === 0) {
+        container.innerHTML = '<p class="no-activity">No hay actividad registrada en los últimos 3 días.</p>';
+    } else {
+        entries.forEach(entry => {
+            const p = document.createElement('p');
+            p.style.fontSize = '13px';
+            p.style.borderBottom = '1px solid rgba(255,255,255,0.03)';
+            p.style.padding = '8px 0';
+            p.style.display = 'flex';
+            p.style.justifyContent = 'space-between';
+            p.style.alignItems = 'center';
+            p.style.gap = '8px';
+
+            const cleanDetails = (entry.details || '').replace(/^\[Locales\]\s*/, '');
+            const timeStr = formatLogTimestamp(entry.created_at);
+
+            p.innerHTML = `
+                <span>${cleanDetails}</span>
+                <span style="font-size: 11px; color: var(--text-muted); white-space: nowrap;">
+                    ${entry.user_name} • ${timeStr}
+                </span>
+            `;
+            container.appendChild(p);
+        });
+    }
+}
+
+function formatLogTimestamp(isoStr) {
+    if (!isoStr) return '';
+    const d = new Date(isoStr);
+    const datePart = d.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' });
+    const timePart = d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+    return `${datePart} ${timePart}`;
 }

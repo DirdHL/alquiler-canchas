@@ -2675,7 +2675,7 @@ async function addHistoryEntry(action, details) {
     const entry = {
         action,
         user_name: userName,
-        details,
+        details: details.startsWith('[Polideportivo]') ? details : `[Polideportivo] ${details}`,
         created_at: new Date().toISOString()
     };
 
@@ -2751,10 +2751,14 @@ async function fetchAndRenderHistory() {
         }
     }
 
-    // Filter out entries that belong to Los Pinos complex or Office Attendance
+    // Filter to only include Polideportivo logs (and fallback for legacy logs without prefix)
     entries = entries.filter(e => {
         const d = e.details || '';
-        if (d.includes('[Asistencia]')) return false;
+        if (d.startsWith('[Polideportivo]')) return true;
+        // Legacy logs fallback: exclude other systems
+        const otherPrefixes = ['[Canchas]', '[Bungalows]', '[Locales]', '[Asistencia]'];
+        if (otherPrefixes.some(p => d.startsWith(p))) return false;
+        // Also apply the old filter to separate from old Canchas logs
         return !d.includes('(Grande -') && !d.includes('(Pequeña -');
     });
 

@@ -562,10 +562,14 @@ CREATE POLICY "Acceso publico" ON reservas FOR ALL USING (true) WITH CHECK (true
 CREATE TABLE IF NOT EXISTS historial (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   action TEXT NOT NULL,         -- 'crear', 'editar', 'eliminar'
+  sistema TEXT,                 -- 'canchas', 'polideportivo', 'bungalows', 'locales', 'asistencia'
   user_name TEXT NOT NULL,      -- Nombre de quien modifico
   details TEXT NOT NULL,        -- Descripcion de la accion
   created_at TIMESTAMPTZ DEFAULT now()
 );
+
+-- Si ya tienes la tabla creada, opcionalmente ejecuta esto para agregar la columna sistema:
+-- ALTER TABLE historial ADD COLUMN IF NOT EXISTS sistema TEXT;
 
 ALTER TABLE historial ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Acceso publico" ON historial FOR ALL USING (true) WITH CHECK (true);

@@ -1348,14 +1348,14 @@ async function addHistoryEntry(action, details) {
 
 function saveHistoryEntryLocal(entry) {
     try {
-        const historyData = localStorage.getItem('canchapro_historial');
+        const historyData = localStorage.getItem('canchapro_historial_asistencia');
         let history = [];
         if (historyData) {
             history = JSON.parse(historyData);
         }
         history.unshift(entry);
         if (history.length > 50) history = history.slice(0, 50);
-        localStorage.setItem('canchapro_historial', JSON.stringify(history));
+        localStorage.setItem('canchapro_historial_asistencia', JSON.stringify(history));
     } catch (e) {
         console.warn("Could not save history entry locally:", e);
     }
