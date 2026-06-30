@@ -424,7 +424,7 @@ function updateNinosLimit() {
     if (ninosInput) {
         const maxVal = Math.max(1, selectedCount);
         ninosInput.max = maxVal;
-        
+
         // Clamp current value if it exceeds maxVal
         const currentVal = parseInt(ninosInput.value) || 0;
         if (currentVal > maxVal) {
@@ -863,48 +863,10 @@ async function initDatabase() {
                 supabaseClient = supabase.createClient(url, key);
                 dbMode = 'supabase';
 
-                // Verify tables exist in the database
-                let missingTables = [];
-                try {
-                    const { error: resErr } = await supabaseClient.from('reservas_bungalows').select('id').limit(1);
-                    if (resErr) {
-                        if (resErr.code === '42P01' || resErr.message.includes('does not exist')) {
-                            missingTables.push('reservas_bungalows');
-                        }
-                    }
-                } catch (e) {
-                    missingTables.push('reservas_bungalows');
-                }
-
-                try {
-                    const { error: advErr } = await supabaseClient.from('personal_asesores').select('name').limit(1);
-                    if (advErr) {
-                        if (advErr.code === '42P01' || advErr.message.includes('does not exist')) {
-                            missingTables.push('personal_asesores');
-                        }
-                    }
-                } catch (e) {
-                    missingTables.push('personal_asesores');
-                }
-
                 const statusDot = document.getElementById('statusDot');
-                const statusText = document.getElementById('statusText');
-                const statusDesc = document.getElementById('statusDesc');
-
-                if (missingTables.length > 0) {
-                    statusDot.className = 'status-dot disconnected';
-                    statusText.textContent = 'Error de Configuración';
-                    statusDesc.innerHTML = `Conectado, pero no se encontraron las tablas: <strong>${missingTables.join(', ')}</strong>. ¿Ejecutaste el SQL de configuración?`;
-                    
-                    // Fallback to local mode for reservations if reservas_bungalows is missing
-                    if (missingTables.includes('reservas_bungalows')) {
-                        dbMode = 'local';
-                    }
-                } else {
-                    statusDot.className = 'status-dot connected';
-                    statusText.textContent = 'Conectado a la Nube (Supabase)';
-                    statusDesc.textContent = 'Las reservas de Bungalows se sincronizan automáticamente en tiempo real.';
-                }
+                statusDot.className = 'status-dot connected';
+                document.getElementById('statusText').textContent = 'Conectado a la Nube (Supabase)';
+                document.getElementById('statusDesc').textContent = 'Las reservas de Bungalows se sincronizan automáticamente en tiempo real.';
 
                 // Fetch active advisors list
                 await fetchAdvisors();
@@ -1253,11 +1215,11 @@ function getBookingInterval(checkInStr, checkOutStr, horarioStr, extraHours = 0)
         start = new Date(checkInStr + 'T15:00:00');
         end = new Date(checkOutStr + 'T12:00:00');
     }
-    
+
     if (extraHours > 0) {
         end.setHours(end.getHours() + extraHours);
     }
-    
+
     return { start, end };
 }
 
@@ -1473,7 +1435,7 @@ function updateAvailabilityGrid() {
     if (!tabAvailabilityContent || tabAvailabilityContent.style.display === 'none') return;
 
     const activeDate = getActiveDate();
-    
+
     // Sync datepicker value
     const gridDatePicker = document.getElementById('gridDatePicker');
     if (gridDatePicker) {
@@ -1517,7 +1479,7 @@ function updateAvailabilityGrid() {
         bungalows.forEach(bNum => {
             const filterEl = document.getElementById(`filterB${bNum}`);
             const isFilterChecked = filterEl ? filterEl.checked : true;
-            
+
             html += `<td style="padding: 6px 8px; border-bottom: 1px solid var(--border-color); vertical-align: top; text-align: center; ${isFilterChecked ? '' : 'opacity: 0.4; pointer-events: none;'}">`;
 
             // Find all close/relevant bookings for this bungalow on this date (within 2 days window)
@@ -1535,7 +1497,7 @@ function updateAvailabilityGrid() {
             // Determine if a booking actually overlaps with date D on a time level
             const dateStart = new Date(D + 'T00:00:00');
             const dateEnd = new Date(new Date(D + 'T00:00:00').getTime() + 24 * 60 * 60 * 1000);
-            
+
             const overlaps = relevantBookings.filter(b => {
                 const interval = getBookingInterval(b.fecha_ingreso, b.fecha_salida, b.horario, b.horas_extras || 0);
                 return interval.start < dateEnd && interval.end > dateStart;
@@ -1596,7 +1558,7 @@ function updateAvailabilityGrid() {
                             statusEmoji = '👤';
                             timeText = 'Todo el día';
                         }
-                        
+
                         html += `
                         <div class="availability-card bungalow-${bNum}" onclick="openBookingEditModalById('${b.id}')" title="${escapeHTML(b.nombre_cliente)} (${b.horario}) | Ingreso: ${startHour} - Salida: ${endHour}">
                             <div class="availability-card-header">
@@ -1644,16 +1606,16 @@ function updateAvailabilityGrid() {
 // Global functions for availability grid actions
 window.openBookingFromGrid = function (dateStr, bungalowNum) {
     openBookingModal(dateStr);
-    
+
     // Check the checkbox for the selected bungalow
     const chkList = document.querySelectorAll('input[name="bungalowSelect"]');
     chkList.forEach(chk => {
         chk.checked = (parseInt(chk.value) === bungalowNum);
     });
-    
+
     // Sync the hidden select
     document.getElementById('bookingBungalow').value = bungalowNum;
-    
+
     // Update limit and calculations
     updateNinosLimit();
     runDynamicCalculations();
@@ -1731,7 +1693,7 @@ function copyReservationDetails() {
     const selectedBungalows = Array.from(document.querySelectorAll('input[name="bungalowSelect"]:checked'))
         .map(c => c.value)
         .sort((a, b) => parseInt(a) - parseInt(b));
-    
+
     let bungalowStr = "";
     if (selectedBungalows.length > 0) {
         const formatted = selectedBungalows.map(num => `N° ${num}`);
@@ -1781,15 +1743,35 @@ function copyReservationDetails() {
     const yearOut = String(dateOutObj.getFullYear()).slice(-2);
     const formattedOut = `${weekdayOut} ${dayOut}/${monthOut}/${yearOut}`;
 
+    let checkInTime = "";
+    let checkOutTime = "";
+    if (horario === "Día y Noche") {
+        checkInTime = "3:00 pm";
+        const baseHour = 12; // 12:00 pm
+        const totalHour = (baseHour + horasExtras) % 24;
+        const period = totalHour >= 12 ? "pm" : "am";
+        let displayHour = totalHour % 12;
+        if (displayHour === 0) displayHour = 12;
+        checkOutTime = `${displayHour}:00 ${period}`;
+    } else if (horario === "Full Day") {
+        checkInTime = "9:00 am";
+        const baseHour = 18; // 6:00 pm
+        const totalHour = (baseHour + horasExtras) % 24;
+        const period = totalHour >= 12 ? "pm" : "am";
+        let displayHour = totalHour % 12;
+        if (displayHour === 0) displayHour = 12;
+        checkOutTime = `${displayHour}:00 ${period}`;
+    }
+
+    const advisor = document.getElementById('bookingNotes') ? document.getElementById('bookingNotes').value : '';
+
     let msg = `🏡 *RESERVA DE BUNGALOW* 🏡\n\n`;
     msg += `*Cliente:* ${name}\n`;
     if (dni) {
         msg += `*DNI:* ${dni}\n`;
     }
-    msg += `*Bungalow${selectedBungalows.length > 1 ? 's' : ''}:* ${bungalowStr}\n`;
-    msg += `📅 *Fecha Ingreso:* ${formattedIn}\n`;
-    msg += `🏁 *Fecha Salida:* ${formattedOut}\n`;
-    msg += `*Horario:* ${horario}\n`;
+    msg += `📅 *Fecha Ingreso:* ${formattedIn}${checkInTime ? ` - ${checkInTime}` : ''}\n`;
+    msg += `🏁 *Fecha Salida:* ${formattedOut}${checkOutTime ? ` - ${checkOutTime}` : ''}\n`;
 
     if (adicionales > 0) {
         msg += `*Personas adicionales:* ${adicionales}\n`;
@@ -1798,12 +1780,11 @@ function copyReservationDetails() {
         msg += `*Menores:* ${ninos}\n`;
     }
 
-    if (horasExtras > 0) {
-        msg += `*Horas extras:* ${horasExtras} hora(s)\n`;
+    if (advisor && advisor !== '_add_new_' && advisor !== '_delete_') {
+        msg += `*Asesor(a):* ${advisor}\n`;
     }
-
-    msg += `*Método de Pago:* ${paymentType}\n`;
     msg += `*Medio:* ${source}\n`;
+    msg += `*Bungalow${selectedBungalows.length > 1 ? 's' : ''}:* ${bungalowStr}\n`;
 
     msg += `\n*Monto Adelantado:* S/. ${adelanto.toFixed(2)}\n`;
     if (pendiente > 0) {
@@ -2221,21 +2202,7 @@ async function fetchAdvisors() {
             if (advData && advData.length > 0) {
                 activeAdvisorsList = advData.map(a => a.name);
             } else {
-                // If table is empty, load defaults from local/code and auto-populate database in background
                 loadActiveAdvisorsFromLocal();
-                if (activeAdvisorsList.length > 0) {
-                    const payloads = activeAdvisorsList.map(name => ({ name, is_active: true }));
-                    supabaseClient
-                        .from('personal_asesores')
-                        .insert(payloads)
-                        .then(({ error: insErr }) => {
-                            if (insErr) {
-                                console.warn("Failed to auto-populate default advisors in Supabase:", insErr.message);
-                            } else {
-                                console.log("Default advisors auto-populated successfully in Supabase.");
-                            }
-                        });
-                }
             }
         } catch (err) {
             console.warn("Table personal_asesores not found or failed, using localStorage fallback:", err.message);
