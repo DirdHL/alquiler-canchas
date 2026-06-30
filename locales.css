@@ -6,41 +6,40 @@
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Outfit:wght@300;400;500;600;700&display=swap');
 
 :root {
-    /* Color Palette */
-    --bg-primary: #fbf9f3;
-    /* Warm Cream / Sand Paper */
-    --bg-secondary: #f2ebe0;
-    /* Slightly darker warm cream */
+    /* Color Palette - Royal Gold & Pearl (Celebración Dorada Elegante) */
+    --bg-primary: #f8fafc;
+    /* Soft pearl white */
+    --bg-secondary: #f1f5f9;
+    /* Very clean light gray */
     --bg-card: #ffffff;
-    /* Solid white cards */
-    --border-color: #dfd5c4;
-    /* Soft sand-gold border */
+    /* Pure white for cards */
+    --border-color: #e2e8f0;
+    /* Soft slate border */
 
-    --text-primary: #19321f;
-    /* Deep Forest Green (almost black) */
-    --text-secondary: #5e5142;
-    /* Warm Walnut Brown */
-    --text-muted: #8e7d69;
-    /* Earthy beige-brown */
+    --text-primary: #0f172a;
+    /* Deep slate/black */
+    --text-secondary: #475569;
+    /* Dark slate gray */
+    --text-muted: #94a3b8;
+    /* Medium slate gray */
 
-    --primary: #1c3d25;
-    /* Majestic Forest Green */
-    --primary-hover: #122919;
-    --primary-glow: rgba(28, 61, 37, 0.12);
+    --primary: #c49b45;
+    /* Royal Gold */
+    --primary-hover: #b08733;
+    --primary-glow: rgba(196, 155, 69, 0.12);
 
-    --accent: #a4763c;
-    /* Warm Sandy-Gold */
-    --accent-hover: #8f622f;
-    --danger: #9c2a2a;
-    /* Earthy crimson red */
-    --danger-hover: #7d2020;
+    --accent: #d4af37;
+    /* Bright Gold */
+    --accent-hover: #c5a028;
+    --danger: #ef4444;
+    --danger-hover: #dc2626;
 
     --font-sans: 'Outfit', sans-serif;
     --font-serif: 'Playfair Display', serif;
-    --radius-sm: 6px;
-    --radius-md: 10px;
-    --radius-lg: 14px;
-    --radius-xl: 20px;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 24px;
 
     --transition-smooth: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     --blur-strength: 8px;
@@ -48,7 +47,7 @@
 
 /* Base Body Styles */
 body {
-    background: radial-gradient(circle at 50% 0%, #faf6ec 0%, #f1e9db 70%) !important;
+    background: radial-gradient(circle at 50% 0%, #ffffff 0%, #f1f5f9 100%) !important;
     color: var(--text-primary) !important;
     font-family: var(--font-sans) !important;
 }
@@ -60,10 +59,10 @@ body {
 
 /* Sidebar Styles Overrides (Nature Style) */
 .sidebar {
-    background: #f2ebe0 !important;
+    background: #ffffff !important;
     border-right: 1px solid var(--border-color) !important;
     backdrop-filter: none !important;
-    box-shadow: 2px 0 12px rgba(62, 53, 43, 0.04) !important;
+    box-shadow: 2px 0 12px rgba(15, 23, 42, 0.03) !important;
 }
 
 /* Sidebar Headings */
@@ -86,10 +85,10 @@ body {
 
 .logo-area h2 .logo-subtitle {
     font-family: var(--font-sans) !important;
-    background: rgba(164, 118, 60, 0.12) !important;
-    border: 1px solid rgba(164, 118, 60, 0.3) !important;
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(124, 58, 237, 0.1)) !important;
+    border: 1px solid rgba(245, 158, 11, 0.4) !important;
     color: var(--accent) !important;
-    box-shadow: none !important;
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.1) !important;
 }
 
 .logo-icon {
@@ -98,8 +97,9 @@ body {
 
 /* Status indicator card */
 .status-indicator-card {
-    background: rgba(255, 255, 255, 0.5) !important;
+    background: rgba(248, 250, 252, 0.8) !important;
     border: 1px solid var(--border-color) !important;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.01) !important;
 }
 
 .status-dot.disconnected {
@@ -119,19 +119,23 @@ body {
 }
 
 .btn-secondary:hover {
-    background: #fdfbf7 !important;
-    border-color: var(--accent) !important;
-    color: var(--accent) !important;
+    background: #fafafb !important;
+    border-color: var(--primary) !important;
+    color: var(--primary) !important;
+    box-shadow: 0 4px 12px rgba(196, 155, 69, 0.1);
+    transform: translateY(-1px);
 }
 
 /* Sidebar Nav links */
 .nav-filters h3 {
-    color: var(--text-muted) !important;
+    color: var(--primary) !important;
     font-weight: 700 !important;
     font-size: 11px !important;
-    border-bottom: 1px solid rgba(223, 213, 196, 0.5);
-    padding-bottom: 4px;
-    margin-top: 10px;
+    border-bottom: 2px solid rgba(196, 155, 69, 0.15);
+    padding-bottom: 6px;
+    margin-top: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .filter-item {
@@ -148,16 +152,17 @@ body {
 
 /* Sidebar action buttons */
 .btn-sidebar-action {
-    background: rgba(255, 255, 255, 0.5) !important;
+    background: rgba(196, 155, 69, 0.05) !important;
     color: var(--text-secondary) !important;
-    border: 1px solid var(--border-color) !important;
+    border: 1px solid rgba(196, 155, 69, 0.1) !important;
+    box-shadow: none !important;
 }
 
 .btn-sidebar-action:hover {
-    background: #ffffff !important;
+    background: rgba(196, 155, 69, 0.1) !important;
     color: var(--primary) !important;
-    border-color: var(--primary) !important;
-    transform: translateY(-1px);
+    border-color: rgba(196, 155, 69, 0.3) !important;
+    transform: translateX(4px);
 }
 
 /* Stats and user profile card in sidebar */
@@ -233,20 +238,18 @@ body {
 
 /* Primary Nature Button styling */
 .btn-primary {
-    background: var(--primary) !important;
-    color: #ffffff !important;
-    border: 1px solid var(--primary) !important;
-    border-radius: var(--radius-md) !important;
-    font-family: var(--font-sans) !important;
+    background: linear-gradient(135deg, var(--primary), var(--primary-hover)) !important;
+    color: white !important;
     font-weight: 600 !important;
-    box-shadow: 0 4px 10px rgba(28, 61, 37, 0.15) !important;
+    border: none !important;
+    box-shadow: 0 4px 12px var(--primary-glow) !important;
+    text-shadow: none;
 }
 
 .btn-primary:hover {
-    background: var(--primary-hover) !important;
-    border-color: var(--primary-hover) !important;
-    transform: translateY(-1.5px);
-    box-shadow: 0 6px 14px rgba(28, 61, 37, 0.25) !important;
+    box-shadow: 0 6px 16px rgba(196, 155, 69, 0.25) !important;
+    transform: translateY(-2px);
+    background: linear-gradient(135deg, var(--accent), var(--primary)) !important;
 }
 
 /* =============================================================
@@ -569,13 +572,13 @@ body {
 .modal-card {
     background: #ffffff !important;
     border: 1px solid var(--border-color) !important;
-    box-shadow: 0 16px 40px rgba(62, 53, 43, 0.15) !important;
-    color: var(--text-primary) !important;
+    border-radius: var(--radius-xl) !important;
+    box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08) !important;
 }
 
 .modal-header {
+    background: #ffffff !important;
     border-bottom: 1px solid var(--border-color) !important;
-    background: #faf7f1;
 }
 
 .modal-header h3 {
@@ -637,782 +640,4 @@ body {
 .input-wrapper:focus-within {
     border: none !important;
     box-shadow: none !important;
-}
-
-.input-wrapper input {
-    color: var(--text-primary) !important;
-}
-
-.input-wrapper svg {
-    color: var(--text-muted) !important;
-}
-
-/* Helpers & small text */
-.text-secondary {
-    color: var(--text-muted) !important;
-}
-
-.rule-helper {
-    color: var(--accent) !important;
-}
-
-/* Dynamic total container in Modal */
-#bookingTotal {
-    font-family: var(--font-sans) !important;
-}
-
-#bookingTotalContainer {
-    background: rgba(28, 61, 37, 0.05) !important;
-    border: 1px solid rgba(28, 61, 37, 0.2) !important;
-}
-
-/* Modal Actions buttons */
-.btn-delete {
-    background: var(--danger) !important;
-    color: white !important;
-}
-
-.btn-delete:hover {
-    background: var(--danger-hover) !important;
-}
-
-/* Activity history list */
-.activity-list p {
-    border-bottom: 1px solid rgba(223, 213, 196, 0.4) !important;
-    color: var(--text-secondary) !important;
-}
-
-/* Admin Stats Panel tab links */
-.stats-tabs button {
-    font-family: var(--font-sans) !important;
-    font-weight: 500 !important;
-    color: var(--text-secondary) !important;
-}
-
-.stats-tabs button.active {
-    color: var(--primary) !important;
-    border-bottom: 2px solid var(--primary) !important;
-    font-weight: 700 !important;
-}
-
-/* Table Stats style */
-#tableStatsReport,
-#tableStatsClients {
-    background: #ffffff !important;
-    color: var(--text-primary) !important;
-}
-
-#tableStatsReport th,
-#tableStatsClients th {
-    background: #faf7f1 !important;
-    color: var(--text-secondary) !important;
-    border-bottom: 2px solid var(--border-color) !important;
-}
-
-#tableStatsReport tr,
-#tableStatsClients tr {
-    border-bottom: 1px solid var(--border-color) !important;
-}
-
-#tableStatsReport td,
-#tableStatsClients td {
-    color: var(--text-primary) !important;
-}
-
-/* =============================================================
-   Custom Bungalows Grid & Checkbox Options
-   ============================================================= */
-.bungalows-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    gap: 12px;
-    margin-top: 8px;
-    width: 100%;
-}
-
-.bungalow-card {
-    position: relative;
-}
-
-.bungalow-card input[type="checkbox"] {
-    position: absolute;
-    opacity: 0;
-    width: 0;
-    height: 0;
-}
-
-.bungalow-card-label {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    background: #ffffff !important;
-    border: 1px solid var(--border-color) !important;
-    border-radius: var(--radius-md) !important;
-    padding: 10px 12px !important;
-    cursor: pointer;
-    user-select: none;
-    transition: var(--transition-smooth);
-    margin-bottom: 0 !important;
-    font-weight: 500 !important;
-}
-
-.bungalow-card:hover:not(.disabled) .bungalow-card-label {
-    border-color: var(--accent) !important;
-    background: rgba(164, 118, 60, 0.04) !important;
-}
-
-/* Checked state */
-.bungalow-card input[type="checkbox"]:checked+.bungalow-card-label {
-    border-color: var(--primary) !important;
-    background: rgba(28, 61, 37, 0.05) !important;
-    box-shadow: 0 0 0 3px rgba(28, 61, 37, 0.08) !important;
-}
-
-.bungalow-card-label .checkbox-box {
-    width: 18px;
-    height: 18px;
-    border: 2px solid var(--text-muted) !important;
-    border-radius: 4px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: var(--transition-smooth);
-    background: #ffffff !important;
-    flex-shrink: 0;
-}
-
-.bungalow-card-label .checkbox-box svg {
-    width: 12px;
-    height: 12px;
-    color: transparent !important;
-    transition: var(--transition-smooth);
-    stroke-width: 3;
-}
-
-.bungalow-card input[type="checkbox"]:checked+.bungalow-card-label .checkbox-box {
-    border-color: var(--primary) !important;
-    background: var(--primary) !important;
-}
-
-.bungalow-card input[type="checkbox"]:checked+.bungalow-card-label .checkbox-box svg {
-    color: #ffffff !important;
-}
-
-.bungalow-card .bungalow-name {
-    font-weight: 600 !important;
-    color: var(--text-primary) !important;
-    font-size: 13px !important;
-    flex-grow: 1;
-}
-
-.bungalow-card .bungalow-status {
-    font-size: 10px !important;
-    font-weight: 700 !important;
-    padding: 2px 6px !important;
-    border-radius: 4px !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.2px;
-}
-
-.bungalow-card .bungalow-status.available {
-    background: rgba(45, 90, 39, 0.1) !important;
-    color: #2d5a27 !important;
-}
-
-.bungalow-card .bungalow-status.occupied {
-    background: rgba(156, 42, 42, 0.1) !important;
-    color: #9c2a2a !important;
-}
-
-/* Disabled/Occupied state style */
-.bungalow-card.disabled {
-    cursor: not-allowed !important;
-}
-
-.bungalow-card.disabled .bungalow-card-label {
-    background: #f4efdf !important;
-    border-color: #dfd5c4 !important;
-    opacity: 0.6 !important;
-    cursor: not-allowed !important;
-}
-
-.bungalow-card.disabled .checkbox-box {
-    background: #e8e2d5 !important;
-    border-color: #c4b9a8 !important;
-}
-
-.bungalow-card.disabled .bungalow-name {
-    color: var(--text-muted) !important;
-    text-decoration: line-through !important;
-}
-
-/* =============================================================
-   Modernized Availability Table, Legend, and Cards Overrides
-   ============================================================= */
-.availability-table {
-    min-width: 950px;
-    border-collapse: separate !important;
-    border-spacing: 0;
-}
-
-.availability-table th {
-    background: var(--bg-secondary) !important;
-    color: var(--text-primary) !important;
-    font-family: var(--font-sans);
-    font-weight: 600 !important;
-    text-transform: none !important;
-    font-size: 13px !important;
-    border-bottom: 2px solid var(--border-color) !important;
-    border-right: 1px solid rgba(223, 213, 196, 0.4) !important;
-    padding: 10px 16px !important;
-}
-
-.availability-table th:last-child {
-    border-right: none !important;
-}
-
-.availability-table td {
-    border-bottom: 1px solid rgba(223, 213, 196, 0.4) !important;
-    border-right: 1px solid rgba(223, 213, 196, 0.4) !important;
-    padding: 8px 10px !important;
-    background: #ffffff !important;
-    vertical-align: top !important;
-}
-
-.availability-table td:last-child {
-    border-right: none !important;
-}
-
-.availability-table td:first-child {
-    background: #faf7f1 !important;
-    font-weight: 600 !important;
-    color: var(--text-secondary) !important;
-}
-
-/* Legend Container Styling */
-.availability-legend-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-    margin-bottom: 16px;
-    background: #ffffff;
-    padding: 10px 14px;
-    border-radius: var(--radius-md);
-    border: 1px solid var(--border-color);
-    box-shadow: 0 4px 12px rgba(62, 53, 43, 0.02);
-}
-
-.legend-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 12px;
-    color: var(--text-secondary);
-    background: var(--bg-primary);
-    padding: 6px 12px;
-    border-radius: 20px;
-    border: 1px solid rgba(223, 213, 196, 0.6);
-}
-
-/* New Planner Card Style for Bookings */
-.availability-card {
-    padding: 8px 10px;
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    transition: var(--transition-smooth);
-    text-align: left;
-    box-shadow: 0 2px 4px rgba(62, 53, 43, 0.04);
-    margin-bottom: 6px;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    width: 100%;
-}
-
-.availability-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 12px rgba(62, 53, 43, 0.08);
-}
-
-.availability-card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 10px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.3px;
-    opacity: 0.85;
-}
-
-.availability-card-title {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-}
-
-.availability-card-time {
-    font-size: 9px;
-    font-weight: 600;
-    background: rgba(255, 255, 255, 0.4);
-    padding: 2px 5px;
-    border-radius: 4px;
-}
-
-.availability-card-client {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--text-primary);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-/* Color bindings for Cards in Nature Theme */
-.availability-card.bungalow-1 {
-    background: rgba(46, 125, 50, 0.07);
-    border: 1px solid rgba(46, 125, 50, 0.35);
-    color: #2e7d32;
-}
-
-.availability-card.bungalow-1:hover {
-    background: rgba(46, 125, 50, 0.15);
-    border-color: #2e7d32;
-}
-
-.availability-card.bungalow-2 {
-    background: rgba(211, 84, 0, 0.07);
-    border: 1px solid rgba(211, 84, 0, 0.35);
-    color: #d35400;
-}
-
-.availability-card.bungalow-2:hover {
-    background: rgba(211, 84, 0, 0.15);
-    border-color: #d35400;
-}
-
-.availability-card.bungalow-3 {
-    background: rgba(31, 97, 141, 0.07);
-    border: 1px solid rgba(31, 97, 141, 0.35);
-    color: #1f618d;
-}
-
-.availability-card.bungalow-3:hover {
-    background: rgba(31, 97, 141, 0.15);
-    border-color: #1f618d;
-}
-
-.availability-card.bungalow-4 {
-    background: rgba(192, 57, 43, 0.07);
-    border: 1px solid rgba(192, 57, 43, 0.35);
-    color: #c0392b;
-}
-
-.availability-card.bungalow-4:hover {
-    background: rgba(192, 57, 43, 0.15);
-    border-color: #c0392b;
-}
-
-.availability-card.bungalow-5 {
-    background: rgba(142, 68, 173, 0.07);
-    border: 1px solid rgba(142, 68, 173, 0.35);
-    color: #8e44ad;
-}
-
-.availability-card.bungalow-5:hover {
-    background: rgba(142, 68, 173, 0.15);
-    border-color: #8e44ad;
-}
-
-.availability-card.bungalow-6 {
-    background: rgba(22, 160, 133, 0.07);
-    border: 1px solid rgba(22, 160, 133, 0.35);
-    color: #16a085;
-}
-
-.availability-card.bungalow-6:hover {
-    background: rgba(22, 160, 133, 0.15);
-    border-color: #16a085;
-}
-
-/* Maintenance Block Cards */
-.availability-card.blocked-card {
-    background: rgba(156, 42, 42, 0.06);
-    border: 1px solid rgba(156, 42, 42, 0.3);
-    color: #9c2a2a;
-}
-
-.availability-card.blocked-card:hover {
-    background: rgba(156, 42, 42, 0.12);
-    border-color: #9c2a2a;
-}
-
-.availability-card.blocked-card .availability-card-client {
-    color: #9c2a2a;
-}
-
-/* Datepicker & Controls Toolbar for Availability Map */
-.availability-toolbar {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 16px;
-    background: #ffffff;
-    padding: 10px 14px;
-    border-radius: var(--radius-md);
-    border: 1px solid var(--border-color);
-    box-shadow: 0 4px 12px rgba(62, 53, 43, 0.02);
-}
-
-.availability-toolbar label {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text-secondary);
-}
-
-.availability-toolbar input[type="date"] {
-    padding: 6px 12px 6px 36px !important;
-    border: 1px solid var(--border-color) !important;
-    border-radius: var(--radius-sm) !important;
-    font-size: 13px !important;
-    font-family: var(--font-sans) !important;
-    color: var(--text-primary) !important;
-    background: var(--bg-primary) !important;
-    height: 32px !important;
-    width: 140px !important;
-    line-height: normal !important;
-}
-
-.availability-toolbar .btn {
-    padding: 6px 12px !important;
-    font-size: 13px !important;
-    font-weight: 600 !important;
-    border-radius: var(--radius-sm) !important;
-    height: 32px !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    gap: 6px !important;
-    background: #ffffff !important;
-    border: 1px solid var(--border-color) !important;
-    color: var(--text-primary) !important;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
-    cursor: pointer;
-    transition: var(--transition-smooth);
-}
-
-.availability-toolbar .btn:hover {
-    background: #fdfbf7 !important;
-    border-color: var(--accent) !important;
-    color: var(--accent) !important;
-}
-
-/* Responsive Overrides for Availability Toolbar and Legend */
-@media (max-width: 768px) {
-    .availability-toolbar {
-        flex-direction: column;
-        align-items: stretch !important;
-        gap: 12px;
-        padding: 12px !important;
-    }
-
-    .availability-toolbar>div {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        width: 100%;
-    }
-
-    .availability-toolbar label {
-        font-size: 12px;
-    }
-
-    .availability-toolbar input[type="date"] {
-        width: 125px !important;
-        font-size: 12px !important;
-    }
-
-    .availability-toolbar .btn {
-        padding: 5px 10px !important;
-        font-size: 12px !important;
-        height: 32px !important;
-    }
-
-    .availability-legend-container {
-        gap: 6px !important;
-        padding: 8px 10px !important;
-    }
-
-    .legend-item {
-        font-size: 10px !important;
-        padding: 4px 8px !important;
-    }
-
-    /* Mobile availability table styles */
-    .availability-table {
-        min-width: 600px !important;
-    }
-
-    .availability-table th,
-    .availability-table td {
-        padding: 6px 4px !important;
-        font-size: 11px !important;
-    }
-
-    .availability-table th {
-        font-size: 11px !important;
-        padding: 8px 4px !important;
-    }
-
-    .availability-table td:first-child {
-        font-size: 11px !important;
-        white-space: nowrap;
-    }
-
-    .availability-slot-btn {
-        padding: 4px 4px !important;
-        font-size: 9px !important;
-        gap: 2px !important;
-    }
-
-    .availability-slot-btn svg {
-        width: 9px !important;
-        height: 9px !important;
-    }
-
-    .availability-card {
-        padding: 4px 6px !important;
-        gap: 3px !important;
-        border-radius: 4px !important;
-    }
-
-    .availability-card-header {
-        font-size: 8px !important;
-        gap: 2px !important;
-    }
-
-    .availability-card-title {
-        font-size: 8px !important;
-    }
-
-    .availability-card-time {
-        font-size: 8px !important;
-        padding: 1px 3px !important;
-    }
-
-    .availability-card-client {
-        font-size: 10px !important;
-        font-weight: 600 !important;
-    }
-}
-
-/* Custom Slot Reservation Button for Bungalows Theme */
-.availability-slot-btn {
-    background: rgba(45, 90, 39, 0.05) !important;
-    border: 1px dashed rgba(45, 90, 39, 0.3) !important;
-    color: #2d5a27 !important;
-    font-weight: 600 !important;
-    transition: var(--transition-smooth) !important;
-}
-
-.availability-slot-btn:hover {
-    background: var(--primary) !important;
-    border-style: solid !important;
-    border-color: var(--primary) !important;
-    color: #ffffff !important;
-    box-shadow: 0 2px 8px var(--primary-glow) !important;
-}
-
-/* Responsive adjustments from 1028px downwards for better mobile/tablet view */
-@media (max-width: 1028px) {
-    .main-content {
-        padding: 20px 16px !important;
-    }
-
-    .calendar-card {
-        padding: 12px !important;
-        border-radius: var(--radius-md) !important;
-    }
-
-    /* Hide client name in availability grid cards to save space */
-    .availability-card-client {
-        display: none !important;
-    }
-
-    /* Hide status text label (keep only emoji) */
-    .grid-status-text {
-        display: none !important;
-    }
-
-    /* Adjust availability grid padding and font sizes */
-    .availability-table th,
-    .availability-table td {
-        padding: 5px 3px !important;
-        font-size: 11px !important;
-    }
-
-    .availability-card {
-        padding: 4px 4px !important;
-        gap: 2px !important;
-    }
-
-    .availability-card-title {
-        font-size: 9px !important;
-    }
-
-    .availability-card-time {
-        font-size: 8px !important;
-        padding: 1px 2px !important;
-    }
-}
-
-@media (max-width: 768px) {
-
-    /* Layout general */
-    .main-content {
-        padding: 12px 8px !important;
-    }
-
-    /* El card del calendario clipea visualmente pero no bloquea scroll interno */
-    .calendar-card {
-        padding: 10px !important;
-        border-radius: var(--radius-sm) !important;
-        overflow: hidden !important;
-        min-height: auto !important;
-    }
-
-    /* ── SCROLL DEL CALENDARIO (enfoque ChatGPT) ── */
-    .calendar-scroll-wrapper {
-        width: 100%;
-        overflow-x: auto;
-        overflow-y: hidden;
-        -webkit-overflow-scrolling: touch;
-    }
-
-    /* Forzar que el contenedor externo del calendario sea ancho */
-    #calendar {
-        min-width: 700px;
-    }
-
-    /* Forzar que los elementos INTERNOS de FullCalendar también sean anchos */
-    /* Sin esto, FC comprime sus tablas internas para adaptarse al contenedor */
-    .fc {
-        min-width: 700px !important;
-    }
-
-    .fc-scrollgrid,
-    .fc-daygrid-body,
-    .fc-col-header {
-        min-width: 700px !important;
-    }
-
-    /* Cada columna de día mínimo 100px → 7 × 100 = 700px */
-    .fc-daygrid-day,
-    .fc-col-header-cell {
-        min-width: 100px !important;
-    }
-
-    /* Toolbar compacto */
-    .fc .fc-toolbar {
-        flex-direction: column !important;
-        gap: 8px !important;
-        align-items: center !important;
-    }
-
-    .fc .fc-toolbar-title {
-        font-size: 15px !important;
-    }
-
-    .fc .fc-button {
-        font-size: 12px !important;
-        padding: 4px 8px !important;
-    }
-
-    /* Vista lista: compacta */
-    .fc-list-event-title {
-        font-size: 12px !important;
-    }
-
-    .fc-list-day-cushion {
-        font-size: 13px !important;
-        padding: 6px 12px !important;
-    }
-
-    /* ── Mapa de disponibilidad ── */
-    .availability-grid-wrapper {
-        overflow-x: auto !important;
-        overflow-y: auto !important;
-        -webkit-overflow-scrolling: touch !important;
-        max-height: 400px !important;
-        scrollbar-width: thin !important;
-        scrollbar-color: var(--accent) transparent !important;
-    }
-
-    .availability-grid-wrapper::-webkit-scrollbar {
-        height: 5px;
-        width: 4px;
-    }
-    .availability-grid-wrapper::-webkit-scrollbar-thumb {
-        background: var(--accent);
-        border-radius: 99px;
-    }
-
-    .availability-grid-wrapper .availability-table {
-        min-width: 580px !important;
-        table-layout: auto !important;
-    }
-
-    .availability-table th {
-        font-size: 11px !important;
-        padding: 8px 6px !important;
-        white-space: nowrap !important;
-    }
-
-    .availability-table td {
-        padding: 6px 4px !important;
-    }
-
-    /* ── Lista de Huéspedes ── */
-    .summary-list {
-        display: flex !important;
-        overflow-x: auto !important;
-        gap: 12px !important;
-        padding-bottom: 8px !important;
-        -webkit-overflow-scrolling: touch;
-        scroll-snap-type: x mandatory;
-        scrollbar-width: thin;
-        scrollbar-color: var(--accent) transparent;
-    }
-
-    .summary-list .summary-item-card {
-        flex: 0 0 280px !important;
-        scroll-snap-align: start;
-        margin-bottom: 4px !important;
-    }
-
-    .summary-list .no-activity {
-        flex: 0 0 100% !important;
-    }
-}
-
-
-
-/* ============================================================
-   Bungalows: Sidebar desliza desde la DERECHA en móvil
-   ============================================================ */
-@media (max-width: 900px) {
-    .sidebar {
-        right: 0 !important;
-        left: auto !important;
-        border-left: 1px solid var(--border-color) !important;
-        border-right: none !important;
-        box-shadow: -10px 0 30px rgba(62, 53, 43, 0.2) !important;
-        transform: translateX(100%) !important;
-    }
-
-    .sidebar.open {
-        transform: translateX(0) !important;
-    }
 }

@@ -166,6 +166,7 @@ function initCalendar() {
     const calendarEl = document.getElementById('calendar');
     calendar = new FullCalendar.Calendar(calendarEl, {
         locale: 'es',
+        firstDay: 1, // 1 = Lunes
         initialView: 'dayGridMonth',
         headerToolbar: {
             left: 'prev,next today',
