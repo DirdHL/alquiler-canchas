@@ -213,8 +213,10 @@
                     <div class="availability-toolbar">
                         <div style="display: flex; align-items: center; gap: 8px;">
                             <label for="gridDatePicker">Ver desde:</label>
-                            <div class="input-wrapper" style="margin-bottom: 0; width: auto; display: inline-block; position: relative;">
-                                <i data-lucide="calendar" style="width: 16px; height: 16px; position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none;"></i>
+                            <div class="input-wrapper"
+                                style="margin-bottom: 0; width: auto; display: inline-block; position: relative;">
+                                <i data-lucide="calendar"
+                                    style="width: 16px; height: 16px; position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none;"></i>
                                 <input type="date" id="gridDatePicker">
                             </div>
                             <button type="button" class="btn btn-secondary" id="btnGridToday">
@@ -222,10 +224,12 @@
                             </button>
                         </div>
                         <div style="display: flex; gap: 8px;">
-                            <button type="button" class="btn btn-secondary" id="btnGridPrevWeek" title="Semana anterior">
+                            <button type="button" class="btn btn-secondary" id="btnGridPrevWeek"
+                                title="Semana anterior">
                                 <i data-lucide="chevron-left" style="width: 16px; height: 16px;"></i> Anterior
                             </button>
-                            <button type="button" class="btn btn-secondary" id="btnGridNextWeek" title="Semana siguiente">
+                            <button type="button" class="btn btn-secondary" id="btnGridNextWeek"
+                                title="Semana siguiente">
                                 Siguiente <i data-lucide="chevron-right" style="width: 16px; height: 16px;"></i>
                             </button>
                         </div>
@@ -795,23 +799,28 @@
                         </div>
                         <div
                             style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px;">
-                            <span style="font-size: 12px; color: var(--text-muted); text-transform: uppercase;">Día y Noche</span>
+                            <span style="font-size: 12px; color: var(--text-muted); text-transform: uppercase;">Día y
+                                Noche</span>
                             <div id="statsDayNightCount"
                                 style="font-size: 24px; font-weight: 700; color: #a78bfa; margin-top: 6px;">0
                             </div>
-                            <span id="statsDayNightRevenue" style="font-size: 12px; color: var(--text-secondary);">S/. 0.00</span>
+                            <span id="statsDayNightRevenue" style="font-size: 12px; color: var(--text-secondary);">S/.
+                                0.00</span>
                         </div>
                         <div
                             style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px;">
-                            <span style="font-size: 12px; color: var(--text-muted); text-transform: uppercase;">Full Day</span>
+                            <span style="font-size: 12px; color: var(--text-muted); text-transform: uppercase;">Full
+                                Day</span>
                             <div id="statsFullDayCount"
                                 style="font-size: 24px; font-weight: 700; color: #fbbf24; margin-top: 6px;">0
                             </div>
-                            <span id="statsFullDayRevenue" style="font-size: 12px; color: var(--text-secondary);">S/. 0.00</span>
+                            <span id="statsFullDayRevenue" style="font-size: 12px; color: var(--text-secondary);">S/.
+                                0.00</span>
                         </div>
                         <div
                             style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px;">
-                            <span style="font-size: 12px; color: var(--text-muted); text-transform: uppercase;">Extras / Adicionales</span>
+                            <span style="font-size: 12px; color: var(--text-muted); text-transform: uppercase;">Extras /
+                                Adicionales</span>
                             <div id="statsExtrasMonth"
                                 style="font-size: 24px; font-weight: 700; color: #22d3ee; margin-top: 6px;">S/. 0.00
                             </div>
@@ -830,7 +839,8 @@
                                     <th style="padding: 12px 16px; color: var(--text-secondary);">Total Reservas</th>
                                     <th style="padding: 12px 16px; color: var(--text-secondary);">Día y Noche</th>
                                     <th style="padding: 12px 16px; color: var(--text-secondary);">Full Day</th>
-                                    <th style="padding: 12px 16px; color: var(--text-secondary);">Extras / Adicionales</th>
+                                    <th style="padding: 12px 16px; color: var(--text-secondary);">Extras / Adicionales
+                                    </th>
                                     <th style="padding: 12px 16px; color: var(--text-secondary);">Ingreso Estimado</th>
                                 </tr>
                             </thead>

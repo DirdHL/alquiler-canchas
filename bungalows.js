@@ -1272,12 +1272,17 @@ function initCalendar() {
             updateAvailabilityGrid();
         },
         events: function (info, successCallback, failureCallback) {
-            // Format state bookings into FullCalendar events
+            const isSmallScreen = window.innerWidth <= 1028;
             const fcEvents = bookings.map(b => {
                 const isBlocked = b.estado_reserva === 'Bloqueado';
-                let title = isBlocked
-                    ? `🔒 B${b.bungalow_numero} BLOQUEADO`
-                    : `B${b.bungalow_numero}: ${b.nombre_cliente} (${b.horario})`;
+                let title = "";
+                if (isSmallScreen) {
+                    title = isBlocked ? `🔒 B${b.bungalow_numero}` : `B${b.bungalow_numero}`;
+                } else {
+                    title = isBlocked
+                        ? `🔒 B${b.bungalow_numero} BLOQUEADO`
+                        : `B${b.bungalow_numero}: ${b.nombre_cliente} (${b.horario})`;
+                }
 
                 // For FullCalendar display, the end date is exclusive.
                 // We add 1 day to the checkout date so it highlights the grid cell correctly.
@@ -1334,6 +1339,16 @@ function initCalendar() {
     });
 
     calendar.render();
+
+    let resizeTimer;
+    window.addEventListener('resize', () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => {
+            if (calendar) {
+                calendar.refetchEvents();
+            }
+        }, 150);
+    });
 }
 
 // Update "Huéspedes para Hoy" Resumen Diario
@@ -1516,7 +1531,7 @@ function updateAvailabilityGrid() {
                         html += `
                         <div class="availability-card blocked-card" onclick="openBookingEditModalById('${b.id}')" title="🔒 Bloqueo: ${escapeHTML(blockReason)}">
                             <div class="availability-card-header">
-                                <span class="availability-card-title">🔒 Bloqueo</span>
+                                <span class="availability-card-title">🔒 <span class="grid-status-text">Bloqueo</span></span>
                             </div>
                             <div class="availability-card-client">${escapeHTML(blockReason)}</div>
                         </div>`;
@@ -1559,10 +1574,10 @@ function updateAvailabilityGrid() {
                             timeText = 'Todo el día';
                         }
 
-                        html += `
+                         html += `
                         <div class="availability-card bungalow-${bNum}" onclick="openBookingEditModalById('${b.id}')" title="${escapeHTML(b.nombre_cliente)} (${b.horario}) | Ingreso: ${startHour} - Salida: ${endHour}">
                             <div class="availability-card-header">
-                                <span class="availability-card-title">${statusEmoji} ${statusText}</span>
+                                <span class="availability-card-title">${statusEmoji} <span class="grid-status-text">${statusText}</span></span>
                                 <span class="availability-card-time">${timeText}</span>
                             </div>
                             <div class="availability-card-client">${escapeHTML(b.nombre_cliente)}</div>

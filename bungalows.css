@@ -1068,3 +1068,63 @@ body {
     color: #ffffff !important;
     box-shadow: 0 2px 8px var(--primary-glow) !important;
 }
+
+/* Responsive adjustments from 1028px downwards for better mobile/tablet view */
+@media (max-width: 1028px) {
+    .main-content {
+        padding: 20px 16px !important;
+    }
+    
+    .calendar-card {
+        padding: 12px !important;
+        border-radius: var(--radius-md) !important;
+    }
+
+    /* Hide client name in availability grid cards to save space */
+    .availability-card-client {
+        display: none !important;
+    }
+    /* Hide status text label (keep only emoji) */
+    .grid-status-text {
+        display: none !important;
+    }
+    /* Adjust availability grid padding and font sizes */
+    .availability-table th, 
+    .availability-table td {
+        padding: 5px 3px !important;
+        font-size: 11px !important;
+    }
+    .availability-card {
+        padding: 4px 4px !important;
+        gap: 2px !important;
+    }
+    .availability-card-title {
+        font-size: 9px !important;
+    }
+    .availability-card-time {
+        font-size: 8px !important;
+        padding: 1px 2px !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .main-content {
+        padding: 12px 8px !important;
+    }
+    
+    .calendar-card {
+        padding: 8px !important;
+        border-radius: var(--radius-sm) !important;
+    }
+
+    /* Stack calendar toolbar vertically on small screens */
+    .fc .fc-toolbar {
+        flex-direction: column !important;
+        gap: 10px !important;
+        align-items: center !important;
+    }
+    
+    .fc .fc-toolbar-title {
+        font-size: 18px !important;
+    }
+}
