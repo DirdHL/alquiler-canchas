@@ -36,8 +36,24 @@ function setupEventListeners() {
     document.getElementById('formSettings').addEventListener('submit', handleSaveSettings);
     document.getElementById('formBooking').addEventListener('submit', handleSaveBooking);
     document.getElementById('btnDeleteBooking').addEventListener('click', handleDeleteBooking);
-    document.getElementById('btnOpenHistory').addEventListener('click', openHistoryModal);
+    const historySearchInput = document.getElementById('historySearchInput');
+    const btnClearHistoryLocal = document.getElementById('btnClearHistoryLocal');
+    document.getElementById('btnOpenHistory').addEventListener('click', () => {
+        if (historySearchInput) historySearchInput.value = '';
+        openHistoryModal();
+    });
     document.getElementById('btnCloseHistory').addEventListener('click', () => closeModal('modalHistory'));
+    if (historySearchInput) {
+        historySearchInput.addEventListener('input', openHistoryModal);
+    }
+    if (btnClearHistoryLocal) {
+        btnClearHistoryLocal.addEventListener('click', () => {
+            if (confirm("¿Estás seguro de que deseas limpiar el historial local? Esto no afectará la base de datos Supabase.")) {
+                localStorage.removeItem('canchapro_historial_locales');
+                openHistoryModal();
+            }
+        });
+    }
 
     // Dynamic calculations
     document.getElementById('bookingTotal').addEventListener('input', runDynamicCalculations);
@@ -344,8 +360,8 @@ function getHistoryLocal() {
     if (!data) return [];
     try {
         const history = JSON.parse(data);
-        const threeDaysAgo = Date.now() - (3 * 24 * 60 * 60 * 1000);
-        return history.filter(e => new Date(e.created_at).getTime() > threeDaysAgo);
+        const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+        return history.filter(e => new Date(e.created_at).getTime() > sevenDaysAgo);
     } catch (e) {
         return [];
     }
@@ -353,28 +369,36 @@ function getHistoryLocal() {
 
 async function openHistoryModal() {
     const container = document.getElementById('activityList');
+    const btnClearHistoryLocal = document.getElementById('btnClearHistoryLocal');
     container.innerHTML = '<p class="no-activity">Cargando historial...</p>';
     openModal('modalHistory');
 
     let entries = [];
-    const threeDaysAgoISO = new Date(Date.now() - (3 * 24 * 60 * 60 * 1000)).toISOString();
+    const sevenDaysAgoISO = new Date(Date.now() - (7 * 24 * 60 * 60 * 1000)).toISOString();
 
     if (dbMode === 'supabase' && supabaseClient) {
         try {
             const { data, error } = await supabaseClient
                 .from('historial')
                 .select('*')
-                .gt('created_at', threeDaysAgoISO)
+                .gt('created_at', sevenDaysAgoISO)
                 .order('created_at', { ascending: false });
 
             if (error) throw error;
             entries = data || [];
+            if (btnClearHistoryLocal) btnClearHistoryLocal.style.display = 'none';
         } catch (e) {
             console.warn("Fallo al obtener historial de Supabase, usando local:", e);
             entries = getHistoryLocal();
+            if (btnClearHistoryLocal) btnClearHistoryLocal.style.display = 'inline-block';
         }
     } else {
         entries = getHistoryLocal();
+        if (btnClearHistoryLocal && entries.length > 0) {
+            btnClearHistoryLocal.style.display = 'inline-block';
+        } else if (btnClearHistoryLocal) {
+            btnClearHistoryLocal.style.display = 'none';
+        }
     }
 
     // Filter to only include Locales logs
@@ -383,38 +407,118 @@ async function openHistoryModal() {
         return d.startsWith('[Locales]');
     });
 
+    // Apply Search Filter Reactively
+    const searchVal = document.getElementById('historySearchInput') ? document.getElementById('historySearchInput').value.trim().toLowerCase() : '';
+    if (searchVal) {
+        entries = entries.filter(e => {
+            const user = (e.user_name || '').toLowerCase();
+            const details = (e.details || '').toLowerCase();
+            const action = (e.action || '').toLowerCase();
+            return user.includes(searchVal) || details.includes(searchVal) || action.includes(searchVal);
+        });
+    }
+
     container.innerHTML = '';
     if (entries.length === 0) {
-        container.innerHTML = '<p class="no-activity">No hay actividad registrada en los últimos 3 días.</p>';
-    } else {
-        entries.forEach(entry => {
-            const p = document.createElement('p');
-            p.style.fontSize = '13px';
-            p.style.borderBottom = '1px solid rgba(255,255,255,0.03)';
-            p.style.padding = '8px 0';
-            p.style.display = 'flex';
-            p.style.justifyContent = 'space-between';
-            p.style.alignItems = 'center';
-            p.style.gap = '8px';
+        container.innerHTML = '<p class="no-activity">No se encontraron registros en el historial.</p>';
+        return;
+    }
 
-            const cleanDetails = (entry.details || '').replace(/^\[Locales\]\s*/, '');
-            const timeStr = formatLogTimestamp(entry.created_at);
+    // Group entries by day
+    const groups = {};
+    entries.forEach(entry => {
+        const label = getDayGroupLabel(entry.created_at);
+        if (!groups[label]) {
+            groups[label] = [];
+        }
+        groups[label].push(entry);
+    });
 
-            p.innerHTML = `
-                <span>${cleanDetails}</span>
-                <span style="font-size: 11px; color: var(--text-muted); white-space: nowrap;">
-                    ${entry.user_name} • ${timeStr}
-                </span>
+    let html = '';
+    for (const [dayLabel, groupEntries] of Object.entries(groups)) {
+        html += `<div class="activity-day-group" style="font-weight: 700; margin-top: 16px; margin-bottom: 8px; color: var(--primary); font-size: 12px; text-transform: uppercase;">${dayLabel}</div>`;
+        html += groupEntries.map(entry => {
+            let badgeColor = '#10b981'; // green for crear
+            let badgeBg = 'rgba(16, 185, 129, 0.1)';
+            let actionTextLabel = 'Crear';
+
+            const detailsText = entry.details || '';
+            if (entry.action === 'editar' || detailsText.toLowerCase().includes('edit') || detailsText.toLowerCase().includes('actualiz')) {
+                badgeColor = '#f59e0b'; // orange for editar
+                badgeBg = 'rgba(245, 158, 11, 0.1)';
+                actionTextLabel = 'Editar';
+            } else if (entry.action === 'eliminar' || detailsText.toLowerCase().includes('elimin') || detailsText.toLowerCase().includes('borrar')) {
+                badgeColor = '#ef4444'; // red for eliminar
+                badgeBg = 'rgba(239, 68, 68, 0.1)';
+                actionTextLabel = 'Eliminar';
+            }
+
+            // Clean details (removing system prefix if present)
+            let cleanDetails = detailsText;
+            const systemPrefixes = ['[Canchas] ', '[Polideportivo] ', '[Bungalows] ', '[Locales] ', '[Asistencia] '];
+            systemPrefixes.forEach(pref => {
+                if (cleanDetails.startsWith(pref)) {
+                    cleanDetails = cleanDetails.substring(pref.length);
+                }
+            });
+
+            // Format timestamp relative
+            const dateObj = new Date(entry.created_at);
+            const timeAgo = formatLogTimestamp(entry.created_at);
+
+            return `
+                <div class="activity-item" style="padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.03);">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
+                        <div style="display: flex; flex-direction: column; gap: 4px; flex: 1;">
+                            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                <span style="font-size: 10px; font-weight: 600; text-transform: uppercase; padding: 2px 6px; border-radius: 4px; background: ${badgeBg}; color: ${badgeColor}; border: 1px solid rgba(255,255,255,0.03);">
+                                    ${actionTextLabel}
+                                </span>
+                                <span class="user-highlight" style="font-weight: 600; font-size: 13px; color: var(--text-primary);">${escapeHTML(entry.user_name)}</span>
+                            </div>
+                            <span class="activity-text" style="font-size: 13px; color: var(--text-secondary); line-height: 1.4;">
+                                ${escapeHTML(cleanDetails)}
+                            </span>
+                        </div>
+                        <span class="activity-time" style="font-size: 11px; color: var(--text-muted); white-space: nowrap;">${timeAgo}</span>
+                    </div>
+                </div>
             `;
-            container.appendChild(p);
+        }).join('');
+    }
+    container.innerHTML = html;
+}
+
+function getDayGroupLabel(dateStr) {
+    const today = new Date();
+    const target = new Date(dateStr);
+    const todayDate = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+    const targetDate = new Date(target.getFullYear(), target.getMonth(), target.getDate()).getTime();
+    const diffDays = Math.round((todayDate - targetDate) / (1000 * 60 * 60 * 24));
+    if (diffDays === 0) {
+        return "Hoy";
+    } else if (diffDays === 1) {
+        return "Ayer";
+    } else {
+        let label = target.toLocaleDateString('es-ES', {
+            weekday: 'long',
+            day: 'numeric',
+            month: 'long'
         });
+        return label.charAt(0).toUpperCase() + label.slice(1);
     }
 }
 
 function formatLogTimestamp(isoStr) {
     if (!isoStr) return '';
     const d = new Date(isoStr);
-    const datePart = d.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' });
     const timePart = d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
-    return `${datePart} ${timePart}`;
+    return timePart;
+}
+
+function escapeHTML(str) {
+    if (!str) return '';
+    return str.replace(/[&<>'"]/g, 
+        tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+    );
 }

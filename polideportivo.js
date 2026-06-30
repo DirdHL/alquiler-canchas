@@ -528,9 +528,11 @@ function setupEventListeners() {
     }
 
     // Activity Log Actions
+    const historySearchInput = document.getElementById('historySearchInput');
     if (btnOpenHistory) {
         btnOpenHistory.addEventListener('click', () => {
             closeSidebarDrawer();
+            if (historySearchInput) historySearchInput.value = '';
             openModal(modalHistory);
             fetchAndRenderHistory();
         });
@@ -542,6 +544,9 @@ function setupEventListeners() {
     }
     if (btnClearHistoryLocal) {
         btnClearHistoryLocal.addEventListener('click', clearHistoryLocal);
+    }
+    if (historySearchInput) {
+        historySearchInput.addEventListener('input', fetchAndRenderHistory);
     }
 
     // Auto-adjust end time when start time changes to be at least 1 hour later
@@ -2707,8 +2712,8 @@ function getHistoryLocal() {
     if (!data) return [];
     try {
         const history = JSON.parse(data);
-        const threeDaysAgo = Date.now() - (3 * 24 * 60 * 60 * 1000);
-        return history.filter(e => new Date(e.created_at).getTime() > threeDaysAgo);
+        const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+        return history.filter(e => new Date(e.created_at).getTime() > sevenDaysAgo);
     } catch (e) {
         return [];
     }
@@ -2716,21 +2721,21 @@ function getHistoryLocal() {
 
 async function fetchAndRenderHistory() {
     let entries = [];
-    const threeDaysAgoISO = new Date(Date.now() - (3 * 24 * 60 * 60 * 1000)).toISOString();
+    const sevenDaysAgoISO = new Date(Date.now() - (7 * 24 * 60 * 60 * 1000)).toISOString();
 
     if (dbMode === 'supabase' && supabaseClient) {
         try {
-            // Prune database logs older than 3 days
+            // Prune database logs older than 7 days
             await supabaseClient
                 .from('historial')
                 .delete()
-                .lt('created_at', threeDaysAgoISO);
+                .lt('created_at', sevenDaysAgoISO);
 
-            // Fetch remaining active logs for the last 3 days
+            // Fetch remaining active logs for the last 7 days
             const { data, error } = await supabaseClient
                 .from('historial')
                 .select('*')
-                .gt('created_at', threeDaysAgoISO)
+                .gt('created_at', sevenDaysAgoISO)
                 .order('created_at', { ascending: false });
 
             if (error) throw error;
@@ -2762,10 +2767,21 @@ async function fetchAndRenderHistory() {
         return !d.includes('(Grande -') && !d.includes('(Pequeña -');
     });
 
+    // Apply Search Filter Reactively
+    const searchVal = document.getElementById('historySearchInput') ? document.getElementById('historySearchInput').value.trim().toLowerCase() : '';
+    if (searchVal) {
+        entries = entries.filter(e => {
+            const user = (e.user_name || '').toLowerCase();
+            const details = (e.details || '').toLowerCase();
+            const action = (e.action || '').toLowerCase();
+            return user.includes(searchVal) || details.includes(searchVal) || action.includes(searchVal);
+        });
+    }
+
     if (!activityList) return;
 
     if (entries.length === 0) {
-        activityList.innerHTML = '<p class="no-activity">No hay actividad registrada.</p>';
+        activityList.innerHTML = '<p class="no-activity">No se encontraron registros en el historial.</p>';
         return;
     }
 
@@ -2781,25 +2797,48 @@ async function fetchAndRenderHistory() {
 
     let html = '';
     for (const [dayLabel, groupEntries] of Object.entries(groups)) {
-        html += `<div class="activity-day-group">${dayLabel}</div>`;
+        html += `<div class="activity-day-group" style="font-weight: 700; margin-top: 16px; margin-bottom: 8px; color: var(--primary); font-size: 12px; text-transform: uppercase;">${dayLabel}</div>`;
         html += groupEntries.map(entry => {
             const timeAgo = formatTimeAgo(new Date(entry.created_at));
-            let actionClass = 'crear';
+            
+            let badgeColor = '#10b981'; // green for crear
+            let badgeBg = 'rgba(16, 185, 129, 0.1)';
+            let actionTextLabel = 'Crear';
 
             if (entry.action === 'editar') {
-                actionClass = 'editar';
+                badgeColor = '#f59e0b'; // orange for editar
+                badgeBg = 'rgba(245, 158, 11, 0.1)';
+                actionTextLabel = 'Editar';
             } else if (entry.action === 'eliminar') {
-                actionClass = 'eliminar';
+                badgeColor = '#ef4444'; // red for eliminar
+                badgeBg = 'rgba(239, 68, 68, 0.1)';
+                actionTextLabel = 'Eliminar';
             }
 
+            // Clean details (removing system prefix if present)
+            let cleanDetails = entry.details || '';
+            const systemPrefixes = ['[Canchas] ', '[Polideportivo] ', '[Bungalows] ', '[Locales] ', '[Asistencia] '];
+            systemPrefixes.forEach(pref => {
+                if (cleanDetails.startsWith(pref)) {
+                    cleanDetails = cleanDetails.substring(pref.length);
+                }
+            });
+
             return `
-                <div class="activity-item">
-                    <div class="activity-indicator ${actionClass}"></div>
-                    <div class="activity-content">
-                        <span class="activity-text">
-                            <span class="user-highlight">${escapeHTML(entry.user_name)}</span> ${escapeHTML(entry.details)}
-                        </span>
-                        <span class="activity-time">${timeAgo}</span>
+                <div class="activity-item" style="padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.03);">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
+                        <div style="display: flex; flex-direction: column; gap: 4px; flex: 1;">
+                            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                <span style="font-size: 10px; font-weight: 600; text-transform: uppercase; padding: 2px 6px; border-radius: 4px; background: ${badgeBg}; color: ${badgeColor}; border: 1px solid rgba(255,255,255,0.03);">
+                                    ${actionTextLabel}
+                                </span>
+                                <span class="user-highlight" style="font-weight: 600; font-size: 13px; color: var(--text-primary);">${escapeHTML(entry.user_name)}</span>
+                            </div>
+                            <span class="activity-text" style="font-size: 13px; color: var(--text-secondary); line-height: 1.4;">
+                                ${escapeHTML(cleanDetails)}
+                            </span>
+                        </div>
+                        <span class="activity-time" style="font-size: 11px; color: var(--text-muted); white-space: nowrap;">${timeAgo}</span>
                     </div>
                 </div>
             `;
