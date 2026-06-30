@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bungalows de Tomayquichua - Sistema de Reservas</title>
+    <title>Locales - Sistema de Reservas - Sistema de Reservas</title>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -34,7 +34,7 @@
                 <div class="logo-title">
                     <i data-lucide="leaf" class="logo-icon"
                         style="color: var(--primary); filter: drop-shadow(0 0 8px var(--primary-glow));"></i>
-                    <h2>Bungalow <span>de Tomayquichua</span><span class="logo-subtitle">Casa Campo</span></h2>
+                    <h2>Alquiler <span>de Locales</span><span class="logo-subtitle">Eventos</span></h2>
                 </div>
                 <button class="btn-close-sidebar" id="btnCloseSidebar">
                     <i data-lucide="x"></i>
@@ -54,37 +54,22 @@
             </div>
 
             <nav class="nav-filters">
-                <h3>Filtrar por Bungalow</h3>
-                <div class="filter-group">
+                <h3>Filtrar por Local</h3>
+                                <div class="filter-group">
                     <label class="filter-item">
-                        <input type="checkbox" id="filterB1" checked>
+                        <input type="checkbox" id="filterLosPinosGrande" checked>
                         <span class="custom-checkbox color-b1"></span>
-                        Bungalow 1
+                        Los Pinos (Grande)
                     </label>
                     <label class="filter-item">
-                        <input type="checkbox" id="filterB2" checked>
+                        <input type="checkbox" id="filterLosPinosPequeno" checked>
                         <span class="custom-checkbox color-b2"></span>
-                        Bungalow 2
+                        Los Pinos (Pequeño)
                     </label>
                     <label class="filter-item">
-                        <input type="checkbox" id="filterB3" checked>
+                        <input type="checkbox" id="filterPolideportivoGrande" checked>
                         <span class="custom-checkbox color-b3"></span>
-                        Bungalow 3
-                    </label>
-                    <label class="filter-item">
-                        <input type="checkbox" id="filterB4" checked>
-                        <span class="custom-checkbox color-b4"></span>
-                        Bungalow 4
-                    </label>
-                    <label class="filter-item">
-                        <input type="checkbox" id="filterB5" checked>
-                        <span class="custom-checkbox color-b5"></span>
-                        Bungalow 5
-                    </label>
-                    <label class="filter-item">
-                        <input type="checkbox" id="filterB6" checked>
-                        <span class="custom-checkbox color-b6"></span>
-                        Bungalow 6
+                        Polideportivo (Grande)
                     </label>
                 </div>
 
@@ -112,7 +97,7 @@
             <div class="stats-card">
                 <h3>Resumen de Hoy</h3>
                 <div class="stat-item">
-                    <span class="stat-label">Bungalows Ocupados</span>
+                    <span class="stat-label">Locales Ocupados</span>
                     <span class="stat-value" id="statTodayOccupied">0 / 6</span>
                 </div>
                 <div class="stat-item">
@@ -153,7 +138,7 @@
             </div>
 
             <footer class="sidebar-footer">
-                <p>Bungalows de Tomayquichua &copy; 2026</p>
+                <p>Locales - Sistema de Reservas &copy; 2026</p>
                 <p class="footer-note">Desarrollado por Rogger Dird Huaicama Lacerna</p>
             </footer>
         </aside>
@@ -166,8 +151,8 @@
                         <i data-lucide="menu"></i>
                     </button>
                     <div class="header-title">
-                        <h1>Calendario de Bungalows</h1>
-                        <p>Gestione el hospedaje, tarifas de fin de semana y turnos.</p>
+                        <h1>Calendario de Locales</h1>
+                        <p>Gestione el alquiler de locales por sede y fecha.</p>
                     </div>
                 </div>
                 <button class="btn btn-primary" id="btnNewReservation">
@@ -305,21 +290,18 @@
     <div class="modal-backdrop" id="modalBooking">
         <div class="modal-card modal-lg">
             <div class="modal-header">
-                <h3 id="modalTitle">Nueva Reserva de Bungalow</h3>
+                <h3 id="modalTitle">Nueva Reserva de Local</h3>
                 <button class="btn-close" id="btnCloseBooking"><i data-lucide="x"></i></button>
             </div>
             <div class="modal-body">
                 <form id="formBooking">
                     <input type="hidden" id="bookingId">
 
-                    <!-- Maintenance Mode / Block -->
+                                        <!-- Maintenance Mode / Block -->
                     <div class="form-group" style="margin-bottom: 16px;">
-                        <label class="checkbox-container"
-                            style="display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;">
-                            <input type="checkbox" id="bookingIsBlock"
-                                style="width: 18px; height: 18px; cursor: pointer;">
-                            <span style="font-weight: 600; color: #f87171;">🔒 ¿Bloquear Bungalow (Fuera de Servicio /
-                                Mantenimiento)?</span>
+                        <label class="checkbox-container" style="display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;">
+                            <input type="checkbox" id="bookingIsBlock" style="width: 18px; height: 18px; cursor: pointer;">
+                            <span style="font-weight: 600; color: #f87171;">🔒 ¿Bloquear Local (Fuera de Servicio)?</span>
                         </label>
                     </div>
 
@@ -334,197 +316,77 @@
 
                     <div class="form-row" id="rowClientDetails" style="grid-template-columns: 1fr;">
                         <div class="form-group">
-                            <label for="bookingDni">DNI *</label>
+                            <label for="bookingTelefono">Teléfono (Opcional)</label>
                             <div class="input-wrapper">
-                                <i data-lucide="credit-card"></i>
-                                <input type="text" id="bookingDni" required placeholder="Ej. 12345678" maxlength="12"
-                                    inputmode="numeric" pattern="[0-9]*">
+                                <i data-lucide="phone"></i>
+                                <input type="text" id="bookingTelefono" placeholder="Ej. 987654321">
                             </div>
                         </div>
                     </div>
 
-                    <!-- Horario / Turno -->
-                    <div class="form-group">
-                        <label for="bookingHorario">Horario / Turno *</label>
-                        <div class="input-wrapper">
-                            <i data-lucide="clock"></i>
-                            <select id="bookingHorario" required>
-                                <option value="Día y Noche" selected>Día y Noche (3:00 PM - 12:00 PM del día sgte)
-                                </option>
-                                <option value="Full Day">Full Day (9:00 AM - 6:00 PM del mismo día)</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <!-- Dates selection -->
+                    <!-- Local y Tipo de Evento -->
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="bookingCheckIn">Fecha de Ingreso *</label>
+                            <label for="bookingLocal">Local y Espacio *</label>
+                            <div class="input-wrapper">
+                                <i data-lucide="map-pin"></i>
+                                <select id="bookingLocal" required>
+                                    <option value="" disabled selected>Seleccione...</option>
+                                    <option value="Los Pinos|Grande">Los Pinos - Grande</option>
+                                    <option value="Los Pinos|Pequeño">Los Pinos - Pequeño</option>
+                                    <option value="Polideportivo|Grande">Polideportivo - Grande</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="bookingTipoEvento">Tipo de Evento *</label>
+                            <div class="input-wrapper">
+                                <i data-lucide="party-popper"></i>
+                                <input type="text" id="bookingTipoEvento" required placeholder="Ej. Cumpleaños, Boda, Fiesta...">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Fecha y Horario -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="bookingFecha">Fecha del Evento *</label>
                             <div class="input-wrapper">
                                 <i data-lucide="calendar-days"></i>
-                                <input type="date" id="bookingCheckIn" required>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label for="bookingCheckOut">Fecha de Salida *</label>
-                            <div class="input-wrapper">
-                                <i data-lucide="calendar-check"></i>
-                                <input type="date" id="bookingCheckOut" required>
+                                <input type="date" id="bookingFecha" required>
                             </div>
                         </div>
                     </div>
-
-                    <!-- Bungalow Selection Checklist -->
-                    <div class="form-group" style="margin-bottom: 20px;">
-                        <label style="display: block; margin-bottom: 8px; font-weight: 600;">Número de Bungalows
-                            *</label>
-                        <div class="bungalows-grid">
-                            <div class="bungalow-card" data-bungalow="1">
-                                <input type="checkbox" id="chkBungalow1" name="bungalowSelect" value="1">
-                                <label for="chkBungalow1" class="bungalow-card-label">
-                                    <span class="checkbox-box"><i data-lucide="check"></i></span>
-                                    <span class="bungalow-name">Bungalow 1</span>
-                                    <span class="bungalow-status available">Disponible</span>
-                                </label>
-                            </div>
-                            <div class="bungalow-card" data-bungalow="2">
-                                <input type="checkbox" id="chkBungalow2" name="bungalowSelect" value="2">
-                                <label for="chkBungalow2" class="bungalow-card-label">
-                                    <span class="checkbox-box"><i data-lucide="check"></i></span>
-                                    <span class="bungalow-name">Bungalow 2</span>
-                                    <span class="bungalow-status available">Disponible</span>
-                                </label>
-                            </div>
-                            <div class="bungalow-card" data-bungalow="3">
-                                <input type="checkbox" id="chkBungalow3" name="bungalowSelect" value="3">
-                                <label for="chkBungalow3" class="bungalow-card-label">
-                                    <span class="checkbox-box"><i data-lucide="check"></i></span>
-                                    <span class="bungalow-name">Bungalow 3</span>
-                                    <span class="bungalow-status available">Disponible</span>
-                                </label>
-                            </div>
-                            <div class="bungalow-card" data-bungalow="4">
-                                <input type="checkbox" id="chkBungalow4" name="bungalowSelect" value="4">
-                                <label for="chkBungalow4" class="bungalow-card-label">
-                                    <span class="checkbox-box"><i data-lucide="check"></i></span>
-                                    <span class="bungalow-name">Bungalow 4</span>
-                                    <span class="bungalow-status available">Disponible</span>
-                                </label>
-                            </div>
-                            <div class="bungalow-card" data-bungalow="5">
-                                <input type="checkbox" id="chkBungalow5" name="bungalowSelect" value="5">
-                                <label for="chkBungalow5" class="bungalow-card-label">
-                                    <span class="checkbox-box"><i data-lucide="check"></i></span>
-                                    <span class="bungalow-name">Bungalow 5</span>
-                                    <span class="bungalow-status available">Disponible</span>
-                                </label>
-                            </div>
-                            <div class="bungalow-card" data-bungalow="6">
-                                <input type="checkbox" id="chkBungalow6" name="bungalowSelect" value="6">
-                                <label for="chkBungalow6" class="bungalow-card-label">
-                                    <span class="checkbox-box"><i data-lucide="check"></i></span>
-                                    <span class="bungalow-name">Bungalow 6</span>
-                                    <span class="bungalow-status available">Disponible</span>
-                                </label>
-                            </div>
-                        </div>
-                        <select id="bookingBungalow" required
-                            style="position: absolute; opacity: 0; width: 1px; height: 1px; pointer-events: none;">
-                            <option value="">Seleccione...</option>
-                            <option value="1">Bungalow 1</option>
-                            <option value="2">Bungalow 2</option>
-                            <option value="3">Bungalow 3</option>
-                            <option value="4">Bungalow 4</option>
-                            <option value="5">Bungalow 5</option>
-                            <option value="6">Bungalow 6</option>
-                        </select>
-                    </div>
-
-                    <!-- Occupancy: Additional guests and little child -->
-                    <div class="form-row" id="rowOccupancy">
+                    <div class="form-row">
                         <div class="form-group">
-                            <label for="bookingAdicionales">Personas Adicionales</label>
+                            <label for="bookingHoraInicio">Hora de Inicio *</label>
                             <div class="input-wrapper">
-                                <i data-lucide="users"></i>
-                                <input type="number" id="bookingAdicionales" min="0" max="10" value="0">
-                            </div>
-                            <small class="text-secondary">Capacidad estándar: 4 personas. Adicionales pagan S/. 35 c/u
-                                por noche.</small>
-                        </div>
-                        <div class="form-group">
-                            <label for="bookingNinoPequeno">Niños menores de 7</label>
-                            <div class="input-wrapper">
-                                <i data-lucide="baby"></i>
-                                <input type="number" id="bookingNinoPequeno" min="0" max="1" value="0">
-                            </div>
-                            <small class="text-secondary" id="bookingNinosHelp">Máximo 1 niño por bungalow.</small>
-                        </div>
-                    </div>
-
-                    <!-- Extras: Hours and Cuatrimotos -->
-                    <div class="form-row" id="rowExtras">
-                        <div class="form-group">
-                            <label for="bookingHorasExtras">Horas Adicionales</label>
-                            <div class="input-wrapper">
-                                <i data-lucide="plus-circle"></i>
-                                <input type="number" id="bookingHorasExtras" min="0" value="0">
+                                <i data-lucide="clock"></i>
+                                <input type="time" id="bookingHoraInicio" required>
                             </div>
                         </div>
                         <div class="form-group">
-                            <label for="bookingAdicionalHoras">Monto por Horas Extras (S/.)</label>
+                            <label for="bookingHoraFin">Hora de Fin *</label>
                             <div class="input-wrapper">
-                                <i data-lucide="banknote"></i>
-                                <input type="number" id="bookingAdicionalHoras" min="0" value="0" step="any">
+                                <i data-lucide="clock"></i>
+                                <input type="time" id="bookingHoraFin" required>
                             </div>
                         </div>
                     </div>
 
                     <!-- Payment Information -->
-                    <div class="form-row" id="rowMedioPago">
-                        <div class="form-group">
-                            <label for="bookingSource">Medio de Contacto *</label>
-                            <div class="input-wrapper">
-                                <i data-lucide="share-2"></i>
-                                <select id="bookingSource" required>
-                                    <option value="Facebook" selected>Facebook</option>
-                                    <option value="TikTok">TikTok</option>
-                                    <option value="Instagram">Instagram</option>
-                                    <option value="Estado WSP">Estado WSP</option>
-                                    <option value="Msg masivo">Msg masivo</option>
-                                    <option value="Cliente frecuente">Cliente frecuente</option>
-                                    <option value="Recomendación">Recomendación</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label for="bookingPaymentType">Tipo de Pago *</label>
-                            <div class="input-wrapper">
-                                <i data-lucide="wallet"></i>
-                                <select id="bookingPaymentType" required>
-                                    <option value="Depósito" selected>Depósito</option>
-                                    <option value="Yape">Yape</option>
-                                    <option value="Dividido">Dividido (Depósito + Yape)</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Split Payment Row -->
-                    <div class="form-row hidden" id="splitPaymentRow"
-                        style="margin-top: 12px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: var(--radius-sm);">
-                        <div class="form-group" style="margin-bottom: 0;">
-                            <label for="splitEfectivo">Monto Depósito (S/.) *</label>
-                            <div class="input-wrapper">
-                                <i data-lucide="banknote"></i>
-                                <input type="number" id="splitEfectivo" placeholder="0.00" min="0" step="any">
-                            </div>
-                        </div>
-                        <div class="form-group" style="margin-bottom: 0;">
-                            <label for="splitYape">Monto Yape (S/.) *</label>
-                            <div class="input-wrapper">
-                                <i data-lucide="smartphone"></i>
-                                <input type="number" id="splitYape" placeholder="0.00" min="0" step="any">
-                            </div>
+                    <div class="form-group">
+                        <label for="bookingSource">Medio de Contacto *</label>
+                        <div class="input-wrapper">
+                            <i data-lucide="share-2"></i>
+                            <select id="bookingSource" required>
+                                <option value="WhatsApp" selected>WhatsApp</option>
+                                <option value="Facebook">Facebook</option>
+                                <option value="TikTok">TikTok</option>
+                                <option value="Instagram">Instagram</option>
+                                <option value="Estado WSP">Estado WSP</option>
+                                <option value="Presencial">Presencial</option>
+                            </select>
                         </div>
                     </div>
 
@@ -554,62 +416,29 @@
                             style="width: 100%; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--border-color); border-radius: var(--radius-sm); color: white; padding: 10px; font-family: var(--font-sans);"></textarea>
                     </div>
 
-                    <!-- Cost Breakdown Display -->
-                    <div
-                        style="background: rgba(245, 158, 11, 0.05); border: 1px solid rgba(245, 158, 11, 0.2); padding: 15px; border-radius: var(--radius-md); margin-top: 16px; display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; font-size: 13px;">
-                        <div>
-                            <span class="text-secondary" style="display: block;">Precio Base:</span>
-                            <span id="breakdownBase" style="font-weight: 700; font-size: 15px;">S/. 0.00</span>
-                        </div>
-                        <div>
-                            <span class="text-secondary" style="display: block;">Adicional Huéspedes:</span>
-                            <span id="breakdownGuests" style="font-weight: 700; font-size: 15px;">S/. 0.00</span>
-                        </div>
-                        <div>
-                            <span class="text-secondary" style="display: block;">Extras (Horas/Motos):</span>
-                            <span id="breakdownExtras" style="font-weight: 700; font-size: 15px;">S/. 0.00</span>
-                        </div>
-                        <div style="display: none; border-left: 1px solid rgba(245, 158, 11, 0.2); padding-left: 12px;">
-                            <span class="text-secondary" style="display: block;">Adelanto:</span>
-                            <span id="breakdownAdvance" style="font-weight: 700; font-size: 15px; color: #fbbf24;">S/.
-                                0.00</span>
-                        </div>
-                        <div style="display: none;">
-                            <span class="text-secondary" style="display: block;">Saldo Pendiente:</span>
-                            <span id="breakdownRemaining" style="font-weight: 700; font-size: 15px; color: #ef4444;">S/.
-                                0.00</span>
-                        </div>
-                    </div>
-
                     <!-- Dynamic Booking Payment Row -->
                     <div class="form-row" style="margin-top: 16px;">
                         <div class="form-group">
                             <label for="bookingTotal">Total a Pagar (S/.) *</label>
-                            <div class="input-wrapper"
-                                style="background: rgba(245, 158, 11, 0.05); border-color: rgba(245, 158, 11, 0.2);">
+                            <div class="input-wrapper" style="background: rgba(245, 158, 11, 0.05); border-color: rgba(245, 158, 11, 0.2);">
                                 <i data-lucide="banknote"></i>
-                                <input type="number" id="bookingTotal" required placeholder="0.00" min="0" step="any"
-                                    style="font-weight: 700; color: var(--text-primary);">
+                                <input type="number" id="bookingTotal" required placeholder="0.00" min="0" step="any" style="font-weight: 700; color: var(--text-primary);">
                             </div>
-                            <small class="text-secondary">Se calcula solo.</small>
                         </div>
                         <div class="form-group">
-                            <label for="bookingAdelanto">Monto Adelantado (S/.)</label>
+                            <label for="bookingAdelanto">Avance de Costo (S/.)</label>
                             <div class="input-wrapper">
                                 <i data-lucide="wallet"></i>
                                 <input type="number" id="bookingAdelanto" placeholder="0.00" min="0" step="any">
                             </div>
-                            <small class="text-secondary">Monto recibido </small>
                         </div>
                         <div class="form-group">
-                            <label for="bookingPendiente">Saldo Pendiente</label>
-                            <div class="input-wrapper"
-                                style="background: rgba(239, 68, 68, 0.05); border-color: rgba(239, 68, 68, 0.2);">
+                            <label for="bookingPendiente">Saldo Pendiente (Falta Pagar)</label>
+                            <div class="input-wrapper" style="background: rgba(239, 68, 68, 0.05); border-color: rgba(239, 68, 68, 0.2);">
                                 <i data-lucide="alert-circle" style="color: #ef4444;"></i>
-                                <input type="number" id="bookingPendiente" placeholder="0.00" min="0" step="any"
-                                    style="color: #ef4444; font-weight: 600;">
+                                <input type="number" id="bookingPendiente" placeholder="0.00" min="0" step="any" style="color: #ef4444; font-weight: 600;" readonly>
                             </div>
-                            <small class="text-secondary">Monto restante por cobrar.</small>
+                            <small class="text-secondary">Se calcula automáticamente.</small>
                         </div>
                     </div>
 
@@ -748,7 +577,7 @@
         <div class="modal-card modal-lg" style="max-width: 800px;">
             <div class="modal-header">
                 <h3 style="display: flex; align-items: center; gap: 8px; margin: 0;">
-                    <i data-lucide="line-chart" style="color: var(--primary);"></i> Estadísticas y Finanzas de Bungalows
+                    <i data-lucide="line-chart" style="color: var(--primary);"></i> Estadísticas y Finanzas de Locales
                 </h3>
                 <button class="btn-close" id="btnCloseStatsModal"><i data-lucide="x"></i></button>
             </div>
@@ -914,7 +743,7 @@
         </div>
     </div>
     <!-- Script triggers and main logic -->
-    <script src="bungalows.js"></script>
+    <script src="locales.js"></script>
 </body>
 
 </html>

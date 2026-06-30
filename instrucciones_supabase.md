@@ -216,4 +216,46 @@ ALTER PUBLICATION supabase_realtime ADD TABLE personal_asesores;
 
 4. Haz clic en **"Run"**. Si todo sale bien, la lista de asesores se almacenará en la nube en lugar de solo en la memoria del navegador.
 
+---
+
+## 🏢 Paso Especial: Configurar Base de Datos para Alquiler de Locales
+
+Para activar el nuevo sistema de reservas de **Locales**, debes crear la tabla correspondiente en tu base de datos de Supabase.
+
+1. Ve a **SQL Editor** (`>_`) en Supabase.
+2. Abre una pestaña nueva (**+ New query**).
+3. Pega y ejecuta el siguiente bloque SQL:
+
+```sql
+-- 1. Crear tabla para registrar las reservas de los locales
+CREATE TABLE IF NOT EXISTS reservas_locales (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  sede TEXT NOT NULL,                      -- 'Los Pinos' o 'Polideportivo'
+  espacio TEXT NOT NULL,                   -- 'Grande' o 'Pequeño'
+  nombre_cliente TEXT NOT NULL,
+  telefono_cliente TEXT,
+  fecha_reserva DATE NOT NULL,
+  hora_inicio TIME NOT NULL,
+  hora_fin TIME NOT NULL,
+  tipo_evento TEXT,                        -- Cumpleaños, Bautizo, Fiesta, etc.
+  monto_total DECIMAL(10,2) NOT NULL,      -- Costo total del alquiler
+  monto_adelanto DECIMAL(10,2) DEFAULT 0.00,
+  medio_contacto TEXT DEFAULT 'WhatsApp',
+  estado_reserva TEXT DEFAULT 'Confirmado', -- Confirmado, Cancelado, Completado
+  notas TEXT,
+  asesor_registro TEXT,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Habilitar RLS (Row Level Security) obligatorio en Supabase
+ALTER TABLE reservas_locales ENABLE ROW LEVEL SECURITY;
+
+-- Crear regla de acceso público
+CREATE POLICY "Acceso publico reservas_locales" ON reservas_locales FOR ALL USING (true) WITH CHECK (true);
+
+-- Habilitar tiempo real
+ALTER PUBLICATION supabase_realtime ADD TABLE reservas_locales;
+```
+
+4. Haz clic en **"Run"**. Deberías ver el mensaje **"Success. No rows returned"**. ¡El módulo de Locales está listo para conectarse!
 
