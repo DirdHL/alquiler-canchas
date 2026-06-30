@@ -342,12 +342,12 @@ body {
 }
 
 /* Nature Palette for Events */
-.event-bungalow-1 { background: linear-gradient(135deg, #2d5a27, #1f421a) !important; } /* Sage */
-.event-bungalow-2 { background: linear-gradient(135deg, #a4763c, #8b602d) !important; } /* Terracotta Gold */
-.event-bungalow-3 { background: linear-gradient(135deg, #3d5a80, #293d56) !important; } /* Slate Blue */
-.event-bungalow-4 { background: linear-gradient(135deg, #a06a6a, #805252) !important; } /* Rosewood */
-.event-bungalow-5 { background: linear-gradient(135deg, #6b5b95, #4f4270) !important; } /* Muted Grape */
-.event-bungalow-6 { background: linear-gradient(135deg, #4f6d7a, #38515c) !important; } /* Pine Ocean */
+.event-bungalow-1 { background: linear-gradient(135deg, #43a047, #2e7d32) !important; } /* Grass Green */
+.event-bungalow-2 { background: linear-gradient(135deg, #e67e22, #d35400) !important; } /* Clay Orange */
+.event-bungalow-3 { background: linear-gradient(135deg, #3498db, #1f618d) !important; } /* Sky Blue */
+.event-bungalow-4 { background: linear-gradient(135deg, #e74c3c, #c0392b) !important; } /* Hibiscus Red */
+.event-bungalow-5 { background: linear-gradient(135deg, #af7ac5, #8e44ad) !important; } /* Lavender Purple */
+.event-bungalow-6 { background: linear-gradient(135deg, #1abc9c, #16a085) !important; } /* Eucalyptus Teal */
 .event-bungalow-blocked { background: linear-gradient(135deg, #78716c, #57534e) !important; } /* Stone Gray */
 
 /* =============================================================
@@ -381,81 +381,81 @@ body {
 }
 
 /* Badges for Bungalows */
-.bungalow-badge-1 { background: rgba(45, 90, 39, 0.12) !important; color: #2d5a27 !important; border: 1px solid rgba(45, 90, 39, 0.25) !important; }
-.bungalow-badge-2 { background: rgba(164, 118, 60, 0.12) !important; color: #a4763c !important; border: 1px solid rgba(164, 118, 60, 0.25) !important; }
-.bungalow-badge-3 { background: rgba(61, 90, 128, 0.12) !important; color: #3d5a80 !important; border: 1px solid rgba(61, 90, 128, 0.25) !important; }
-.bungalow-badge-4 { background: rgba(160, 106, 106, 0.12) !important; color: #a06a6a !important; border: 1px solid rgba(160, 106, 106, 0.25) !important; }
-.bungalow-badge-5 { background: rgba(107, 91, 149, 0.12) !important; color: #6b5b95 !important; border: 1px solid rgba(107, 91, 149, 0.25) !important; }
-.bungalow-badge-6 { background: rgba(79, 109, 122, 0.12) !important; color: #4f6d7a !important; border: 1px solid rgba(79, 109, 122, 0.25) !important; }
+.bungalow-badge-1 { background: rgba(46, 125, 50, 0.1) !important; color: #2e7d32 !important; border: 1px solid rgba(46, 125, 50, 0.2) !important; }
+.bungalow-badge-2 { background: rgba(211, 84, 0, 0.1) !important; color: #d35400 !important; border: 1px solid rgba(211, 84, 0, 0.2) !important; }
+.bungalow-badge-3 { background: rgba(31, 97, 141, 0.1) !important; color: #1f618d !important; border: 1px solid rgba(31, 97, 141, 0.2) !important; }
+.bungalow-badge-4 { background: rgba(192, 57, 43, 0.1) !important; color: #c0392b !important; border: 1px solid rgba(192, 57, 43, 0.2) !important; }
+.bungalow-badge-5 { background: rgba(142, 68, 173, 0.1) !important; color: #8e44ad !important; border: 1px solid rgba(142, 68, 173, 0.2) !important; }
+.bungalow-badge-6 { background: rgba(22, 160, 133, 0.1) !important; color: #16a085 !important; border: 1px solid rgba(22, 160, 133, 0.2) !important; }
 .bungalow-badge-blocked { background: rgba(120, 113, 108, 0.12) !important; color: #78716c !important; border: 1px solid rgba(120, 113, 108, 0.25) !important; }
 
 /* Filter items checkmarks */
-.filter-item input:checked+.custom-checkbox.color-b1 { background: #2d5a27; border-color: #2d5a27; }
-.filter-item input:checked+.custom-checkbox.color-b2 { background: #a4763c; border-color: #a4763c; }
-.filter-item input:checked+.custom-checkbox.color-b3 { background: #3d5a80; border-color: #3d5a80; }
-.filter-item input:checked+.custom-checkbox.color-b4 { background: #a06a6a; border-color: #a06a6a; }
-.filter-item input:checked+.custom-checkbox.color-b5 { background: #6b5b95; border-color: #6b5b95; }
-.filter-item input:checked+.custom-checkbox.color-b6 { background: #4f6d7a; border-color: #4f6d7a; }
+.filter-item input:checked+.custom-checkbox.color-b1 { background: #2e7d32; border-color: #2e7d32; }
+.filter-item input:checked+.custom-checkbox.color-b2 { background: #d35400; border-color: #d35400; }
+.filter-item input:checked+.custom-checkbox.color-b3 { background: #1f618d; border-color: #1f618d; }
+.filter-item input:checked+.custom-checkbox.color-b4 { background: #c0392b; border-color: #c0392b; }
+.filter-item input:checked+.custom-checkbox.color-b5 { background: #8e44ad; border-color: #8e44ad; }
+.filter-item input:checked+.custom-checkbox.color-b6 { background: #16a085; border-color: #16a085; }
 
 /* Availability grid badges specific to each Bungalow */
 .availability-booked-badge.bungalow-1 {
-    background: rgba(45, 90, 39, 0.12) !important;
-    border: 1px solid rgba(45, 90, 39, 0.4) !important;
-    color: #2d5a27 !important;
+    background: rgba(46, 125, 50, 0.1) !important;
+    border: 1px solid rgba(46, 125, 50, 0.3) !important;
+    color: #2e7d32 !important;
 }
 .availability-booked-badge.bungalow-1:hover {
-    background: rgba(45, 90, 39, 0.22) !important;
-    border-color: #2d5a27 !important;
+    background: rgba(46, 125, 50, 0.18) !important;
+    border-color: #2e7d32 !important;
 }
 
 .availability-booked-badge.bungalow-2 {
-    background: rgba(164, 118, 60, 0.12) !important;
-    border: 1px solid rgba(164, 118, 60, 0.4) !important;
-    color: #a4763c !important;
+    background: rgba(211, 84, 0, 0.1) !important;
+    border: 1px solid rgba(211, 84, 0, 0.3) !important;
+    color: #d35400 !important;
 }
 .availability-booked-badge.bungalow-2:hover {
-    background: rgba(164, 118, 60, 0.22) !important;
-    border-color: #a4763c !important;
+    background: rgba(211, 84, 0, 0.18) !important;
+    border-color: #d35400 !important;
 }
 
 .availability-booked-badge.bungalow-3 {
-    background: rgba(61, 90, 128, 0.12) !important;
-    border: 1px solid rgba(61, 90, 128, 0.4) !important;
-    color: #3d5a80 !important;
+    background: rgba(31, 97, 141, 0.1) !important;
+    border: 1px solid rgba(31, 97, 141, 0.3) !important;
+    color: #1f618d !important;
 }
 .availability-booked-badge.bungalow-3:hover {
-    background: rgba(61, 90, 128, 0.22) !important;
-    border-color: #3d5a80 !important;
+    background: rgba(31, 97, 141, 0.18) !important;
+    border-color: #1f618d !important;
 }
 
 .availability-booked-badge.bungalow-4 {
-    background: rgba(160, 106, 106, 0.12) !important;
-    border: 1px solid rgba(160, 106, 106, 0.4) !important;
-    color: #a06a6a !important;
+    background: rgba(192, 57, 43, 0.1) !important;
+    border: 1px solid rgba(192, 57, 43, 0.3) !important;
+    color: #c0392b !important;
 }
 .availability-booked-badge.bungalow-4:hover {
-    background: rgba(160, 106, 106, 0.22) !important;
-    border-color: #a06a6a !important;
+    background: rgba(192, 57, 43, 0.18) !important;
+    border-color: #c0392b !important;
 }
 
 .availability-booked-badge.bungalow-5 {
-    background: rgba(107, 91, 149, 0.12) !important;
-    border: 1px solid rgba(107, 91, 149, 0.4) !important;
-    color: #6b5b95 !important;
+    background: rgba(142, 68, 173, 0.1) !important;
+    border: 1px solid rgba(142, 68, 173, 0.3) !important;
+    color: #8e44ad !important;
 }
 .availability-booked-badge.bungalow-5:hover {
-    background: rgba(107, 91, 149, 0.22) !important;
-    border-color: #6b5b95 !important;
+    background: rgba(142, 68, 173, 0.18) !important;
+    border-color: #8e44ad !important;
 }
 
 .availability-booked-badge.bungalow-6 {
-    background: rgba(79, 109, 122, 0.12) !important;
-    border: 1px solid rgba(79, 109, 122, 0.4) !important;
-    color: #4f6d7a !important;
+    background: rgba(22, 160, 133, 0.1) !important;
+    border: 1px solid rgba(22, 160, 133, 0.3) !important;
+    color: #16a085 !important;
 }
 .availability-booked-badge.bungalow-6:hover {
-    background: rgba(79, 109, 122, 0.22) !important;
-    border-color: #4f6d7a !important;
+    background: rgba(22, 160, 133, 0.18) !important;
+    border-color: #16a085 !important;
 }
 
 /* =============================================================
@@ -863,23 +863,23 @@ body {
 }
 
 /* Color bindings for Cards in Nature Theme */
-.availability-card.bungalow-1 { background: rgba(45, 90, 39, 0.07); border: 1px solid rgba(45, 90, 39, 0.35); color: #2d5a27; }
-.availability-card.bungalow-1:hover { background: rgba(45, 90, 39, 0.15); border-color: #2d5a27; }
+.availability-card.bungalow-1 { background: rgba(46, 125, 50, 0.07); border: 1px solid rgba(46, 125, 50, 0.35); color: #2e7d32; }
+.availability-card.bungalow-1:hover { background: rgba(46, 125, 50, 0.15); border-color: #2e7d32; }
 
-.availability-card.bungalow-2 { background: rgba(164, 118, 60, 0.07); border: 1px solid rgba(164, 118, 60, 0.35); color: #a4763c; }
-.availability-card.bungalow-2:hover { background: rgba(164, 118, 60, 0.15); border-color: #a4763c; }
+.availability-card.bungalow-2 { background: rgba(211, 84, 0, 0.07); border: 1px solid rgba(211, 84, 0, 0.35); color: #d35400; }
+.availability-card.bungalow-2:hover { background: rgba(211, 84, 0, 0.15); border-color: #d35400; }
 
-.availability-card.bungalow-3 { background: rgba(61, 90, 128, 0.07); border: 1px solid rgba(61, 90, 128, 0.35); color: #3d5a80; }
-.availability-card.bungalow-3:hover { background: rgba(61, 90, 128, 0.15); border-color: #3d5a80; }
+.availability-card.bungalow-3 { background: rgba(31, 97, 141, 0.07); border: 1px solid rgba(31, 97, 141, 0.35); color: #1f618d; }
+.availability-card.bungalow-3:hover { background: rgba(31, 97, 141, 0.15); border-color: #1f618d; }
 
-.availability-card.bungalow-4 { background: rgba(160, 106, 106, 0.07); border: 1px solid rgba(160, 106, 106, 0.35); color: #a06a6a; }
-.availability-card.bungalow-4:hover { background: rgba(160, 106, 106, 0.15); border-color: #a06a6a; }
+.availability-card.bungalow-4 { background: rgba(192, 57, 43, 0.07); border: 1px solid rgba(192, 57, 43, 0.35); color: #c0392b; }
+.availability-card.bungalow-4:hover { background: rgba(192, 57, 43, 0.15); border-color: #c0392b; }
 
-.availability-card.bungalow-5 { background: rgba(107, 91, 149, 0.07); border: 1px solid rgba(107, 91, 149, 0.35); color: #6b5b95; }
-.availability-card.bungalow-5:hover { background: rgba(107, 91, 149, 0.15); border-color: #6b5b95; }
+.availability-card.bungalow-5 { background: rgba(142, 68, 173, 0.07); border: 1px solid rgba(142, 68, 173, 0.35); color: #8e44ad; }
+.availability-card.bungalow-5:hover { background: rgba(142, 68, 173, 0.15); border-color: #8e44ad; }
 
-.availability-card.bungalow-6 { background: rgba(79, 109, 122, 0.07); border: 1px solid rgba(79, 109, 122, 0.35); color: #4f6d7a; }
-.availability-card.bungalow-6:hover { background: rgba(79, 109, 122, 0.15); border-color: #4f6d7a; }
+.availability-card.bungalow-6 { background: rgba(22, 160, 133, 0.07); border: 1px solid rgba(22, 160, 133, 0.35); color: #16a085; }
+.availability-card.bungalow-6:hover { background: rgba(22, 160, 133, 0.15); border-color: #16a085; }
 
 /* Maintenance Block Cards */
 .availability-card.blocked-card {
