@@ -1247,10 +1247,13 @@ function checkBookingCollision(id, bungalow, checkIn, checkOut, horario, extraHo
 // ----------------------------------------------------
 function initCalendar() {
     const calendarEl = document.getElementById('calendar');
+    const isMobile = window.innerWidth <= 768;
     calendar = new FullCalendar.Calendar(calendarEl, {
         initialView: 'dayGridMonth',
         locale: 'es',
         firstDay: 1, // Lunes
+        // Desactiva el resize automático para que el min-width del CSS se respete
+        handleWindowResize: false,
         headerToolbar: {
             left: 'prev,next today',
             center: 'title',
@@ -2389,3 +2392,52 @@ async function handleDeleteAsesor(selectAsesor) {
         selectAsesor.value = '';
     }
 }
+
+// ============================================================
+// Touch scroll horizontal para el calendario (móvil)
+// FullCalendar captura los touch events — los interceptamos
+// ANTES que él (capture: true) para manejar el scroll.
+// ============================================================
+function initCalendarTouchScroll() {
+    const wrapper = document.querySelector('.calendar-scroll-wrapper');
+    if (!wrapper) return;
+
+    let startX = 0, startY = 0, startScroll = 0;
+    let scrolling = null; // null = sin decidir, true = horizontal, false = vertical
+
+    // Fase de captura: interceptamos antes que FullCalendar
+    wrapper.addEventListener('touchstart', (e) => {
+        startX      = e.touches[0].clientX;
+        startY      = e.touches[0].clientY;
+        startScroll = wrapper.scrollLeft;
+        scrolling   = null;
+    }, { passive: true, capture: true });
+
+    wrapper.addEventListener('touchmove', (e) => {
+        const dx = e.touches[0].clientX - startX;
+        const dy = e.touches[0].clientY - startY;
+
+        // Decidir dirección solo en el primer movimiento significativo
+        if (scrolling === null && (Math.abs(dx) > 6 || Math.abs(dy) > 6)) {
+            scrolling = Math.abs(dx) > Math.abs(dy); // true = horizontal
+        }
+
+        if (scrolling === true) {
+            // Es un deslizamiento horizontal → scrolleamos nosotros
+            e.preventDefault();   // evitar que el browser haga scroll de página
+            e.stopPropagation();  // evitar que FullCalendar lo reciba
+            wrapper.scrollLeft = startScroll - dx;
+        }
+        // Si scrolling === false (vertical) → dejamos pasar normalmente
+    }, { passive: false, capture: true });
+
+    wrapper.addEventListener('touchend', () => {
+        scrolling = null;
+    }, { passive: true, capture: true });
+}
+
+// Inicializar al cargar el DOM
+document.addEventListener('DOMContentLoaded', () => {
+    // Pequeño delay para que FullCalendar renderice primero
+    setTimeout(initCalendarTouchScroll, 600);
+});

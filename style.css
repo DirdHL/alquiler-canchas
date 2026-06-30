@@ -49,7 +49,7 @@
 
 html,
 body {
-    overflow-x: hidden;
+    overflow-x: clip; /* 'clip' recorta visualmente pero NO bloquea scroll interno */
     width: 100%;
 }
 
@@ -1332,7 +1332,7 @@ body.no-scroll {
 @media (max-width: 900px) {
     .app-container {
         grid-template-columns: 1fr;
-        overflow-x: hidden;
+        overflow-x: clip; /* Permite scroll horizontal en elementos hijos */
     }
 
     .sidebar {
