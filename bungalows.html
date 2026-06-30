@@ -763,6 +763,10 @@
                         style="background: none; border: none; color: var(--text-secondary); font-weight: 500; cursor: pointer; padding: 6px 12px; font-size: 14px;">
                         Clientes
                     </button>
+                    <button class="tab-btn" data-tab="tab-asesores"
+                        style="background: none; border: none; color: var(--text-secondary); font-weight: 500; cursor: pointer; padding: 6px 12px; font-size: 14px;">
+                        Asesores
+                    </button>
                 </div>
 
                 <!-- Tab content: Report -->
@@ -871,6 +875,29 @@
                                     <th style="padding: 12px 16px; color: var(--text-secondary);">DNI</th>
                                     <th style="padding: 12px 16px; color: var(--text-secondary);">Celular</th>
                                     <th style="padding: 12px 16px; color: var(--text-secondary);">Nro Reservas</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Se llenará dinámicamente -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Tab content: Asesores -->
+                <div class="tab-content" id="tab-asesores" style="display: none;">
+                    <p style="color: var(--text-secondary); margin-bottom: 16px;">Rendimiento de Asesores (Este mes):</p>
+                    <div
+                        style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: var(--radius-md); overflow-x: auto; max-height: 300px;">
+                        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 14px;"
+                            id="tableStatsAsesores">
+                            <thead>
+                                <tr
+                                    style="border-bottom: 1px solid var(--border-color); background: rgba(255, 255, 255, 0.03);">
+                                    <th style="padding: 12px 16px; color: var(--text-secondary);">Asesor</th>
+                                    <th style="padding: 12px 16px; color: var(--text-secondary);">Reservas</th>
+                                    <th style="padding: 12px 16px; color: var(--text-secondary);">Ingresos (S/.)</th>
+                                    <th style="padding: 12px 16px; color: var(--text-secondary);">Bungalows más alquilados</th>
                                 </tr>
                             </thead>
                             <tbody>

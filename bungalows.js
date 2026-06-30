@@ -1884,6 +1884,9 @@ function loadStatsDashboard() {
 
     // Client counts map
     const clientsMap = {};
+    
+    // Asesores stats map
+    const asesoresMap = {};
 
     monthBookings.forEach(b => {
         totalRevenue += b.monto_total;
@@ -1943,6 +1946,24 @@ function loadStatsDashboard() {
             }
             clientsMap[clientKey].count++;
         }
+
+        // Populate Asesores stats
+        let asesorNombre = b.asesor_registro ? b.asesor_registro.trim() : 'Sin Asesor';
+        if (asesorNombre === '') asesorNombre = 'Sin Asesor';
+        if (!asesoresMap[asesorNombre]) {
+            asesoresMap[asesorNombre] = {
+                count: 0,
+                revenue: 0,
+                bungalows: {} // { 1: count, 2: count }
+            };
+        }
+        asesoresMap[asesorNombre].count++;
+        asesoresMap[asesorNombre].revenue += b.monto_total || 0;
+        
+        if (!asesoresMap[asesorNombre].bungalows[b.bungalow_numero]) {
+            asesoresMap[asesorNombre].bungalows[b.bungalow_numero] = 0;
+        }
+        asesoresMap[asesorNombre].bungalows[b.bungalow_numero]++;
     });
 
     // Populate Top overview cards
@@ -2019,6 +2040,40 @@ function loadStatsDashboard() {
             `;
             tableClientsBody.appendChild(tr);
         });
+    }
+
+    // Populate Asesores Table
+    const tableAsesoresBody = document.querySelector('#tableStatsAsesores tbody');
+    if (tableAsesoresBody) {
+        tableAsesoresBody.innerHTML = '';
+        const asesoresList = Object.entries(asesoresMap)
+            .map(([nombre, data]) => ({ nombre, ...data }))
+            .sort((a, b) => b.revenue - a.revenue);
+
+        if (asesoresList.length === 0) {
+            tableAsesoresBody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 20px;">No hay registros de asesores este mes.</td></tr>';
+        } else {
+            asesoresList.forEach(a => {
+                // Determine top bungalows
+                const topBungalows = Object.entries(a.bungalows)
+                    .sort((x, y) => y[1] - x[1])
+                    .map(x => `B${x[0]} (${x[1]})`)
+                    .slice(0, 3) // Top 3
+                    .join(', ');
+
+                const tr = document.createElement('tr');
+                tr.style.borderBottom = '1px solid var(--border-color)';
+                tr.innerHTML = `
+                    <td style="padding: 12px 16px; font-weight: 600; color: white;">
+                        ${a.nombre === 'Sin Asesor' ? '<span style="color:var(--text-muted); font-style:italic;">Sin Asesor</span>' : a.nombre}
+                    </td>
+                    <td style="padding: 12px 16px;">${a.count}</td>
+                    <td style="padding: 12px 16px; font-weight: 700; color: #10b981;">S/. ${a.revenue.toFixed(2)}</td>
+                    <td style="padding: 12px 16px; font-size: 13px; color: var(--text-secondary);">${topBungalows || '-'}</td>
+                `;
+                tableAsesoresBody.appendChild(tr);
+            });
+        }
     }
 }
 
