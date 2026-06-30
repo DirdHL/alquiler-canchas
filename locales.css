@@ -1,643 +1,310 @@
 /* =============================================================
-   Bungalows Booking System Stylesheet - Tomayquichua Theme Style
-   Theme: Nature Warm Cream, Forest Green & Sandy-Gold accents
+   Locales Booking System Stylesheet - Spectacular Event Lights Theme
    ============================================================= */
 
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Outfit:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap');
 
 :root {
-    /* Color Palette - Royal Gold & Pearl (Celebración Dorada Elegante) */
-    --bg-primary: #f8fafc;
-    /* Soft pearl white */
-    --bg-secondary: #f1f5f9;
-    /* Very clean light gray */
-    --bg-card: #ffffff;
-    /* Pure white for cards */
-    --border-color: #e2e8f0;
-    /* Soft slate border */
+    /* Color Palette - Spectacular Event Lights */
+    --bg-primary: #fcfbfe;
+    --bg-secondary: #f3effa;
+    --bg-card: rgba(255, 255, 255, 0.8);
+    --border-color: rgba(139, 92, 246, 0.15); /* Neon purple tint */
 
-    --text-primary: #0f172a;
-    /* Deep slate/black */
-    --text-secondary: #475569;
-    /* Dark slate gray */
-    --text-muted: #94a3b8;
-    /* Medium slate gray */
+    --text-primary: #1e1b4b; /* Deep night indigo */
+    --text-secondary: #4c1d95; /* Deep purple */
+    --text-muted: #7c3aed; /* Electric violet */
 
-    --primary: #c49b45;
-    /* Royal Gold */
-    --primary-hover: #b08733;
-    --primary-glow: rgba(196, 155, 69, 0.12);
+    --primary: #8b5cf6; /* Electric Violet */
+    --primary-hover: #7c3aed;
+    --primary-glow: rgba(139, 92, 246, 0.3);
 
-    --accent: #d4af37;
-    /* Bright Gold */
-    --accent-hover: #c5a028;
+    --accent: #ec4899; /* Neon Pink */
+    --accent-hover: #db2777;
+    --accent-gold: #eab308; /* Spotlight Amber */
+    
     --danger: #ef4444;
     --danger-hover: #dc2626;
 
     --font-sans: 'Outfit', sans-serif;
     --font-serif: 'Playfair Display', serif;
-    --radius-sm: 8px;
-    --radius-md: 12px;
-    --radius-lg: 16px;
-    --radius-xl: 24px;
+    --radius-sm: 10px;
+    --radius-md: 16px;
+    --radius-lg: 24px;
+    --radius-xl: 32px;
 
-    --transition-smooth: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-    --blur-strength: 8px;
+    --transition-smooth: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    --blur-strength: 16px;
 }
 
-/* Base Body Styles */
+/* Background Glow Blobs */
+.bg-glow {
+    position: fixed;
+    width: 450px;
+    height: 450px;
+    border-radius: 50%;
+    filter: blur(150px);
+    z-index: -2;
+    pointer-events: none;
+    opacity: 0.45;
+}
+.bg-glow-1 {
+    top: -10%;
+    left: 20%;
+    background: radial-gradient(circle, rgba(139, 92, 246, 0.45) 0%, rgba(236, 72, 153, 0.15) 100%);
+    animation: floatGlow1 20s infinite alternate ease-in-out;
+}
+.bg-glow-2 {
+    bottom: -10%;
+    right: 15%;
+    background: radial-gradient(circle, rgba(236, 72, 153, 0.4) 0%, rgba(234, 179, 8, 0.15) 100%);
+    animation: floatGlow2 25s infinite alternate ease-in-out;
+}
+.bg-glow-3 {
+    top: 45%;
+    left: 5%;
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(circle, rgba(6, 182, 212, 0.3) 0%, rgba(139, 92, 246, 0.1) 100%);
+    animation: floatGlow3 18s infinite alternate ease-in-out;
+}
+
+@keyframes floatGlow1 {
+    0% { transform: translate(0, 0) scale(1); }
+    100% { transform: translate(80px, 50px) scale(1.15); }
+}
+@keyframes floatGlow2 {
+    0% { transform: translate(0, 0) scale(1); }
+    100% { transform: translate(-60px, -90px) scale(1.2); }
+}
+@keyframes floatGlow3 {
+    0% { transform: translate(0, 0) scale(0.9); }
+    100% { transform: translate(40px, 40px) scale(1.1); }
+}
+
 body {
-    background: radial-gradient(circle at 50% 0%, #ffffff 0%, #f1f5f9 100%) !important;
+    background: #f6f3fc !important;
     color: var(--text-primary) !important;
     font-family: var(--font-sans) !important;
+    overflow-x: hidden;
 }
 
-/* App Layout */
-.app-container {
-    background-color: var(--bg-primary);
-}
-
-/* Sidebar Styles Overrides (Nature Style) */
+/* Glassmorphic Sidebar with Neon Accent */
 .sidebar {
-    background: #ffffff !important;
+    background: rgba(255, 255, 255, 0.65) !important;
     border-right: 1px solid var(--border-color) !important;
-    backdrop-filter: none !important;
-    box-shadow: 2px 0 12px rgba(15, 23, 42, 0.03) !important;
+    backdrop-filter: blur(var(--blur-strength)) !important;
+    -webkit-backdrop-filter: blur(var(--blur-strength)) !important;
+    box-shadow: 10px 0 30px rgba(139, 92, 246, 0.04) !important;
 }
 
-/* Sidebar Headings */
-.sidebar h2 {
-    font-family: var(--font-serif) !important;
-    font-weight: 700 !important;
-    color: var(--primary) !important;
-    font-size: 21px !important;
-    letter-spacing: -0.2px !important;
-}
-
-.sidebar h2 span {
-    font-family: var(--font-sans) !important;
-    font-weight: 300 !important;
-    color: var(--accent) !important;
-    font-size: 0.9em;
-    display: inline-block;
-    margin-left: 3px;
-}
-
-.logo-area h2 .logo-subtitle {
-    font-family: var(--font-sans) !important;
-    background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(124, 58, 237, 0.1)) !important;
-    border: 1px solid rgba(245, 158, 11, 0.4) !important;
-    color: var(--accent) !important;
-    box-shadow: 0 0 10px rgba(245, 158, 11, 0.1) !important;
-}
-
+/* Sparkles animation in logo */
 .logo-icon {
+    animation: sparklePulse 3s infinite ease-in-out;
     color: var(--primary) !important;
 }
 
-/* Status indicator card */
-.status-indicator-card {
-    background: rgba(248, 250, 252, 0.8) !important;
-    border: 1px solid var(--border-color) !important;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.01) !important;
+@keyframes sparklePulse {
+    0% { transform: scale(1) rotate(0deg); filter: drop-shadow(0 0 2px var(--primary)); }
+    50% { transform: scale(1.2) rotate(15deg); filter: drop-shadow(0 0 10px var(--accent)); }
+    100% { transform: scale(1) rotate(0deg); filter: drop-shadow(0 0 2px var(--primary)); }
 }
 
-.status-dot.disconnected {
-    background-color: var(--accent) !important;
+.logo-area h2 {
+    font-family: var(--font-serif) !important;
+    color: var(--text-primary);
+}
+.logo-area h2 span {
     color: var(--accent) !important;
+    font-weight: 700 !important;
 }
 
-.status-desc {
-    color: var(--text-secondary) !important;
+/* Sidebar filter controls */
+.nav-filters h3 {
+    color: var(--text-muted) !important;
+    font-size: 11px !important;
+    letter-spacing: 1.5px;
+    border-bottom: 2px solid rgba(139, 92, 246, 0.1);
+    padding-bottom: 8px;
+    text-transform: uppercase;
 }
 
-.btn-secondary {
-    background: #ffffff !important;
+/* Navigation Links */
+.btn-sidebar-action {
+    background: rgba(255, 255, 255, 0.5) !important;
     color: var(--text-primary) !important;
     border: 1px solid var(--border-color) !important;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    transition: var(--transition-smooth) !important;
 }
-
-.btn-secondary:hover {
-    background: #fafafb !important;
-    border-color: var(--primary) !important;
-    color: var(--primary) !important;
-    box-shadow: 0 4px 12px rgba(196, 155, 69, 0.1);
-    transform: translateY(-1px);
-}
-
-/* Sidebar Nav links */
-.nav-filters h3 {
-    color: var(--primary) !important;
-    font-weight: 700 !important;
-    font-size: 11px !important;
-    border-bottom: 2px solid rgba(196, 155, 69, 0.15);
-    padding-bottom: 6px;
-    margin-top: 12px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.filter-item {
-    color: var(--text-secondary) !important;
-}
-
-.filter-item:hover {
-    color: var(--primary) !important;
-}
-
-.custom-checkbox {
-    border: 2px solid var(--text-muted) !important;
-}
-
-/* Sidebar action buttons */
-.btn-sidebar-action {
-    background: rgba(196, 155, 69, 0.05) !important;
-    color: var(--text-secondary) !important;
-    border: 1px solid rgba(196, 155, 69, 0.1) !important;
-    box-shadow: none !important;
-}
-
 .btn-sidebar-action:hover {
-    background: rgba(196, 155, 69, 0.1) !important;
-    color: var(--primary) !important;
-    border-color: rgba(196, 155, 69, 0.3) !important;
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(236, 72, 153, 0.1)) !important;
+    border-color: var(--primary) !important;
+    box-shadow: 0 4px 15px rgba(139, 92, 246, 0.1) !important;
     transform: translateX(4px);
 }
 
-/* Stats and user profile card in sidebar */
-.stats-card {
-    background: rgba(255, 255, 255, 0.5) !important;
-    border: 1px solid var(--border-color) !important;
-}
-
-.stats-card h3 {
-    color: var(--text-secondary) !important;
-    font-family: var(--font-serif) !important;
-    font-size: 14px !important;
-    border-bottom: 1px dotted var(--border-color);
-    padding-bottom: 4px;
-}
-
-.stat-item {
-    border-bottom: 1px solid rgba(223, 213, 196, 0.3) !important;
-}
-
-.stat-label {
-    color: var(--text-muted) !important;
-}
-
-.stat-value {
-    color: var(--text-primary) !important;
-}
-
-.user-profile-card {
-    background: rgba(255, 255, 255, 0.6) !important;
-    border: 1px solid var(--border-color) !important;
-}
-
-.user-name {
-    color: var(--text-primary) !important;
-}
-
-.user-label {
-    color: var(--text-muted) !important;
-}
-
-/* =============================================================
-   Main Content Area
-   ============================================================= */
-.main-content {
-    background: radial-gradient(circle at 50% 0%, #FAF6EE 0%, #F5EFEB 100%) !important;
-    padding: 30px 40px !important;
-}
-
-.app-header h1 {
-    font-family: var(--font-serif) !important;
-    font-weight: 700 !important;
-    color: var(--primary) !important;
-    font-size: 32px !important;
-    letter-spacing: -0.5px;
-    position: relative;
-}
-
-.app-header h1::after {
-    content: '';
-    display: block;
-    width: 60px;
-    height: 2px;
-    background: var(--accent);
-    margin-top: 6px;
-}
-
-.app-header p {
-    color: var(--text-secondary) !important;
-    font-size: 14px !important;
-    margin-top: 4px;
-}
-
-/* Primary Nature Button styling */
-.btn-primary {
-    background: linear-gradient(135deg, var(--primary), var(--primary-hover)) !important;
-    color: white !important;
-    font-weight: 600 !important;
-    border: none !important;
-    box-shadow: 0 4px 12px var(--primary-glow) !important;
-    text-shadow: none;
-}
-
-.btn-primary:hover {
-    box-shadow: 0 6px 16px rgba(196, 155, 69, 0.25) !important;
-    transform: translateY(-2px);
-    background: linear-gradient(135deg, var(--accent), var(--primary)) !important;
-}
-
-/* =============================================================
-   Calendar Container (Clean Light Theme)
-   ============================================================= */
+/* Main Cards - Frosted Glass Glassmorphism */
 .calendar-card {
-    background: var(--bg-card) !important;
+    background: rgba(255, 255, 255, 0.7) !important;
+    backdrop-filter: blur(var(--blur-strength)) !important;
+    -webkit-backdrop-filter: blur(var(--blur-strength)) !important;
     border: 1px solid var(--border-color) !important;
     border-radius: var(--radius-lg) !important;
-    box-shadow: 0 8px 30px rgba(62, 53, 43, 0.05) !important;
-    color: var(--text-primary) !important;
-    padding: 24px !important;
+    box-shadow: 0 8px 32px rgba(139, 92, 246, 0.05) !important;
+    transition: var(--transition-smooth);
+}
+.calendar-card:hover {
+    box-shadow: 0 12px 40px rgba(139, 92, 246, 0.08) !important;
 }
 
-/* FullCalendar styling overrides */
-.fc {
-    --fc-page-bg-color: #ffffff !important;
-    --fc-neutral-bg-color: #faf8f5 !important;
-    --fc-today-bg-color: rgba(164, 118, 60, 0.06) !important;
-    --fc-border-color: #bcae97 !important;
-}
-
-.fc-theme-standard td,
-.fc-theme-standard th {
-    border: 1px solid #bcae97 !important;
-}
-
-.fc th {
-    background-color: var(--primary) !important;
-    color: #ffffff !important;
-    font-family: var(--font-sans) !important;
-    font-weight: 600 !important;
-    text-transform: uppercase !important;
-    font-size: 13px !important;
-    padding: 10px 0 !important;
-}
-
-.fc .fc-daygrid-day-number {
-    color: var(--text-secondary) !important;
-    font-family: var(--font-sans) !important;
-    font-weight: 600 !important;
-    padding: 6px !important;
-}
-
-.fc .fc-daygrid-day.fc-day-today .fc-daygrid-day-number {
-    color: var(--accent) !important;
-    font-weight: 700 !important;
-    background: rgba(164, 118, 60, 0.1) !important;
-    border-radius: 4px;
-    padding: 2px 6px;
-    margin: 4px;
-}
-
-/* Today column cell highlights */
-.fc .fc-col-header-cell.fc-day-today {
-    background: var(--primary-hover) !important;
-    border-bottom: 2px solid var(--accent) !important;
-}
-
-.fc .fc-col-header-cell.fc-day-today a {
-    color: #ffffff !important;
-}
-
-/* Navigation headers toolbar */
-.fc .fc-toolbar-title {
+/* Elegant glowing headers */
+.app-header h1 {
     font-family: var(--font-serif) !important;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--text-primary), var(--primary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* Neon buttons */
+.btn-primary {
+    background: linear-gradient(135deg, var(--primary), var(--accent)) !important;
+    color: white !important;
+    border: none !important;
+    box-shadow: 0 6px 20px var(--primary-glow) !important;
+    transition: var(--transition-smooth) !important;
+    position: relative;
+    overflow: hidden;
+}
+.btn-primary::after {
+    content: '';
+    position: absolute;
+    top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background: linear-gradient(to bottom right, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 80%);
+    transform: rotate(30deg);
+    transition: 0.5s;
+}
+.btn-primary:hover {
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 10px 25px rgba(236, 72, 153, 0.3) !important;
+}
+
+.btn-secondary {
+    background: rgba(255, 255, 255, 0.8) !important;
     color: var(--primary) !important;
-    font-weight: 700 !important;
-    font-size: 22px !important;
-}
-
-.fc .fc-button-primary {
-    background: #ffffff !important;
     border: 1px solid var(--border-color) !important;
-    color: var(--text-primary) !important;
-    font-family: var(--font-sans) !important;
-    font-weight: 600 !important;
+    transition: var(--transition-smooth) !important;
 }
-
-.fc .fc-button-primary:hover {
-    background: #faf6ee !important;
-    border-color: var(--accent) !important;
-    color: var(--accent) !important;
-}
-
-.fc .fc-button-primary:not(:disabled).fc-button-active {
-    background: var(--primary) !important;
+.btn-secondary:hover {
     border-color: var(--primary) !important;
-    color: #ffffff !important;
+    box-shadow: 0 4px 15px rgba(139, 92, 246, 0.1) !important;
+    transform: translateY(-1px);
 }
 
-/* Custom Calendar Event Blocks (Rustic organic look) */
-.fc-event {
-    border-radius: 4px !important;
-    padding: 3px 6px !important;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
-}
-
-.fc-event-main {
-    color: #ffffff !important;
-    font-weight: 600 !important;
-    font-size: 11px !important;
-}
-
-/* Nature Palette for Events */
-.event-bungalow-1 {
-    background: linear-gradient(135deg, #43a047, #2e7d32) !important;
-}
-
-/* Grass Green */
-.event-bungalow-2 {
-    background: linear-gradient(135deg, #e67e22, #d35400) !important;
-}
-
-/* Clay Orange */
-.event-bungalow-3 {
-    background: linear-gradient(135deg, #3498db, #1f618d) !important;
-}
-
-/* Sky Blue */
-.event-bungalow-4 {
-    background: linear-gradient(135deg, #e74c3c, #c0392b) !important;
-}
-
-/* Hibiscus Red */
-.event-bungalow-5 {
-    background: linear-gradient(135deg, #af7ac5, #8e44ad) !important;
-}
-
-/* Lavender Purple */
-.event-bungalow-6 {
-    background: linear-gradient(135deg, #1abc9c, #16a085) !important;
-}
-
-/* Eucalyptus Teal */
-.event-bungalow-blocked {
-    background: linear-gradient(135deg, #78716c, #57534e) !important;
-}
-
-/* Stone Gray */
-
-/* =============================================================
-   Huéspedes para Hoy section
-   ============================================================= */
-.summary-item-card {
-    background: #ffffff !important;
-    border: 1px solid var(--border-color) !important;
-    box-shadow: 0 2px 8px rgba(62, 53, 43, 0.03) !important;
-    color: var(--text-primary) !important;
-}
-
-.summary-item-card:hover {
-    background: #FAF7F0 !important;
-    border-color: var(--accent) !important;
-    box-shadow: 0 4px 15px rgba(164, 118, 60, 0.12) !important;
-}
-
-.summary-item-time {
-    color: var(--accent) !important;
-}
-
-.summary-item-client {
-    font-family: var(--font-serif) !important;
-    font-weight: 700 !important;
-    color: var(--primary) !important;
-}
-
-.summary-item-details {
-    color: var(--text-secondary) !important;
-}
-
-/* Badges for Bungalows */
-.bungalow-badge-1 {
-    background: rgba(46, 125, 50, 0.1) !important;
-    color: #2e7d32 !important;
-    border: 1px solid rgba(46, 125, 50, 0.2) !important;
-}
-
-.bungalow-badge-2 {
-    background: rgba(211, 84, 0, 0.1) !important;
-    color: #d35400 !important;
-    border: 1px solid rgba(211, 84, 0, 0.2) !important;
-}
-
-.bungalow-badge-3 {
-    background: rgba(31, 97, 141, 0.1) !important;
-    color: #1f618d !important;
-    border: 1px solid rgba(31, 97, 141, 0.2) !important;
-}
-
-.bungalow-badge-4 {
-    background: rgba(192, 57, 43, 0.1) !important;
-    color: #c0392b !important;
-    border: 1px solid rgba(192, 57, 43, 0.2) !important;
-}
-
-.bungalow-badge-5 {
-    background: rgba(142, 68, 173, 0.1) !important;
-    color: #8e44ad !important;
-    border: 1px solid rgba(142, 68, 173, 0.2) !important;
-}
-
-.bungalow-badge-6 {
-    background: rgba(22, 160, 133, 0.1) !important;
-    color: #16a085 !important;
-    border: 1px solid rgba(22, 160, 133, 0.2) !important;
-}
-
-.bungalow-badge-blocked {
-    background: rgba(120, 113, 108, 0.12) !important;
-    color: #78716c !important;
-    border: 1px solid rgba(120, 113, 108, 0.25) !important;
-}
-
-/* Filter items checkmarks */
-.filter-item input:checked+.custom-checkbox.color-b1 {
-    background: #2e7d32;
-    border-color: #2e7d32;
-}
-
-.filter-item input:checked+.custom-checkbox.color-b2 {
-    background: #d35400;
-    border-color: #d35400;
-}
-
-.filter-item input:checked+.custom-checkbox.color-b3 {
-    background: #1f618d;
-    border-color: #1f618d;
-}
-
-.filter-item input:checked+.custom-checkbox.color-b4 {
-    background: #c0392b;
-    border-color: #c0392b;
-}
-
-.filter-item input:checked+.custom-checkbox.color-b5 {
-    background: #8e44ad;
-    border-color: #8e44ad;
-}
-
-.filter-item input:checked+.custom-checkbox.color-b6 {
-    background: #16a085;
-    border-color: #16a085;
-}
-
-/* Availability grid badges specific to each Bungalow */
-.availability-booked-badge.bungalow-1 {
-    background: rgba(46, 125, 50, 0.1) !important;
-    border: 1px solid rgba(46, 125, 50, 0.3) !important;
-    color: #2e7d32 !important;
-}
-
-.availability-booked-badge.bungalow-1:hover {
-    background: rgba(46, 125, 50, 0.18) !important;
-    border-color: #2e7d32 !important;
-}
-
-.availability-booked-badge.bungalow-2 {
-    background: rgba(211, 84, 0, 0.1) !important;
-    border: 1px solid rgba(211, 84, 0, 0.3) !important;
-    color: #d35400 !important;
-}
-
-.availability-booked-badge.bungalow-2:hover {
-    background: rgba(211, 84, 0, 0.18) !important;
-    border-color: #d35400 !important;
-}
-
-.availability-booked-badge.bungalow-3 {
-    background: rgba(31, 97, 141, 0.1) !important;
-    border: 1px solid rgba(31, 97, 141, 0.3) !important;
-    color: #1f618d !important;
-}
-
-.availability-booked-badge.bungalow-3:hover {
-    background: rgba(31, 97, 141, 0.18) !important;
-    border-color: #1f618d !important;
-}
-
-.availability-booked-badge.bungalow-4 {
-    background: rgba(192, 57, 43, 0.1) !important;
-    border: 1px solid rgba(192, 57, 43, 0.3) !important;
-    color: #c0392b !important;
-}
-
-.availability-booked-badge.bungalow-4:hover {
-    background: rgba(192, 57, 43, 0.18) !important;
-    border-color: #c0392b !important;
-}
-
-.availability-booked-badge.bungalow-5 {
-    background: rgba(142, 68, 173, 0.1) !important;
-    border: 1px solid rgba(142, 68, 173, 0.3) !important;
-    color: #8e44ad !important;
-}
-
-.availability-booked-badge.bungalow-5:hover {
-    background: rgba(142, 68, 173, 0.18) !important;
-    border-color: #8e44ad !important;
-}
-
-.availability-booked-badge.bungalow-6 {
-    background: rgba(22, 160, 133, 0.1) !important;
-    border: 1px solid rgba(22, 160, 133, 0.3) !important;
-    color: #16a085 !important;
-}
-
-.availability-booked-badge.bungalow-6:hover {
-    background: rgba(22, 160, 133, 0.18) !important;
-    border-color: #16a085 !important;
-}
-
-/* =============================================================
-   Modals & Popups (Nature Theme Style)
-   ============================================================= */
-.modal-backdrop {
-    background: rgba(45, 38, 30, 0.6) !important;
-}
-
+/* Modals styling: VIP spotlight look */
 .modal-card {
-    background: #ffffff !important;
-    border: 1px solid var(--border-color) !important;
+    background: rgba(255, 255, 255, 0.9) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border: 1px solid rgba(236, 72, 153, 0.3) !important; /* soft pink border */
     border-radius: var(--radius-xl) !important;
-    box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08) !important;
+    box-shadow: 0 25px 60px rgba(76, 29, 149, 0.15), 0 0 25px rgba(139, 92, 246, 0.1) !important;
 }
 
 .modal-header {
-    background: #ffffff !important;
+    background: linear-gradient(to right, rgba(139, 92, 246, 0.05), rgba(236, 72, 153, 0.05)) !important;
     border-bottom: 1px solid var(--border-color) !important;
 }
 
-.modal-header h3 {
-    font-family: var(--font-serif) !important;
-    color: var(--primary) !important;
-    font-weight: 700 !important;
-    font-size: 20px !important;
-}
-
-.modal-body label {
-    color: var(--text-secondary) !important;
-    font-weight: 600 !important;
-    font-size: 13px !important;
-    margin-bottom: 4px;
-}
-
-/* Input Fields and Selects (Rustic Light Theme) */
-.modal-body input[type="text"],
-.modal-body input[type="tel"],
-.modal-body input[type="number"],
-.modal-body input[type="date"],
-.modal-body select,
-.modal-body textarea {
-    background: #ffffff !important;
-    border: 1px solid var(--border-color) !important;
+/* Form items glow */
+.input-wrapper input, .input-wrapper select, .input-wrapper textarea {
+    background: rgba(255, 255, 255, 0.6) !important;
+    border: 1px solid rgba(139, 92, 246, 0.2) !important;
     color: var(--text-primary) !important;
     border-radius: var(--radius-sm) !important;
-    font-family: var(--font-sans) !important;
-    padding: 8px 12px 8px 12px;
-    /* Removed !important to allow overrides */
     transition: var(--transition-smooth) !important;
 }
-
-.modal-body .input-wrapper input[type="text"],
-.modal-body .input-wrapper input[type="tel"],
-.modal-body .input-wrapper input[type="number"],
-.modal-body .input-wrapper input[type="date"],
-.modal-body .input-wrapper select,
-.modal-body .input-wrapper textarea {
-    padding: 8px 12px 8px 42px !important;
-}
-
-.modal-body input:focus,
-.modal-body select:focus,
-.modal-body textarea:focus {
+.input-wrapper input:focus, .input-wrapper select:focus, .input-wrapper textarea:focus {
+    background: #ffffff !important;
     border-color: var(--accent) !important;
-    box-shadow: 0 0 0 3px rgba(164, 118, 60, 0.1) !important;
-    background: #fffdfb !important;
+    box-shadow: 0 0 15px rgba(236, 72, 153, 0.2) !important;
 }
 
-/* Remove double borders and backgrounds from the wrapper itself */
-.input-wrapper {
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    width: 100%;
+/* FullCalendar customizations */
+.fc {
+    font-family: var(--font-sans) !important;
+}
+.fc-col-header-cell {
+    background: rgba(139, 92, 246, 0.05);
+    padding: 10px 0 !important;
+}
+.fc-daygrid-event {
+    border-radius: 6px !important;
+    padding: 3px 6px !important;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.05);
+    transition: var(--transition-smooth);
+}
+.fc-daygrid-event:hover {
+    transform: scale(1.03) translateY(-1px);
+    box-shadow: 0 5px 12px rgba(0,0,0,0.1);
 }
 
-.input-wrapper:focus-within {
-    border: none !important;
-    box-shadow: none !important;
+/* Legend items */
+.legend-item {
+    background: rgba(255, 255, 255, 0.5);
+    border: 1px solid var(--border-color);
+    padding: 8px 12px;
+    border-radius: 20px;
 }
+
+/* --- FullCalendar Contrast Fixes --- */
+.fc .fc-col-header-cell-cushion,
+.fc .fc-daygrid-day-number,
+.fc .fc-toolbar-title {
+    color: var(--text-primary) !important; /* Force dark text for calendar days, headers and titles */
+}
+
+/* Make sure days are clickable and clearly visible */
+.fc .fc-daygrid-day-number {
+    font-weight: 600 !important;
+    font-size: 14px !important;
+}
+
+/* Event titles inside the calendar should have high contrast (white text on event color background) */
+.fc-event, .fc-event-title, .fc-event-time {
+    color: #ffffff !important;
+    font-weight: 500 !important;
+}
+
+/* Ensure buttons in toolbar have correct styling and contrast */
+.fc .fc-button-primary {
+    background-color: var(--primary) !important;
+    border-color: var(--primary) !important;
+    color: #ffffff !important;
+}
+.fc .fc-button-primary:hover {
+    background-color: var(--primary-hover) !important;
+    border-color: var(--primary-hover) !important;
+}
+.fc .fc-button-primary:disabled {
+    background-color: var(--text-muted) !important;
+    border-color: var(--text-muted) !important;
+    color: rgba(255,255,255,0.6) !important;
+}
+
+/* Force visible border lines for calendar cells */
+.fc-theme-standard td, 
+.fc-theme-standard th {
+    border: 1px solid rgba(139, 92, 246, 0.15) !important; /* Soft purple border */
+}
+.fc-theme-standard .fc-scrollgrid {
+    border: 1px solid rgba(139, 92, 246, 0.25) !important;
+}
+
+/* Specific border line for day cell boundaries */
+.fc .fc-daygrid-day {
+    border: 1px solid rgba(139, 92, 246, 0.15) !important;
+}
+
+
