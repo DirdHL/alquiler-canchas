@@ -863,10 +863,48 @@ async function initDatabase() {
                 supabaseClient = supabase.createClient(url, key);
                 dbMode = 'supabase';
 
+                // Verify tables exist in the database
+                let missingTables = [];
+                try {
+                    const { error: resErr } = await supabaseClient.from('reservas_bungalows').select('id').limit(1);
+                    if (resErr) {
+                        if (resErr.code === '42P01' || resErr.message.includes('does not exist')) {
+                            missingTables.push('reservas_bungalows');
+                        }
+                    }
+                } catch (e) {
+                    missingTables.push('reservas_bungalows');
+                }
+
+                try {
+                    const { error: advErr } = await supabaseClient.from('personal_asesores').select('name').limit(1);
+                    if (advErr) {
+                        if (advErr.code === '42P01' || advErr.message.includes('does not exist')) {
+                            missingTables.push('personal_asesores');
+                        }
+                    }
+                } catch (e) {
+                    missingTables.push('personal_asesores');
+                }
+
                 const statusDot = document.getElementById('statusDot');
-                statusDot.className = 'status-dot connected';
-                document.getElementById('statusText').textContent = 'Conectado a la Nube (Supabase)';
-                document.getElementById('statusDesc').textContent = 'Las reservas de Bungalows se sincronizan automáticamente en tiempo real.';
+                const statusText = document.getElementById('statusText');
+                const statusDesc = document.getElementById('statusDesc');
+
+                if (missingTables.length > 0) {
+                    statusDot.className = 'status-dot disconnected';
+                    statusText.textContent = 'Error de Configuración';
+                    statusDesc.innerHTML = `Conectado, pero no se encontraron las tablas: <strong>${missingTables.join(', ')}</strong>. ¿Ejecutaste el SQL de configuración?`;
+                    
+                    // Fallback to local mode for reservations if reservas_bungalows is missing
+                    if (missingTables.includes('reservas_bungalows')) {
+                        dbMode = 'local';
+                    }
+                } else {
+                    statusDot.className = 'status-dot connected';
+                    statusText.textContent = 'Conectado a la Nube (Supabase)';
+                    statusDesc.textContent = 'Las reservas de Bungalows se sincronizan automáticamente en tiempo real.';
+                }
 
                 // Fetch active advisors list
                 await fetchAdvisors();
@@ -2183,7 +2221,21 @@ async function fetchAdvisors() {
             if (advData && advData.length > 0) {
                 activeAdvisorsList = advData.map(a => a.name);
             } else {
+                // If table is empty, load defaults from local/code and auto-populate database in background
                 loadActiveAdvisorsFromLocal();
+                if (activeAdvisorsList.length > 0) {
+                    const payloads = activeAdvisorsList.map(name => ({ name, is_active: true }));
+                    supabaseClient
+                        .from('personal_asesores')
+                        .insert(payloads)
+                        .then(({ error: insErr }) => {
+                            if (insErr) {
+                                console.warn("Failed to auto-populate default advisors in Supabase:", insErr.message);
+                            } else {
+                                console.log("Default advisors auto-populated successfully in Supabase.");
+                            }
+                        });
+                }
             }
         } catch (err) {
             console.warn("Table personal_asesores not found or failed, using localStorage fallback:", err.message);
