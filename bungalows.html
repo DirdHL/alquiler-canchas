@@ -103,11 +103,11 @@
                     style="background: rgba(139, 92, 246, 0.1); border-color: rgba(139, 92, 246, 0.3); color: #a78bfa; text-decoration: none; display: flex; align-items: center; gap: 8px;">
                     <i data-lucide="building" style="width: 16px; height: 16px;"></i> Polideportivo Huaral
                 </a>
-                            <a href="locales.html" class="btn btn-secondary btn-sm btn-sidebar-action"
+                <a href="locales.html" class="btn btn-secondary btn-sm btn-sidebar-action"
                     style="background: rgba(245, 158, 11, 0.1); border-color: rgba(245, 158, 11, 0.3); color: #f59e0b; text-decoration: none; display: flex; align-items: center; gap: 8px; margin-top: 8px;">
                     <i data-lucide="map-pin" style="width: 16px; height: 16px;"></i> Alquiler Locales
                 </a>
-</nav>
+            </nav>
 
             <div class="stats-card">
                 <h3>Resumen de Hoy</h3>
@@ -493,6 +493,8 @@
                                     <option value="Msg masivo">Msg masivo</option>
                                     <option value="Cliente frecuente">Cliente frecuente</option>
                                     <option value="Recomendación">Recomendación</option>
+                                    <option value="AFICHE">AFICHE</option>
+                                    <option value="Otro">Otro</option>
                                 </select>
                             </div>
                         </div>
@@ -682,10 +684,13 @@
             <div class="modal-body" style="padding-top: 16px;">
                 <div style="display: flex; gap: 8px; margin-bottom: 16px; align-items: center;">
                     <div style="position: relative; flex: 1;">
-                        <i data-lucide="search" style="width: 16px; height: 16px; position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none;"></i>
-                        <input type="text" id="historySearchInput" placeholder="Buscar operador o actividad..." style="width: 100%; padding: 8px 12px 8px 32px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); border-radius: var(--radius-md); color: var(--text-primary); font-size: 13px;">
+                        <i data-lucide="search"
+                            style="width: 16px; height: 16px; position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none;"></i>
+                        <input type="text" id="historySearchInput" placeholder="Buscar operador o actividad..."
+                            style="width: 100%; padding: 8px 12px 8px 32px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); border-radius: var(--radius-md); color: var(--text-primary); font-size: 13px;">
                     </div>
-                    <button class="btn btn-secondary btn-sm" id="btnClearHistoryLocal" style="display: none; margin: 0; white-space: nowrap;">
+                    <button class="btn btn-secondary btn-sm" id="btnClearHistoryLocal"
+                        style="display: none; margin: 0; white-space: nowrap;">
                         <i data-lucide="trash-2"></i> Limpiar Local
                     </button>
                 </div>
@@ -899,7 +904,8 @@
 
                 <!-- Tab content: Asesores -->
                 <div class="tab-content" id="tab-asesores" style="display: none;">
-                    <p style="color: var(--text-secondary); margin-bottom: 16px;">Rendimiento de Asesores (Este mes):</p>
+                    <p style="color: var(--text-secondary); margin-bottom: 16px;">Rendimiento de Asesores (Este mes):
+                    </p>
                     <div
                         style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: var(--radius-md); overflow-x: auto; max-height: 300px;">
                         <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 14px;"
@@ -910,7 +916,8 @@
                                     <th style="padding: 12px 16px; color: var(--text-secondary);">Asesor</th>
                                     <th style="padding: 12px 16px; color: var(--text-secondary);">Reservas</th>
                                     <th style="padding: 12px 16px; color: var(--text-secondary);">Ingresos (S/.)</th>
-                                    <th style="padding: 12px 16px; color: var(--text-secondary);">Bungalows más alquilados</th>
+                                    <th style="padding: 12px 16px; color: var(--text-secondary);">Bungalows más
+                                        alquilados</th>
                                 </tr>
                             </thead>
                             <tbody>
