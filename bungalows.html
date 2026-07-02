@@ -18,6 +18,8 @@
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/locales/es.global.min.js"></script>
     <!-- Supabase JS CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- ExcelJS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
     <!-- Custom CSS -->
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="bungalows.css">
@@ -760,11 +762,18 @@
     <!-- Statistics Dashboard Modal -->
     <div class="modal-backdrop" id="modalStats">
         <div class="modal-card modal-lg" style="max-width: 800px;">
-            <div class="modal-header">
+            <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; padding: 20px 24px;">
                 <h3 style="display: flex; align-items: center; gap: 8px; margin: 0;">
                     <i data-lucide="line-chart" style="color: var(--primary);"></i> Estadísticas y Finanzas de Bungalows
                 </h3>
-                <button class="btn-close" id="btnCloseStatsModal"><i data-lucide="x"></i></button>
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <button class="btn btn-secondary btn-sm" id="btnExportStatsExcel" title="Exportar a Excel"
+                        style="gap: 4px; padding: 4px 8px; font-size: 11px; display: flex; align-items: center; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); color: #10b981; cursor: pointer; border-radius: var(--radius-sm);">
+                        <i data-lucide="file-spreadsheet" style="width: 12px; height: 12px;"></i> Exportar Excel
+                    </button>
+                    <button class="btn-close" id="btnCloseStatsModal" style="margin: 0;"><i
+                            data-lucide="x"></i></button>
+                </div>
             </div>
             <div class="modal-body" style="padding: 24px;">
                 <div class="stats-tabs"

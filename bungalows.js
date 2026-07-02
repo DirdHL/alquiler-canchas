@@ -85,6 +85,7 @@ function setupEventListeners() {
     document.getElementById('btnOpenStats').addEventListener('click', () => openStatsAuthModal());
     document.getElementById('btnCloseStatsAuth').addEventListener('click', () => closeModal('modalStatsAuth'));
     document.getElementById('btnCloseStatsModal').addEventListener('click', () => closeModal('modalStats'));
+    document.getElementById('btnExportStatsExcel').addEventListener('click', exportAllDataToExcel);
 
     // Forms
     document.getElementById('formUserOnboarding').addEventListener('submit', handleOnboarding);
@@ -1845,6 +1846,344 @@ function copyReservationDetails() {
 // ----------------------------------------------------
 // Statistics Dashboard Engine
 // ----------------------------------------------------
+
+function getColLetter(colIndex) {
+    let temp = colIndex;
+    let letter = '';
+    while (temp > 0) {
+        let modulo = (temp - 1) % 26;
+        letter = String.fromCharCode(65 + modulo) + letter;
+        temp = Math.floor((temp - modulo) / 26);
+    }
+    return letter;
+}
+
+async function exportAllDataToExcel() {
+    if (!bookings || bookings.length === 0) {
+        alert("No hay reservas registradas para exportar.");
+        return;
+    }
+
+    const workbook = new ExcelJS.Workbook();
+    
+    // ─── RESUMEN SHEET ─────────────────────────────────────────────
+    const summaryWs = workbook.addWorksheet('📊 RESUMEN', { properties: { tabColor: { argb: 'FF0F766E' } } });
+    summaryWs.views = [{ showGridLines: false }];
+
+    function styleTitle(cell, text, bgArgb = 'FF0F766E', fgArgb = 'FFFFFFFF', fontSize = 12) {
+        cell.value = text;
+        cell.font = { name: 'Outfit', bold: true, size: fontSize, color: { argb: fgArgb } };
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bgArgb } };
+        cell.alignment = { vertical: 'middle', horizontal: 'center' };
+        cell.border = { 
+            top:{style:'thin',color:{argb:'FFE2E8F0'}}, 
+            left:{style:'thin',color:{argb:'FFE2E8F0'}}, 
+            bottom:{style:'thin',color:{argb:'FFE2E8F0'}}, 
+            right:{style:'thin',color:{argb:'FFE2E8F0'}} 
+        };
+    }
+    function styleValue(cell, value, isMoney = false) {
+        cell.value = isMoney ? parseFloat(parseFloat(value).toFixed(2)) : value;
+        if (isMoney) cell.numFmt = '"S/. "#,##0.00';
+        cell.font = { name: 'Outfit', bold: true, size: 10, color: { argb: 'FF0F766E' } };
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFFFF' } };
+        cell.alignment = { vertical: 'middle', horizontal: isMoney ? 'right' : 'left' };
+        cell.border = { 
+            top:{style:'thin',color:{argb:'FFE2E8F0'}}, 
+            left:{style:'thin',color:{argb:'FFE2E8F0'}}, 
+            bottom:{style:'thin',color:{argb:'FFE2E8F0'}}, 
+            right:{style:'thin',color:{argb:'FFE2E8F0'}} 
+        };
+    }
+
+    summaryWs.getColumn(1).width = 30;
+    summaryWs.getColumn(2).width = 20;
+    summaryWs.getColumn(3).width = 20;
+    summaryWs.getColumn(4).width = 20;
+    summaryWs.getColumn(5).width = 20;
+
+    let sr = 1;
+    const monthColorsS = ['FFFFFFFF', 'FFF8FAFC'];
+
+    // Title Block
+    summaryWs.mergeCells(sr, 1, sr, 5);
+    const mainTitleCell = summaryWs.getCell(sr, 1);
+    styleTitle(mainTitleCell, "REPORTE GENERAL DE RESERVAS Y ESTADÍSTICAS - BUNGALOWS", 'FF0F766E', 'FFFFFFFF', 14);
+    summaryWs.getRow(sr).height = 40;
+    sr += 2; // Blank row
+
+    // Group events by Month based on fecha_ingreso
+    const groups = {};
+    bookings.forEach(b => {
+        if (!b.fecha_ingreso) return;
+        const dateParts = b.fecha_ingreso.split('-');
+        if (dateParts.length < 2) return;
+        const year = dateParts[0];
+        const monthIndex = parseInt(dateParts[1]) - 1;
+        const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+        const monthName = months[monthIndex] || 'Otros';
+        const label = `${monthName} ${year}`;
+        if (!groups[label]) {
+            groups[label] = [];
+        }
+        groups[label].push(b);
+    });
+
+    // 1. Month Summary Block
+    summaryWs.mergeCells(sr, 1, sr, 5);
+    styleTitle(summaryWs.getCell(sr, 1), "INGRESOS Y USOS MENSUALES", 'FF334155', 'FFFFFFFF', 11);
+    summaryWs.getRow(sr).height = 24; sr++;
+
+    const headersM = ["Mes / Período", "Reservas", "Monto Hospedaje", "Monto Adicionales", "Total Facturado"];
+    headersM.forEach((h, idx) => {
+        styleTitle(summaryWs.getCell(sr, idx + 1), h, 'FF1E293B', 'FFFFFFFF', 10);
+    });
+    summaryWs.getRow(sr).height = 22; sr++;
+
+    let grandTotalBookings = 0;
+    let grandTotalHospedaje = 0;
+    let grandTotalAdic = 0;
+    let grandTotalSum = 0;
+
+    let rowIdx = 0;
+    for (const [monthLabel, items] of Object.entries(groups)) {
+        const bg = monthColorsS[rowIdx % 2];
+        const activeItems = items.filter(b => b.estado_reserva !== 'Bloqueado');
+        
+        let count = activeItems.length;
+        let hMonto = 0;
+        let adicMonto = 0;
+        let tMonto = 0;
+
+        activeItems.forEach(b => {
+            const tot = parseFloat(b.monto_total) || 0;
+            const extraP = parseFloat(b.adicional_personas) || 0;
+            const extraH = parseFloat(b.adicional_horas) || 0;
+            
+            // Hospedaje base (total minus extras)
+            const base = Math.max(0, tot - extraP - extraH);
+            hMonto += base;
+            adicMonto += extraP + extraH;
+            tMonto += tot;
+        });
+
+        grandTotalBookings += count;
+        grandTotalHospedaje += hMonto;
+        grandTotalAdic += adicMonto;
+        grandTotalSum += tMonto;
+
+        const c1 = summaryWs.getCell(sr, 1);
+        c1.value = monthLabel; c1.font = { name: 'Outfit', bold: true, size: 10, color: { argb: 'FF1E293B' } };
+        c1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
+        c1.alignment = { vertical: 'middle', horizontal: 'left' };
+        c1.border = { top:{style:'thin',color:{argb:'FFE2E8F0'}}, left:{style:'thin',color:{argb:'FFE2E8F0'}}, bottom:{style:'thin',color:{argb:'FFE2E8F0'}}, right:{style:'thin',color:{argb:'FFE2E8F0'}} };
+
+        styleValue(summaryWs.getCell(sr, 2), count, false);
+        styleValue(summaryWs.getCell(sr, 3), hMonto, true);
+        styleValue(summaryWs.getCell(sr, 4), adicMonto, true);
+        styleValue(summaryWs.getCell(sr, 5), tMonto, true);
+
+        // Apply row BG to values
+        for (let col = 2; col <= 5; col++) {
+            summaryWs.getCell(sr, col).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
+        }
+
+        summaryWs.getRow(sr).height = 20;
+        sr++;
+        rowIdx++;
+    }
+
+    // Totals Row for Months
+    const totalCell = summaryWs.getCell(sr, 1);
+    totalCell.value = "TOTAL GENERAL";
+    totalCell.font = { name: 'Outfit', bold: true, size: 10, color: { argb: 'FFFFFFFF' } };
+    totalCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F766E' } };
+    totalCell.alignment = { vertical: 'middle', horizontal: 'left' };
+    totalCell.border = { top:{style:'thin',color:{argb:'FF0F766E'}}, left:{style:'thin',color:{argb:'FF0F766E'}}, bottom:{style:'thin',color:{argb:'FF0F766E'}}, right:{style:'thin',color:{argb:'FF0F766E'}} };
+
+    styleValue(summaryWs.getCell(sr, 2), grandTotalBookings, false);
+    styleValue(summaryWs.getCell(sr, 3), grandTotalHospedaje, true);
+    styleValue(summaryWs.getCell(sr, 4), grandTotalAdic, true);
+    styleValue(summaryWs.getCell(sr, 5), grandTotalSum, true);
+
+    for (let col = 2; col <= 5; col++) {
+        summaryWs.getCell(sr, col).font.color = { argb: 'FFFFFFFF' };
+        summaryWs.getCell(sr, col).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F766E' } };
+    }
+    summaryWs.getRow(sr).height = 22;
+    sr += 3; // Blank rows
+
+    // 2. Bungalow breakdown Block
+    summaryWs.mergeCells(sr, 1, sr, 3);
+    styleTitle(summaryWs.getCell(sr, 1), "INGRESOS POR BUNGALOW", 'FF334155', 'FFFFFFFF', 11);
+    summaryWs.getRow(sr).height = 24; sr++;
+
+    const headersB = ["Bungalow", "Reservas", "Monto Hospedaje"];
+    headersB.forEach((h, idx) => {
+        styleTitle(summaryWs.getCell(sr, idx + 1), h, 'FF1E293B', 'FFFFFFFF', 10);
+    });
+    summaryWs.getRow(sr).height = 22; sr++;
+
+    const activeAll = bookings.filter(b => b.estado_reserva !== 'Bloqueo');
+    const bungalowsMap = {};
+    activeAll.forEach(b => {
+        const num = b.bungalow_numero || 'Bungalow Sin Número';
+        if (!bungalowsMap[num]) {
+            bungalowsMap[num] = { count: 0, income: 0 };
+        }
+        bungalowsMap[num].count++;
+        bungalowsMap[num].income += parseFloat(b.monto_total) || 0;
+    });
+
+    Object.entries(bungalowsMap).sort((a,b) => a[0].localeCompare(b[0])).forEach(([num, data], bIdx) => {
+        const bg = monthColorsS[bIdx % 2];
+        const c1 = summaryWs.getCell(sr, 1);
+        c1.value = `Bungalow ${num}`; c1.font = { name: 'Outfit', bold: true, size: 10, color: { argb: 'FF1E293B' } };
+        c1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
+        c1.alignment = { vertical: 'middle', horizontal: 'left' };
+        c1.border = { top:{style:'thin',color:{argb:'FFE2E8F0'}}, left:{style:'thin',color:{argb:'FFE2E8F0'}}, bottom:{style:'thin',color:{argb:'FFE2E8F0'}}, right:{style:'thin',color:{argb:'FFE2E8F0'}} };
+        
+        styleValue(summaryWs.getCell(sr, 2), data.count, false);
+        styleValue(summaryWs.getCell(sr, 3), data.income, true);
+        
+        summaryWs.getCell(sr, 2).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
+        summaryWs.getCell(sr, 3).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
+        
+        summaryWs.getRow(sr).height = 20;
+        sr++;
+    });
+
+    // ─── DATA WORKSEETS ───────────────────────────────────────────
+    const columnsDef = [
+        { header: 'Bungalow', key: 'bungalow', width: 14 },
+        { header: 'Fecha Entrada', key: 'fecha_entrada', width: 14 },
+        { header: 'Fecha Salida', key: 'fecha_salida', width: 14 },
+        { header: 'Horario', key: 'horario', width: 12 },
+        { header: 'Cliente', key: 'cliente', width: 25 },
+        { header: 'DNI', key: 'dni', width: 12 },
+        { header: 'Teléfono', key: 'telefono', width: 14 },
+        { header: 'Asesor', key: 'asesor', width: 16 },
+        { header: 'Medio de Contacto', key: 'medio', width: 18 },
+        { header: 'Tipo de Pago', key: 'tipo_pago', width: 18 },
+        { header: 'Monto Total (S/.)', key: 'monto_total', width: 18 },
+        { header: 'Adelanto (S/.)', key: 'monto_adelanto', width: 18 },
+        { header: 'Efectivo (S/.)', key: 'monto_efectivo', width: 18 },
+        { header: 'Yape (S/.)', key: 'monto_yape', width: 18 },
+        { header: 'Depósito (S/.)', key: 'monto_deposito', width: 18 },
+        { header: 'Extra Personas (S/.)', key: 'monto_adic_personas', width: 20 },
+        { header: 'Extra Horas (S/.)', key: 'monto_adic_horas', width: 20 },
+        { header: 'Estado', key: 'estado', width: 14 },
+        { header: 'Observaciones', key: 'observaciones', width: 30 },
+        { header: 'Fecha Registro', key: 'registro', width: 22 }
+    ];
+
+    for (const [monthLabel, bookingsInMonth] of Object.entries(groups)) {
+        const worksheet = workbook.addWorksheet(monthLabel);
+        
+        // Grid lines visible
+        worksheet.views = [{ showGridLines: true }];
+        worksheet.columns = columnsDef;
+
+        // Auto filter
+        worksheet.autoFilter = `A1:${getColLetter(columnsDef.length)}1`;
+
+        // Style header row
+        const headerRow = worksheet.getRow(1);
+        headerRow.height = 26;
+        headerRow.eachCell((cell) => {
+            cell.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FF0F766E' }
+            };
+            cell.font = {
+                name: 'Outfit',
+                color: { argb: 'FFFFFFFF' },
+                bold: true,
+                size: 11
+            };
+            cell.alignment = {
+                vertical: 'middle',
+                horizontal: 'center',
+                wrapText: true
+            };
+            cell.border = {
+                top: { style: 'thin', color: { argb: 'FF1E293B' } },
+                left: { style: 'thin', color: { argb: 'FF1E293B' } },
+                bottom: { style: 'medium', color: { argb: 'FF1E293B' } },
+                right: { style: 'thin', color: { argb: 'FF1E293B' } }
+            };
+        });
+
+        let rowNumber = 2;
+        bookingsInMonth.forEach(b => {
+            const dataRow = worksheet.addRow({
+                bungalow: b.bungalow_numero || '',
+                fecha_entrada: b.fecha_ingreso || '',
+                fecha_salida: b.fecha_salida || '',
+                horario: b.horario || '',
+                cliente: b.nombre_cliente || '',
+                dni: b.dni_cliente || '',
+                telefono: b.telefono_cliente || '',
+                asesor: b.asesor_registro || '',
+                medio: b.medio_contacto || '',
+                tipo_pago: b.tipo_pago || '',
+                monto_total: b.monto_total ? parseFloat(b.monto_total) : 0,
+                monto_adelanto: b.monto_adelanto ? parseFloat(b.monto_adelanto) : 0,
+                monto_efectivo: b.monto_efectivo ? parseFloat(b.monto_efectivo) : 0,
+                monto_yape: b.monto_yape ? parseFloat(b.monto_yape) : 0,
+                monto_deposito: b.monto_deposito ? parseFloat(b.monto_deposito) : 0,
+                monto_adic_personas: b.adicional_personas ? parseFloat(b.adicional_personas) : 0,
+                monto_adic_horas: b.adicional_horas ? parseFloat(b.adicional_horas) : 0,
+                estado: b.estado_reserva || '',
+                observaciones: b.observaciones || '',
+                registro: b.created_at ? new Date(b.created_at).toLocaleString('es-PE') : ''
+            });
+
+            dataRow.height = 20;
+
+            const isAlternate = (rowNumber % 2 === 0);
+            dataRow.eachCell((cell, colNumber) => {
+                cell.font = { name: 'Outfit', size: 10 };
+                cell.fill = {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    fgColor: { argb: isAlternate ? 'FFF8FAFC' : 'FFFFFFFF' }
+                };
+                cell.border = {
+                    top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                    left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                    bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                    right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+                };
+
+                const colKey = columnsDef[colNumber - 1].key;
+                if (['fecha_entrada', 'fecha_salida', 'horario', 'dni', 'telefono', 'tipo_pago', 'medio', 'estado'].includes(colKey)) {
+                    cell.alignment = { horizontal: 'center', vertical: 'middle' };
+                } else if (['monto_total', 'monto_adelanto', 'monto_efectivo', 'monto_yape', 'monto_deposito', 'monto_adic_personas', 'monto_adic_horas'].includes(colKey)) {
+                    cell.alignment = { horizontal: 'right', vertical: 'middle' };
+                    cell.numFmt = '"S/. "#,##0.00';
+                } else {
+                    cell.alignment = { horizontal: 'left', vertical: 'middle' };
+                }
+            });
+
+            rowNumber++;
+        });
+    }
+
+    workbook.xlsx.writeBuffer().then((buffer) => {
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'Reporte_Reservas_Bungalows.xlsx';
+        link.click();
+    }).catch(err => {
+        console.error("Error al exportar:", err);
+        alert("Ocurrió un error al generar el archivo Excel: " + err.message);
+    });
+}
+
 function openStatsAuthModal() {
     const isUnlocked = localStorage.getItem('canchapro_stats_unlocked') === 'true';
     if (isUnlocked) {

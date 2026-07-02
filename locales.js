@@ -63,6 +63,33 @@ function setupEventListeners() {
     document.getElementById('filterLosPinosGrande').addEventListener('change', renderCalendarEvents);
     document.getElementById('filterLosPinosPequeno').addEventListener('change', renderCalendarEvents);
     document.getElementById('filterPolideportivoGrande').addEventListener('change', renderCalendarEvents);
+
+    // Stats Event Listeners
+    document.getElementById('btnOpenStats').addEventListener('click', () => openStatsAuthModal());
+    document.getElementById('btnCloseStatsAuth').addEventListener('click', () => closeModal('modalStatsAuth'));
+    document.getElementById('btnCloseStatsModal').addEventListener('click', () => closeModal('modalStats'));
+    document.getElementById('btnExportStatsExcel').addEventListener('click', exportAllDataToExcel);
+    document.getElementById('formStatsAuth').addEventListener('submit', handleStatsAuth);
+
+    // Stats Tabs Navigation
+    const statsTabBtns = document.querySelectorAll('#modalStats .tab-btn');
+    const statsTabContents = document.querySelectorAll('#modalStats .tab-content');
+    statsTabBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const tabId = btn.getAttribute('data-tab');
+            statsTabBtns.forEach(b => b.classList.remove('active'));
+            statsTabContents.forEach(c => {
+                c.classList.remove('active');
+                c.style.display = 'none';
+            });
+            btn.classList.add('active');
+            const targetContent = document.getElementById(tabId);
+            if (targetContent) {
+                targetContent.classList.add('active');
+                targetContent.style.display = 'block';
+            }
+        });
+    });
 }
 
 function runDynamicCalculations() {
@@ -519,4 +546,568 @@ function escapeHTML(str) {
     return str.replace(/[&<>'"]/g, 
         tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
     );
+}
+
+// ----------------------------------------------------
+// Statistics Dashboard Engine - Locales
+// ----------------------------------------------------
+function openStatsAuthModal() {
+    const isUnlocked = localStorage.getItem('canchapro_stats_unlocked') === 'true';
+    if (isUnlocked) {
+        loadStatsDashboard();
+    } else {
+        document.getElementById('statsPassword').value = '';
+        document.getElementById('statsAuthError').style.display = 'none';
+        openModal('modalStatsAuth');
+    }
+}
+
+function handleStatsAuth(e) {
+    e.preventDefault();
+    const pwd = document.getElementById('statsPassword').value;
+    if (pwd === 'Reservasupabase') {
+        localStorage.setItem('canchapro_stats_unlocked', 'true');
+        closeModal('modalStatsAuth');
+        loadStatsDashboard();
+    } else {
+        const errorEl = document.getElementById('statsAuthError');
+        errorEl.textContent = '❌ Contraseña incorrecta. Solicítela al administrador.';
+        errorEl.style.display = 'block';
+    }
+}
+
+function loadStatsDashboard() {
+    openModal('modalStats');
+
+    // Reset tabs on load
+    const statsTabBtns = document.querySelectorAll('#modalStats .tab-btn');
+    const statsTabContents = document.querySelectorAll('#modalStats .tab-content');
+    statsTabBtns.forEach(b => b.classList.remove('active'));
+    statsTabContents.forEach(c => {
+        c.classList.remove('active');
+        c.style.display = 'none';
+    });
+    if (statsTabBtns[0]) statsTabBtns[0].classList.add('active');
+    if (statsTabContents[0]) {
+        statsTabContents[0].classList.add('active');
+        statsTabContents[0].style.display = 'block';
+    }
+
+    const today = new Date();
+    const thisMonth = today.getMonth();
+    const thisYear = today.getFullYear();
+
+    // 1. Gather bookings this month
+    const monthBookings = bookings.filter(b => {
+        if (b.estado_reserva === 'Bloqueado') return false;
+        if (!b.fecha_reserva) return false;
+        const start = new Date(b.fecha_reserva + 'T00:00:00');
+        return (start.getMonth() === thisMonth && start.getFullYear() === thisYear);
+    });
+
+    // 2. Calculations
+    let totalRevenue = 0;
+    let depositoTotal = 0;
+    let otrosTotal = 0;
+    let totalDayNightCount = 0;
+    let totalDayNightRevenue = 0;
+    let totalFullDayCount = 0;
+    let totalFullDayRevenue = 0;
+    let totalExtrasRevenue = 0;
+
+    const spacesMap = {
+        'Los Pinos - Grande': { count: 0, revenue: 0, dayNightCount: 0, dayNightRevenue: 0, fullDayCount: 0, fullDayRevenue: 0, extras: 0, daysOccupied: 0 },
+        'Los Pinos - Pequeño': { count: 0, revenue: 0, dayNightCount: 0, dayNightRevenue: 0, fullDayCount: 0, fullDayRevenue: 0, extras: 0, daysOccupied: 0 },
+        'Polideportivo - Grande': { count: 0, revenue: 0, dayNightCount: 0, dayNightRevenue: 0, fullDayCount: 0, fullDayRevenue: 0, extras: 0, daysOccupied: 0 }
+    };
+
+    const clientsMap = {};
+    const asesoresMap = {};
+
+    monthBookings.forEach(b => {
+        const tot = parseFloat(b.monto_total) || 0;
+        const adelanto = parseFloat(b.monto_adelanto) || 0;
+        totalRevenue += tot;
+
+        if (b.tipo_pago === 'Depósito') {
+            depositoTotal += tot;
+        } else if (b.tipo_pago === 'Yape' || b.tipo_pago === 'Efectivo') {
+            otrosTotal += tot;
+        } else {
+            depositoTotal += adelanto;
+            otrosTotal += Math.max(0, tot - adelanto);
+        }
+
+        // Determine if it's full day (duration >= 8 hours)
+        let isFullDay = false;
+        if (b.hora_inicio && b.hora_fin) {
+            const startMins = parseTimeToMinutes(b.hora_inicio);
+            let endMins = parseTimeToMinutes(b.hora_fin);
+            if (endMins <= startMins) endMins += 1440;
+            if ((endMins - startMins) / 60 >= 8) {
+                isFullDay = true;
+            }
+        }
+
+        if (isFullDay) {
+            totalFullDayCount++;
+            totalFullDayRevenue += tot;
+        } else {
+            totalDayNightCount++;
+            totalDayNightRevenue += tot;
+        }
+
+        // Space mapping
+        const key = `${b.sede} - ${b.espacio}`;
+        if (spacesMap[key]) {
+            spacesMap[key].count++;
+            spacesMap[key].revenue += tot;
+            spacesMap[key].daysOccupied++;
+            if (isFullDay) {
+                spacesMap[key].fullDayCount++;
+                spacesMap[key].fullDayRevenue += tot;
+            } else {
+                spacesMap[key].dayNightCount++;
+                spacesMap[key].dayNightRevenue += tot;
+            }
+        }
+
+        // Client counts
+        const clientName = b.nombre_cliente || 'Desconocido';
+        const clientDni = b.dni_cliente || '';
+        const clientTel = b.telefono_cliente || '';
+        const cKey = `${clientName}|${clientDni}`;
+        if (!clientsMap[cKey]) {
+            clientsMap[cKey] = { name: clientName, dni: clientDni, telefono: clientTel, count: 0 };
+        }
+        clientsMap[cKey].count++;
+
+        // Asesores stats
+        const asesorName = b.asesor_registro || 'Invitado';
+        if (!asesoresMap[asesorName]) {
+            asesoresMap[asesorName] = { name: asesorName, count: 0, revenue: 0, spaces: {} };
+        }
+        asesoresMap[asesorName].count++;
+        asesoresMap[asesorName].revenue += tot;
+        const sKey = b.espacio || 'Grande';
+        asesoresMap[asesorName].spaces[sKey] = (asesoresMap[asesorName].spaces[sKey] || 0) + 1;
+    });
+
+    // Write metric cards
+    document.getElementById('statsIncomeMonth').textContent = `S/. ${totalRevenue.toFixed(2)}`;
+    document.getElementById('statsCountMonth').textContent = `${monthBookings.length} reservas`;
+    document.getElementById('statsDepositoMonth').textContent = `S/. ${depositoTotal.toFixed(2)}`;
+    document.getElementById('statsOtrosMonth').textContent = `S/. ${otrosTotal.toFixed(2)}`;
+    
+    document.getElementById('statsDayNightCount').textContent = totalDayNightCount;
+    document.getElementById('statsDayNightRevenue').textContent = `S/. ${totalDayNightRevenue.toFixed(2)}`;
+    
+    document.getElementById('statsFullDayCount').textContent = totalFullDayCount;
+    document.getElementById('statsFullDayRevenue').textContent = `S/. ${totalFullDayRevenue.toFixed(2)}`;
+    
+    document.getElementById('statsExtrasRevenue').textContent = `S/. ${totalExtrasRevenue.toFixed(2)}`;
+
+    // Fill tableStatsReport
+    const reportTbody = document.querySelector('#tableStatsReport tbody');
+    if (reportTbody) {
+        reportTbody.innerHTML = Object.entries(spacesMap).map(([spaceName, data]) => {
+            return `
+                <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 12px 16px; font-weight: 500;">${spaceName}</td>
+                    <td style="padding: 12px 16px;">${data.count}</td>
+                    <td style="padding: 12px 16px;">${data.dayNightCount} (S/. ${data.dayNightRevenue.toFixed(2)})</td>
+                    <td style="padding: 12px 16px;">${data.fullDayCount} (S/. ${data.fullDayRevenue.toFixed(2)})</td>
+                    <td style="padding: 12px 16px;">S/. ${data.extras.toFixed(2)}</td>
+                    <td style="padding: 12px 16px; font-weight: 600; color: #34d399;">S/. ${data.revenue.toFixed(2)}</td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    // Fill ocupacionContainer (monthly progress bars)
+    const ocupacionContainer = document.getElementById('ocupacionContainer');
+    if (ocupacionContainer) {
+        const daysInMonth = new Date(thisYear, thisMonth + 1, 0).getDate();
+        ocupacionContainer.innerHTML = Object.entries(spacesMap).map(([spaceName, data]) => {
+            const pct = Math.min(100, Math.round((data.daysOccupied / daysInMonth) * 100));
+            return `
+                <div>
+                    <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px;">
+                        <span style="font-weight: 500;">${spaceName}</span>
+                        <span style="color: var(--text-secondary);">${data.daysOccupied} / ${daysInMonth} días (${pct}%)</span>
+                    </div>
+                    <div style="background: rgba(255, 255, 255, 0.05); height: 8px; border-radius: 4px; overflow: hidden;">
+                        <div style="background: var(--primary); width: ${pct}%; height: 100%; border-radius: 4px; transition: width 0.3s ease;"></div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // Fill tableStatsClients (top clients)
+    const clientsTbody = document.querySelector('#tableStatsClients tbody');
+    if (clientsTbody) {
+        const sortedClients = Object.values(clientsMap).sort((a, b) => b.count - a.count).slice(0, 10);
+        if (sortedClients.length === 0) {
+            clientsTbody.innerHTML = `<tr><td colspan="3" style="padding: 16px; text-align: center; color: var(--text-muted);">Sin datos de clientes este mes</td></tr>`;
+        } else {
+            clientsTbody.innerHTML = sortedClients.map(c => `
+                <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 12px 16px; font-weight: 500;">${escapeHTML(c.name)}</td>
+                    <td style="padding: 12px 16px; color: var(--text-secondary);">${escapeHTML(c.dni || '-')}</td>
+                    <td style="padding: 12px 16px; color: var(--text-secondary);">${escapeHTML(c.telefono || '-')}</td>
+                    <td style="padding: 12px 16px; font-weight: 600; text-align: right; color: var(--primary);">${c.count} reservas</td>
+                </tr>
+            `).join('');
+        }
+    }
+
+    // Fill tableStatsAsesores
+    const asesoresTbody = document.querySelector('#tableStatsAsesores tbody');
+    if (asesoresTbody) {
+        const sortedAsesores = Object.values(asesoresMap).sort((a, b) => b.revenue - a.revenue);
+        if (sortedAsesores.length === 0) {
+            asesoresTbody.innerHTML = `<tr><td colspan="4" style="padding: 16px; text-align: center; color: var(--text-muted);">Sin datos de asesores este mes</td></tr>`;
+        } else {
+            asesoresTbody.innerHTML = sortedAsesores.map(a => {
+                const favSpace = Object.entries(a.spaces).sort((x, y) => y[1] - x[1])[0]?.[0] || 'Ninguno';
+                return `
+                    <tr style="border-bottom: 1px solid var(--border-color);">
+                        <td style="padding: 12px 16px; font-weight: 500;">${escapeHTML(a.name)}</td>
+                        <td style="padding: 12px 16px;">${a.count}</td>
+                        <td style="padding: 12px 16px; font-weight: 600; color: #34d399;">S/. ${a.revenue.toFixed(2)}</td>
+                        <td style="padding: 12px 16px; color: var(--text-secondary);">${escapeHTML(favSpace)}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+    }
+}
+
+function parseTimeToMinutes(timeStr) {
+    if (!timeStr) return 0;
+    const parts = timeStr.split(':');
+    return parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
+}
+
+function getColLetter(colIndex) {
+    let temp = colIndex;
+    let letter = '';
+    while (temp > 0) {
+        let modulo = (temp - 1) % 26;
+        letter = String.fromCharCode(65 + modulo) + letter;
+        temp = Math.floor((temp - modulo) / 26);
+    }
+    return letter;
+}
+
+async function exportAllDataToExcel() {
+    if (!bookings || bookings.length === 0) {
+        alert("No hay reservas registradas para exportar.");
+        return;
+    }
+
+    const workbook = new ExcelJS.Workbook();
+    
+    // ─── RESUMEN SHEET ─────────────────────────────────────────────
+    const summaryWs = workbook.addWorksheet('📊 RESUMEN', { properties: { tabColor: { argb: 'FF0F766E' } } });
+    summaryWs.views = [{ showGridLines: false }];
+
+    function styleTitle(cell, text, bgArgb = 'FF0F766E', fgArgb = 'FFFFFFFF', fontSize = 12) {
+        cell.value = text;
+        cell.font = { name: 'Outfit', bold: true, size: fontSize, color: { argb: fgArgb } };
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bgArgb } };
+        cell.alignment = { vertical: 'middle', horizontal: 'center' };
+        cell.border = { 
+            top:{style:'thin',color:{argb:'FFE2E8F0'}}, 
+            left:{style:'thin',color:{argb:'FFE2E8F0'}}, 
+            bottom:{style:'thin',color:{argb:'FFE2E8F0'}}, 
+            right:{style:'thin',color:{argb:'FFE2E8F0'}} 
+        };
+    }
+    function styleValue(cell, value, isMoney = false) {
+        cell.value = isMoney ? parseFloat(parseFloat(value).toFixed(2)) : value;
+        if (isMoney) cell.numFmt = '"S/. "#,##0.00';
+        cell.font = { name: 'Outfit', bold: true, size: 10, color: { argb: 'FF0F766E' } };
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFFFF' } };
+        cell.alignment = { vertical: 'middle', horizontal: isMoney ? 'right' : 'left' };
+        cell.border = { 
+            top:{style:'thin',color:{argb:'FFE2E8F0'}}, 
+            left:{style:'thin',color:{argb:'FFE2E8F0'}}, 
+            bottom:{style:'thin',color:{argb:'FFE2E8F0'}}, 
+            right:{style:'thin',color:{argb:'FFE2E8F0'}} 
+        };
+    }
+
+    summaryWs.getColumn(1).width = 30;
+    summaryWs.getColumn(2).width = 20;
+    summaryWs.getColumn(3).width = 20;
+    summaryWs.getColumn(4).width = 20;
+    summaryWs.getColumn(5).width = 20;
+
+    let sr = 1;
+    const monthColorsS = ['FFFFFFFF', 'FFF8FAFC'];
+
+    // Title Block
+    summaryWs.mergeCells(sr, 1, sr, 5);
+    const mainTitleCell = summaryWs.getCell(sr, 1);
+    styleTitle(mainTitleCell, "REPORTE GENERAL DE RESERVAS Y ESTADÍSTICAS - LOCALES", 'FF0F766E', 'FFFFFFFF', 14);
+    summaryWs.getRow(sr).height = 40;
+    sr += 2; // Blank row
+
+    // Group events by Month based on fecha_reserva
+    const groups = {};
+    bookings.forEach(b => {
+        if (!b.fecha_reserva) return;
+        const dateParts = b.fecha_reserva.split('-');
+        if (dateParts.length < 2) return;
+        const year = dateParts[0];
+        const monthIndex = parseInt(dateParts[1]) - 1;
+        const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+        const monthName = months[monthIndex] || 'Otros';
+        const label = `${monthName} ${year}`;
+        if (!groups[label]) {
+            groups[label] = [];
+        }
+        groups[label].push(b);
+    });
+
+    // 1. Month Summary Block
+    summaryWs.mergeCells(sr, 1, sr, 5);
+    styleTitle(summaryWs.getCell(sr, 1), "INGRESOS Y USOS MENSUALES", 'FF334155', 'FFFFFFFF', 11);
+    summaryWs.getRow(sr).height = 24; sr++;
+
+    const headersM = ["Mes / Período", "Reservas", "Monto Cobrado", "Monto Adelanto", "Total Facturado"];
+    headersM.forEach((h, idx) => {
+        styleTitle(summaryWs.getCell(sr, idx + 1), h, 'FF1E293B', 'FFFFFFFF', 10);
+    });
+    summaryWs.getRow(sr).height = 22; sr++;
+
+    let grandTotalBookings = 0;
+    let grandTotalCobrado = 0;
+    let grandTotalAdelanto = 0;
+    let grandTotalSum = 0;
+
+    let rowIdx = 0;
+    for (const [monthLabel, items] of Object.entries(groups)) {
+        const bg = monthColorsS[rowIdx % 2];
+        const activeItems = items.filter(b => b.estado_reserva !== 'Bloqueado');
+        
+        let count = activeItems.length;
+        let cMonto = 0;
+        let aMonto = 0;
+        let tMonto = 0;
+
+        activeItems.forEach(b => {
+            const tot = parseFloat(b.monto_total) || 0;
+            const adelanto = parseFloat(b.monto_adelanto) || 0;
+            cMonto += Math.max(0, tot - adelanto);
+            aMonto += adelanto;
+            tMonto += tot;
+        });
+
+        grandTotalBookings += count;
+        grandTotalCobrado += cMonto;
+        grandTotalAdelanto += aMonto;
+        grandTotalSum += tMonto;
+
+        const c1 = summaryWs.getCell(sr, 1);
+        c1.value = monthLabel; c1.font = { name: 'Outfit', bold: true, size: 10, color: { argb: 'FF1E293B' } };
+        c1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
+        c1.alignment = { vertical: 'middle', horizontal: 'left' };
+        c1.border = { top:{style:'thin',color:{argb:'FFE2E8F0'}}, left:{style:'thin',color:{argb:'FFE2E8F0'}}, bottom:{style:'thin',color:{argb:'FFE2E8F0'}}, right:{style:'thin',color:{argb:'FFE2E8F0'}} };
+
+        styleValue(summaryWs.getCell(sr, 2), count, false);
+        styleValue(summaryWs.getCell(sr, 3), cMonto, true);
+        styleValue(summaryWs.getCell(sr, 4), aMonto, true);
+        styleValue(summaryWs.getCell(sr, 5), tMonto, true);
+
+        for (let col = 2; col <= 5; col++) {
+            summaryWs.getCell(sr, col).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
+        }
+
+        summaryWs.getRow(sr).height = 20;
+        sr++;
+        rowIdx++;
+    }
+
+    // Totals Row for Months
+    const totalCell = summaryWs.getCell(sr, 1);
+    totalCell.value = "TOTAL GENERAL";
+    totalCell.font = { name: 'Outfit', bold: true, size: 10, color: { argb: 'FFFFFFFF' } };
+    totalCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F766E' } };
+    totalCell.alignment = { vertical: 'middle', horizontal: 'left' };
+    totalCell.border = { top:{style:'thin',color:{argb:'FF0F766E'}}, left:{style:'thin',color:{argb:'FF0F766E'}}, bottom:{style:'thin',color:{argb:'FF0F766E'}}, right:{style:'thin',color:{argb:'FF0F766E'}} };
+
+    styleValue(summaryWs.getCell(sr, 2), grandTotalBookings, false);
+    styleValue(summaryWs.getCell(sr, 3), grandTotalCobrado, true);
+    styleValue(summaryWs.getCell(sr, 4), grandTotalAdelanto, true);
+    styleValue(summaryWs.getCell(sr, 5), grandTotalSum, true);
+
+    for (let col = 2; col <= 5; col++) {
+        summaryWs.getCell(sr, col).font.color = { argb: 'FFFFFFFF' };
+        summaryWs.getCell(sr, col).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F766E' } };
+    }
+    summaryWs.getRow(sr).height = 22;
+    sr += 3; // Blank rows
+
+    // 2. Local/Sede breakdown Block
+    summaryWs.mergeCells(sr, 1, sr, 3);
+    styleTitle(summaryWs.getCell(sr, 1), "INGRESOS POR SEDE Y LOCAL", 'FF334155', 'FFFFFFFF', 11);
+    summaryWs.getRow(sr).height = 24; sr++;
+
+    const headersL = ["Sede / Local", "Reservas", "Monto Reservas"];
+    headersL.forEach((h, idx) => {
+        styleTitle(summaryWs.getCell(sr, idx + 1), h, 'FF1E293B', 'FFFFFFFF', 10);
+    });
+    summaryWs.getRow(sr).height = 22; sr++;
+
+    const activeAll = bookings.filter(b => b.estado_reserva !== 'Bloqueado');
+    const localSedesMap = {};
+    activeAll.forEach(b => {
+        const key = `${b.sede || 'Desconocida'} - ${b.espacio || 'Grande'}`;
+        if (!localSedesMap[key]) {
+            localSedesMap[key] = { count: 0, revenue: 0 };
+        }
+        localSedesMap[key].count++;
+        localSedesMap[key].revenue += parseFloat(b.monto_total) || 0;
+    });
+
+    Object.entries(localSedesMap).sort((a,b) => a[0].localeCompare(b[0])).forEach(([keyName, data], lIdx) => {
+        const bg = monthColorsS[lIdx % 2];
+        const c1 = summaryWs.getCell(sr, 1);
+        c1.value = keyName; c1.font = { name: 'Outfit', bold: true, size: 10, color: { argb: 'FF1E293B' } };
+        c1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
+        c1.alignment = { vertical: 'middle', horizontal: 'left' };
+        c1.border = { top:{style:'thin',color:{argb:'FFE2E8F0'}}, left:{style:'thin',color:{argb:'FFE2E8F0'}}, bottom:{style:'thin',color:{argb:'FFE2E8F0'}}, right:{style:'thin',color:{argb:'FFE2E8F0'}} };
+        
+        styleValue(summaryWs.getCell(sr, 2), data.count, false);
+        styleValue(summaryWs.getCell(sr, 3), data.revenue, true);
+        
+        summaryWs.getCell(sr, 2).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
+        summaryWs.getCell(sr, 3).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
+        
+        summaryWs.getRow(sr).height = 20;
+        sr++;
+    });
+
+    // ─── DATA WORKSEETS ───────────────────────────────────────────
+    const columnsDef = [
+        { header: 'Sede', key: 'sede', width: 16 },
+        { header: 'Espacio', key: 'espacio', width: 14 },
+        { header: 'Cliente', key: 'cliente', width: 25 },
+        { header: 'Celular', key: 'celular', width: 14 },
+        { header: 'Fecha Reserva', key: 'fecha_reserva', width: 14 },
+        { header: 'Hora Inicio', key: 'hora_inicio', width: 12 },
+        { header: 'Hora Fin', key: 'hora_fin', width: 12 },
+        { header: 'Tipo Evento', key: 'tipo_evento', width: 20 },
+        { header: 'Monto Total (S/.)', key: 'monto_total', width: 18 },
+        { header: 'Adelanto (S/.)', key: 'monto_adelanto', width: 18 },
+        { header: 'Medio de Contacto', key: 'medio', width: 18 },
+        { header: 'Estado', key: 'estado', width: 14 },
+        { header: 'Asesor', key: 'asesor', width: 16 },
+        { header: 'Notas / Observaciones', key: 'notas', width: 30 },
+        { header: 'Fecha Registro', key: 'registro', width: 22 }
+    ];
+
+    for (const [monthLabel, bookingsInMonth] of Object.entries(groups)) {
+        const worksheet = workbook.addWorksheet(monthLabel);
+        
+        // Grid lines visible
+        worksheet.views = [{ showGridLines: true }];
+        worksheet.columns = columnsDef;
+
+        // Auto filter
+        worksheet.autoFilter = `A1:${getColLetter(columnsDef.length)}1`;
+
+        // Style header row
+        const headerRow = worksheet.getRow(1);
+        headerRow.height = 26;
+        headerRow.eachCell((cell) => {
+            cell.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FF0F766E' }
+            };
+            cell.font = {
+                name: 'Outfit',
+                color: { argb: 'FFFFFFFF' },
+                bold: true,
+                size: 11
+            };
+            cell.alignment = {
+                vertical: 'middle',
+                horizontal: 'center',
+                wrapText: true
+            };
+            cell.border = {
+                top: { style: 'thin', color: { argb: 'FF1E293B' } },
+                left: { style: 'thin', color: { argb: 'FF1E293B' } },
+                bottom: { style: 'medium', color: { argb: 'FF1E293B' } },
+                right: { style: 'thin', color: { argb: 'FF1E293B' } }
+            };
+        });
+
+        let rowNumber = 2;
+        bookingsInMonth.forEach(b => {
+            const dataRow = worksheet.addRow({
+                sede: b.sede || '',
+                espacio: b.espacio || '',
+                cliente: b.nombre_cliente || '',
+                celular: b.telefono_cliente || '',
+                fecha_reserva: b.fecha_reserva || '',
+                hora_inicio: b.hora_inicio || '',
+                hora_fin: b.hora_fin || '',
+                tipo_evento: b.tipo_event || b.tipo_evento || '',
+                monto_total: b.monto_total ? parseFloat(b.monto_total) : 0,
+                monto_adelanto: b.monto_adelanto ? parseFloat(b.monto_adelanto) : 0,
+                medio: b.medio_contacto || '',
+                estado: b.estado_reserva || '',
+                asesor: b.asesor_registro || '',
+                notas: b.notas || '',
+                registro: b.created_at ? new Date(b.created_at).toLocaleString('es-PE') : ''
+            });
+
+            dataRow.height = 20;
+
+            const isAlternate = (rowNumber % 2 === 0);
+            dataRow.eachCell((cell, colNumber) => {
+                cell.font = { name: 'Outfit', size: 10 };
+                cell.fill = {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    fgColor: { argb: isAlternate ? 'FFF8FAFC' : 'FFFFFFFF' }
+                };
+                cell.border = {
+                    top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                    left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                    bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                    right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+                };
+
+                const colKey = columnsDef[colNumber - 1].key;
+                if (['fecha_reserva', 'hora_inicio', 'hora_fin', 'celular', 'medio', 'estado'].includes(colKey)) {
+                    cell.alignment = { horizontal: 'center', vertical: 'middle' };
+                } else if (['monto_total', 'monto_adelanto'].includes(colKey)) {
+                    cell.alignment = { horizontal: 'right', vertical: 'middle' };
+                    cell.numFmt = '"S/. "#,##0.00';
+                } else {
+                    cell.alignment = { horizontal: 'left', vertical: 'middle' };
+                }
+            });
+
+            rowNumber++;
+        });
+    }
+
+    workbook.xlsx.writeBuffer().then((buffer) => {
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'Reporte_Reservas_Locales.xlsx';
+        link.click();
+    }).catch(err => {
+        console.error("Error al exportar:", err);
+        alert("Ocurrió un error al generar el archivo Excel: " + err.message);
+    });
 }

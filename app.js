@@ -709,6 +709,10 @@ function setupEventListeners() {
     if (btnLockStats) {
         btnLockStats.addEventListener('click', handleLockStatsClick);
     }
+    const btnExportStatsExcel = document.getElementById('btnExportStatsExcel');
+    if (btnExportStatsExcel) {
+        btnExportStatsExcel.addEventListener('click', exportAllDataToExcel);
+    }
     const searchInput = document.getElementById('statsClientesSearch');
     if (searchInput) {
         searchInput.addEventListener('input', (e) => {
@@ -2887,6 +2891,390 @@ function handleStatsAuthSubmit(e) {
             }
         }, 1000);
     }
+}
+
+function getColLetter(colIndex) {
+    let temp = colIndex;
+    let letter = '';
+    while (temp > 0) {
+        let modulo = (temp - 1) % 26;
+        letter = String.fromCharCode(65 + modulo) + letter;
+        temp = Math.floor((temp - modulo) / 26);
+    }
+    return letter;
+}
+
+async function exportAllDataToExcel() {
+    // Check if we have events to export
+    if (!allEvents || allEvents.length === 0) {
+        alert("No hay reservas registradas para exportar.");
+        return;
+    }
+
+    const workbook = new ExcelJS.Workbook();
+    
+    // ─── RESUMEN SHEET ─────────────────────────────────────────────
+    const summaryWs = workbook.addWorksheet('📊 RESUMEN', { properties: { tabColor: { argb: 'FF0F766E' } } });
+    summaryWs.views = [{ showGridLines: false }];
+
+    function styleTitle(cell, text, bgArgb = 'FF0F766E', fgArgb = 'FFFFFFFF', fontSize = 12) {
+        cell.value = text;
+        cell.font = { name: 'Outfit', bold: true, size: fontSize, color: { argb: fgArgb } };
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bgArgb } };
+        cell.alignment = { vertical: 'middle', horizontal: 'center' };
+        cell.border = { 
+            top:{style:'thin',color:{argb:'FFE2E8F0'}}, 
+            left:{style:'thin',color:{argb:'FFE2E8F0'}}, 
+            bottom:{style:'thin',color:{argb:'FFE2E8F0'}}, 
+            right:{style:'thin',color:{argb:'FFE2E8F0'}} 
+        };
+    }
+    function styleValue(cell, value, isMoney = false) {
+        cell.value = isMoney ? parseFloat(parseFloat(value).toFixed(2)) : value;
+        if (isMoney) cell.numFmt = '"S/. "#,##0.00';
+        cell.font = { name: 'Outfit', bold: true, size: 10, color: { argb: 'FF0F766E' } };
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFFFF' } };
+        cell.alignment = { vertical: 'middle', horizontal: isMoney ? 'right' : 'left' };
+        cell.border = { 
+            top:{style:'thin',color:{argb:'FFE2E8F0'}}, 
+            left:{style:'thin',color:{argb:'FFE2E8F0'}}, 
+            bottom:{style:'thin',color:{argb:'FFE2E8F0'}}, 
+            right:{style:'thin',color:{argb:'FFE2E8F0'}} 
+        };
+    }
+
+    summaryWs.getColumn(1).width = 30;
+    summaryWs.getColumn(2).width = 20;
+    summaryWs.getColumn(3).width = 20;
+    summaryWs.getColumn(4).width = 20;
+    summaryWs.getColumn(5).width = 20;
+
+    let sr = 1;
+    const monthColorsS = ['FFFFFFFF', 'FFF8FAFC'];
+
+    // Title Block
+    summaryWs.mergeCells(sr, 1, sr, 5);
+    const mainTitleCell = summaryWs.getCell(sr, 1);
+    styleTitle(mainTitleCell, "REPORTE GENERAL DE RESERVAS Y ESTADÍSTICAS - CANCHAS", 'FF0F766E', 'FFFFFFFF', 14);
+    summaryWs.getRow(sr).height = 40;
+    sr += 2; // Blank row
+
+    // Group events by Month
+    const groups = {};
+    allEvents.forEach(e => {
+        if (!e.date) return;
+        const dateParts = e.date.split('-');
+        if (dateParts.length < 2) return;
+        const year = dateParts[0];
+        const monthIndex = parseInt(dateParts[1]) - 1;
+        const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+        const monthName = months[monthIndex] || 'Otros';
+        const label = `${monthName} ${year}`;
+        if (!groups[label]) {
+            groups[label] = [];
+        }
+        groups[label].push(e);
+    });
+
+    // 1. Month Summary Block
+    summaryWs.mergeCells(sr, 1, sr, 5);
+    styleTitle(summaryWs.getCell(sr, 1), "INGRESOS Y USOS MENSUALES", 'FF334155', 'FFFFFFFF', 11);
+    summaryWs.getRow(sr).height = 24; sr++;
+
+    const headersM = ["Mes / Período", "Reservas", "Monto Cancha", "Monto Accesorios", "Total Facturado"];
+    headersM.forEach((h, idx) => {
+        styleTitle(summaryWs.getCell(sr, idx + 1), h, 'FF1E293B', 'FFFFFFFF', 10);
+    });
+    summaryWs.getRow(sr).height = 22; sr++;
+
+    let grandTotalBookings = 0;
+    let grandTotalCancha = 0;
+    let grandTotalAcc = 0;
+    let grandTotalSum = 0;
+
+    let rowIdx = 0;
+    for (const [monthLabel, events] of Object.entries(groups)) {
+        const bg = monthColorsS[rowIdx % 2];
+        const activeEvents = events.filter(e => e.sport !== 'Bloqueo');
+        
+        let count = activeEvents.length;
+        let cMonto = 0;
+        let accMonto = 0;
+        let tMonto = 0;
+
+        activeEvents.forEach(e => {
+            const inc = getEventIncome(e);
+            cMonto += inc.courtIncome;
+            accMonto += inc.pelotaIncome + inc.chalecoIncome;
+            tMonto += inc.total;
+        });
+
+        grandTotalBookings += count;
+        grandTotalCancha += cMonto;
+        grandTotalAcc += accMonto;
+        grandTotalSum += tMonto;
+
+        const c1 = summaryWs.getCell(sr, 1);
+        c1.value = monthLabel; c1.font = { name: 'Outfit', bold: true, size: 10, color: { argb: 'FF1E293B' } };
+        c1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
+        c1.alignment = { vertical: 'middle', horizontal: 'left' };
+        c1.border = { top:{style:'thin',color:{argb:'FFE2E8F0'}}, left:{style:'thin',color:{argb:'FFE2E8F0'}}, bottom:{style:'thin',color:{argb:'FFE2E8F0'}}, right:{style:'thin',color:{argb:'FFE2E8F0'}} };
+
+        styleValue(summaryWs.getCell(sr, 2), count, false);
+        styleValue(summaryWs.getCell(sr, 3), cMonto, true);
+        styleValue(summaryWs.getCell(sr, 4), accMonto, true);
+        styleValue(summaryWs.getCell(sr, 5), tMonto, true);
+
+        // Apply row BG to values
+        for (let col = 2; col <= 5; col++) {
+            summaryWs.getCell(sr, col).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
+        }
+
+        summaryWs.getRow(sr).height = 20;
+        sr++;
+        rowIdx++;
+    }
+
+    // Totals Row for Months
+    const totalCell = summaryWs.getCell(sr, 1);
+    totalCell.value = "TOTAL GENERAL";
+    totalCell.font = { name: 'Outfit', bold: true, size: 10, color: { argb: 'FFFFFFFF' } };
+    totalCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F766E' } };
+    totalCell.alignment = { vertical: 'middle', horizontal: 'left' };
+    totalCell.border = { top:{style:'thin',color:{argb:'FF0F766E'}}, left:{style:'thin',color:{argb:'FF0F766E'}}, bottom:{style:'thin',color:{argb:'FF0F766E'}}, right:{style:'thin',color:{argb:'FF0F766E'}} };
+
+    styleValue(summaryWs.getCell(sr, 2), grandTotalBookings, false);
+    styleValue(summaryWs.getCell(sr, 3), grandTotalCancha, true);
+    styleValue(summaryWs.getCell(sr, 4), grandTotalAcc, true);
+    styleValue(summaryWs.getCell(sr, 5), grandTotalSum, true);
+
+    for (let col = 2; col <= 5; col++) {
+        summaryWs.getCell(sr, col).font.color = { argb: 'FFFFFFFF' };
+        summaryWs.getCell(sr, col).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F766E' } };
+    }
+    summaryWs.getRow(sr).height = 22;
+    sr += 3; // Blank rows
+
+    // 2. Cancha breakdown Block
+    summaryWs.mergeCells(sr, 1, sr, 3);
+    styleTitle(summaryWs.getCell(sr, 1), "INGRESOS POR TIPO DE CANCHA", 'FF334155', 'FFFFFFFF', 11);
+    summaryWs.getRow(sr).height = 24; sr++;
+
+    const headersC = ["Cancha / Tamaño", "Reservas", "Monto Canchas"];
+    headersC.forEach((h, idx) => {
+        styleTitle(summaryWs.getCell(sr, idx + 1), h, 'FF1E293B', 'FFFFFFFF', 10);
+    });
+    summaryWs.getRow(sr).height = 22; sr++;
+
+    const activeAll = allEvents.filter(e => e.sport !== 'Bloqueo');
+    const courtsMap = {
+        'Grande': { count: 0, income: 0 },
+        'Pequeña': { count: 0, income: 0 }
+    };
+    activeAll.forEach(e => {
+        const cType = e.court === 'Grande' ? 'Grande' : 'Pequeña';
+        const inc = getEventIncome(e);
+        courtsMap[cType].count++;
+        courtsMap[cType].income += inc.courtIncome;
+    });
+
+    [['Cancha Grande', courtsMap['Grande'].count, courtsMap['Grande'].income],
+     ['Cancha Pequeña', courtsMap['Pequeña'].count, courtsMap['Pequeña'].income]].forEach(([label, cnt, inc], cIdx) => {
+        const bg = monthColorsS[cIdx % 2];
+        const c1 = summaryWs.getCell(sr, 1);
+        c1.value = label; c1.font = { name: 'Outfit', bold: true, size: 10, color: { argb: 'FF1E293B' } };
+        c1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
+        c1.alignment = { vertical: 'middle', horizontal: 'left' };
+        c1.border = { top:{style:'thin',color:{argb:'FFE2E8F0'}}, left:{style:'thin',color:{argb:'FFE2E8F0'}}, bottom:{style:'thin',color:{argb:'FFE2E8F0'}}, right:{style:'thin',color:{argb:'FFE2E8F0'}} };
+        
+        styleValue(summaryWs.getCell(sr, 2), cnt, false);
+        styleValue(summaryWs.getCell(sr, 3), inc, true);
+        
+        summaryWs.getCell(sr, 2).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
+        summaryWs.getCell(sr, 3).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
+        
+        summaryWs.getRow(sr).height = 20;
+        sr++;
+    });
+    sr += 2;
+
+    // 3. Accessories breakdown Block
+    summaryWs.mergeCells(sr, 1, sr, 3);
+    styleTitle(summaryWs.getCell(sr, 1), "ADICIONALES Y ACCESORIOS", 'FF334155', 'FFFFFFFF', 11);
+    summaryWs.getRow(sr).height = 24; sr++;
+
+    const headersA = ["Accesorio", "Usos", "Monto Alquiler"];
+    headersA.forEach((h, idx) => {
+        styleTitle(summaryWs.getCell(sr, idx + 1), h, 'FF1E293B', 'FFFFFFFF', 10);
+    });
+    summaryWs.getRow(sr).height = 22; sr++;
+
+    let pelotaCount = 0;
+    let pelotaInc = 0;
+    let chalecoCount = 0;
+    let chalecoInc = 0;
+
+    activeAll.forEach(e => {
+        const inc = getEventIncome(e);
+        if (e.pelota === true || e.pelota === 'true') {
+            pelotaCount++;
+            pelotaInc += inc.pelotaIncome;
+        }
+        if (e.chaleco === true || e.chaleco === 'true') {
+            chalecoCount++;
+            chalecoInc += inc.chalecoIncome;
+        }
+    });
+
+    [['⚽ Pelota', pelotaCount, pelotaInc], ['🎽 Chalecos', chalecoCount, chalecoInc]].forEach(([label, cnt, inc], aIdx) => {
+        const bg = monthColorsS[aIdx % 2];
+        const c1 = summaryWs.getCell(sr, 1);
+        c1.value = label; c1.font = { name: 'Outfit', bold: true, size: 10, color: { argb: 'FF1E293B' } };
+        c1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
+        c1.alignment = { vertical: 'middle', horizontal: 'left' };
+        c1.border = { top:{style:'thin',color:{argb:'FFE2E8F0'}}, left:{style:'thin',color:{argb:'FFE2E8F0'}}, bottom:{style:'thin',color:{argb:'FFE2E8F0'}}, right:{style:'thin',color:{argb:'FFE2E8F0'}} };
+        
+        styleValue(summaryWs.getCell(sr, 2), cnt, false);
+        styleValue(summaryWs.getCell(sr, 3), inc, true);
+        
+        summaryWs.getCell(sr, 2).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
+        summaryWs.getCell(sr, 3).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
+
+        summaryWs.getRow(sr).height = 20;
+        sr++;
+    });
+
+    // ─── DATA WORKSEETS ───────────────────────────────────────────
+    const columnsDef = [
+        { header: 'Fecha', key: 'fecha', width: 14 },
+        { header: 'Hora Inicio', key: 'hora_inicio', width: 12 },
+        { header: 'Hora Fin', key: 'hora_fin', width: 12 },
+        { header: 'Cliente', key: 'cliente', width: 25 },
+        { header: 'DNI', key: 'dni', width: 12 },
+        { header: 'Cancha', key: 'cancha', width: 16 },
+        { header: 'Deporte', key: 'deporte', width: 12 },
+        { header: 'Asesor', key: 'asesor', width: 16 },
+        { header: 'Pelota', key: 'pelota', width: 10 },
+        { header: 'Chaleco', key: 'chaleco', width: 10 },
+        { header: 'Medio de Contacto', key: 'medio', width: 18 },
+        { header: 'Tipo de Pago', key: 'tipo_pago', width: 18 },
+        { header: 'Duracion (Horas)', key: 'duracion', width: 16 },
+        { header: 'Monto Cancha (S/.)', key: 'monto_cancha', width: 18 },
+        { header: 'Monto Pelota (S/.)', key: 'monto_pelota', width: 18 },
+        { header: 'Monto Chaleco (S/.)', key: 'monto_chaleco', width: 18 },
+        { header: 'Monto Total (S/.)', key: 'monto_total', width: 18 },
+        { header: 'Fecha Registro', key: 'registro', width: 22 }
+    ];
+
+    for (const [monthLabel, eventsInMonth] of Object.entries(groups)) {
+        const worksheet = workbook.addWorksheet(monthLabel);
+        
+        // Grid lines visible
+        worksheet.views = [{ showGridLines: true }];
+        worksheet.columns = columnsDef;
+
+        // Auto filter
+        worksheet.autoFilter = `A1:${getColLetter(columnsDef.length)}1`;
+
+        // Style header row
+        const headerRow = worksheet.getRow(1);
+        headerRow.height = 26;
+        headerRow.eachCell((cell) => {
+            cell.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FF0F766E' }
+            };
+            cell.font = {
+                name: 'Outfit',
+                color: { argb: 'FFFFFFFF' },
+                bold: true,
+                size: 11
+            };
+            cell.alignment = {
+                vertical: 'middle',
+                horizontal: 'center',
+                wrapText: true
+            };
+            cell.border = {
+                top: { style: 'thin', color: { argb: 'FF1E293B' } },
+                left: { style: 'thin', color: { argb: 'FF1E293B' } },
+                bottom: { style: 'medium', color: { argb: 'FF1E293B' } },
+                right: { style: 'thin', color: { argb: 'FF1E293B' } }
+            };
+        });
+
+        let rowNumber = 2;
+        eventsInMonth.forEach(e => {
+            if (e.sport === 'Bloqueo') return; // Exclude blocks from data tabs
+
+            const inc = getEventIncome(e);
+
+            const dataRow = worksheet.addRow({
+                fecha: e.date || '',
+                hora_inicio: e.start_time || '',
+                hora_fin: e.end_time || '',
+                cliente: e.client_name || '',
+                dni: e.client_dni || '',
+                cancha: e.court || '',
+                deporte: e.sport || '',
+                asesor: e.asesor || '',
+                pelota: (e.pelota === true || e.pelota === 'true') ? 'Sí' : 'No',
+                chaleco: (e.chaleco === true || e.chaleco === 'true') ? 'Sí' : 'No',
+                medio: e.medio_pago || '',
+                tipo_pago: e.tipo_pago || '',
+                duracion: parseFloat(inc.durationHours.toFixed(2)),
+                monto_cancha: parseFloat(inc.courtIncome.toFixed(2)),
+                monto_pelota: parseFloat(inc.pelotaIncome.toFixed(2)),
+                monto_chaleco: parseFloat(inc.chalecoIncome.toFixed(2)),
+                monto_total: parseFloat(inc.total.toFixed(2)),
+                registro: e.created_at ? new Date(e.created_at).toLocaleString('es-PE') : ''
+            });
+
+            dataRow.height = 20;
+
+            const isAlternate = (rowNumber % 2 === 0);
+            dataRow.eachCell((cell, colNumber) => {
+                cell.font = { name: 'Outfit', size: 10 };
+                cell.fill = {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    fgColor: { argb: isAlternate ? 'FFF8FAFC' : 'FFFFFFFF' }
+                };
+                cell.border = {
+                    top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                    left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                    bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                    right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+                };
+
+                const colKey = columnsDef[colNumber - 1].key;
+                if (['fecha', 'hora_inicio', 'hora_fin', 'dni', 'pelota', 'chaleco', 'tipo_pago', 'medio'].includes(colKey)) {
+                    cell.alignment = { horizontal: 'center', vertical: 'middle' };
+                } else if (['duracion', 'monto_cancha', 'monto_pelota', 'monto_chaleco', 'monto_total'].includes(colKey)) {
+                    cell.alignment = { horizontal: 'right', vertical: 'middle' };
+                    if (colKey !== 'duracion') {
+                        cell.numFmt = '"S/. "#,##0.00';
+                    }
+                } else {
+                    cell.alignment = { horizontal: 'left', vertical: 'middle' };
+                }
+            });
+
+            rowNumber++;
+        });
+    }
+
+    workbook.xlsx.writeBuffer().then((buffer) => {
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'Reporte_Reservas_Canchas.xlsx';
+        link.click();
+    }).catch(err => {
+        console.error("Error al exportar:", err);
+        alert("Ocurrió un error al generar el archivo Excel: " + err.message);
+    });
 }
 
 function handleLockStatsClick() {
