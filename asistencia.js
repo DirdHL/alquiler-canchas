@@ -461,6 +461,57 @@ function populateMonthFilter() {
     } else {
         filterMonth.value = currentYearMonth;
     }
+    updateWeekFilterOptions();
+}
+
+// Calculate weeks of the month (starting Monday, ending Sunday or end of month)
+function getWeeksOfMonth(yearMonthStr) {
+    const [year, month] = yearMonthStr.split('-').map(Number);
+    const jsMonth = month - 1;
+    const lastDay = new Date(year, month, 0).getDate();
+
+    const weeks = [];
+    let currentWeek = { start: 1, end: 1 };
+
+    for (let day = 1; day <= lastDay; day++) {
+        const d = new Date(year, jsMonth, day);
+        const dayOfWeek = d.getDay(); // 0 = Sunday, 1 = Monday, ...
+
+        if (day === 1) {
+            currentWeek.start = 1;
+        }
+
+        if (dayOfWeek === 0 || day === lastDay) {
+            currentWeek.end = day;
+            weeks.push({ ...currentWeek });
+            if (day < lastDay) {
+                currentWeek = { start: day + 1, end: day + 1 };
+            }
+        }
+    }
+    return weeks;
+}
+
+// Update options for the week selector dropdown
+function updateWeekFilterOptions() {
+    const filterWeek = document.getElementById('filterWeek');
+    if (!filterWeek) return;
+
+    const selectedMonth = filterMonth.value;
+    if (!selectedMonth) {
+        filterWeek.innerHTML = '<option value="todas">Todas las semanas</option>';
+        return;
+    }
+
+    const weeks = getWeeksOfMonth(selectedMonth);
+    let html = '<option value="todas">Todas las semanas</option>';
+    weeks.forEach((w, index) => {
+        const startFormatted = String(w.start).padStart(2, '0');
+        const endFormatted = String(w.end).padStart(2, '0');
+        const [, month] = selectedMonth.split('-');
+        html += `<option value="${w.start}-${w.end}">Semana ${index + 1} (${startFormatted}/${month} al ${endFormatted}/${month})</option>`;
+    });
+    filterWeek.innerHTML = html;
 }
 
 // LocalStorage helpers for attendance
@@ -1051,6 +1102,21 @@ function renderAttendanceTable() {
         });
     }
 
+    // 3. Filter by selected Week
+    const filterWeek = document.getElementById('filterWeek');
+    const filterSelectedWeek = filterWeek ? filterWeek.value : 'todas';
+    if (filterSelectedMonth && filterSelectedWeek && filterSelectedWeek !== 'todas') {
+        const [startDay, endDay] = filterSelectedWeek.split('-').map(Number);
+        const [year, month] = filterSelectedMonth.split('-');
+        const startDateStr = `${year}-${month}-${String(startDay).padStart(2, '0')}`;
+        const endDateStr = `${year}-${month}-${String(endDay).padStart(2, '0')}`;
+
+        filtered = filtered.filter(r => {
+            if (!r.date) return false;
+            return r.date >= startDateStr && r.date <= endDateStr;
+        });
+    }
+
     if (filtered.length === 0) {
         attendanceTableBody.innerHTML = `
             <tr>
@@ -1418,9 +1484,17 @@ function setupEventListeners() {
         updateEmployeeStats();
     });
     filterMonth.addEventListener('change', () => {
+        updateWeekFilterOptions();
         renderAttendanceTable();
         updateEmployeeStats();
     });
+
+    const filterWeek = document.getElementById('filterWeek');
+    if (filterWeek) {
+        filterWeek.addEventListener('change', () => {
+            renderAttendanceTable();
+        });
+    }
 
     // Admin dialogs
     btnAdminActions.addEventListener('click', handleAdminActionsClick);
