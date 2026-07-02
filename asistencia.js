@@ -1010,12 +1010,9 @@ function updateEmployeeStats() {
     const expectedHours = getExpectedHoursForMonth(selectedMonth);
     const hoursOwed = Math.max(0, expectedHours - totalMonthHours);
 
-    const today = new Date();
-    const [year, month] = selectedMonth.split('-').map(Number);
-    const isCurrentMonth = (today.getFullYear() === year && today.getMonth() === (month - 1));
 
     if (labelRequiredHours) {
-        labelRequiredHours.textContent = isCurrentMonth ? 'Horas Requeridas (al día de hoy):' : 'Horas Requeridas:';
+        labelRequiredHours.textContent = 'Horas Requeridas:';
     }
     if (statsRequiredHours) {
         statsRequiredHours.textContent = formatHoursToHHMM(expectedHours, true);
@@ -1551,15 +1548,12 @@ function escapeHTML(str) {
     );
 }
 
-// Calculate expected working hours for a given month (Mon-Sat, 8h/day).
-// If it is the current month, only calculate up to today's date.
+// Calculate expected working hours for a given month (Mon-Sat, 8h/day) for the entire month.
 function getExpectedHoursForMonth(yearMonthStr) {
-    const today = new Date();
     const [year, month] = yearMonthStr.split('-').map(Number);
     const jsMonth = month - 1;
 
-    const isCurrentMonth = (today.getFullYear() === year && today.getMonth() === jsMonth);
-    const lastDay = isCurrentMonth ? today.getDate() : new Date(year, month, 0).getDate();
+    const lastDay = new Date(year, month, 0).getDate();
 
     let workingDays = 0;
     for (let day = 1; day <= lastDay; day++) {
