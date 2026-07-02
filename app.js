@@ -3268,17 +3268,32 @@ function updateStatsDashboard() {
         return `<span style="color: var(--text-muted);">= 0% vs per. ant.</span>`;
     }
 
+    // Calculate range strings
+    const monthsShort = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+    
+    // Today
+    const formattedToday = `${currentDate.getDate()} ${monthsShort[currentDate.getMonth()]}`;
+    
+    // Week (Monday of current business week to Sunday)
+    const currentSunday = new Date(currentMonday);
+    currentSunday.setDate(currentMonday.getDate() + 6);
+    const weekRangeStr = `${currentMonday.getDate()} ${monthsShort[currentMonday.getMonth()]} al ${currentSunday.getDate()} ${monthsShort[currentSunday.getMonth()]}`;
+    
+    // Month (1st of the month to currentDate/today)
+    const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+    const monthRangeStr = `${firstDayOfMonth.getDate()} ${monthsShort[firstDayOfMonth.getMonth()]} al ${currentDate.getDate()} ${monthsShort[currentDate.getMonth()]}`;
+
     // Update dashboard labels & comparisons
     document.getElementById('statsIncomeToday').textContent = `S/. ${metrics.Total.today.income.toFixed(2)}`;
-    document.getElementById('statsCountToday').textContent = `${metrics.Total.today.count} reservas`;
+    document.getElementById('statsCountToday').textContent = `${metrics.Total.today.count} reservas (${formattedToday})`;
     document.getElementById('statsCompareToday').innerHTML = renderCompareBadge(metrics.Total.today.income, yesterdayIncome);
 
     document.getElementById('statsIncomeWeek').textContent = `S/. ${metrics.Total.week.income.toFixed(2)}`;
-    document.getElementById('statsCountWeek').textContent = `${metrics.Total.week.count} reservas`;
+    document.getElementById('statsCountWeek').textContent = `${metrics.Total.week.count} reservas (${weekRangeStr})`;
     document.getElementById('statsCompareWeek').innerHTML = renderCompareBadge(metrics.Total.week.income, prevWeekIncome);
 
     document.getElementById('statsIncomeMonth').textContent = `S/. ${metrics.Total.month.income.toFixed(2)}`;
-    document.getElementById('statsCountMonth').textContent = `${metrics.Total.month.count} reservas`;
+    document.getElementById('statsCountMonth').textContent = `${metrics.Total.month.count} reservas (${monthRangeStr})`;
     document.getElementById('statsCompareMonth').innerHTML = renderCompareBadge(metrics.Total.month.income, prevMonthIncome);
 
     // Calculate Month efficiency (Capacity & Duration)

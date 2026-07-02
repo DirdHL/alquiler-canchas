@@ -1989,9 +1989,14 @@ function loadStatsDashboard() {
         asesoresMap[asesorNombre].bungalows[b.bungalow_numero]++;
     });
 
+    // Calculate month date range string (from 1st of the month to today)
+    const firstDayOfMonth = new Date(thisYear, thisMonth, 1);
+    const monthsShort = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+    const monthRangeStr = `${firstDayOfMonth.getDate()} ${monthsShort[firstDayOfMonth.getMonth()]} al ${today.getDate()} ${monthsShort[today.getMonth()]}`;
+
     // Populate Top overview cards
     document.getElementById('statsIncomeMonth').textContent = `S/. ${totalRevenue.toFixed(2)}`;
-    document.getElementById('statsCountMonth').textContent = `${monthBookings.length} reservas registradas`;
+    document.getElementById('statsCountMonth').textContent = `${monthBookings.length} reservas registradas (${monthRangeStr})`;
     document.getElementById('statsDepositoMonth').textContent = `S/. ${depositoTotal.toFixed(2)}`;
     document.getElementById('statsOtrosMonth').textContent = `S/. ${otrosTotal.toFixed(2)}`;
 
