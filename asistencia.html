@@ -203,9 +203,9 @@
             </header>
 
             <!-- Dashboard Grid -->
-            <div class="attendance-layout">
+            <div class="attendance-layout" id="attendanceLayout">
                 <!-- Left Column: Clock and Selection -->
-                <div style="display: flex; flex-direction: column; gap: 20px;">
+                <div class="left-column" style="display: flex; flex-direction: column; gap: 20px;">
                     <!-- Clock Card -->
                     <div class="clock-card">
                         <h3
@@ -344,6 +344,11 @@
                             <i data-lucide="rainbow" style="color: var(--primary);"></i>
                             Historial de Marcaciones
                         </h3>
+                        <button class="btn btn-secondary" id="btnToggleLayout" style="font-size: 12.5px; padding: 6px 12px; display: flex; align-items: center; gap: 6px; border-color: var(--primary); color: var(--primary); background: transparent; cursor: pointer; border-radius: var(--radius-sm);">
+                            <i data-lucide="arrow-left" class="toggle-icon-left" style="width: 14px; height: 14px;"></i>
+                            <i data-lucide="arrow-right" class="toggle-icon-right" style="width: 14px; height: 14px;"></i>
+                            <span id="toggleLayoutText">Ver completo</span>
+                        </button>
                     </div>
 
                     <!-- Filters -->

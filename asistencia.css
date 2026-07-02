@@ -398,17 +398,21 @@ select option {
 
 /* Destacar marcaciones del día de hoy */
 .attendance-table tbody tr.today-record-row {
-    background: #ffeef4 !important; /* Soft distinct warm rose pink */
+    background: #ffeef4 !important;
+    /* Soft distinct warm rose pink */
     font-weight: 600 !important;
 }
 
 .attendance-table tbody tr.today-record-row td {
-    border-bottom: 1.5px solid #ffb3d1 !important; /* Marked bottom border */
-    border-top: 1.5px solid #ffd6e8 !important; /* Top border too */
+    border-bottom: 1.5px solid #ffb3d1 !important;
+    /* Marked bottom border */
+    border-top: 1.5px solid #ffd6e8 !important;
+    /* Top border too */
 }
 
 .attendance-table tbody tr.today-record-row td:first-child {
-    border-left: 5px solid #ff007f !important; /* Strong pink stripe on left edge */
+    border-left: 5px solid #ff007f !important;
+    /* Strong pink stripe on left edge */
 }
 
 .attendance-table tbody tr.today-record-row:hover {
@@ -1233,4 +1237,21 @@ select option {
     to {
         transform: rotate(360deg);
     }
+}
+
+/* Expanded Table Mode styling */
+.attendance-layout.expanded-table {
+    grid-template-columns: 1fr !important;
+}
+
+.attendance-layout.expanded-table .left-column {
+    display: none !important;
+}
+
+.attendance-layout.expanded-table .toggle-icon-left {
+    display: none !important;
+}
+
+.attendance-layout:not(.expanded-table) .toggle-icon-right {
+    display: none !important;
 }

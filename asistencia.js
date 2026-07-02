@@ -1094,7 +1094,7 @@ function renderAttendanceTable() {
                 <td data-label="Salida">${outFormatted}</td>
                 <td data-label="Horas Abonadas" style="font-weight: 600;">${formatHoursToHHMM(realHours, true)}${lunchIcon}</td>
                 <td data-label="Tipo"><span class="${typeBadgeClass}">${typeLabel}</span></td>
-                <td data-label="Notas" style="font-size: 12px; color: var(--text-secondary); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHTML(r.notes || '')}">
+                <td data-label="Notas" style="font-size: 11px; color: var(--text-secondary); max-width: 220px; word-break: break-word; line-height: 1.3;" title="${escapeHTML(r.notes || '')}">
                     ${escapeHTML(r.notes || '')}
                 </td>
                 <td data-label="Acción" style="text-align: center;">
@@ -1415,6 +1415,20 @@ function setupEventListeners() {
     btnCloseAdminRegister.addEventListener('click', () => closeModal(modalAdminRegister));
     formAdminRegister.addEventListener('submit', handleAdminRegisterSubmit);
     adminRegisterType.addEventListener('change', toggleAdminEmployeeSelect);
+
+    // Toggle layout width (expand/collapse table)
+    const btnToggleLayout = document.getElementById('btnToggleLayout');
+    const attendanceLayout = document.getElementById('attendanceLayout');
+    const toggleLayoutText = document.getElementById('toggleLayoutText');
+
+    if (btnToggleLayout && attendanceLayout) {
+        btnToggleLayout.addEventListener('click', () => {
+            const isExpanded = attendanceLayout.classList.toggle('expanded-table');
+            if (toggleLayoutText) {
+                toggleLayoutText.textContent = isExpanded ? 'Ver normal' : 'Ver completo';
+            }
+        });
+    }
 }
 
 function closeSidebarDrawer() {
@@ -1517,7 +1531,7 @@ function formatHoursToHHMM(hoursDecimal, includeSuffix = true) {
     const totalMinutes = Math.round(hoursDecimal * 60);
     const h = Math.floor(totalMinutes / 60);
     const m = totalMinutes % 60;
-    
+
     if (m === 0) {
         return includeSuffix ? `${h} h` : `${h}`;
     } else {
