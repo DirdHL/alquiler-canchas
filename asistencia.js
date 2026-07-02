@@ -88,6 +88,7 @@ const adminEmployeeSelectGroup = document.getElementById('adminEmployeeSelectGro
 const adminEmployeeSelect = document.getElementById('adminEmployeeSelect');
 const adminRegisterDate = document.getElementById('adminRegisterDate');
 const adminRegisterHours = document.getElementById('adminRegisterHours');
+const adminRegisterMinutes = document.getElementById('adminRegisterMinutes');
 const adminRegisterNotes = document.getElementById('adminRegisterNotes');
 const adminRegisterError = document.getElementById('adminRegisterError');
 
@@ -1146,8 +1147,10 @@ function handleAdminAuthSubmit(e) {
 function openAdminRegisterModal() {
     formAdminRegister.reset();
     adminRegisterDate.value = getLocalDateString(new Date());
-    adminRegisterHours.value = "8.0";
+    adminRegisterHours.value = "8";
+    if (adminRegisterMinutes) adminRegisterMinutes.value = "0";
     adminRegisterHours.disabled = false;
+    if (adminRegisterMinutes) adminRegisterMinutes.disabled = false;
     adminRegisterError.style.display = 'none';
 
     // Handle conditional fields
@@ -1158,26 +1161,32 @@ function openAdminRegisterModal() {
 
 function toggleAdminEmployeeSelect() {
     const type = adminRegisterType.value;
-    const hoursLabel = document.querySelector('label[for="adminRegisterHours"]');
+    const hoursLabel = document.getElementById('labelAdminRegisterTime') || document.querySelector('label[for="adminRegisterHours"]');
 
     if (type === 'Feriado') {
         adminEmployeeSelectGroup.style.display = 'none';
         adminEmployeeSelect.required = false;
-        adminRegisterHours.value = "8.0";
+        adminRegisterHours.value = "8";
+        if (adminRegisterMinutes) adminRegisterMinutes.value = "0";
         adminRegisterHours.disabled = false;
-        if (hoursLabel) hoursLabel.textContent = "Horas Justificadas Abonadas *";
+        if (adminRegisterMinutes) adminRegisterMinutes.disabled = false;
+        if (hoursLabel) hoursLabel.textContent = "Tiempo Justificado Abonado *";
     } else if (type === 'Falta') {
         adminEmployeeSelectGroup.style.display = 'block';
         adminEmployeeSelect.required = true;
-        adminRegisterHours.value = "0.0";
+        adminRegisterHours.value = "0";
+        if (adminRegisterMinutes) adminRegisterMinutes.value = "0";
         adminRegisterHours.disabled = true;
-        if (hoursLabel) hoursLabel.textContent = "Horas Abonadas (Falta = 0h) *";
+        if (adminRegisterMinutes) adminRegisterMinutes.disabled = true;
+        if (hoursLabel) hoursLabel.textContent = "Tiempo Abonado (Falta = 0h) *";
     } else { // Permiso
         adminEmployeeSelectGroup.style.display = 'block';
         adminEmployeeSelect.required = true;
-        adminRegisterHours.value = "8.0";
+        adminRegisterHours.value = "8";
+        if (adminRegisterMinutes) adminRegisterMinutes.value = "0";
         adminRegisterHours.disabled = false;
-        if (hoursLabel) hoursLabel.textContent = "Horas Justificadas Abonadas *";
+        if (adminRegisterMinutes) adminRegisterMinutes.disabled = false;
+        if (hoursLabel) hoursLabel.textContent = "Tiempo Justificado Abonado *";
     }
 }
 
@@ -1189,7 +1198,13 @@ async function handleAdminRegisterSubmit(e) {
     const type = adminRegisterType.value;
     const date = adminRegisterDate.value;
     const isFalta = type === 'Falta';
-    const hours = isFalta ? 0 : Number(adminRegisterHours.value);
+    
+    let hours = 0;
+    if (!isFalta) {
+        const hrsVal = Number(adminRegisterHours.value || 0);
+        const minsVal = adminRegisterMinutes ? Number(adminRegisterMinutes.value || 0) : 0;
+        hours = hrsVal + (minsVal / 60);
+    }
     const notes = adminRegisterNotes.value.trim();
 
     if (!date || isNaN(hours) || (hours <= 0 && !isFalta)) {
