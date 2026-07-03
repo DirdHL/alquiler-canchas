@@ -1416,3 +1416,491 @@ body {
         transform: translateX(0) !important;
     }
 }
+
+/* ==========================================================================
+   SISTEMA DE RESERVAS DE BUNGALOWS - REGLAS RESPONSIVAS (@media)
+   Diseñado por: Antigravity IDE (Front-End Senior specialized in Responsive Design)
+   ========================================================================== */
+
+/* ──────────────────────────────────────────────────────────────────────────
+   1. GLOBAL OVERFLOW & PREVENCIÓN DE SCROLL HORIZONTAL
+   ────────────────────────────────────────────────────────────────────────── */
+html, body {
+    overflow-x: hidden !important;
+    width: 100% !important;
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   2. CONFIGURACIÓN GENERAL PARA DISPOSITIVOS TÁCTILES (Móviles & Tablets)
+   ────────────────────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+    /* Touch Target Sizing (Mínimo 44px de alto para botones e inputs) */
+    .btn,
+    .btn-secondary,
+    .btn-primary,
+    .btn-delete,
+    .btn-copy-reservation,
+    .fc .fc-button {
+        min-height: 44px !important;
+        font-size: 14px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+
+    .modal-body input[type="text"],
+    .modal-body input[type="tel"],
+    .modal-body input[type="number"],
+    .modal-body input[type="date"],
+    .modal-body select,
+    .modal-body textarea,
+    .availability-toolbar input[type="date"] {
+        min-height: 44px !important;
+        font-size: 14px !important;
+        width: 100% !important;
+    }
+
+    /* Iconos escalados correctamente */
+    .input-wrapper svg,
+    .btn svg {
+        width: 18px !important;
+        height: 18px !important;
+    }
+
+    /* Forzar Formularios a 1 Columna en móviles */
+    .form-row {
+        grid-template-columns: 1fr !important;
+        gap: 12px !important;
+    }
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   3. MEDIA QUERIES PROGRESSIVAS
+   ────────────────────────────────────────────────────────────────────────── */
+
+/* ==========================================
+   BREAKPOINT: 1440px (Pantallas de Laptop Grandes)
+   ========================================== */
+@media (max-width: 1440px) {
+    .main-content {
+        padding: 24px 30px !important;
+    }
+}
+
+/* ==========================================
+   BREAKPOINT: 1200px (Desktop Estándar)
+   ========================================== */
+@media (max-width: 1200px) {
+    .main-content {
+        padding: 20px 24px !important;
+    }
+    .app-header h1 {
+        font-size: 28px !important;
+    }
+    /* Optimizar espaciado en la tabla de disponibilidad */
+    .availability-table th, 
+    .availability-table td {
+        padding: 8px 12px !important;
+    }
+}
+
+/* ==========================================
+   BREAKPOINT: 1024px (iPad Pro / Tablet Landscape)
+   Convertimos el Sidebar en un Drawer
+   ========================================== */
+@media (max-width: 1024px) {
+    /* El contenedor principal pasa de Grid de 2 columnas a Flujo en Bloque */
+    .app-container {
+        display: block !important;
+        width: 100% !important;
+    }
+
+    /* Sidebar Drawer de Navegación */
+    .sidebar {
+        position: fixed !important;
+        top: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        left: auto !important;
+        width: 290px !important;
+        height: 100vh !important;
+        z-index: 1000 !important;
+        transform: translateX(100%) !important;
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        display: flex !important;
+        flex-direction: column !important;
+        overflow-y: auto !important;
+        box-shadow: -10px 0 30px rgba(62, 53, 43, 0.15) !important;
+        border-left: 1px solid var(--border-color) !important;
+        border-right: none !important;
+        background: #f2ebe0 !important;
+        padding: 24px 20px !important;
+    }
+
+    /* Mostrar Drawer */
+    .sidebar.open {
+        transform: translateX(0) !important;
+    }
+
+    /* Backdrop Overlay debajo del Sidebar */
+    .sidebar-backdrop-overlay.active {
+        z-index: 999 !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
+    }
+
+    /* Botones de Control de Sidebar */
+    .btn.btn-menu {
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .btn-close-sidebar {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+
+    .main-content {
+        padding: 20px !important;
+        width: 100% !important;
+    }
+
+    /* Ocultar el nombre largo del cliente para evitar que se rompa la tabla */
+    .availability-card-client {
+        display: none !important;
+    }
+}
+
+/* ==========================================
+   BREAKPOINT: 992px (Tablets Medianas)
+   ========================================== */
+@media (max-width: 992px) {
+    /* Modales responsivos */
+    .modal-card {
+        max-width: 90% !important;
+    }
+    .modal-lg {
+        max-width: 95% !important;
+    }
+    .fc .fc-toolbar-title {
+        font-size: 18px !important;
+    }
+}
+
+/* ==========================================
+   BREAKPOINT: 768px (Tablets Portrait / Móviles Grandes)
+   ========================================== */
+@media (max-width: 768px) {
+    .main-content {
+        padding: 16px !important;
+    }
+
+    /* Header del Sistema */
+    .app-header {
+        flex-direction: row !important;
+        flex-wrap: wrap !important;
+        gap: 16px !important;
+    }
+    .header-left {
+        flex: 1 !important;
+    }
+    .app-header .btn-primary {
+        width: auto !important;
+    }
+
+    /* Cabecera del Resumen Diario */
+    .summary-header-container {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 12px !important;
+    }
+    .summary-header-container h3 {
+        text-align: center !important;
+    }
+    
+    /* Tabs adaptativas */
+    .summary-tabs {
+        width: 100% !important;
+        display: flex !important;
+    }
+    .summary-tabs .tab-btn {
+        flex: 1 !important;
+        justify-content: center !important;
+        font-size: 12px !important;
+        padding: 10px !important;
+        white-space: nowrap !important;
+    }
+
+    /* Leyenda de Disponibilidad en Grid Ordenado */
+    .availability-legend-container {
+        display: grid !important;
+        grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)) !important;
+        gap: 8px !important;
+        padding: 10px !important;
+    }
+    .legend-item {
+        font-size: 11px !important;
+        padding: 6px 10px !important;
+        justify-content: center !important;
+        width: 100% !important;
+        margin: 0 !important;
+    }
+
+    /* Contenedor de Scroll de FullCalendar (Evita romper la página) */
+    .calendar-card {
+        padding: 12px !important;
+        border-radius: var(--radius-md) !important;
+        overflow: hidden !important;
+    }
+    
+    .calendar-scroll-wrapper {
+        width: 100% !important;
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
+        -webkit-overflow-scrolling: touch !important;
+        scrollbar-width: thin !important;
+        scrollbar-color: var(--accent) transparent !important;
+    }
+    .calendar-scroll-wrapper::-webkit-scrollbar {
+        height: 6px;
+    }
+    .calendar-scroll-wrapper::-webkit-scrollbar-thumb {
+        background: var(--accent);
+        border-radius: 3px;
+    }
+    
+    #calendar, .fc {
+        min-width: 750px !important;
+    }
+
+    /* Mapa de disponibilidad scrollable y táctil */
+    .availability-grid-wrapper {
+        overflow-x: auto !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        max-height: 400px !important;
+    }
+    .availability-table {
+        min-width: 580px !important;
+        table-layout: auto !important;
+    }
+    .availability-table th {
+        font-size: 11px !important;
+        padding: 8px 6px !important;
+        white-space: nowrap !important;
+    }
+    .availability-table td {
+        padding: 6px 4px !important;
+    }
+    .availability-slot-btn {
+        padding: 4px 6px !important;
+        font-size: 10px !important;
+        min-height: 32px !important;
+    }
+    .availability-card {
+        padding: 4px 6px !important;
+        border-radius: 4px !important;
+    }
+    
+    /* Scroll seguro en tablas de reportes y clientes */
+    #tableStatsReport,
+    #tableStatsClients,
+    #tableStatsAsesores {
+        min-width: 600px !important;
+    }
+    
+    /* Historial sin overflow de texto */
+    .activity-list p {
+        word-break: break-word !important;
+        white-space: normal !important;
+        font-size: 13px !important;
+        padding: 8px 0 !important;
+    }
+}
+
+/* ==========================================
+   BREAKPOINT: 640px (Móviles Paisaje)
+   ========================================== */
+@media (max-width: 640px) {
+    /* Stack modal actions verticalmente */
+    .modal-actions {
+        flex-direction: column !important;
+        gap: 12px !important;
+        align-items: stretch !important;
+    }
+    .left-actions, .right-actions {
+        width: 100% !important;
+        flex-direction: column !important;
+        gap: 8px !important;
+    }
+    .left-actions .btn, .right-actions .btn {
+        width: 100% !important;
+    }
+    
+    /* Grid de tarjetas financieras de estadísticas */
+    #tab-report > div:nth-child(2) {
+        grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)) !important;
+        gap: 10px !important;
+    }
+}
+
+/* ==========================================
+   BREAKPOINT: 576px (Móviles Estándar)
+   ========================================== */
+@media (max-width: 576px) {
+    .main-content {
+        padding: 12px !important;
+    }
+    
+    /* Header compacto */
+    .app-header {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 12px !important;
+    }
+    .header-left {
+        width: 100% !important;
+        justify-content: flex-start !important;
+    }
+    .app-header .btn-primary {
+        width: 100% !important;
+    }
+
+    /* Modales maximizados en pantallas pequeñas (95% - 98%) */
+    .modal-backdrop {
+        padding: 10px 8px !important;
+    }
+    .modal-card {
+        width: 98% !important;
+        border-radius: var(--radius-md) !important;
+    }
+    .modal-body {
+        padding: 16px !important;
+    }
+    
+    /* Desglose de Costos en 2 columnas */
+    #formBooking > div[style*="rgba(245, 158, 11"] {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 10px !important;
+        padding: 10px !important;
+    }
+}
+
+/* ==========================================
+   BREAKPOINT: 480px (Móviles Verticales)
+   ========================================== */
+@media (max-width: 480px) {
+    /* Grid de Bungalows en Modal en 2 columnas muy táctiles */
+    .bungalows-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 8px !important;
+    }
+    .bungalow-card-label {
+        padding: 8px 6px !important;
+        font-size: 11px !important;
+        gap: 6px !important;
+    }
+    .checkbox-box {
+        width: 15px !important;
+        height: 15px !important;
+    }
+    
+    /* Grid de Reportes Financieros en 2 columnas */
+    #tab-report > div:nth-child(2) {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 8px !important;
+    }
+    
+    /* Barra de herramientas del Mapa de Disponibilidad apilada */
+    .availability-toolbar > div {
+        flex-direction: column !important;
+        align-items: stretch !important;
+    }
+    .availability-toolbar label {
+        text-align: center;
+        margin-bottom: 4px;
+    }
+}
+
+/* ==========================================
+   BREAKPOINT: 430px / 414px / 390px (iPhones & Dispositivos Android Modernos)
+   ========================================== */
+@media (max-width: 430px) {
+    .app-header h1 {
+        font-size: 24px !important;
+    }
+    .app-header p {
+        font-size: 12px !important;
+    }
+}
+
+@media (max-width: 414px) {
+    .modal-header h3 {
+        font-size: 16px !important;
+    }
+}
+
+@media (max-width: 390px) {
+    /* Desglose de costos a 1 columna */
+    #formBooking > div[style*="rgba(245, 158, 11"] {
+        grid-template-columns: 1fr !important;
+    }
+    
+    /* Slider horizontal de pestañas de estadísticas */
+    .stats-tabs {
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        padding-bottom: 6px !important;
+        gap: 6px !important;
+    }
+    .stats-tabs .tab-btn {
+        flex-shrink: 0 !important;
+        font-size: 12px !important;
+        padding: 6px 10px !important;
+    }
+}
+
+/* ==========================================
+   BREAKPOINT: 375px / 360px (Móviles Pequeños / iPhone SE)
+   ========================================== */
+@media (max-width: 375px) {
+    .fc .fc-toolbar-title {
+        font-size: 14px !important;
+    }
+    .fc .fc-button {
+        font-size: 11px !important;
+        padding: 4px 6px !important;
+    }
+}
+
+@media (max-width: 360px) {
+    .app-header h1 {
+        font-size: 20px !important;
+    }
+    /* Grid de bungalows en 1 columna si el viewport es extremadamente angosto */
+    .bungalows-grid {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+/* ==========================================
+   BREAKPOINT: 320px (Móviles Extremadamente Pequeños)
+   ========================================== */
+@media (max-width: 320px) {
+    .main-content {
+        padding: 8px !important;
+    }
+    .app-header h1 {
+        font-size: 18px !important;
+    }
+    .modal-body {
+        padding: 10px !important;
+    }
+    .availability-legend-container {
+        grid-template-columns: 1fr !important;
+    }
+}
