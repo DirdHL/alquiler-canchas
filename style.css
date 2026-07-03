@@ -478,6 +478,51 @@ body.no-scroll {
     transform: translateY(-1px);
 }
 
+/* Color-coded sidebar action buttons for other systems */
+.btn-sidebar-action.btn-canchas {
+    background: rgba(16, 185, 129, 0.1) !important;
+    border-color: rgba(16, 185, 129, 0.3) !important;
+    color: #10b981 !important;
+}
+.btn-sidebar-action.btn-canchas:hover {
+    background: rgba(16, 185, 129, 0.2) !important;
+    border-color: rgba(16, 185, 129, 0.5) !important;
+    color: #059669 !important;
+}
+
+.btn-sidebar-action.btn-polideportivo {
+    background: rgba(139, 92, 246, 0.1) !important;
+    border-color: rgba(139, 92, 246, 0.3) !important;
+    color: #a78bfa !important;
+}
+.btn-sidebar-action.btn-polideportivo:hover {
+    background: rgba(139, 92, 246, 0.2) !important;
+    border-color: rgba(139, 92, 246, 0.5) !important;
+    color: #8b5cf6 !important;
+}
+
+.btn-sidebar-action.btn-locales {
+    background: rgba(239, 68, 68, 0.1) !important;
+    border-color: rgba(239, 68, 68, 0.3) !important;
+    color: #ef4444 !important;
+}
+.btn-sidebar-action.btn-locales:hover {
+    background: rgba(239, 68, 68, 0.2) !important;
+    border-color: rgba(239, 68, 68, 0.5) !important;
+    color: #dc2626 !important;
+}
+
+.btn-sidebar-action.btn-bungalows {
+    background: rgba(245, 158, 11, 0.1) !important;
+    border-color: rgba(245, 158, 11, 0.3) !important;
+    color: #f59e0b !important;
+}
+.btn-sidebar-action.btn-bungalows:hover {
+    background: rgba(245, 158, 11, 0.2) !important;
+    border-color: rgba(245, 158, 11, 0.5) !important;
+    color: #d97706 !important;
+}
+
 .btn-danger {
     background: var(--danger);
     color: white;
