@@ -2520,22 +2520,109 @@ function handleStatsAuth(e) {
     }
 }
 
-function loadStatsDashboard() {
+function loadStatsDashboard(period = 'month') {
     openModal('modalStats');
 
-    const today = new Date();
-    const thisMonth = today.getMonth();
-    const thisYear = today.getFullYear();
+    // Sincronizar botones de período en la UI
+    document.querySelectorAll('.filter-period-btn').forEach(btn => {
+        const btnPeriod = btn.getAttribute('data-period');
+        if (btnPeriod === period) {
+            btn.classList.add('active');
+            btn.style.background = 'rgba(255, 255, 255, 0.05)';
+            btn.style.color = 'var(--text-secondary)';
+            btn.style.fontWeight = '600';
+        } else {
+            btn.classList.remove('active');
+            btn.style.background = 'none';
+            btn.style.color = 'var(--text-muted)';
+            btn.style.fontWeight = '500';
+        }
+    });
 
-    // 1. Gather bookings this month
+    // Actualizar etiquetas en la UI
+    const labelsMap = {
+        month: {
+            income: 'Ganancia Estimada del Mes',
+            deposito: 'Cobrado en Depósito (Mes)',
+            otros: 'Yape / Otros Pagos (Mes)',
+            extras: 'Extras / Adicionales (Mes)',
+            occupancy: 'Grado de ocupación por cada Bungalow este mes:',
+            asesores: 'Rendimiento de Asesores (Este mes):'
+        },
+        week: {
+            income: 'Ganancia de la Semana',
+            deposito: 'Cobrado en Depósito (Semana)',
+            otros: 'Yape / Otros Pagos (Semana)',
+            extras: 'Extras / Adicionales (Semana)',
+            occupancy: 'Grado de ocupación por cada Bungalow esta semana:',
+            asesores: 'Rendimiento de Asesores (Esta semana):'
+        },
+        day: {
+            income: 'Ganancia Hoy',
+            deposito: 'Cobrado en Depósito (Hoy)',
+            otros: 'Yape / Otros Pagos (Hoy)',
+            extras: 'Extras / Adicionales (Hoy)',
+            occupancy: 'Grado de ocupación por cada Bungalow hoy:',
+            asesores: 'Rendimiento de Asesores (Hoy):'
+        }
+    };
+
+    const currentLabels = labelsMap[period];
+    document.getElementById('labelIncome').textContent = currentLabels.income;
+    document.getElementById('labelDeposito').textContent = currentLabels.deposito;
+    document.getElementById('labelOtros').textContent = currentLabels.otros;
+    document.getElementById('labelExtras').textContent = currentLabels.extras;
+    document.getElementById('labelOccupancy').textContent = currentLabels.occupancy;
+    document.getElementById('labelAsesores').textContent = currentLabels.asesores;
+
+    const todayObj = new Date();
+    const thisMonth = todayObj.getMonth();
+    const thisYear = todayObj.getFullYear();
+
+    // Helper to format local YYYY-MM-DD
+    const getLocalYYYYMMDD = (d) => {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const r = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${r}`;
+    };
+
+    const todayStr = getLocalYYYYMMDD(todayObj);
+
+    // Calculate all 7 days of the current week (Monday-Sunday)
+    const getWeekDaysList = () => {
+        const temp = new Date(todayObj.getTime());
+        const day = temp.getDay();
+        const diff = temp.getDate() - day + (day === 0 ? -6 : 1);
+        const mon = new Date(temp.setDate(diff));
+        
+        const weekDates = [];
+        for (let i = 0; i < 7; i++) {
+            const tempD = new Date(mon.getTime());
+            tempD.setDate(mon.getDate() + i);
+            weekDates.push(getLocalYYYYMMDD(tempD));
+        }
+        return weekDates;
+    };
+    const currentWeekDays = getWeekDaysList();
+
+    // Filter bookings based on selected period
     const monthBookings = bookings.filter(b => {
         if (b.estado_reserva === 'Bloqueado' || b.estado_reserva === 'Bloqueo') return false;
         if (!b.fecha_ingreso) return false;
-        const parts = b.fecha_ingreso.split('-');
-        if (parts.length < 2) return false;
-        const year = parseInt(parts[0]);
-        const month = parseInt(parts[1]) - 1;
-        return (month === thisMonth && year === thisYear);
+
+        if (period === 'day') {
+            return b.fecha_ingreso === todayStr;
+        } else if (period === 'week') {
+            return currentWeekDays.includes(b.fecha_ingreso);
+        } else {
+            // Month
+            const parts = b.fecha_ingreso.split('-');
+            if (parts.length < 2) return false;
+            const year = parseInt(parts[0]);
+            const month = parseInt(parts[1]) - 1;
+            return (month === thisMonth && year === thisYear);
+        }
     });
 
     // 2. Calculations
@@ -2642,14 +2729,30 @@ function loadStatsDashboard() {
         asesoresMap[asesorNombre].bungalows[b.bungalow_numero]++;
     });
 
-    // Calculate month date range string (from 1st of the month to today)
-    const firstDayOfMonth = new Date(thisYear, thisMonth, 1);
-    const monthsShort = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
-    const monthRangeStr = `${firstDayOfMonth.getDate()} ${monthsShort[firstDayOfMonth.getMonth()]} al ${today.getDate()} ${monthsShort[today.getMonth()]}`;
+    // Calculate date range string based on period
+    let rangeText = '';
+    let totalDaysInPeriod = new Date(thisYear, thisMonth + 1, 0).getDate();
+
+    if (period === 'day') {
+        rangeText = 'hoy';
+        totalDaysInPeriod = 1;
+    } else if (period === 'week') {
+        const formatShortDate = (dateStr) => {
+            const p = dateStr.split('-');
+            const monthsShort = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+            return `${parseInt(p[2])} ${monthsShort[parseInt(p[1]) - 1]}`;
+        };
+        rangeText = `semana: ${formatShortDate(currentWeekDays[0])} al ${formatShortDate(currentWeekDays[6])}`;
+        totalDaysInPeriod = 7;
+    } else {
+        const firstDayOfMonth = new Date(thisYear, thisMonth, 1);
+        const monthsShort = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+        rangeText = `mes: ${firstDayOfMonth.getDate()} ${monthsShort[firstDayOfMonth.getMonth()]} al ${todayObj.getDate()} ${monthsShort[todayObj.getMonth()]}`;
+    }
 
     // Populate Top overview cards
     document.getElementById('statsIncomeMonth').textContent = `S/. ${totalRevenue.toFixed(2)}`;
-    document.getElementById('statsCountMonth').textContent = `${monthBookings.length} reservas registradas (${monthRangeStr})`;
+    document.getElementById('statsCountMonth').textContent = `${monthBookings.length} reservas registradas (${rangeText})`;
     document.getElementById('statsDepositoMonth').textContent = `S/. ${depositoTotal.toFixed(2)}`;
     document.getElementById('statsOtrosMonth').textContent = `S/. ${otrosTotal.toFixed(2)}`;
 
@@ -2680,14 +2783,12 @@ function loadStatsDashboard() {
     }
 
     // Populate Occupancy Bars
-    // Days in current month
-    const totalDaysInMonth = new Date(thisYear, thisMonth + 1, 0).getDate();
     const occupancyContainer = document.getElementById('ocupacionContainer');
     occupancyContainer.innerHTML = '';
 
     for (let i = 1; i <= 6; i++) {
         const stats = bungalowStats[i];
-        const percent = Math.min(100, Math.round((stats.daysOccupied / totalDaysInMonth) * 100));
+        const percent = Math.min(100, Math.round((stats.daysOccupied / totalDaysInPeriod) * 100));
 
         const row = document.createElement('div');
         row.innerHTML = `
@@ -3338,4 +3439,12 @@ function initCalendarTouchScroll() {
 document.addEventListener('DOMContentLoaded', () => {
     // Pequeño delay para que FullCalendar renderice primero
     setTimeout(initCalendarTouchScroll, 600);
+
+    // Setup period filter buttons for stats dashboard
+    document.querySelectorAll('.filter-period-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const period = e.currentTarget.getAttribute('data-period');
+            loadStatsDashboard(period);
+        });
+    });
 });

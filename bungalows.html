@@ -799,11 +799,27 @@
 
                 <!-- Tab content: Report -->
                 <div class="tab-content active" id="tab-report">
+                    <!-- Period Filter -->
+                    <div style="display: flex; gap: 8px; margin-bottom: 20px;">
+                        <button class="btn btn-secondary btn-sm filter-period-btn active" data-period="month"
+                            style="padding: 6px 16px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; cursor: pointer; border: 1px solid var(--border-color); background: rgba(255, 255, 255, 0.05); color: var(--text-secondary); transition: all 0.2s;">
+                            Mes Actual
+                        </button>
+                        <button class="btn btn-secondary btn-sm filter-period-btn" data-period="week"
+                            style="padding: 6px 16px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid var(--border-color); background: none; color: var(--text-muted); transition: all 0.2s;">
+                            Semana Actual
+                        </button>
+                        <button class="btn btn-secondary btn-sm filter-period-btn" data-period="day"
+                            style="padding: 6px 16px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid var(--border-color); background: none; color: var(--text-muted); transition: all 0.2s;">
+                            Día de Hoy
+                        </button>
+                    </div>
+
                     <div
                         style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px;">
                         <div
                             style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px;">
-                            <span style="font-size: 12px; color: var(--text-muted); text-transform: uppercase;">Ganancia
+                            <span id="labelIncome" style="font-size: 12px; color: var(--text-muted); text-transform: uppercase;">Ganancia
                                 Estimada del Mes</span>
                             <div id="statsIncomeMonth"
                                 style="font-size: 24px; font-weight: 700; color: #34d399; margin-top: 6px;">S/. 0.00
@@ -813,7 +829,7 @@
                         </div>
                         <div
                             style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px;">
-                            <span style="font-size: 12px; color: var(--text-muted); text-transform: uppercase;">Cobrado
+                            <span id="labelDeposito" style="font-size: 12px; color: var(--text-muted); text-transform: uppercase;">Cobrado
                                 en Depósito</span>
                             <div id="statsDepositoMonth"
                                 style="font-size: 24px; font-weight: 700; color: #60a5fa; margin-top: 6px;">S/. 0.00
@@ -821,7 +837,7 @@
                         </div>
                         <div
                             style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px;">
-                            <span style="font-size: 12px; color: var(--text-muted); text-transform: uppercase;">Yape /
+                            <span id="labelOtros" style="font-size: 12px; color: var(--text-muted); text-transform: uppercase;">Yape /
                                 Otros Pagos</span>
                             <div id="statsOtrosMonth"
                                 style="font-size: 24px; font-weight: 700; color: #fbbf24; margin-top: 6px;">S/. 0.00
@@ -849,7 +865,7 @@
                         </div>
                         <div
                             style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px;">
-                            <span style="font-size: 12px; color: var(--text-muted); text-transform: uppercase;">Extras /
+                            <span id="labelExtras" style="font-size: 12px; color: var(--text-muted); text-transform: uppercase;">Extras /
                                 Adicionales</span>
                             <div id="statsExtrasMonth"
                                 style="font-size: 24px; font-weight: 700; color: #22d3ee; margin-top: 6px;">S/. 0.00
@@ -883,8 +899,7 @@
 
                 <!-- Tab content: Ocupación -->
                 <div class="tab-content" id="tab-ocupacion" style="display: none;">
-                    <p style="color: var(--text-secondary); margin-bottom: 16px;">Grado de ocupación por cada Bungalow
-                        este mes:</p>
+                    <p id="labelOccupancy" style="color: var(--text-secondary); margin-bottom: 16px;">Grado de ocupación por cada Bungalow este mes:</p>
                     <div id="ocupacionContainer" style="display: flex; flex-direction: column; gap: 16px;">
                         <!-- Se llenará dinámicamente con barras de progreso -->
                     </div>
@@ -914,8 +929,7 @@
 
                 <!-- Tab content: Asesores -->
                 <div class="tab-content" id="tab-asesores" style="display: none;">
-                    <p style="color: var(--text-secondary); margin-bottom: 16px;">Rendimiento de Asesores (Este mes):
-                    </p>
+                    <p id="labelAsesores" style="color: var(--text-secondary); margin-bottom: 16px;">Rendimiento de Asesores (Este mes):</p>
                     <div
                         style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: var(--radius-md); overflow-x: auto; max-height: 300px;">
                         <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 14px;"
