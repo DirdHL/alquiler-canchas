@@ -3290,9 +3290,9 @@ async function exportAllDataToExcel() {
     }
     sr += 2;
 
-    // 3. Accessories breakdown Block
+    // 3. Accessories breakdown Block (grouped by Month)
     summaryWs.mergeCells(sr, 1, sr, 3);
-    styleTitle(summaryWs.getCell(sr, 1), "ADICIONALES Y ACCESORIOS", 'FF334155', 'FFFFFFFF', 11);
+    styleTitle(summaryWs.getCell(sr, 1), "ADICIONALES Y ACCESORIOS POR MES", 'FF334155', 'FFFFFFFF', 11);
     summaryWs.getRow(sr).height = 24; sr++;
 
     const headersA = ["Accesorio", "Usos", "Monto Alquiler"];
@@ -3301,40 +3301,185 @@ async function exportAllDataToExcel() {
     });
     summaryWs.getRow(sr).height = 22; sr++;
 
-    let pelotaCount = 0;
-    let pelotaInc = 0;
-    let chalecoCount = 0;
-    let chalecoInc = 0;
-
-    activeAll.forEach(e => {
-        const inc = getEventIncome(e);
-        if (e.pelota === true || e.pelota === 'true') {
-            pelotaCount++;
-            pelotaInc += inc.pelotaIncome;
-        }
-        if (e.chaleco === true || e.chaleco === 'true') {
-            chalecoCount++;
-            chalecoInc += inc.chalecoIncome;
-        }
-    });
-
-    [['⚽ Pelota', pelotaCount, pelotaInc], ['🎽 Chalecos', chalecoCount, chalecoInc]].forEach(([label, cnt, inc], aIdx) => {
-        const bg = monthColorsS[aIdx % 2];
-        const c1 = summaryWs.getCell(sr, 1);
-        c1.value = label; c1.font = { name: 'Outfit', bold: true, size: 10, color: { argb: 'FF1E293B' } };
-        c1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
-        c1.alignment = { vertical: 'middle', horizontal: 'left' };
-        c1.border = { top:{style:'thin',color:{argb:'FFE2E8F0'}}, left:{style:'thin',color:{argb:'FFE2E8F0'}}, bottom:{style:'thin',color:{argb:'FFE2E8F0'}}, right:{style:'thin',color:{argb:'FFE2E8F0'}} };
+    let aIdx = 0;
+    for (const [monthLabel, events] of Object.entries(groups)) {
+        // Subtle month separator row
+        const cellMonth = summaryWs.getCell(sr, 1);
+        cellMonth.value = `📅 ${monthLabel.toUpperCase()}`;
+        cellMonth.font = { name: 'Outfit', bold: true, size: 10, color: { argb: 'FF0F766E' } };
+        cellMonth.alignment = { vertical: 'middle', horizontal: 'left' };
         
-        styleValue(summaryWs.getCell(sr, 2), cnt, false);
-        styleValue(summaryWs.getCell(sr, 3), inc, true);
-        
-        summaryWs.getCell(sr, 2).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
-        summaryWs.getCell(sr, 3).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
-
-        summaryWs.getRow(sr).height = 20;
+        for (let col = 1; col <= 3; col++) {
+            const cell = summaryWs.getCell(sr, col);
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
+            cell.border = {
+                top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+            };
+        }
+        summaryWs.getRow(sr).height = 22;
         sr++;
+
+        let pelotaCount = 0;
+        let pelotaInc = 0;
+        let chalecoCount = 0;
+        let chalecoInc = 0;
+
+        const activeEvents = events.filter(e => e.sport !== 'Bloqueo');
+        activeEvents.forEach(e => {
+            const inc = getEventIncome(e);
+            if (e.pelota === true || e.pelota === 'true') {
+                pelotaCount++;
+                pelotaInc += inc.pelotaIncome;
+            }
+            if (e.chaleco === true || e.chaleco === 'true') {
+                chalecoCount++;
+                chalecoInc += inc.chalecoIncome;
+            }
+        });
+
+        [['⚽ Pelota', pelotaCount, pelotaInc], ['🎽 Chalecos', chalecoCount, chalecoInc]].forEach(([label, cnt, inc], rIdx) => {
+            const bg = monthColorsS[rIdx % 2];
+            const c1 = summaryWs.getCell(sr, 1);
+            c1.value = label; c1.font = { name: 'Outfit', bold: true, size: 10, color: { argb: 'FF1E293B' } };
+            c1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
+            c1.alignment = { vertical: 'middle', horizontal: 'left' };
+            c1.border = { top:{style:'thin',color:{argb:'FFE2E8F0'}}, left:{style:'thin',color:{argb:'FFE2E8F0'}}, bottom:{style:'thin',color:{argb:'FFE2E8F0'}}, right:{style:'thin',color:{argb:'FFE2E8F0'}} };
+            
+            styleValue(summaryWs.getCell(sr, 2), cnt, false);
+            styleValue(summaryWs.getCell(sr, 3), inc, true);
+            
+            summaryWs.getCell(sr, 2).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
+            summaryWs.getCell(sr, 3).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
+
+            summaryWs.getRow(sr).height = 20;
+            sr++;
+        });
+
+        aIdx++;
+    }
+
+    // ─── CLIENTS WORKSHEET ─────────────────────────────────────────
+    const clientsWs = workbook.addWorksheet('👥 CLIENTES', { properties: { tabColor: { argb: 'FF10B981' } } });
+    clientsWs.views = [{ showGridLines: true }];
+
+    const clientColsDef = [
+        { header: 'Nombre del Cliente', key: 'nombre', width: 35 },
+        { header: 'DNI', key: 'dni', width: 16 },
+        { header: 'Asesores que lo atendieron', key: 'asesores', width: 35 },
+        { header: 'Medios de Contacto', key: 'medios', width: 30 },
+        { header: 'Veces Alquiladas', key: 'cantidad', width: 18 }
+    ];
+    clientsWs.columns = clientColsDef;
+
+    // Style client header row
+    const clientHeaderRow = clientsWs.getRow(1);
+    clientHeaderRow.height = 26;
+    clientHeaderRow.eachCell((cell) => {
+        cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FF10B981' }
+        };
+        cell.font = {
+            name: 'Outfit',
+            color: { argb: 'FFFFFFFF' },
+            bold: true,
+            size: 11
+        };
+        cell.alignment = {
+            vertical: 'middle',
+            horizontal: 'center',
+            wrapText: true
+        };
+        cell.border = {
+            top: { style: 'thin', color: { argb: 'FF1E293B' } },
+            left: { style: 'thin', color: { argb: 'FF1E293B' } },
+            bottom: { style: 'medium', color: { argb: 'FF1E293B' } },
+            right: { style: 'thin', color: { argb: 'FF1E293B' } }
+        };
     });
+
+    // Group active bookings by DNI (or Name if empty)
+    const clientsMap = {};
+    const activeAllEvents = allEvents.filter(e => e.sport !== 'Bloqueo');
+    activeAllEvents.forEach(e => {
+        const name = (e.name || 'Desconocido').trim();
+        const dni = (e.dni || '').trim();
+        const key = dni !== '' ? dni : `nodni_${name.toLowerCase()}`;
+
+        if (!clientsMap[key]) {
+            clientsMap[key] = {
+                name: name,
+                dni: dni,
+                advisors: new Set(),
+                medios: new Set(),
+                count: 0
+            };
+        }
+
+        if (name !== 'Desconocido') {
+            clientsMap[key].name = name;
+        }
+
+        const advisor = (e.notes || '').trim();
+        if (advisor && advisor.toLowerCase() !== 'sin asesor') {
+            clientsMap[key].advisors.add(advisor);
+        }
+
+        const medio = (e.medio || '').trim();
+        if (medio) {
+            clientsMap[key].medios.add(medio);
+        }
+
+        clientsMap[key].count++;
+    });
+
+    const clientsList = Object.values(clientsMap).sort((a, b) => b.count - a.count);
+
+    let clientRowNo = 2;
+    clientsList.forEach(c => {
+        const advisorsStr = Array.from(c.advisors).join(', ') || 'Sin asesor';
+        const mediosStr = Array.from(c.medios).join(', ') || 'Ninguno';
+
+        const dataRow = clientsWs.addRow({
+            nombre: c.name,
+            dni: c.dni || 'Sin DNI',
+            asesores: advisorsStr,
+            medios: mediosStr,
+            cantidad: c.count
+        });
+
+        dataRow.height = 20;
+        const isAlternate = (clientRowNo % 2 === 0);
+        dataRow.eachCell((cell, colNumber) => {
+            cell.font = { name: 'Outfit', size: 10 };
+            cell.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: isAlternate ? 'FFF8FAFC' : 'FFFFFFFF' }
+            };
+            cell.border = {
+                top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+            };
+
+            const colKey = clientColsDef[colNumber - 1].key;
+            if (colKey === 'dni' || colKey === 'cantidad') {
+                cell.alignment = { horizontal: 'center', vertical: 'middle' };
+            } else {
+                cell.alignment = { horizontal: 'left', vertical: 'middle' };
+            }
+        });
+
+        clientRowNo++;
+    });
+
+    clientsWs.autoFilter = `A1:E1`;
 
     // ─── DATA WORKSEETS ───────────────────────────────────────────
     const columnsDef = [
