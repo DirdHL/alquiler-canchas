@@ -1865,7 +1865,7 @@ async function exportAllDataToExcel() {
     }
 
     const workbook = new ExcelJS.Workbook();
-    
+
     // ─── RESUMEN SHEET ─────────────────────────────────────────────
     const summaryWs = workbook.addWorksheet('📊 RESUMEN', { properties: { tabColor: { argb: 'FF0F766E' } } });
     summaryWs.views = [{ showGridLines: false }];
@@ -1875,11 +1875,11 @@ async function exportAllDataToExcel() {
         cell.font = { name: 'Outfit', bold: true, size: fontSize, color: { argb: fgArgb } };
         cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bgArgb } };
         cell.alignment = { vertical: 'middle', horizontal: 'center' };
-        cell.border = { 
-            top:{style:'thin',color:{argb:'FFE2E8F0'}}, 
-            left:{style:'thin',color:{argb:'FFE2E8F0'}}, 
-            bottom:{style:'thin',color:{argb:'FFE2E8F0'}}, 
-            right:{style:'thin',color:{argb:'FFE2E8F0'}} 
+        cell.border = {
+            top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+            left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+            bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+            right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
         };
     }
     function styleValue(cell, value, isMoney = false) {
@@ -1888,11 +1888,11 @@ async function exportAllDataToExcel() {
         cell.font = { name: 'Outfit', bold: true, size: 10, color: { argb: 'FF0F766E' } };
         cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFFFF' } };
         cell.alignment = { vertical: 'middle', horizontal: isMoney ? 'right' : 'left' };
-        cell.border = { 
-            top:{style:'thin',color:{argb:'FFE2E8F0'}}, 
-            left:{style:'thin',color:{argb:'FFE2E8F0'}}, 
-            bottom:{style:'thin',color:{argb:'FFE2E8F0'}}, 
-            right:{style:'thin',color:{argb:'FFE2E8F0'}} 
+        cell.border = {
+            top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+            left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+            bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+            right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
         };
     }
 
@@ -1949,7 +1949,7 @@ async function exportAllDataToExcel() {
     for (const [monthLabel, items] of Object.entries(groups)) {
         const bg = monthColorsS[rowIdx % 2];
         const activeItems = items.filter(b => b.estado_reserva !== 'Bloqueado');
-        
+
         let count = activeItems.length;
         let hMonto = 0;
         let adicMonto = 0;
@@ -1959,7 +1959,7 @@ async function exportAllDataToExcel() {
             const tot = parseFloat(b.monto_total) || 0;
             const extraP = parseFloat(b.adicional_personas) || 0;
             const extraH = parseFloat(b.adicional_horas) || 0;
-            
+
             // Hospedaje base (total minus extras)
             const base = Math.max(0, tot - extraP - extraH);
             hMonto += base;
@@ -1976,7 +1976,7 @@ async function exportAllDataToExcel() {
         c1.value = monthLabel; c1.font = { name: 'Outfit', bold: true, size: 10, color: { argb: 'FF1E293B' } };
         c1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
         c1.alignment = { vertical: 'middle', horizontal: 'left' };
-        c1.border = { top:{style:'thin',color:{argb:'FFE2E8F0'}}, left:{style:'thin',color:{argb:'FFE2E8F0'}}, bottom:{style:'thin',color:{argb:'FFE2E8F0'}}, right:{style:'thin',color:{argb:'FFE2E8F0'}} };
+        c1.border = { top: { style: 'thin', color: { argb: 'FFE2E8F0' } }, left: { style: 'thin', color: { argb: 'FFE2E8F0' } }, bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } }, right: { style: 'thin', color: { argb: 'FFE2E8F0' } } };
 
         styleValue(summaryWs.getCell(sr, 2), count, false);
         styleValue(summaryWs.getCell(sr, 3), hMonto, true);
@@ -1999,7 +1999,7 @@ async function exportAllDataToExcel() {
     totalCell.font = { name: 'Outfit', bold: true, size: 10, color: { argb: 'FFFFFFFF' } };
     totalCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F766E' } };
     totalCell.alignment = { vertical: 'middle', horizontal: 'left' };
-    totalCell.border = { top:{style:'thin',color:{argb:'FF0F766E'}}, left:{style:'thin',color:{argb:'FF0F766E'}}, bottom:{style:'thin',color:{argb:'FF0F766E'}}, right:{style:'thin',color:{argb:'FF0F766E'}} };
+    totalCell.border = { top: { style: 'thin', color: { argb: 'FF0F766E' } }, left: { style: 'thin', color: { argb: 'FF0F766E' } }, bottom: { style: 'thin', color: { argb: 'FF0F766E' } }, right: { style: 'thin', color: { argb: 'FF0F766E' } } };
 
     styleValue(summaryWs.getCell(sr, 2), grandTotalBookings, false);
     styleValue(summaryWs.getCell(sr, 3), grandTotalHospedaje, true);
@@ -2013,45 +2013,207 @@ async function exportAllDataToExcel() {
     summaryWs.getRow(sr).height = 22;
     sr += 3; // Blank rows
 
-    // 2. Bungalow breakdown Block
+    // ─── FINANCIAL SUMMARY OF CURRENT MONTH Block ───────────────────
+    const today = new Date();
+    const thisMonth = today.getMonth(); // 0-indexed (0-11)
+    const thisYear = today.getFullYear();
+
+    const monthBookings = bookings.filter(b => {
+        if (b.estado_reserva === 'Bloqueado' || b.estado_reserva === 'Bloqueo') return false;
+        if (!b.fecha_ingreso) return false;
+        const parts = b.fecha_ingreso.split('-');
+        if (parts.length < 2) return false;
+        const year = parseInt(parts[0]);
+        const month = parseInt(parts[1]) - 1; // Convert to 0-indexed
+        return (month === thisMonth && year === thisYear);
+    });
+
+    let monthRevenue = 0;
+    let monthDeposito = 0;
+    let monthOtros = 0;
+    let monthDayNightRevenue = 0;
+    let monthFullDayRevenue = 0;
+
+
+    monthBookings.forEach(b => {
+        const amt = parseFloat(b.monto_total) || 0;
+        monthRevenue += amt;
+
+        if (b.tipo_pago === 'Depósito') {
+            monthDeposito += amt;
+        } else if (b.tipo_pago === 'Yape' || b.tipo_pago === 'Efectivo') {
+            monthOtros += amt;
+        } else if (b.tipo_pago === 'Dividido') {
+            monthDeposito += parseFloat(b.monto_efectivo) || 0;
+            monthOtros += parseFloat(b.monto_yape) || 0;
+        }
+
+        const isFullDay = b.horario === 'Full Day';
+        if (isFullDay) {
+            monthFullDayRevenue += amt;
+        } else {
+            monthDayNightRevenue += amt;
+        }
+    });
+
+    sr += 3;
     summaryWs.mergeCells(sr, 1, sr, 3);
-    styleTitle(summaryWs.getCell(sr, 1), "INGRESOS POR BUNGALOW", 'FF334155', 'FFFFFFFF', 11);
+    styleTitle(summaryWs.getCell(sr, 1), "INGRESO DE DINERO EN BUNGALOWS (MES ACTUAL)", 'FF0F766E', 'FFFFFFFF', 11);
     summaryWs.getRow(sr).height = 24; sr++;
 
-    const headersB = ["Bungalow", "Reservas", "Monto Hospedaje"];
-    headersB.forEach((h, idx) => {
-        styleTitle(summaryWs.getCell(sr, idx + 1), h, 'FF1E293B', 'FFFFFFFF', 10);
-    });
+    styleTitle(summaryWs.getCell(sr, 1), "Concepto", 'FF1E293B', 'FFFFFFFF', 10);
+    styleTitle(summaryWs.getCell(sr, 2), "Monto", 'FF1E293B', 'FFFFFFFF', 10);
     summaryWs.getRow(sr).height = 22; sr++;
 
-    const activeAll = bookings.filter(b => b.estado_reserva !== 'Bloqueo');
-    const bungalowsMap = {};
-    activeAll.forEach(b => {
-        const num = b.bungalow_numero || 'Bungalow Sin Número';
-        if (!bungalowsMap[num]) {
-            bungalowsMap[num] = { count: 0, income: 0 };
-        }
-        bungalowsMap[num].count++;
-        bungalowsMap[num].income += parseFloat(b.monto_total) || 0;
-    });
+    const financialData = [
+        ["Ganancia del Mes Total", monthRevenue],
+        ["Depósitos del Mes", monthDeposito],
+        ["Yape / Otros Pagos del Mes", monthOtros],
+        ["Ganancia del Mes Día y Noche", monthDayNightRevenue],
+        ["Ganancia de Full Day del Mes", monthFullDayRevenue]
+    ];
 
-    Object.entries(bungalowsMap).sort((a,b) => a[0].localeCompare(b[0])).forEach(([num, data], bIdx) => {
-        const bg = monthColorsS[bIdx % 2];
+    financialData.forEach(([concept, val], fIdx) => {
+        const bg = monthColorsS[fIdx % 2];
         const c1 = summaryWs.getCell(sr, 1);
-        c1.value = `Bungalow ${num}`; c1.font = { name: 'Outfit', bold: true, size: 10, color: { argb: 'FF1E293B' } };
+        c1.value = concept;
+        c1.font = { name: 'Outfit', bold: true, size: 10, color: { argb: 'FF1E293B' } };
         c1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
         c1.alignment = { vertical: 'middle', horizontal: 'left' };
-        c1.border = { top:{style:'thin',color:{argb:'FFE2E8F0'}}, left:{style:'thin',color:{argb:'FFE2E8F0'}}, bottom:{style:'thin',color:{argb:'FFE2E8F0'}}, right:{style:'thin',color:{argb:'FFE2E8F0'}} };
-        
-        styleValue(summaryWs.getCell(sr, 2), data.count, false);
-        styleValue(summaryWs.getCell(sr, 3), data.income, true);
-        
+        c1.border = { 
+            top: { style: 'thin', color: { argb: 'FFE2E8F0' } }, 
+            left: { style: 'thin', color: { argb: 'FFE2E8F0' } }, 
+            bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } }, 
+            right: { style: 'thin', color: { argb: 'FFE2E8F0' } } 
+        };
+
+        styleValue(summaryWs.getCell(sr, 2), val, true);
         summaryWs.getCell(sr, 2).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
-        summaryWs.getCell(sr, 3).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
-        
+
         summaryWs.getRow(sr).height = 20;
         sr++;
     });
+
+    // ─── CLIENTS WORKSHEET ─────────────────────────────────────────
+    const clientsWs = workbook.addWorksheet('👥 CLIENTES', { properties: { tabColor: { argb: 'FF10B981' } } });
+    clientsWs.views = [{ showGridLines: true }];
+
+    const clientColsDef = [
+        { header: 'Nombre del Cliente', key: 'nombre', width: 35 },
+        { header: 'DNI', key: 'dni', width: 16 },
+        { header: 'Asesores que lo atendieron', key: 'asesores', width: 35 },
+        { header: 'Medios de Contacto', key: 'medios', width: 30 },
+        { header: 'Veces Alquiladas', key: 'cantidad', width: 18 }
+    ];
+    clientsWs.columns = clientColsDef;
+
+    // Style client header row
+    const clientHeaderRow = clientsWs.getRow(1);
+    clientHeaderRow.height = 26;
+    clientHeaderRow.eachCell((cell) => {
+        cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FF10B981' }
+        };
+        cell.font = {
+            name: 'Outfit',
+            color: { argb: 'FFFFFFFF' },
+            bold: true,
+            size: 11
+        };
+        cell.alignment = {
+            vertical: 'middle',
+            horizontal: 'center',
+            wrapText: true
+        };
+        cell.border = {
+            top: { style: 'thin', color: { argb: 'FF1E293B' } },
+            left: { style: 'thin', color: { argb: 'FF1E293B' } },
+            bottom: { style: 'medium', color: { argb: 'FF1E293B' } },
+            right: { style: 'thin', color: { argb: 'FF1E293B' } }
+        };
+    });
+
+    // Group active bookings by DNI (or Name if empty)
+    const clientsExcelMap = {};
+    const activeAllExcelBookings = bookings.filter(b => b.estado_reserva !== 'Bloqueo' && b.estado_reserva !== 'Bloqueado');
+    
+    activeAllExcelBookings.forEach(b => {
+        const name = (b.nombre_cliente || 'Desconocido').trim();
+        const dni = (b.dni_cliente || '').trim();
+        const key = dni !== '' ? dni : `nodni_${name.toLowerCase()}`;
+
+        if (!clientsExcelMap[key]) {
+            clientsExcelMap[key] = {
+                name: name,
+                dni: dni,
+                advisors: new Set(),
+                medios: new Set(),
+                count: 0
+            };
+        }
+
+        if (name !== 'Desconocido') {
+            clientsExcelMap[key].name = name;
+        }
+
+        const advisor = (b.asesor_registro || '').trim();
+        if (advisor && advisor.toLowerCase() !== 'sin asesor') {
+            clientsExcelMap[key].advisors.add(advisor);
+        }
+
+        const medio = (b.medio_contacto || '').trim();
+        if (medio) {
+            clientsExcelMap[key].medios.add(medio);
+        }
+
+        clientsExcelMap[key].count++;
+    });
+
+    const clientsExcelList = Object.values(clientsExcelMap).sort((a, b) => b.count - a.count);
+
+    let clientRowNo = 2;
+    clientsExcelList.forEach(c => {
+        const advisorsStr = Array.from(c.advisors).join(', ') || 'Sin asesor';
+        const mediosStr = Array.from(c.medios).join(', ') || 'Ninguno';
+
+        const dataRow = clientsWs.addRow({
+            nombre: c.name,
+            dni: c.dni || 'Sin DNI',
+            asesores: advisorsStr,
+            medios: mediosStr,
+            cantidad: c.count
+        });
+
+        dataRow.height = 20;
+        const isAlternate = (clientRowNo % 2 === 0);
+        dataRow.eachCell((cell, colNumber) => {
+            cell.font = { name: 'Outfit', size: 10 };
+            cell.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: isAlternate ? 'FFF8FAFC' : 'FFFFFFFF' }
+            };
+            cell.border = {
+                top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+            };
+
+            const colKey = clientColsDef[colNumber - 1].key;
+            if (colKey === 'dni' || colKey === 'cantidad') {
+                cell.alignment = { horizontal: 'center', vertical: 'middle' };
+            } else {
+                cell.alignment = { horizontal: 'left', vertical: 'middle' };
+            }
+        });
+
+        clientRowNo++;
+    });
+
+
 
     // ─── DATA WORKSEETS ───────────────────────────────────────────
     const columnsDef = [
@@ -2079,7 +2241,7 @@ async function exportAllDataToExcel() {
 
     for (const [monthLabel, bookingsInMonth] of Object.entries(groups)) {
         const worksheet = workbook.addWorksheet(monthLabel);
-        
+
         // Grid lines visible
         worksheet.views = [{ showGridLines: true }];
         worksheet.columns = columnsDef;
@@ -2172,6 +2334,8 @@ async function exportAllDataToExcel() {
         });
     }
 
+
+
     workbook.xlsx.writeBuffer().then((buffer) => {
         const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
         const link = document.createElement('a');
@@ -2219,9 +2383,13 @@ function loadStatsDashboard() {
 
     // 1. Gather bookings this month
     const monthBookings = bookings.filter(b => {
-        if (b.estado_reserva === 'Bloqueado') return false;
-        const start = new Date(b.fecha_ingreso + 'T00:00:00');
-        return (start.getMonth() === thisMonth && start.getFullYear() === thisYear);
+        if (b.estado_reserva === 'Bloqueado' || b.estado_reserva === 'Bloqueo') return false;
+        if (!b.fecha_ingreso) return false;
+        const parts = b.fecha_ingreso.split('-');
+        if (parts.length < 2) return false;
+        const year = parseInt(parts[0]);
+        const month = parseInt(parts[1]) - 1;
+        return (month === thisMonth && year === thisYear);
     });
 
     // 2. Calculations
@@ -2246,7 +2414,7 @@ function loadStatsDashboard() {
 
     // Client counts map
     const clientsMap = {};
-    
+
     // Asesores stats map
     const asesoresMap = {};
 
@@ -2321,7 +2489,7 @@ function loadStatsDashboard() {
         }
         asesoresMap[asesorNombre].count++;
         asesoresMap[asesorNombre].revenue += b.monto_total || 0;
-        
+
         if (!asesoresMap[asesorNombre].bungalows[b.bungalow_numero]) {
             asesoresMap[asesorNombre].bungalows[b.bungalow_numero] = 0;
         }
@@ -2718,7 +2886,7 @@ function formatLogTimestamp(isoStr) {
 // Escape HTML helper if not defined
 function escapeHTML(str) {
     if (!str) return '';
-    return str.replace(/[&<>'"]/g, 
+    return str.replace(/[&<>'"]/g,
         tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
     );
 }
@@ -2991,10 +3159,10 @@ function initCalendarTouchScroll() {
 
     // Fase de captura: interceptamos antes que FullCalendar
     wrapper.addEventListener('touchstart', (e) => {
-        startX      = e.touches[0].clientX;
-        startY      = e.touches[0].clientY;
+        startX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
         startScroll = wrapper.scrollLeft;
-        scrolling   = null;
+        scrolling = null;
     }, { passive: true, capture: true });
 
     wrapper.addEventListener('touchmove', (e) => {
