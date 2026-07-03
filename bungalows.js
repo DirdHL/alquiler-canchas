@@ -2013,6 +2013,32 @@ async function exportAllDataToExcel() {
     summaryWs.getRow(sr).height = 22;
     sr += 3; // Blank rows
 
+    // Helper function to format local YYYY-MM-DD
+    const getLocalYYYYMMDD = (d) => {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const r = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${r}`;
+    };
+
+    // Calculate all 7 days of the current week (Monday-Sunday)
+    const getWeekDaysList = () => {
+        const t = new Date();
+        const day = t.getDay();
+        const diff = t.getDate() - day + (day === 0 ? -6 : 1);
+        const mon = new Date(t.setDate(diff));
+        
+        const weekDates = [];
+        for (let i = 0; i < 7; i++) {
+            const temp = new Date(mon);
+            temp.setDate(mon.getDate() + i);
+            weekDates.push(getLocalYYYYMMDD(temp));
+        }
+        return weekDates;
+    };
+    const currentWeekDays = getWeekDaysList();
+    const todayStr = getLocalYYYYMMDD(new Date());
+
     // ─── FINANCIAL SUMMARY OF CURRENT MONTH Block ───────────────────
     const today = new Date();
     const thisMonth = today.getMonth(); // 0-indexed (0-11)
@@ -2059,6 +2085,48 @@ async function exportAllDataToExcel() {
         monthAdicPersonas += parseFloat(b.adicional_personas) || 0;
     });
 
+    // Today bookings calculations
+    const todayBookings = bookings.filter(b => {
+        if (b.estado_reserva === 'Bloqueado' || b.estado_reserva === 'Bloqueo') return false;
+        return b.fecha_ingreso === todayStr;
+    });
+
+    let todayBungalowBase = 0;
+    let todayAdicionales = 0;
+    let todayTotal = 0;
+
+    todayBookings.forEach(b => {
+        const tot = parseFloat(b.monto_total) || 0;
+        const extraP = parseFloat(b.adicional_personas) || 0;
+        const extraH = parseFloat(b.adicional_horas) || 0;
+        const extra = extraP + extraH;
+        
+        todayBungalowBase += (tot - extra);
+        todayAdicionales += extra;
+        todayTotal += tot;
+    });
+
+    // Week bookings calculations
+    const weekBookings = bookings.filter(b => {
+        if (b.estado_reserva === 'Bloqueado' || b.estado_reserva === 'Bloqueo') return false;
+        return currentWeekDays.includes(b.fecha_ingreso);
+    });
+
+    let weekBungalowBase = 0;
+    let weekAdicionales = 0;
+    let weekTotal = 0;
+
+    weekBookings.forEach(b => {
+        const tot = parseFloat(b.monto_total) || 0;
+        const extraP = parseFloat(b.adicional_personas) || 0;
+        const extraH = parseFloat(b.adicional_horas) || 0;
+        const extra = extraP + extraH;
+
+        weekBungalowBase += (tot - extra);
+        weekAdicionales += extra;
+        weekTotal += tot;
+    });
+
     sr += 3;
     summaryWs.mergeCells(sr, 1, sr, 3);
     styleTitle(summaryWs.getCell(sr, 1), "INGRESO DE DINERO EN BUNGALOWS (MES ACTUAL)", 'FF0F766E', 'FFFFFFFF', 11);
@@ -2078,6 +2146,80 @@ async function exportAllDataToExcel() {
     ];
 
     financialData.forEach(([concept, val], fIdx) => {
+        const bg = monthColorsS[fIdx % 2];
+        const c1 = summaryWs.getCell(sr, 1);
+        c1.value = concept;
+        c1.font = { name: 'Outfit', bold: true, size: 10, color: { argb: 'FF1E293B' } };
+        c1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
+        c1.alignment = { vertical: 'middle', horizontal: 'left' };
+        c1.border = { 
+            top: { style: 'thin', color: { argb: 'FFE2E8F0' } }, 
+            left: { style: 'thin', color: { argb: 'FFE2E8F0' } }, 
+            bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } }, 
+            right: { style: 'thin', color: { argb: 'FFE2E8F0' } } 
+        };
+
+        styleValue(summaryWs.getCell(sr, 2), val, true);
+        summaryWs.getCell(sr, 2).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
+
+        summaryWs.getRow(sr).height = 20;
+        sr++;
+    });
+
+    // ─── INGRESO DE DINERO EN BUNGALOWS (SEMANA ACTUAL) ────────────
+    sr += 3;
+    summaryWs.mergeCells(sr, 1, sr, 3);
+    styleTitle(summaryWs.getCell(sr, 1), "INGRESO DE DINERO EN BUNGALOWS (SEMANA ACTUAL)", 'FF0F766E', 'FFFFFFFF', 11);
+    summaryWs.getRow(sr).height = 24; sr++;
+
+    styleTitle(summaryWs.getCell(sr, 1), "Concepto", 'FF1E293B', 'FFFFFFFF', 10);
+    styleTitle(summaryWs.getCell(sr, 2), "Monto", 'FF1E293B', 'FFFFFFFF', 10);
+    summaryWs.getRow(sr).height = 22; sr++;
+
+    const weekData = [
+        ["Ganancias de Bungalows Totales", weekBungalowBase],
+        ["Ganancias de Adicionales", weekAdicionales],
+        ["Total", weekTotal]
+    ];
+
+    weekData.forEach(([concept, val], fIdx) => {
+        const bg = monthColorsS[fIdx % 2];
+        const c1 = summaryWs.getCell(sr, 1);
+        c1.value = concept;
+        c1.font = { name: 'Outfit', bold: true, size: 10, color: { argb: 'FF1E293B' } };
+        c1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
+        c1.alignment = { vertical: 'middle', horizontal: 'left' };
+        c1.border = { 
+            top: { style: 'thin', color: { argb: 'FFE2E8F0' } }, 
+            left: { style: 'thin', color: { argb: 'FFE2E8F0' } }, 
+            bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } }, 
+            right: { style: 'thin', color: { argb: 'FFE2E8F0' } } 
+        };
+
+        styleValue(summaryWs.getCell(sr, 2), val, true);
+        summaryWs.getCell(sr, 2).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
+
+        summaryWs.getRow(sr).height = 20;
+        sr++;
+    });
+
+    // ─── INGRESO DE DINERO EN BUNGALOWS (DÍA DE HOY) ────────────────
+    sr += 3;
+    summaryWs.mergeCells(sr, 1, sr, 3);
+    styleTitle(summaryWs.getCell(sr, 1), "INGRESO DE DINERO EN BUNGALOWS (DÍA DE HOY)", 'FF0F766E', 'FFFFFFFF', 11);
+    summaryWs.getRow(sr).height = 24; sr++;
+
+    styleTitle(summaryWs.getCell(sr, 1), "Concepto", 'FF1E293B', 'FFFFFFFF', 10);
+    styleTitle(summaryWs.getCell(sr, 2), "Monto", 'FF1E293B', 'FFFFFFFF', 10);
+    summaryWs.getRow(sr).height = 22; sr++;
+
+    const todayData = [
+        ["Ganancias de Bungalows Totales", todayBungalowBase],
+        ["Ganancias de Adicionales", todayAdicionales],
+        ["Total", todayTotal]
+    ];
+
+    todayData.forEach(([concept, val], fIdx) => {
         const bg = monthColorsS[fIdx % 2];
         const c1 = summaryWs.getCell(sr, 1);
         c1.value = concept;
