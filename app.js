@@ -2949,12 +2949,14 @@ async function exportAllDataToExcel() {
     summaryWs.getColumn(3).width = 20;
     summaryWs.getColumn(4).width = 20;
     summaryWs.getColumn(5).width = 20;
+    summaryWs.getColumn(6).width = 20;
+    summaryWs.getColumn(7).width = 20;
 
     let sr = 1;
     const monthColorsS = ['FFFFFFFF', 'FFF8FAFC'];
 
     // Title Block
-    summaryWs.mergeCells(sr, 1, sr, 5);
+    summaryWs.mergeCells(sr, 1, sr, 7);
     const mainTitleCell = summaryWs.getCell(sr, 1);
     styleTitle(mainTitleCell, "REPORTE GENERAL DE RESERVAS Y ESTADÍSTICAS - CANCHAS", 'FF0F766E', 'FFFFFFFF', 14);
     summaryWs.getRow(sr).height = 40;
@@ -2978,11 +2980,11 @@ async function exportAllDataToExcel() {
     });
 
     // 1. Month Summary Block
-    summaryWs.mergeCells(sr, 1, sr, 5);
+    summaryWs.mergeCells(sr, 1, sr, 7);
     styleTitle(summaryWs.getCell(sr, 1), "INGRESOS Y USOS MENSUALES", 'FF334155', 'FFFFFFFF', 11);
     summaryWs.getRow(sr).height = 24; sr++;
 
-    const headersM = ["Mes / Período", "Reservas", "Monto Cancha", "Monto Accesorios", "Total Facturado"];
+    const headersM = ["Mes / Período", "Reservas", "Monto Cancha", "Monto Accesorios", "Total Facturado", "Efectivo", "Yape"];
     headersM.forEach((h, idx) => {
         styleTitle(summaryWs.getCell(sr, idx + 1), h, 'FF1E293B', 'FFFFFFFF', 10);
     });
@@ -2992,6 +2994,8 @@ async function exportAllDataToExcel() {
     let grandTotalCancha = 0;
     let grandTotalAcc = 0;
     let grandTotalSum = 0;
+    let grandTotalEfectivo = 0;
+    let grandTotalYape = 0;
 
     let rowIdx = 0;
     for (const [monthLabel, events] of Object.entries(groups)) {
@@ -3002,18 +3006,39 @@ async function exportAllDataToExcel() {
         let cMonto = 0;
         let accMonto = 0;
         let tMonto = 0;
+        let efectivoMonto = 0;
+        let yapeMonto = 0;
 
         activeEvents.forEach(e => {
             const inc = getEventIncome(e);
             cMonto += inc.courtIncome;
             accMonto += inc.pelotaIncome + inc.chalecoIncome;
             tMonto += inc.total;
+
+            const payType = e.tipo_pago || 'Efectivo';
+            if (payType.startsWith('Dividido')) {
+                const split = parseSplitPayment(payType);
+                if (split) {
+                    efectivoMonto += split.efectivo;
+                    yapeMonto += split.yape;
+                } else {
+                    const half = inc.total / 2;
+                    efectivoMonto += half;
+                    yapeMonto += half;
+                }
+            } else if (payType === 'Yape') {
+                yapeMonto += inc.total;
+            } else {
+                efectivoMonto += inc.total;
+            }
         });
 
         grandTotalBookings += count;
         grandTotalCancha += cMonto;
         grandTotalAcc += accMonto;
         grandTotalSum += tMonto;
+        grandTotalEfectivo += efectivoMonto;
+        grandTotalYape += yapeMonto;
 
         const c1 = summaryWs.getCell(sr, 1);
         c1.value = monthLabel; c1.font = { name: 'Outfit', bold: true, size: 10, color: { argb: 'FF1E293B' } };
@@ -3025,9 +3050,11 @@ async function exportAllDataToExcel() {
         styleValue(summaryWs.getCell(sr, 3), cMonto, true);
         styleValue(summaryWs.getCell(sr, 4), accMonto, true);
         styleValue(summaryWs.getCell(sr, 5), tMonto, true);
+        styleValue(summaryWs.getCell(sr, 6), efectivoMonto, true);
+        styleValue(summaryWs.getCell(sr, 7), yapeMonto, true);
 
         // Apply row BG to values
-        for (let col = 2; col <= 5; col++) {
+        for (let col = 2; col <= 7; col++) {
             summaryWs.getCell(sr, col).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
         }
 
@@ -3048,8 +3075,10 @@ async function exportAllDataToExcel() {
     styleValue(summaryWs.getCell(sr, 3), grandTotalCancha, true);
     styleValue(summaryWs.getCell(sr, 4), grandTotalAcc, true);
     styleValue(summaryWs.getCell(sr, 5), grandTotalSum, true);
+    styleValue(summaryWs.getCell(sr, 6), grandTotalEfectivo, true);
+    styleValue(summaryWs.getCell(sr, 7), grandTotalYape, true);
 
-    for (let col = 2; col <= 5; col++) {
+    for (let col = 2; col <= 7; col++) {
         summaryWs.getCell(sr, col).font.color = { argb: 'FFFFFFFF' };
         summaryWs.getCell(sr, col).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F766E' } };
     }
