@@ -300,6 +300,7 @@ function initCalendar() {
         locale: 'es',
         firstDay: 1, // 1 = Lunes
         initialView: 'dayGridMonth',
+        multiMonthMaxColumns: 2,
         headerToolbar: {
             left: 'prev,next today',
             center: 'title',
