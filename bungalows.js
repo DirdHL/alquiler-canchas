@@ -2033,6 +2033,7 @@ async function exportAllDataToExcel() {
     let monthOtros = 0;
     let monthDayNightRevenue = 0;
     let monthFullDayRevenue = 0;
+    let monthAdicPersonas = 0;
 
 
     monthBookings.forEach(b => {
@@ -2054,6 +2055,8 @@ async function exportAllDataToExcel() {
         } else {
             monthDayNightRevenue += amt;
         }
+
+        monthAdicPersonas += parseFloat(b.adicional_personas) || 0;
     });
 
     sr += 3;
@@ -2070,7 +2073,8 @@ async function exportAllDataToExcel() {
         ["Depósitos del Mes", monthDeposito],
         ["Yape / Otros Pagos del Mes", monthOtros],
         ["Ganancia del Mes Día y Noche", monthDayNightRevenue],
-        ["Ganancia de Full Day del Mes", monthFullDayRevenue]
+        ["Ganancia de Full Day del Mes", monthFullDayRevenue],
+        ["Ganancia de Personas Adicionales", monthAdicPersonas]
     ];
 
     financialData.forEach(([concept, val], fIdx) => {
