@@ -250,6 +250,22 @@ body {
     box-shadow: 0 5px 12px rgba(0,0,0,0.1);
 }
 
+/* Filter items checkmarks */
+.filter-item input:checked+.custom-checkbox.color-b1 {
+    background: #10b981;
+    border-color: #10b981;
+}
+
+.filter-item input:checked+.custom-checkbox.color-b2 {
+    background: #f59e0b;
+    border-color: #f59e0b;
+}
+
+.filter-item input:checked+.custom-checkbox.color-b3 {
+    background: #8b5cf6;
+    border-color: #8b5cf6;
+}
+
 /* Legend items */
 .legend-item {
     background: rgba(255, 255, 255, 0.5);
@@ -305,6 +321,35 @@ body {
 /* Specific border line for day cell boundaries */
 .fc .fc-daygrid-day {
     border: 1px solid rgba(139, 92, 246, 0.15) !important;
+}
+
+/* Make single-day timed (dot) events look like block events */
+.fc-daygrid-dot-event {
+    padding: 3px 6px !important;
+    border: none !important;
+    border-radius: 6px !important;
+}
+
+.fc-daygrid-dot-event .fc-event-dot {
+    display: none !important;
+}
+
+/* Event custom class backgrounds to enforce correct contrast */
+.fc-event.event-pinos-g {
+    background-color: #10b981 !important;
+    border-color: #10b981 !important;
+}
+.fc-event.event-pinos-p {
+    background-color: #f59e0b !important;
+    border-color: #f59e0b !important;
+}
+.fc-event.event-polidep {
+    background-color: #8b5cf6 !important;
+    border-color: #8b5cf6 !important;
+}
+.fc-event.event-bloqueado {
+    background-color: #ef4444 !important;
+    border-color: #ef4444 !important;
 }
 
 

@@ -360,6 +360,17 @@ function renderCalendarEvents() {
             endIso = `${yyyy}-${mm}-${dd}T${b.hora_fin}`;
         }
 
+        let customClass = '';
+        if (b.estado_reserva === 'Bloqueado') {
+            customClass = 'event-bloqueado';
+        } else if (b.sede === 'Los Pinos' && b.espacio === 'Grande') {
+            customClass = 'event-pinos-g';
+        } else if (b.sede === 'Los Pinos' && b.espacio === 'Pequeño') {
+            customClass = 'event-pinos-p';
+        } else if (b.sede === 'Polideportivo' && b.espacio === 'Grande') {
+            customClass = 'event-polidep';
+        }
+
         events.push({
             id: b.id,
             title: title,
@@ -367,6 +378,7 @@ function renderCalendarEvents() {
             end: endIso,
             backgroundColor: color,
             borderColor: color,
+            classNames: [customClass],
             extendedProps: { rawBooking: b }
         });
     });
