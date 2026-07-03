@@ -58,6 +58,13 @@ function setupEventListeners() {
     // Dynamic calculations
     document.getElementById('bookingTotal').addEventListener('input', runDynamicCalculations);
     document.getElementById('bookingAdelanto').addEventListener('input', runDynamicCalculations);
+
+    const bookingDniInput = document.getElementById('bookingDni');
+    if (bookingDniInput) {
+        bookingDniInput.addEventListener('input', function () {
+            this.value = this.value.replace(/[^0-9]/g, '');
+        });
+    }
     
     // Filters
     document.getElementById('filterLosPinosGrande').addEventListener('change', renderCalendarEvents);
@@ -90,6 +97,51 @@ function setupEventListeners() {
             }
         });
     });
+
+    // Auto-update and sync start/end dates and times
+    const bookingFecha = document.getElementById('bookingFecha');
+    const bookingFechaFin = document.getElementById('bookingFechaFin');
+    const bookingHoraInicio = document.getElementById('bookingHoraInicio');
+    const bookingHoraFin = document.getElementById('bookingHoraFin');
+
+    function updateEndDate() {
+        if (!bookingFecha || !bookingFecha.value || !bookingFechaFin) return;
+        
+        bookingFechaFin.min = bookingFecha.value;
+        
+        const startVal = bookingHoraInicio ? bookingHoraInicio.value : '';
+        const endVal = bookingHoraFin ? bookingHoraFin.value : '';
+        
+        if (startVal && endVal && endVal <= startVal) {
+            // Crossed midnight: set end date to the next day
+            const dateParts = bookingFecha.value.split('-');
+            const nextDay = new Date(dateParts[0], dateParts[1] - 1, parseInt(dateParts[2]) + 1);
+            const yyyy = nextDay.getFullYear();
+            const mm = String(nextDay.getMonth() + 1).padStart(2, '0');
+            const dd = String(nextDay.getDate()).padStart(2, '0');
+            bookingFechaFin.value = `${yyyy}-${mm}-${dd}`;
+        } else {
+            // Same day
+            bookingFechaFin.value = bookingFecha.value;
+        }
+    }
+
+    if (bookingFecha) {
+        bookingFecha.addEventListener('change', updateEndDate);
+    }
+    if (bookingHoraInicio) {
+        bookingHoraInicio.addEventListener('change', updateEndDate);
+    }
+    if (bookingHoraFin) {
+        bookingHoraFin.addEventListener('change', updateEndDate);
+    }
+    if (bookingFechaFin) {
+        bookingFechaFin.addEventListener('change', function () {
+            if (bookingFecha.value && this.value < bookingFecha.value) {
+                this.value = bookingFecha.value;
+            }
+        });
+    }
 }
 
 function runDynamicCalculations() {
@@ -112,20 +164,40 @@ function openBookingModal(booking = null, defaultDate = null) {
     
     if (defaultDate) {
         document.getElementById('bookingFecha').value = defaultDate;
+        const finInput = document.getElementById('bookingFechaFin');
+        if (finInput) finInput.value = defaultDate;
     } else {
-        document.getElementById('bookingFecha').value = new Date().toISOString().split('T')[0];
+        const todayStr = new Date().toISOString().split('T')[0];
+        document.getElementById('bookingFecha').value = todayStr;
+        const finInput = document.getElementById('bookingFechaFin');
+        if (finInput) finInput.value = todayStr;
     }
     
     if (booking) {
         document.getElementById('modalTitle').textContent = 'Editar Reserva';
         document.getElementById('bookingId').value = booking.id;
         document.getElementById('bookingName').value = booking.nombre_cliente || '';
-        document.getElementById('bookingTelefono').value = booking.telefono_cliente || '';
+        document.getElementById('bookingDni').value = booking.telefono_cliente || '';
         document.getElementById('bookingLocal').value = `${booking.sede}|${booking.espacio}`;
         document.getElementById('bookingTipoEvento').value = booking.tipo_evento || '';
         document.getElementById('bookingFecha').value = booking.fecha_reserva;
         document.getElementById('bookingHoraInicio').value = booking.hora_inicio.substring(0, 5);
         document.getElementById('bookingHoraFin').value = booking.hora_fin.substring(0, 5);
+        
+        // Calculate and set Fecha Fin
+        const finInput = document.getElementById('bookingFechaFin');
+        if (finInput) {
+            let fechaFinStr = booking.fecha_reserva;
+            if (booking.hora_fin && booking.hora_inicio && booking.hora_fin.substring(0, 5) <= booking.hora_inicio.substring(0, 5)) {
+                const dateParts = booking.fecha_reserva.split('-');
+                const nextDay = new Date(dateParts[0], dateParts[1] - 1, parseInt(dateParts[2]) + 1);
+                const yyyy = nextDay.getFullYear();
+                const mm = String(nextDay.getMonth() + 1).padStart(2, '0');
+                const dd = String(nextDay.getDate()).padStart(2, '0');
+                fechaFinStr = `${yyyy}-${mm}-${dd}`;
+            }
+            finInput.value = fechaFinStr;
+        }
         document.getElementById('bookingSource').value = booking.medio_contacto || 'WhatsApp';
         document.getElementById('bookingTotal').value = booking.monto_total;
         document.getElementById('bookingAdelanto').value = booking.monto_adelanto;
@@ -150,7 +222,7 @@ async function handleSaveBooking(e) {
         sede: sede,
         espacio: espacio,
         nombre_cliente: document.getElementById('bookingName').value,
-        telefono_cliente: document.getElementById('bookingTelefono').value,
+        telefono_cliente: document.getElementById('bookingDni').value,
         fecha_reserva: document.getElementById('bookingFecha').value,
         hora_inicio: document.getElementById('bookingHoraInicio').value,
         hora_fin: document.getElementById('bookingHoraFin').value,
@@ -277,11 +349,21 @@ function renderCalendarEvents() {
             color = '#ef4444';
         }
         
+        let endIso = `${b.fecha_reserva}T${b.hora_fin}`;
+        if (b.hora_fin && b.hora_inicio && b.hora_fin <= b.hora_inicio) {
+            const dateParts = b.fecha_reserva.split('-');
+            const nextDay = new Date(dateParts[0], dateParts[1] - 1, parseInt(dateParts[2]) + 1);
+            const yyyy = nextDay.getFullYear();
+            const mm = String(nextDay.getMonth() + 1).padStart(2, '0');
+            const dd = String(nextDay.getDate()).padStart(2, '0');
+            endIso = `${yyyy}-${mm}-${dd}T${b.hora_fin}`;
+        }
+
         events.push({
             id: b.id,
             title: title,
             start: `${b.fecha_reserva}T${b.hora_inicio}`,
-            end: `${b.fecha_reserva}T${b.hora_fin}`,
+            end: endIso,
             backgroundColor: color,
             borderColor: color,
             extendedProps: { rawBooking: b }
@@ -674,8 +756,8 @@ function loadStatsDashboard() {
 
         // Client counts
         const clientName = b.nombre_cliente || 'Desconocido';
-        const clientDni = b.dni_cliente || '';
-        const clientTel = b.telefono_cliente || '';
+        const clientDni = b.telefono_cliente || '';
+        const clientTel = '';
         const cKey = `${clientName}|${clientDni}`;
         if (!clientsMap[cKey]) {
             clientsMap[cKey] = { name: clientName, dni: clientDni, telefono: clientTel, count: 0 };
@@ -755,7 +837,6 @@ function loadStatsDashboard() {
                 <tr style="border-bottom: 1px solid var(--border-color);">
                     <td style="padding: 12px 16px; font-weight: 500;">${escapeHTML(c.name)}</td>
                     <td style="padding: 12px 16px; color: var(--text-secondary);">${escapeHTML(c.dni || '-')}</td>
-                    <td style="padding: 12px 16px; color: var(--text-secondary);">${escapeHTML(c.telefono || '-')}</td>
                     <td style="padding: 12px 16px; font-weight: 600; text-align: right; color: var(--primary);">${c.count} reservas</td>
                 </tr>
             `).join('');
@@ -996,7 +1077,7 @@ async function exportAllDataToExcel() {
         { header: 'Sede', key: 'sede', width: 16 },
         { header: 'Espacio', key: 'espacio', width: 14 },
         { header: 'Cliente', key: 'cliente', width: 25 },
-        { header: 'Celular', key: 'celular', width: 14 },
+        { header: 'DNI', key: 'celular', width: 14 },
         { header: 'Fecha Reserva', key: 'fecha_reserva', width: 14 },
         { header: 'Hora Inicio', key: 'hora_inicio', width: 12 },
         { header: 'Hora Fin', key: 'hora_fin', width: 12 },
