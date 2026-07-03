@@ -1281,11 +1281,13 @@ function initCalendar() {
         headerToolbar: {
             left: 'prev,next today',
             center: 'title',
-            right: 'dayGridMonth,listMonth'
+            right: 'dayGridMonth,dayGridWeek,dayGridDay,listMonth'
         },
         buttonText: {
             today: 'Hoy',
             month: 'Mes',
+            week: 'Semana',
+            day: 'Día',
             list: 'Lista'
         },
         editable: false,
