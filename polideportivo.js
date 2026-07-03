@@ -3097,6 +3097,65 @@ async function exportAllDataToExcel() {
         };
     }
 
+    function getMondayDateString(dateStr) {
+        const parts = dateStr.split('-');
+        if (parts.length < 3) return '9999-12-31';
+        const year = parseInt(parts[0]);
+        const month = parseInt(parts[1]) - 1;
+        const day = parseInt(parts[2]);
+        const d = new Date(year, month, day);
+        const dayOfWeek = d.getDay();
+        const mondayDiff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+        const mondayDate = new Date(d);
+        mondayDate.setDate(d.getDate() + mondayDiff);
+        
+        const y = mondayDate.getFullYear();
+        const m = String(mondayDate.getMonth() + 1).padStart(2, '0');
+        const dd = String(mondayDate.getDate()).padStart(2, '0');
+        return `${y}-${m}-${dd}`;
+    }
+
+    function getWeekRangeString(dateStr) {
+        const parts = dateStr.split('-');
+        if (parts.length < 3) return 'Otros';
+        const year = parseInt(parts[0]);
+        const month = parseInt(parts[1]) - 1;
+        const day = parseInt(parts[2]);
+        
+        const mondayDate = new Date(year, month, day);
+        const sundayDate = new Date(mondayDate);
+        sundayDate.setDate(mondayDate.getDate() + 6);
+        
+        const formatOption = { day: 'numeric', month: 'long' };
+        const formatter = new Intl.DateTimeFormat('es-ES', formatOption);
+        
+        const monStr = formatter.format(mondayDate);
+        const sunStr = formatter.format(sundayDate);
+        
+        const capitalizeWords = str => str.replace(/(^\w|\s\w)/g, m => m.toUpperCase());
+        
+        const monYear = mondayDate.getFullYear();
+        const sunYear = sundayDate.getFullYear();
+        const yearStr = monYear === sunYear ? ` ${monYear}` : ` ${monYear}/${sunYear}`;
+        
+        return `Lunes ${capitalizeWords(monStr)} - Domingo ${capitalizeWords(sunStr)}${yearStr}`;
+    }
+
+    function getDailyLabel(dateStr) {
+        const parts = dateStr.split('-');
+        if (parts.length < 3) return dateStr;
+        const year = parseInt(parts[0]);
+        const month = parseInt(parts[1]) - 1;
+        const day = parseInt(parts[2]);
+        const d = new Date(year, month, day);
+        
+        const formatOption = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+        const formatter = new Intl.DateTimeFormat('es-ES', formatOption);
+        const formatted = formatter.format(d);
+        
+        return formatted.replace(/(^\w|\s\w)/g, m => m.toUpperCase());
+    }
+
     summaryWs.getColumn(1).width = 30;
     summaryWs.getColumn(2).width = 20;
     summaryWs.getColumn(3).width = 20;
@@ -3389,6 +3448,138 @@ async function exportAllDataToExcel() {
 
         aIdx++;
     }
+
+    // 4. Weekly Summary Block (Current Week Only)
+    sr += 3;
+    summaryWs.mergeCells(sr, 1, sr, 7);
+    styleTitle(summaryWs.getCell(sr, 1), "INGRESOS Y USOS DE LA SEMANA ACTUAL", 'FF334155', 'FFFFFFFF', 11);
+    summaryWs.getRow(sr).height = 24; sr++;
+
+    const headersW = ["Semana / Período", "Reservas", "Monto Cancha", "Monto Accesorios", "Total Facturado", "Efectivo", "Yape"];
+    headersW.forEach((h, idx) => {
+        styleTitle(summaryWs.getCell(sr, idx + 1), h, 'FF1E293B', 'FFFFFFFF', 10);
+    });
+    summaryWs.getRow(sr).height = 22; sr++;
+
+    // Get current week's Monday
+    const todayObj = new Date();
+    const currentY = todayObj.getFullYear();
+    const currentM = String(todayObj.getMonth() + 1).padStart(2, '0');
+    const currentD = String(todayObj.getDate()).padStart(2, '0');
+    const todayStr = `${currentY}-${currentM}-${currentD}`;
+    const currentMondayStr = getMondayDateString(todayStr);
+    const currentWeekLabel = getWeekRangeString(currentMondayStr);
+
+    const currentWeekEvents = activeAll.filter(e => e.date && getMondayDateString(e.date) === currentMondayStr);
+
+    let wCount = currentWeekEvents.length;
+    let wCancha = 0;
+    let wAcc = 0;
+    let wSum = 0;
+    let wEfectivo = 0;
+    let wYape = 0;
+
+    currentWeekEvents.forEach(e => {
+        const inc = getEventIncome(e);
+        wCancha += inc.courtIncome;
+        wAcc += inc.pelotaIncome + inc.chalecoIncome;
+        wSum += inc.total;
+
+        const payType = e.tipo_pago || 'Efectivo';
+        if (payType.startsWith('Dividido')) {
+            const split = parseSplitPayment(payType);
+            if (split) {
+                wEfectivo += split.efectivo;
+                wYape += split.yape;
+            } else {
+                const half = inc.total / 2;
+                wEfectivo += half;
+                wYape += half;
+            }
+        } else if (payType === 'Yape') {
+            wYape += inc.total;
+        } else {
+            wEfectivo += inc.total;
+        }
+    });
+
+    const cw1 = summaryWs.getCell(sr, 1);
+    cw1.value = currentWeekLabel; cw1.font = { name: 'Outfit', bold: true, size: 10, color: { argb: 'FF1E293B' } };
+    cw1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFFFF' } };
+    cw1.alignment = { vertical: 'middle', horizontal: 'left' };
+    cw1.border = { top:{style:'thin',color:{argb:'FFE2E8F0'}}, left:{style:'thin',color:{argb:'FFE2E8F0'}}, bottom:{style:'thin',color:{argb:'FFE2E8F0'}}, right:{style:'thin',color:{argb:'FFE2E8F0'}} };
+
+    styleValue(summaryWs.getCell(sr, 2), wCount, false);
+    styleValue(summaryWs.getCell(sr, 3), wCancha, true);
+    styleValue(summaryWs.getCell(sr, 4), wAcc, true);
+    styleValue(summaryWs.getCell(sr, 5), wSum, true);
+    styleValue(summaryWs.getCell(sr, 6), wEfectivo, true);
+    styleValue(summaryWs.getCell(sr, 7), wYape, true);
+
+    summaryWs.getRow(sr).height = 22;
+    sr++;
+
+    // 5. Daily Summary Block (Today Only)
+    sr += 3;
+    summaryWs.mergeCells(sr, 1, sr, 7);
+    styleTitle(summaryWs.getCell(sr, 1), "INGRESOS Y USOS DEL DÍA DE HOY (DÍA DE LA DESCARGA)", 'FF334155', 'FFFFFFFF', 11);
+    summaryWs.getRow(sr).height = 24; sr++;
+
+    const headersD = ["Fecha / Día", "Reservas", "Monto Cancha", "Monto Accesorios", "Total Facturado", "Efectivo", "Yape"];
+    headersD.forEach((h, idx) => {
+        styleTitle(summaryWs.getCell(sr, idx + 1), h, 'FF1E293B', 'FFFFFFFF', 10);
+    });
+    summaryWs.getRow(sr).height = 22; sr++;
+
+    const todayLabel = getDailyLabel(todayStr);
+    const todayEvents = activeAll.filter(e => e.date === todayStr);
+
+    let dCount = todayEvents.length;
+    let dCancha = 0;
+    let dAcc = 0;
+    let dSum = 0;
+    let dEfectivo = 0;
+    let dYape = 0;
+
+    todayEvents.forEach(e => {
+        const inc = getEventIncome(e);
+        dCancha += inc.courtIncome;
+        dAcc += inc.pelotaIncome + inc.chalecoIncome;
+        dSum += inc.total;
+
+        const payType = e.tipo_pago || 'Efectivo';
+        if (payType.startsWith('Dividido')) {
+            const split = parseSplitPayment(payType);
+            if (split) {
+                dEfectivo += split.efectivo;
+                dYape += split.yape;
+            } else {
+                const half = inc.total / 2;
+                dEfectivo += half;
+                dYape += half;
+            }
+        } else if (payType === 'Yape') {
+            dYape += inc.total;
+        } else {
+            dEfectivo += inc.total;
+        }
+    });
+
+    const cd1 = summaryWs.getCell(sr, 1);
+    cd1.value = todayLabel; cd1.font = { name: 'Outfit', bold: true, size: 10, color: { argb: 'FF1E293B' } };
+    cd1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFFFF' } };
+    cd1.alignment = { vertical: 'middle', horizontal: 'left' };
+    cd1.border = { top:{style:'thin',color:{argb:'FFE2E8F0'}}, left:{style:'thin',color:{argb:'FFE2E8F0'}}, bottom:{style:'thin',color:{argb:'FFE2E8F0'}}, right:{style:'thin',color:{argb:'FFE2E8F0'}} };
+
+    styleValue(summaryWs.getCell(sr, 2), dCount, false);
+    styleValue(summaryWs.getCell(sr, 3), dCancha, true);
+    styleValue(summaryWs.getCell(sr, 4), dAcc, true);
+    styleValue(summaryWs.getCell(sr, 5), dSum, true);
+    styleValue(summaryWs.getCell(sr, 6), dEfectivo, true);
+    styleValue(summaryWs.getCell(sr, 7), dYape, true);
+
+    summaryWs.getRow(sr).height = 22;
+    sr++;
 
     // ─── CLIENTS WORKSHEET ─────────────────────────────────────────
     const clientsWs = workbook.addWorksheet('👥 CLIENTES', { properties: { tabColor: { argb: 'FF10B981' } } });
