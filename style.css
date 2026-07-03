@@ -480,25 +480,25 @@ body.no-scroll {
 
 /* Color-coded sidebar action buttons for other systems */
 .btn-sidebar-action.btn-canchas {
-    background: rgba(16, 185, 129, 0.1) !important;
-    border-color: rgba(16, 185, 129, 0.3) !important;
-    color: #10b981 !important;
-}
-.btn-sidebar-action.btn-canchas:hover {
-    background: rgba(16, 185, 129, 0.2) !important;
-    border-color: rgba(16, 185, 129, 0.5) !important;
-    color: #059669 !important;
-}
-
-.btn-sidebar-action.btn-polideportivo {
     background: rgba(139, 92, 246, 0.1) !important;
     border-color: rgba(139, 92, 246, 0.3) !important;
     color: #a78bfa !important;
 }
-.btn-sidebar-action.btn-polideportivo:hover {
+.btn-sidebar-action.btn-canchas:hover {
     background: rgba(139, 92, 246, 0.2) !important;
     border-color: rgba(139, 92, 246, 0.5) !important;
     color: #8b5cf6 !important;
+}
+
+.btn-sidebar-action.btn-polideportivo {
+    background: rgba(16, 185, 129, 0.1) !important;
+    border-color: rgba(16, 185, 129, 0.3) !important;
+    color: #10b981 !important;
+}
+.btn-sidebar-action.btn-polideportivo:hover {
+    background: rgba(16, 185, 129, 0.2) !important;
+    border-color: rgba(16, 185, 129, 0.5) !important;
+    color: #059669 !important;
 }
 
 .btn-sidebar-action.btn-locales {
