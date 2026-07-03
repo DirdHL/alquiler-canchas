@@ -2276,4 +2276,54 @@ select option {
         content: '🔒';
         font-size: 11px !important;
     }
+
+    /* Responsive styling for stats modal (#modalStats) */
+    #modalStats .modal-header {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 12px !important;
+        padding: 16px 40px 16px 16px !important;
+        position: relative !important;
+    }
+
+    #modalStats .modal-header h3 {
+        font-size: 16px !important;
+        padding-right: 20px !important;
+    }
+
+    #modalStats .modal-header > div {
+        width: 100% !important;
+        justify-content: flex-start !important;
+        gap: 8px !important;
+        flex-wrap: wrap !important;
+    }
+
+    #modalStats .modal-header .btn-close {
+        position: absolute !important;
+        top: 16px !important;
+        right: 16px !important;
+        margin: 0 !important;
+    }
+
+    #modalStats .stats-tabs {
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 8px !important;
+        gap: 8px !important;
+        border-bottom: 1px solid var(--border-color) !important;
+        scrollbar-width: none !important; /* Firefox */
+    }
+
+    #modalStats .stats-tabs::-webkit-scrollbar {
+        display: none !important; /* Safari and Chrome */
+    }
+
+    #modalStats .stats-tabs .tab-btn {
+        flex-shrink: 0 !important;
+        white-space: nowrap !important;
+        font-size: 13px !important;
+        padding: 6px 10px !important;
+    }
 }
