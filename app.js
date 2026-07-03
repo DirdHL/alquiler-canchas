@@ -2905,13 +2905,14 @@ function getColLetter(colIndex) {
 }
 
 async function exportAllDataToExcel() {
-    // Check if we have events to export
-    if (!allEvents || allEvents.length === 0) {
-        alert("No hay reservas registradas para exportar.");
-        return;
-    }
+    try {
+        // Check if we have events to export
+        if (!allEvents || allEvents.length === 0) {
+            alert("No hay reservas registradas para exportar.");
+            return;
+        }
 
-    const workbook = new ExcelJS.Workbook();
+        const workbook = new ExcelJS.Workbook();
     
     // ─── RESUMEN SHEET ─────────────────────────────────────────────
     const summaryWs = workbook.addWorksheet('📊 RESUMEN', { properties: { tabColor: { argb: 'FF0F766E' } } });
@@ -3055,9 +3056,11 @@ async function exportAllDataToExcel() {
     summaryWs.getRow(sr).height = 22;
     sr += 3; // Blank rows
 
-    // 2. Cancha breakdown Block
+    const activeAll = allEvents.filter(e => e.sport !== 'Bloqueo');
+
+    // 2. Cancha breakdown Block (grouped by Month)
     summaryWs.mergeCells(sr, 1, sr, 3);
-    styleTitle(summaryWs.getCell(sr, 1), "INGRESOS POR TIPO DE CANCHA", 'FF334155', 'FFFFFFFF', 11);
+    styleTitle(summaryWs.getCell(sr, 1), "INGRESOS POR TIPO DE CANCHA Y MES", 'FF334155', 'FFFFFFFF', 11);
     summaryWs.getRow(sr).height = 24; sr++;
 
     const headersC = ["Cancha / Tamaño", "Reservas", "Monto Canchas"];
@@ -3066,36 +3069,68 @@ async function exportAllDataToExcel() {
     });
     summaryWs.getRow(sr).height = 22; sr++;
 
-    const activeAll = allEvents.filter(e => e.sport !== 'Bloqueo');
-    const courtsMap = {
-        'Grande': { count: 0, income: 0 },
-        'Pequeña': { count: 0, income: 0 }
-    };
-    activeAll.forEach(e => {
-        const cType = e.court === 'Grande' ? 'Grande' : 'Pequeña';
-        const inc = getEventIncome(e);
-        courtsMap[cType].count++;
-        courtsMap[cType].income += inc.courtIncome;
-    });
-
-    [['Cancha Grande', courtsMap['Grande'].count, courtsMap['Grande'].income],
-     ['Cancha Pequeña', courtsMap['Pequeña'].count, courtsMap['Pequeña'].income]].forEach(([label, cnt, inc], cIdx) => {
-        const bg = monthColorsS[cIdx % 2];
-        const c1 = summaryWs.getCell(sr, 1);
-        c1.value = label; c1.font = { name: 'Outfit', bold: true, size: 10, color: { argb: 'FF1E293B' } };
-        c1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
-        c1.alignment = { vertical: 'middle', horizontal: 'left' };
-        c1.border = { top:{style:'thin',color:{argb:'FFE2E8F0'}}, left:{style:'thin',color:{argb:'FFE2E8F0'}}, bottom:{style:'thin',color:{argb:'FFE2E8F0'}}, right:{style:'thin',color:{argb:'FFE2E8F0'}} };
+    let cIdx = 0;
+    for (const [monthLabel, events] of Object.entries(groups)) {
+        // Subtle month separator row
+        const cellMonth = summaryWs.getCell(sr, 1);
+        cellMonth.value = `📅 ${monthLabel.toUpperCase()}`;
+        cellMonth.font = { name: 'Outfit', bold: true, size: 10, color: { argb: 'FF0F766E' } };
+        cellMonth.alignment = { vertical: 'middle', horizontal: 'left' };
         
-        styleValue(summaryWs.getCell(sr, 2), cnt, false);
-        styleValue(summaryWs.getCell(sr, 3), inc, true);
-        
-        summaryWs.getCell(sr, 2).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
-        summaryWs.getCell(sr, 3).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
-        
-        summaryWs.getRow(sr).height = 20;
+        for (let col = 1; col <= 3; col++) {
+            const cell = summaryWs.getCell(sr, col);
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
+            cell.border = {
+                top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+            };
+        }
+        summaryWs.getRow(sr).height = 22;
         sr++;
-    });
+
+        const activeEvents = events.filter(e => e.sport !== 'Bloqueo');
+        const courtsMap = {
+            'Grande': { count: 0, income: 0 },
+            'Pequeña': { count: 0, income: 0 }
+        };
+        activeEvents.forEach(e => {
+            const cType = e.court === 'Grande' ? 'Grande' : 'Pequeña';
+            const inc = getEventIncome(e);
+            courtsMap[cType].count++;
+            courtsMap[cType].income += inc.courtIncome;
+        });
+
+        [['Cancha Grande', courtsMap['Grande'].count, courtsMap['Grande'].income],
+         ['Cancha Pequeña', courtsMap['Pequeña'].count, courtsMap['Pequeña'].income]].forEach(([courtLabel, cnt, inc], rIdx) => {
+            const bg = monthColorsS[rIdx % 2];
+            
+            const cellCourt = summaryWs.getCell(sr, 1);
+            cellCourt.value = courtLabel;
+            cellCourt.font = { name: 'Outfit', bold: true, size: 10, color: { argb: 'FF1E293B' } };
+            cellCourt.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
+            cellCourt.alignment = { vertical: 'middle', horizontal: 'left' };
+            cellCourt.border = { 
+                top: { style: 'thin', color: { argb: 'FFE2E8F0' } }, 
+                left: { style: 'thin', color: { argb: 'FFE2E8F0' } }, 
+                bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } }, 
+                right: { style: 'thin', color: { argb: 'FFE2E8F0' } } 
+            };
+
+            styleValue(summaryWs.getCell(sr, 2), cnt, false);
+            styleValue(summaryWs.getCell(sr, 3), inc, true);
+
+            for (let col = 2; col <= 3; col++) {
+                summaryWs.getCell(sr, col).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
+            }
+
+            summaryWs.getRow(sr).height = 20;
+            sr++;
+        });
+
+        cIdx++;
+    }
     sr += 2;
 
     // 3. Accessories breakdown Block
@@ -3265,16 +3300,20 @@ async function exportAllDataToExcel() {
         });
     }
 
-    workbook.xlsx.writeBuffer().then((buffer) => {
-        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = 'Reporte_Reservas_Canchas.xlsx';
-        link.click();
-    }).catch(err => {
-        console.error("Error al exportar:", err);
-        alert("Ocurrió un error al generar el archivo Excel: " + err.message);
-    });
+        workbook.xlsx.writeBuffer().then((buffer) => {
+            const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'Reporte_Reservas_Canchas.xlsx';
+            link.click();
+        }).catch(err => {
+            console.error("Error al exportar:", err);
+            alert("Ocurrió un error al generar el archivo Excel: " + err.message);
+        });
+    } catch (err) {
+        console.error("Error crítico al exportar:", err);
+        alert("Error crítico al exportar Excel: " + (err.stack || err.message));
+    }
 }
 
 function handleLockStatsClick() {
