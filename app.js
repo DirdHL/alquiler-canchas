@@ -1156,7 +1156,7 @@ function openBookingModal(booking = null, defaults = null) {
         // Populate and select correct Medio
         if (bookingSourceInput) {
             const savedMedio = booking.medio || 'Cliente frecuente';
-            const standardMedios = ['Facebook', 'TikTok', 'Instagram', 'WhatsApp', 'Cliente frecuente', 'Recomendación'];
+            const standardMedios = ['Facebook', 'TikTok', 'Instagram', 'Msg masivo', 'Cliente frecuente', 'Recomendación'];
             if (standardMedios.includes(savedMedio) && !isBlock) {
                 bookingSourceInput.value = savedMedio;
                 if (customSourceGroup) customSourceGroup.classList.add('hidden');
@@ -4344,7 +4344,7 @@ function updateStatsDashboard() {
         const normalizeChannel = (m) => {
             if (!m) return 'Otros';
             const cleaned = m.trim().toLowerCase();
-            if (cleaned.includes('whatsapp')) return 'WhatsApp';
+            if (cleaned.includes('whatsapp') || cleaned.includes('masivo') || cleaned.includes('wsp')) return 'Msg masivo';
             if (cleaned.includes('facebook')) return 'Facebook';
             if (cleaned.includes('instagram')) return 'Instagram';
             if (cleaned.includes('tiktok')) return 'TikTok';
@@ -4353,9 +4353,9 @@ function updateStatsDashboard() {
             return 'Otros';
         };
 
-        const channels = ['WhatsApp', 'Facebook', 'Instagram', 'TikTok', 'Cliente frecuente', 'Recomendación', 'Otros'];
+        const channels = ['Msg masivo', 'Facebook', 'Instagram', 'TikTok', 'Cliente frecuente', 'Recomendación', 'Otros'];
         const channelCounts = {
-            WhatsApp: { today: 0, week: 0, month: 0 },
+            'Msg masivo': { today: 0, week: 0, month: 0 },
             Facebook: { today: 0, week: 0, month: 0 },
             Instagram: { today: 0, week: 0, month: 0 },
             TikTok: { today: 0, week: 0, month: 0 },
@@ -4392,7 +4392,7 @@ function updateStatsDashboard() {
                 const monthPct = totalMonth > 0 ? ((monthVal / totalMonth) * 100).toFixed(0) : 0;
 
                 let color = 'var(--text-primary)';
-                if (ch === 'WhatsApp') color = '#25d366';
+                if (ch === 'Msg masivo') color = '#25d366';
                 else if (ch === 'Facebook') color = '#1877f2';
                 else if (ch === 'Instagram') color = '#e1306c';
                 else if (ch === 'TikTok') color = '#00f2fe';

@@ -198,7 +198,7 @@ function openBookingModal(booking = null, defaultDate = null) {
             }
             finInput.value = fechaFinStr;
         }
-        document.getElementById('bookingSource').value = booking.medio_contacto || 'WhatsApp';
+        document.getElementById('bookingSource').value = booking.medio_contacto || 'Msg masivo';
         document.getElementById('bookingTotal').value = booking.monto_total;
         document.getElementById('bookingAdelanto').value = booking.monto_adelanto;
         document.getElementById('bookingComment').value = booking.notas || '';
