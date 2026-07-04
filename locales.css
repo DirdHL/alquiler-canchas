@@ -353,4 +353,68 @@ body {
     border-color: #ef4444 !important;
 }
 
+/* Calendar Tooltip (Nube) Styles */
+.calendar-tooltip {
+    position: absolute;
+    z-index: 99999;
+    background: rgba(17, 12, 28, 0.85); /* Dark premium background matching the app */
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(139, 92, 246, 0.25); /* Soft purple border */
+    border-radius: 12px;
+    padding: 14px;
+    color: #f3f4f6;
+    font-family: 'Outfit', sans-serif;
+    font-size: 13px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6), 0 8px 16px -6px rgba(139, 92, 246, 0.1);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    transform: translateY(4px);
+    width: max-content;
+    max-width: 280px;
+    min-width: 200px;
+}
+
+.calendar-tooltip.show {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+}
+
+.tooltip-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.tooltip-sede-los-pinos {
+    color: #10b981; /* Green for Pinos */
+}
+
+.tooltip-sede-polideportivo {
+    color: #8b5cf6; /* Purple for Polideportivo */
+}
+
+.tooltip-blocked {
+    color: #ef4444; /* Red for Blocked */
+}
+
+.tooltip-body p {
+    margin: 4px 0;
+    line-height: 1.4;
+    color: #e5e7eb;
+}
+
+.tooltip-body p strong {
+    color: rgba(255, 255, 255, 0.6);
+    font-weight: 500;
+    margin-right: 4px;
+}
+
 

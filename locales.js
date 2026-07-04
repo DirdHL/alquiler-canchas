@@ -294,6 +294,37 @@ async function handleDeleteBooking() {
     if (dbMode === 'local') await fetchBookings();
 }
 
+function formatClientName(fullName) {
+    if (!fullName) return '';
+    const parts = fullName.trim().split(/\s+/);
+    if (parts.length <= 1) return fullName;
+    if (parts.length === 2) return `${parts[0]} ${parts[1]}`;
+    
+    const commonMiddleNames = [
+        'maria', 'maría', 'carlos', 'jose', 'josé', 'luis', 'ana', 'juan', 
+        'antonio', 'manuel', 'francisco', 'jesus', 'jesús', 'miguel', 'angel', 
+        'ángel', 'pedro', 'javier', 'david', 'daniel', 'fernando', 'andres', 
+        'andrés', 'ramon', 'ramón', 'jorge', 'alberto', 'eduardo', 'alejandro', 
+        'enrique', 'diego', 'sergio', 'victor', 'víctor', 'carmen', 'pilar', 
+        'isabel', 'dolores', 'teresa', 'rosa', 'sofia', 'sofía', 'elena', 
+        'margarita', 'lucia', 'lucía', 'patricia', 'laura', 'marta', 'cristina', 
+        'mercedes', 'raquel', 'irene', 'beatriz', 'sandra', 'monica', 'mónica',
+        'de', 'del', 'la', 'las', 'los'
+    ];
+    
+    const secondPartLower = parts[1].toLowerCase();
+    if (commonMiddleNames.includes(secondPartLower)) {
+        if (parts.length >= 3) {
+            const thirdPartLower = parts[2].toLowerCase();
+            if (commonMiddleNames.includes(thirdPartLower) && parts.length >= 4) {
+                return `${parts[0]} ${parts[3]}`;
+            }
+            return `${parts[0]} ${parts[2]}`;
+        }
+    }
+    return `${parts[0]} ${parts[1]}`;
+}
+
 function initCalendar() {
     const calendarEl = document.getElementById('calendar');
     calendar = new FullCalendar.Calendar(calendarEl, {
@@ -318,6 +349,87 @@ function initCalendar() {
         },
         eventClick: function(info) {
             openBookingModal(info.event.extendedProps.rawBooking);
+        },
+        eventDidMount: function(info) {
+            const b = info.event.extendedProps.rawBooking;
+            if (!b) return;
+
+            let tooltip = document.getElementById('calendar-tooltip');
+            if (!tooltip) {
+                tooltip = document.createElement('div');
+                tooltip.id = 'calendar-tooltip';
+                tooltip.className = 'calendar-tooltip';
+                document.body.appendChild(tooltip);
+            }
+
+            info.el.addEventListener('mouseenter', function(e) {
+                const clientName = formatClientName(b.nombre_cliente);
+                const startTime = b.hora_inicio ? b.hora_inicio.substring(0, 5) : '';
+                const endTime = b.hora_fin ? b.hora_fin.substring(0, 5) : '';
+                const eventType = b.tipo_evento || 'Sin especificar';
+                const advisor = b.asesor_registro || 'No asignado';
+                const sede = b.sede || 'Locales';
+                const espacio = b.espacio || '';
+                const isBlocked = b.estado_reserva === 'Bloqueado';
+
+                let contentHtml = '';
+                if (isBlocked) {
+                    contentHtml = `
+                        <div class="tooltip-header tooltip-blocked">
+                            <span class="tooltip-icon">🔒</span>
+                            <strong>Espacio Bloqueado</strong>
+                        </div>
+                        <div class="tooltip-body">
+                            <p><strong>Sede:</strong> ${sede} (${espacio})</p>
+                            <p><strong>Horario:</strong> ${startTime} - ${endTime}</p>
+                            ${b.notas ? `<p><strong>Motivo:</strong> ${b.notas}</p>` : ''}
+                            <p><strong>Asesor:</strong> ${advisor}</p>
+                        </div>
+                    `;
+                } else {
+                    contentHtml = `
+                        <div class="tooltip-header tooltip-sede-${sede.toLowerCase().replace(/\s+/g, '-')}">
+                            <span class="tooltip-icon">📍</span>
+                            <strong>${sede} - ${espacio}</strong>
+                        </div>
+                        <div class="tooltip-body">
+                            <p><strong>Cliente:</strong> ${clientName}</p>
+                            <p><strong>Horario:</strong> ${startTime} - ${endTime}</p>
+                            <p><strong>Evento:</strong> ${eventType}</p>
+                            <p><strong>Asesor@:</strong> ${advisor}</p>
+                        </div>
+                    `;
+                }
+
+                tooltip.innerHTML = contentHtml;
+                tooltip.classList.add('show');
+
+                const rect = info.el.getBoundingClientRect();
+                const tooltipWidth = tooltip.offsetWidth || 220;
+                const tooltipHeight = tooltip.offsetHeight || 130;
+
+                let top = rect.top + window.scrollY - tooltipHeight - 10;
+                let left = rect.left + window.scrollX + (rect.width / 2) - (tooltipWidth / 2);
+
+                if (left < 10) left = 10;
+                if (left + tooltipWidth > window.innerWidth - 10) {
+                    left = window.innerWidth - tooltipWidth - 10;
+                }
+                if (rect.top - tooltipHeight - 10 < 10) {
+                    top = rect.bottom + window.scrollY + 10;
+                }
+
+                tooltip.style.top = `${top}px`;
+                tooltip.style.left = `${left}px`;
+            });
+
+            info.el.addEventListener('mouseleave', function() {
+                tooltip.classList.remove('show');
+            });
+
+            info.el.addEventListener('click', function() {
+                tooltip.classList.remove('show');
+            });
         },
         events: []
     });
