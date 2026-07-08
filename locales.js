@@ -330,7 +330,7 @@ function initCalendar() {
     calendar = new FullCalendar.Calendar(calendarEl, {
         locale: 'es',
         firstDay: 1, // 1 = Lunes
-        initialView: 'dayGridMonth',
+        initialView: 'multiMonthYear',
         multiMonthMaxColumns: 2,
         headerToolbar: {
             left: 'prev,next today',
