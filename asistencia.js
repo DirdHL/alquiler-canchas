@@ -10,6 +10,7 @@ let activeEmployeesList = ['Admin', 'Rogger', 'Vicky'];
 let selectedEmployeeName = '';
 let realtimeChannel = null;
 let adminAuthCallback = null;
+let isCheckingAutoCheckout = false; // Guard to prevent infinite recursion during updates
 
 // Employee emojis mapping helper
 function getEmployeeNameWithEmoji(name) {
@@ -114,6 +115,10 @@ const earlyStartCheckbox = document.getElementById('earlyStartCheckbox');
 const earlyStartLabel = document.getElementById('earlyStartLabel');
 const earlyStartHelp = document.getElementById('earlyStartHelp');
 
+// Auto Check-out Elements
+const autoCheckoutToggleGroup = document.getElementById('autoCheckoutToggleGroup');
+const autoCheckoutCheckbox = document.getElementById('autoCheckoutCheckbox');
+
 // Sidebar toggle for mobile drawer
 const sidebar = document.getElementById('sidebar');
 const sidebarBackdrop = document.getElementById('sidebarBackdrop');
@@ -152,6 +157,16 @@ function startClock() {
         // Date Spanish
         const options = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
         liveDate.textContent = `🌸 ${now.toLocaleDateString('es-ES', options)} 🌸`;
+
+        // Every minute (on second 00), check auto-checkouts
+        if (seconds === '00') {
+            if (!isCheckingAutoCheckout) {
+                isCheckingAutoCheckout = true;
+                checkAndProcessAutoCheckouts().finally(() => {
+                    isCheckingAutoCheckout = false;
+                });
+            }
+        }
     };
 
     updateTime();
@@ -328,6 +343,14 @@ async function fetchAttendanceRecords() {
     // Render Table and Recalculate stats
     renderAttendanceTable();
     updateEmployeeStats();
+
+    // Run auto-checkout check if not already running
+    if (!isCheckingAutoCheckout) {
+        isCheckingAutoCheckout = true;
+        checkAndProcessAutoCheckouts().finally(() => {
+            isCheckingAutoCheckout = false;
+        });
+    }
 }
 
 function loadActiveEmployeesFromLocal() {
@@ -690,6 +713,10 @@ async function handleEmployeeChange() {
             earlyStartToggleGroup.style.display = 'none';
             earlyStartCheckbox.checked = false;
         }
+        if (autoCheckoutToggleGroup) {
+            autoCheckoutToggleGroup.style.display = 'none';
+            autoCheckoutCheckbox.checked = false;
+        }
         btnToggleAttendance.disabled = true;
         btnToggleAttendance.className = 'btn btn-primary';
         btnToggleAttendance.innerHTML = '<i data-lucide="fingerprint"></i> Marcar Asistencia';
@@ -750,12 +777,19 @@ async function handleEmployeeChange() {
             lunchToggleGroup.style.display = 'block';
             lunchCheckbox.checked = true;
         }
+        if (autoCheckoutToggleGroup) {
+            autoCheckoutToggleGroup.style.display = 'none';
+        }
+
+        const hasAuto6PM = activeShift.notes && activeShift.notes.includes('[Auto-6PM]');
+        const auto6PMMsg = hasAuto6PM ? '<br><span style="color: var(--primary); font-weight: 600;">⏰ Salida automática a las 6:00 PM programada.</span>' : '';
+
         employeeStatusBox.className = 'employee-status-box active-shift';
         employeeStatusBox.innerHTML = `
             <span class="status-title" style="color: #fbbf24; display: flex; align-items: center; gap: 6px;">
                 <i data-lucide="play" class="animate-pulse" style="width: 16px; height: 16px;"></i> Turno Activo
             </span>
-            <span class="status-desc">Ingresaste hoy a las <strong>${activeShift.check_in.substring(0, 5)}</strong>. Haz clic para registrar tu salida.</span>
+            <span class="status-desc">Ingresaste hoy a las <strong>${activeShift.check_in.substring(0, 5)}</strong>. Haz clic para registrar tu salida.${auto6PMMsg}</span>
         `;
         btnToggleAttendance.className = 'btn btn-danger';
         btnToggleAttendance.innerHTML = '<i data-lucide="log-out"></i> Marcar Salida (Check-Out)';
@@ -764,6 +798,18 @@ async function handleEmployeeChange() {
     } else if (employeeShiftsToday.length > 0 && employeeShiftsToday[employeeShiftsToday.length - 1].check_out) {
         // Workday completed or shift completed -> Action: CHECK IN AGAIN
         if (lunchToggleGroup) lunchToggleGroup.style.display = 'none';
+
+        // Show auto-checkout checkbox
+        if (autoCheckoutToggleGroup) {
+            if (currentHour < 18) {
+                autoCheckoutToggleGroup.style.display = 'block';
+                autoCheckoutCheckbox.checked = true;
+            } else {
+                autoCheckoutToggleGroup.style.display = 'none';
+                autoCheckoutCheckbox.checked = false;
+            }
+        }
+
         const lastShift = employeeShiftsToday[employeeShiftsToday.length - 1];
         employeeStatusBox.className = 'employee-status-box completed-shift';
         employeeStatusBox.innerHTML = `
@@ -779,6 +825,18 @@ async function handleEmployeeChange() {
     } else {
         // No attendance recorded today -> Action: CHECK IN
         if (lunchToggleGroup) lunchToggleGroup.style.display = 'none';
+
+        // Show auto-checkout checkbox
+        if (autoCheckoutToggleGroup) {
+            if (currentHour < 18) {
+                autoCheckoutToggleGroup.style.display = 'block';
+                autoCheckoutCheckbox.checked = true;
+            } else {
+                autoCheckoutToggleGroup.style.display = 'none';
+                autoCheckoutCheckbox.checked = false;
+            }
+        }
+
         employeeStatusBox.className = 'employee-status-box';
         employeeStatusBox.innerHTML = `
             <span class="status-title" style="color: var(--text-primary);">Entrada Pendiente</span>
@@ -877,6 +935,11 @@ async function handleToggleAttendance() {
                     checkInTime = targetTime;
                     checkInNotes = `Entrada programada a las ${targetTime.substring(0, 5)} (Marcado temprano a las ${timeStr.substring(0, 5)})`;
                 }
+            }
+
+            const isAutoCheckout = autoCheckoutToggleGroup && autoCheckoutToggleGroup.style.display !== 'none' && autoCheckoutCheckbox && autoCheckoutCheckbox.checked;
+            if (isAutoCheckout) {
+                checkInNotes = `[Auto-6PM] ${checkInNotes}`;
             }
 
             const newShift = {
@@ -1687,6 +1750,98 @@ function getRealHoursCredited(r) {
         return Math.max(0, elapsed - 1);
     }
     return elapsed;
+}
+
+// Check and process automatic checkouts at 6 PM
+async function checkAndProcessAutoCheckouts() {
+    const now = new Date();
+    const todayStr = getLocalDateString(now);
+    const currentTimeStr = getLocalTimeString(now);
+
+    // Find shifts that are open and have the [Auto-6PM] note tag
+    const pendingShifts = allAttendanceRecords.filter(r => 
+        r.type === 'Trabajo' && 
+        r.check_in && 
+        !r.check_out && 
+        r.notes && 
+        r.notes.includes('[Auto-6PM]')
+    );
+
+    if (pendingShifts.length === 0) return;
+
+    let updatedAny = false;
+
+    for (const shift of pendingShifts) {
+        // Trigger auto check-out if it's a past date or today past 6 PM (18:00)
+        const isPastDate = shift.date < todayStr;
+        const isTodayAndPast6 = shift.date === todayStr && currentTimeStr >= '18:00:00';
+
+        if (isPastDate || isTodayAndPast6) {
+            const autoOutTime = '18:00:00';
+            const inTimeHHMM = shift.check_in.substring(0, 5);
+            const outTimeHHMM = autoOutTime.substring(0, 5);
+            
+            const diffHours = calculateDurationInHours(shift.date, inTimeHHMM, shift.date, outTimeHHMM);
+            const tookLunch = true; // Default to taking lunch for a standard full day
+            const lunchDeducted = diffHours > 5 && tookLunch;
+            const finalHours = lunchDeducted ? Math.max(0, diffHours - 1) : diffHours;
+
+            let checkoutNotes = `Salida automática a las 18:00`;
+            if (lunchDeducted) {
+                checkoutNotes += ' (Descuento 1h almuerzo)';
+            }
+
+            const updatedShift = {
+                ...shift,
+                check_out: autoOutTime,
+                hours_credited: Number(finalHours.toFixed(2)),
+                notes: checkoutNotes
+            };
+
+            try {
+                if (dbMode === 'supabase' && supabaseClient) {
+                    const { error } = await supabaseClient
+                        .from('asistencias')
+                        .update({
+                            check_out: updatedShift.check_out,
+                            hours_credited: updatedShift.hours_credited,
+                            notes: updatedShift.notes
+                        })
+                        .eq('id', shift.id);
+
+                    if (error) throw error;
+                } else {
+                    let localList = getLocalAttendance();
+                    localList = localList.map(r => r.id === shift.id ? updatedShift : r);
+                    saveLocalAttendance(localList);
+                }
+
+                // Add log entry
+                const operatorName = localStorage.getItem('canchapro_user_name') || 'Sistema';
+                const entry = {
+                    action: 'editar',
+                    user_name: operatorName,
+                    details: `[Asistencia] salida automática a las 18:00 de ${shift.employee_name} (${formatHoursText(finalHours)})`,
+                    created_at: new Date().toISOString()
+                };
+
+                if (dbMode === 'supabase' && supabaseClient) {
+                    await supabaseClient.from('historial').insert([entry]);
+                } else {
+                    saveHistoryEntryLocal(entry);
+                }
+
+                updatedAny = true;
+            } catch (err) {
+                console.error(`Error during auto-checkout for ${shift.employee_name}:`, err);
+            }
+        }
+    }
+
+    if (updatedAny) {
+        await fetchAttendanceRecords();
+        handleEmployeeChange();
+    }
 }
 
 // Expose handleDeleteRecord globally for inline onclick
