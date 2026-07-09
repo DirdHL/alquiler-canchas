@@ -417,4 +417,91 @@ body {
     margin-right: 4px;
 }
 
+/* --- Mobile Responsive Fixes for Calendar --- */
+@media (max-width: 768px) {
+    /* Prevent calendar container overflow */
+    .calendar-scroll-wrapper {
+        width: 100% !important;
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
+        -webkit-overflow-scrolling: touch !important;
+        scrollbar-width: thin !important;
+        scrollbar-color: rgba(139, 92, 246, 0.3) transparent !important;
+    }
+    
+    .calendar-scroll-wrapper::-webkit-scrollbar {
+        height: 6px;
+    }
+    
+    .calendar-scroll-wrapper::-webkit-scrollbar-thumb {
+        background: rgba(139, 92, 246, 0.5);
+        border-radius: 3px;
+    }
+
+    #calendar {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 320px !important;
+        margin: 0 auto;
+    }
+
+    /* Adjust month titles in multiMonthYear view */
+    .fc .fc-multimonth-title {
+        font-size: 14px !important;
+        font-weight: 600 !important;
+        padding: 8px 0 !important;
+        color: var(--primary) !important;
+    }
+
+    /* Small font size for day headers and day numbers in year view */
+    .fc .fc-multimonth-daygrid th,
+    .fc .fc-multimonth-daygrid td,
+    .fc .fc-multimonth-daygrid .fc-daygrid-day-number,
+    .fc .fc-multimonth-daygrid .fc-col-header-cell-cushion {
+        font-size: 11px !important;
+        padding: 4px 2px !important;
+    }
+
+    /* Style events as small color dots on mobile to prevent overflow and "+1 more" */
+    .fc .fc-daygrid-day-events {
+        display: flex !important;
+        flex-direction: row !important;
+        justify-content: center !important;
+        gap: 3px !important;
+        flex-wrap: wrap !important;
+        padding: 2px !important;
+        min-height: 12px !important;
+    }
+    
+    .fc-daygrid-event {
+        width: 8px !important;
+        height: 8px !important;
+        min-width: 8px !important;
+        border-radius: 50% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        font-size: 0 !important; /* Hide text */
+        overflow: hidden !important;
+        display: inline-block !important;
+        box-shadow: none !important;
+        border: none !important;
+    }
+
+    .fc-event-title, .fc-event-time {
+        display: none !important;
+    }
+
+    /* Adjust layout for toolbar chunks to prevent overflow */
+    .fc-header-toolbar {
+        flex-direction: column !important;
+        gap: 8px !important;
+    }
+    
+    .fc-header-toolbar .fc-toolbar-chunk {
+        display: flex;
+        justify-content: center;
+        width: 100%;
+    }
+}
+
 

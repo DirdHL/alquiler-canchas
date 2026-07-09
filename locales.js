@@ -327,12 +327,20 @@ function formatClientName(fullName) {
 
 function initCalendar() {
     const calendarEl = document.getElementById('calendar');
+    const isMobile = window.innerWidth < 768;
+    
     calendar = new FullCalendar.Calendar(calendarEl, {
         locale: 'es',
         firstDay: 1, // 1 = Lunes
+        height: 'auto',
         initialView: 'multiMonthYear',
-        multiMonthMaxColumns: 2,
-        headerToolbar: {
+        multiMonthMaxColumns: isMobile ? 1 : 2,
+        dayMaxEvents: isMobile ? false : 2,
+        headerToolbar: isMobile ? {
+            left: 'prev,next',
+            center: 'title',
+            right: 'multiMonthYear,dayGridMonth'
+        } : {
             left: 'prev,next today',
             center: 'title',
             right: 'multiMonthYear,dayGridMonth,timeGridWeek,timeGridDay'
@@ -434,6 +442,31 @@ function initCalendar() {
         events: []
     });
     calendar.render();
+
+    let lastWidth = window.innerWidth;
+    window.addEventListener('resize', () => {
+        const currentWidth = window.innerWidth;
+        if (!calendar) {
+            lastWidth = currentWidth;
+            return;
+        }
+        const wasMobile = lastWidth < 768;
+        const isMobile = currentWidth < 768;
+        if (wasMobile !== isMobile) {
+            calendar.setOption('multiMonthMaxColumns', isMobile ? 1 : 2);
+            calendar.setOption('dayMaxEvents', isMobile ? false : 2);
+            calendar.setOption('headerToolbar', isMobile ? {
+                left: 'prev,next',
+                center: 'title',
+                right: 'multiMonthYear,dayGridMonth'
+            } : {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'multiMonthYear,dayGridMonth,timeGridWeek,timeGridDay'
+            });
+        }
+        lastWidth = currentWidth;
+    });
 }
 
 function renderCalendarEvents() {
