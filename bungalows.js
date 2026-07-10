@@ -114,7 +114,7 @@ function setupEventListeners() {
     // Dynamic field change triggers for calculations
     const calcFields = [
         'bookingCheckIn', 'bookingCheckOut', 'bookingHorario',
-        'bookingAdicionales', 'bookingNinoPequeno',
+        'bookingPersonas', 'bookingAdicionales', 'bookingNinoPequeno',
         'bookingHorasExtras', 'bookingAdicionalHoras',
         'bookingTotal', 'bookingAdelanto', 'bookingPendiente'
     ];
@@ -296,8 +296,9 @@ function setupEventListeners() {
             const selected = Array.from(document.querySelectorAll('input[name="bungalowSelect"]:checked')).map(c => c.value);
             // Sincronizar el select oculto con el primer valor seleccionado (o vacío si ninguno)
             document.getElementById('bookingBungalow').value = selected.length > 0 ? selected[0] : '';
-            // Actualizar límite de niños
+            // Actualizar límite de niños y de personas estándar
             updateNinosLimit();
+            updatePersonasLimit();
             // Forzar recálculo financiero
             runDynamicCalculations();
         });
@@ -455,6 +456,29 @@ function updateNinosLimit() {
     }
 }
 
+// Update limit for standard guests based on selected bungalows
+function updatePersonasLimit() {
+    const selectedCount = Math.max(1, document.querySelectorAll('input[name="bungalowSelect"]:checked').length);
+    const personasInput = document.getElementById('bookingPersonas');
+    if (personasInput) {
+        const maxVal = selectedCount * 4;
+        personasInput.max = maxVal;
+
+        // Clamp current value if it exceeds maxVal
+        let currentVal = parseInt(personasInput.value) || 0;
+        if (currentVal === 0) {
+            personasInput.value = maxVal;
+        } else if (currentVal > maxVal) {
+            personasInput.value = maxVal;
+        }
+
+        const helpEl = document.getElementById('bookingPersonasHelp');
+        if (helpEl) {
+            helpEl.textContent = `Máximo ${maxVal} personas (${selectedCount} bungalow(s) seleccionado(s)).`;
+        }
+    }
+}
+
 // Open booking modal in CREATE mode
 function openBookingModal(dateStr = null) {
     isTotalManuallyEdited = false;
@@ -482,7 +506,10 @@ function openBookingModal(dateStr = null) {
     });
     document.getElementById('bookingBungalow').value = '';
     document.getElementById('bookingPendiente').value = '';
+    const personasInput = document.getElementById('bookingPersonas');
+    if (personasInput) personasInput.value = 4;
     updateNinosLimit();
+    updatePersonasLimit();
 
     // Clear error
     const errorEl = document.getElementById('bookingError');
@@ -553,8 +580,16 @@ function openBookingEditModal(booking) {
     document.getElementById('bookingHorario').value = booking.horario;
     document.getElementById('bookingCheckIn').value = booking.fecha_ingreso;
     document.getElementById('bookingCheckOut').value = booking.fecha_salida;
-    const totalGuests = (booking.adultos || 4) + (booking.ninos_pagantes || 0);
-    const adicionales = Math.max(0, totalGuests - 4);
+    
+    const totalAdults = booking.adultos || 4;
+    const standardGuests = Math.min(4, totalAdults);
+    const adicionales = Math.max(0, totalAdults - 4);
+    
+    const personasInput = document.getElementById('bookingPersonas');
+    if (personasInput) {
+        personasInput.value = standardGuests;
+    }
+    updatePersonasLimit();
     document.getElementById('bookingAdicionales').value = adicionales;
     document.getElementById('bookingNinoPequeno').value = booking.ninos_gratis || 0;
     document.getElementById('bookingHorasExtras').value = booking.horas_extras;
@@ -1087,7 +1122,10 @@ async function handleSaveBooking(e) {
             payload.telefono_cliente = phoneInput ? phoneInput.value.trim() : '';
 
             // Main reservation gets additional guests/children, standard ones get base capacity
-            payload.adultos = 4 + (index === 0 ? adicionales : 0);
+            const totalBaseGuests = parseInt(document.getElementById('bookingPersonas').value) || 4;
+            const baseGuestsForBungalow = Math.min(4, Math.max(0, totalBaseGuests - index * 4));
+            
+            payload.adultos = baseGuestsForBungalow + (index === 0 ? adicionales : 0);
             payload.ninos_gratis = (index < ninoPequeno) ? 1 : 0;
             payload.ninos_pagantes = 0;
             payload.precio_base = calculateBasePrice(checkIn, checkOut, horario);
@@ -1756,6 +1794,7 @@ function copyReservationDetails() {
     const checkIn = document.getElementById('bookingCheckIn').value;
     const checkOut = document.getElementById('bookingCheckOut').value;
     const horario = document.getElementById('bookingHorario').value;
+    const personas = parseInt(document.getElementById('bookingPersonas').value) || 4;
     const adicionales = parseInt(document.getElementById('bookingAdicionales').value) || 0;
     const ninos = parseInt(document.getElementById('bookingNinoPequeno').value) || 0;
 
@@ -1813,6 +1852,7 @@ function copyReservationDetails() {
     }
     msg += `*Fecha Ingreso:* ${formattedIn}${checkInTime ? ` - ${checkInTime}` : ''}\n`;
     msg += `*Fecha Salida:* ${formattedOut}${checkOutTime ? ` - ${checkOutTime}` : ''}\n`;
+    msg += `*Personas:* ${personas}\n`;
 
     if (adicionales > 0) {
         msg += `*Personas adicionales:* ${adicionales}\n`;

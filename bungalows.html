@@ -442,16 +442,23 @@
                         </select>
                     </div>
 
-                    <!-- Occupancy: Additional guests and little child -->
-                    <div class="form-row" id="rowOccupancy">
+                    <!-- Occupancy: Standard guests, Additional guests, and little child -->
+                    <div class="form-row" id="rowOccupancy" style="grid-template-columns: 1fr 1fr 1fr;">
+                        <div class="form-group">
+                            <label for="bookingPersonas">Personas *</label>
+                            <div class="input-wrapper">
+                                <i data-lucide="user"></i>
+                                <input type="number" id="bookingPersonas" min="1" max="4" value="4" required>
+                            </div>
+                            <small class="text-secondary" id="bookingPersonasHelp">Máximo 4 personas.</small>
+                        </div>
                         <div class="form-group">
                             <label for="bookingAdicionales">Personas Adicionales</label>
                             <div class="input-wrapper">
                                 <i data-lucide="users"></i>
                                 <input type="number" id="bookingAdicionales" min="0" max="10" value="0">
                             </div>
-                            <small class="text-secondary">Capacidad estándar: 4 personas. Adicionales pagan S/. 35 c/u
-                                por noche.</small>
+                            <small class="text-secondary">Adicionales pagan S/. 35 c/u por noche.</small>
                         </div>
                         <div class="form-group">
                             <label for="bookingNinoPequeno">Niños menores de 7</label>
