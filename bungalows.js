@@ -1811,8 +1811,8 @@ function copyReservationDetails() {
     if (dni) {
         msg += `*DNI:* ${dni}\n`;
     }
-    msg += `📅 *Fecha Ingreso:* ${formattedIn}${checkInTime ? ` - ${checkInTime}` : ''}\n`;
-    msg += `🏁 *Fecha Salida:* ${formattedOut}${checkOutTime ? ` - ${checkOutTime}` : ''}\n`;
+    msg += `*Fecha Ingreso:* ${formattedIn}${checkInTime ? ` - ${checkInTime}` : ''}\n`;
+    msg += `*Fecha Salida:* ${formattedOut}${checkOutTime ? ` - ${checkOutTime}` : ''}\n`;
 
     if (adicionales > 0) {
         msg += `*Personas adicionales:* ${adicionales}\n`;
