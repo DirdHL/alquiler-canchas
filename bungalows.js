@@ -1852,14 +1852,8 @@ function copyReservationDetails() {
     }
     msg += `*Fecha Ingreso:* ${formattedIn}${checkInTime ? ` - ${checkInTime}` : ''}\n`;
     msg += `*Fecha Salida:* ${formattedOut}${checkOutTime ? ` - ${checkOutTime}` : ''}\n`;
-    msg += `*Personas:* ${personas}\n`;
-
-    if (adicionales > 0) {
-        msg += `*Personas adicionales:* ${adicionales}\n`;
-    }
-    if (ninos > 0) {
-        msg += `*Menores:* ${ninos}\n`;
-    }
+    const totalPersonas = personas + adicionales;
+    msg += `*Cantidad:* ${totalPersonas}\n`;
 
     if (advisor && advisor !== '_add_new_' && advisor !== '_delete_') {
         msg += `*Asesor(a):* ${advisor}\n`;
@@ -1867,8 +1861,10 @@ function copyReservationDetails() {
     msg += `*Medio:* ${source}\n`;
     msg += `*Bungalow${selectedBungalows.length > 1 ? 's' : ''}:* ${bungalowStr}\n`;
 
-    msg += `\n*Monto Adelantado:* S/. ${adelanto.toFixed(2)}\n`;
-    if (pendiente > 0) {
+    if (pendiente <= 0) {
+        msg += `\n*Total:* S/. ${total.toFixed(2)} (Cancelado)\n`;
+    } else {
+        msg += `\n*Monto Adelantado:* S/. ${adelanto.toFixed(2)}\n`;
         msg += `*Saldo pendiente por cancelar S/. ${pendiente.toFixed(2)}, para permitir ingreso*\n`;
     }
 
