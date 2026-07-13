@@ -3714,11 +3714,12 @@ async function exportAllDataToExcel() {
         { header: 'Pelota', key: 'pelota', width: 10 },
         { header: 'Chaleco', key: 'chaleco', width: 10 },
         { header: 'Medio de Contacto', key: 'medio', width: 18 },
-        { header: 'Tipo de Pago', key: 'tipo_pago', width: 18 },
         { header: 'Duracion (Horas)', key: 'duracion', width: 16 },
         { header: 'Monto Cancha (S/.)', key: 'monto_cancha', width: 18 },
         { header: 'Monto Pelota (S/.)', key: 'monto_pelota', width: 18 },
         { header: 'Monto Chaleco (S/.)', key: 'monto_chaleco', width: 18 },
+        { header: 'Yape (S/.)', key: 'yape', width: 16 },
+        { header: 'Efectivo (S/.)', key: 'efectivo', width: 16 },
         { header: 'Monto Total (S/.)', key: 'monto_total', width: 18 },
         { header: 'Fecha Registro', key: 'registro', width: 22 }
     ];
@@ -3767,6 +3768,25 @@ async function exportAllDataToExcel() {
 
             const inc = getEventIncome(e);
 
+            const payType = e.tipo_pago || 'Efectivo';
+            let payYape = 0;
+            let payEfectivo = 0;
+            if (payType.startsWith('Dividido')) {
+                const split = parseSplitPayment(payType);
+                if (split) {
+                    payEfectivo = split.efectivo;
+                    payYape = split.yape;
+                } else {
+                    const half = inc.total / 2;
+                    payEfectivo = half;
+                    payYape = half;
+                }
+            } else if (payType === 'Yape') {
+                payYape = inc.total;
+            } else {
+                payEfectivo = inc.total;
+            }
+
             const dataRow = worksheet.addRow({
                 fecha: e.date || '',
                 hora_inicio: e.start_time || '',
@@ -3779,11 +3799,12 @@ async function exportAllDataToExcel() {
                 pelota: (e.pelota === true || e.pelota === 'true') ? 'Sí' : 'No',
                 chaleco: (e.chaleco === true || e.chaleco === 'true') ? 'Sí' : 'No',
                 medio: e.medio || '',
-                tipo_pago: e.tipo_pago || '',
                 duracion: parseFloat(inc.durationHours.toFixed(2)),
                 monto_cancha: parseFloat(inc.courtIncome.toFixed(2)),
                 monto_pelota: parseFloat(inc.pelotaIncome.toFixed(2)),
                 monto_chaleco: parseFloat(inc.chalecoIncome.toFixed(2)),
+                yape: payYape > 0 ? parseFloat(payYape.toFixed(2)) : '-',
+                efectivo: payEfectivo > 0 ? parseFloat(payEfectivo.toFixed(2)) : '-',
                 monto_total: parseFloat(inc.total.toFixed(2)),
                 registro: e.created_at ? new Date(e.created_at).toLocaleString('es-PE') : ''
             });
@@ -3806,9 +3827,9 @@ async function exportAllDataToExcel() {
                 };
 
                 const colKey = columnsDef[colNumber - 1].key;
-                if (['fecha', 'hora_inicio', 'hora_fin', 'dni', 'pelota', 'chaleco', 'tipo_pago', 'medio'].includes(colKey)) {
+                if (['fecha', 'hora_inicio', 'hora_fin', 'dni', 'pelota', 'chaleco', 'medio'].includes(colKey)) {
                     cell.alignment = { horizontal: 'center', vertical: 'middle' };
-                } else if (['duracion', 'monto_cancha', 'monto_pelota', 'monto_chaleco', 'monto_total'].includes(colKey)) {
+                } else if (['duracion', 'monto_cancha', 'monto_pelota', 'monto_chaleco', 'yape', 'efectivo', 'monto_total'].includes(colKey)) {
                     cell.alignment = { horizontal: 'right', vertical: 'middle' };
                     if (colKey !== 'duracion') {
                         cell.numFmt = '"S/. "#,##0.00';
