@@ -2284,7 +2284,9 @@ async function exportAllDataToExcel() {
         { header: 'DNI', key: 'dni', width: 16 },
         { header: 'Asesores que lo atendieron', key: 'asesores', width: 35 },
         { header: 'Medios de Contacto', key: 'medios', width: 30 },
-        { header: 'Veces Alquiladas', key: 'cantidad', width: 18 }
+        { header: 'Número de Reservas', key: 'num_reservas', width: 20 },
+        { header: 'Fechas de Reservas', key: 'fechas_reservas', width: 28 },
+        { header: 'Total Bungalows Reservados', key: 'total_bungalows', width: 24 }
     ];
     clientsWs.columns = clientColsDef;
 
@@ -2331,7 +2333,8 @@ async function exportAllDataToExcel() {
                 dni: dni,
                 advisors: new Set(),
                 medios: new Set(),
-                count: 0
+                dateCounts: {},
+                bungalowsCount: 0
             };
         }
 
@@ -2349,22 +2352,42 @@ async function exportAllDataToExcel() {
             clientsExcelMap[key].medios.add(medio);
         }
 
-        clientsExcelMap[key].count++;
+        if (b.fecha_ingreso) {
+            const d = b.fecha_ingreso;
+            clientsExcelMap[key].dateCounts[d] = (clientsExcelMap[key].dateCounts[d] || 0) + 1;
+        }
+
+        clientsExcelMap[key].bungalowsCount++;
     });
 
-    const clientsExcelList = Object.values(clientsExcelMap).sort((a, b) => b.count - a.count);
+    const clientsExcelList = Object.values(clientsExcelMap).sort((a, b) => Object.keys(b.dateCounts).length - Object.keys(a.dateCounts).length);
 
     let clientRowNo = 2;
     clientsExcelList.forEach(c => {
         const advisorsStr = Array.from(c.advisors).join(', ') || 'Sin asesor';
         const mediosStr = Array.from(c.medios).join(', ') || 'Ninguno';
 
+        const sortedDates = Object.keys(c.dateCounts).sort();
+        const formattedDates = sortedDates.map(d => {
+            const parts = d.split('-');
+            if (parts.length === 3) {
+                const day = parts[2];
+                const month = parts[1];
+                const year = parts[0].length === 4 ? parts[0].substring(2) : parts[0];
+                const count = c.dateCounts[d];
+                return `${day}/${month}/${year}(${count})`;
+            }
+            return `${d}(${c.dateCounts[d]})`;
+        }).join(', ') || 'Sin fechas';
+
         const dataRow = clientsWs.addRow({
             nombre: c.name,
             dni: c.dni || 'Sin DNI',
             asesores: advisorsStr,
             medios: mediosStr,
-            cantidad: c.count
+            num_reservas: Object.keys(c.dateCounts).length,
+            fechas_reservas: formattedDates,
+            total_bungalows: c.bungalowsCount
         });
 
         dataRow.height = 20;
@@ -2384,7 +2407,7 @@ async function exportAllDataToExcel() {
             };
 
             const colKey = clientColsDef[colNumber - 1].key;
-            if (colKey === 'dni' || colKey === 'cantidad') {
+            if (colKey === 'dni' || colKey === 'num_reservas' || colKey === 'total_bungalows' || colKey === 'fechas_reservas') {
                 cell.alignment = { horizontal: 'center', vertical: 'middle' };
             } else {
                 cell.alignment = { horizontal: 'left', vertical: 'middle' };
