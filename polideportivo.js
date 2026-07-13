@@ -3720,8 +3720,7 @@ async function exportAllDataToExcel() {
         { header: 'Monto Chaleco (S/.)', key: 'monto_chaleco', width: 18 },
         { header: 'Yape (S/.)', key: 'yape', width: 16 },
         { header: 'Efectivo (S/.)', key: 'efectivo', width: 16 },
-        { header: 'Monto Total (S/.)', key: 'monto_total', width: 18 },
-        { header: 'Fecha Registro', key: 'registro', width: 22 }
+        { header: 'Monto Total (S/.)', key: 'monto_total', width: 18 }
     ];
 
     for (const [monthLabel, eventsInMonth] of Object.entries(groups)) {
@@ -3805,8 +3804,7 @@ async function exportAllDataToExcel() {
                 monto_chaleco: parseFloat(inc.chalecoIncome.toFixed(2)),
                 yape: payYape > 0 ? parseFloat(payYape.toFixed(2)) : '-',
                 efectivo: payEfectivo > 0 ? parseFloat(payEfectivo.toFixed(2)) : '-',
-                monto_total: parseFloat(inc.total.toFixed(2)),
-                registro: e.created_at ? new Date(e.created_at).toLocaleString('es-PE') : ''
+                monto_total: parseFloat(inc.total.toFixed(2))
             });
 
             dataRow.height = 20;
