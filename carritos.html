@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Eventos & Luces - Reserva de Locales</title>
+    <title>Diversión Kids - Alquiler de Carritos y Juegos</title>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -22,11 +22,11 @@
     <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
     <!-- Custom CSS -->
     <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="locales.css">
+    <link rel="stylesheet" href="carritos.css">
 </head>
 
 <body>
-    <!-- Glowing Party Light Blobs -->
+    <!-- Glowing Party Candy Blobs -->
     <div class="bg-glow bg-glow-1"></div>
     <div class="bg-glow bg-glow-2"></div>
     <div class="bg-glow bg-glow-3"></div>
@@ -38,9 +38,9 @@
         <aside class="sidebar" id="sidebar">
             <div class="logo-area">
                 <div class="logo-title">
-                    <i data-lucide="sparkles" class="logo-icon"
+                    <i data-lucide="lollipop" class="logo-icon"
                         style="color: var(--primary); filter: drop-shadow(0 0 8px var(--primary-glow));"></i>
-                    <h2>Eventos <span>VIP</span><span class="logo-subtitle">Locales</span></h2>
+                    <h2>Diversión <span>Kids</span><span class="logo-subtitle">Carritos & Juegos</span></h2>
                 </div>
                 <button class="btn-close-sidebar" id="btnCloseSidebar">
                     <i data-lucide="x"></i>
@@ -52,30 +52,54 @@
                     <span class="status-dot disconnected" id="statusDot"></span>
                     <span class="status-text" id="statusText">Modo Sin Conexión (Local)</span>
                 </div>
-                <p class="status-desc" id="statusDesc">Accede con las credenciales de la base de datos para sincronizar
-                    con los demás asesores.</p>
+                <p class="status-desc" id="statusDesc">Accede con las credenciales de la base de datos para sincronizar con los demás asesores.</p>
                 <button class="btn btn-secondary btn-sm" id="btnOpenSettings">
                     <i data-lucide="database"></i> Ingresar Credenciales
                 </button>
             </div>
 
             <nav class="nav-filters">
-                <h3>Filtrar por Local</h3>
+                <h3>Filtrar por Artículo</h3>
                 <div class="filter-group">
                     <label class="filter-item">
-                        <input type="checkbox" id="filterLosPinosGrande" checked>
+                        <input type="checkbox" id="filterPopcorn" checked>
                         <span class="custom-checkbox color-b1"></span>
-                        Los Pinos (Grande)
+                        Carrito Popcorn
                     </label>
                     <label class="filter-item">
-                        <input type="checkbox" id="filterLosPinosPequeno" checked>
+                        <input type="checkbox" id="filterAlgodon" checked>
                         <span class="custom-checkbox color-b2"></span>
-                        Los Pinos (Pequeño)
+                        Carrito Algodón
                     </label>
                     <label class="filter-item">
-                        <input type="checkbox" id="filterPolideportivoGrande" checked>
+                        <input type="checkbox" id="filterHotDogs" checked>
                         <span class="custom-checkbox color-b3"></span>
-                        Polideportivo (Grande)
+                        Carrito Hot Dogs
+                    </label>
+                    <label class="filter-item">
+                        <input type="checkbox" id="filterManzanas" checked>
+                        <span class="custom-checkbox color-b4"></span>
+                        Manzanas Acarameladas
+                    </label>
+                    <label class="filter-item">
+                        <input type="checkbox" id="filterCastillo" checked>
+                        <span class="custom-checkbox color-b5"></span>
+                        Castillo Inflable
+                    </label>
+                    <label class="filter-item">
+                        <input type="checkbox" id="filterTobogan" checked>
+                        <span class="custom-checkbox color-b6"></span>
+                        Tobogán Gigante
+                    </label>
+                    <label class="filter-item">
+                        <input type="checkbox" id="filterCamaElastica" checked>
+                        <span class="custom-checkbox color-b7"></span>
+                        Cama Elástica
+                    </label>
+                    <label class="filter-item">
+                        <input type="checkbox" id="filterToroMecanico" checked>
+                        <span class="custom-checkbox color-b8"></span>
+                        Toro Mecánico
                     </label>
                 </div>
 
@@ -84,7 +108,6 @@
                     style="margin-bottom: 8px;">
                     <i data-lucide="history"></i> Historial de Cambios
                 </button>
-
 
                 <h3>Otras Sedes</h3>
                 <a href="index.html" class="btn btn-secondary btn-sm btn-sidebar-action btn-canchas"
@@ -99,17 +122,17 @@
                     style="text-decoration: none; display: flex; align-items: center; gap: 8px; margin-top: 8px;">
                     <i data-lucide="home" style="width: 16px; height: 16px;"></i> Alquiler de Bungalows
                 </a>
-                <a href="carritos.html" class="btn btn-secondary btn-sm btn-sidebar-action btn-carritos"
+                <a href="locales.html" class="btn btn-secondary btn-sm btn-sidebar-action btn-locales"
                     style="text-decoration: none; display: flex; align-items: center; gap: 8px; margin-top: 8px;">
-                    <i data-lucide="lollipop" style="width: 16px; height: 16px;"></i> Carritos y Juegos
+                    <i data-lucide="map-pin" style="width: 16px; height: 16px;"></i> Alquiler Locales
                 </a>
             </nav>
 
             <div class="stats-card">
                 <h3>Resumen de Hoy</h3>
                 <div class="stat-item">
-                    <span class="stat-label">Locales Ocupados</span>
-                    <span class="stat-value" id="statTodayOccupied">0 / 6</span>
+                    <span class="stat-label">Artículos Alquilados</span>
+                    <span class="stat-value" id="statTodayOccupied">0 Artículos</span>
                 </div>
                 <div class="stat-item">
                     <span class="stat-label">Ingresos de Hoy</span>
@@ -149,7 +172,7 @@
             </div>
 
             <footer class="sidebar-footer">
-                <p>Locales - Sistema de Reservas &copy; 2026</p>
+                <p>Carritos & Juegos &copy; 2026</p>
                 <p class="footer-note">Desarrollado por Rogger Dird Huaicama Lacerna</p>
             </footer>
         </aside>
@@ -162,8 +185,8 @@
                         <i data-lucide="menu"></i>
                     </button>
                     <div class="header-title">
-                        <h1>Calendario de Locales</h1>
-                        <p>Gestione el alquiler de locales por sede y fecha.</p>
+                        <h1>Calendario de Carritos y Juegos</h1>
+                        <p>Gestione el alquiler de carritos de snacks y juegos inflables por artículo y fecha.</p>
                     </div>
                 </div>
                 <button class="btn btn-primary" id="btnNewReservation">
@@ -184,7 +207,7 @@
     <div class="modal-backdrop" id="modalBooking">
         <div class="modal-card modal-lg">
             <div class="modal-header">
-                <h3 id="modalTitle">Nueva Reserva de Local</h3>
+                <h3 id="modalTitle">Nueva Reserva de Artículo</h3>
                 <button class="btn-close" id="btnCloseBooking"><i data-lucide="x"></i></button>
             </div>
             <div class="modal-body">
@@ -197,8 +220,7 @@
                             style="display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;">
                             <input type="checkbox" id="bookingIsBlock"
                                 style="width: 18px; height: 18px; cursor: pointer;">
-                            <span style="font-weight: 600; color: #f87171;">🔒 ¿Bloquear Local (Fuera de
-                                Servicio)?</span>
+                            <span style="font-weight: 600; color: #f87171;">🔒 ¿Bloquear Artículo (Fuera de Servicio)?</span>
                         </label>
                     </div>
 
@@ -213,7 +235,7 @@
 
                     <div class="form-row" id="rowClientDetails" style="grid-template-columns: 1fr;">
                         <div class="form-group">
-                            <label for="bookingDni">DNI</label>
+                            <label for="bookingDni">DNI / Teléfono</label>
                             <div class="input-wrapper">
                                 <i data-lucide="credit-card"></i>
                                 <input type="text" id="bookingDni" placeholder="Ej. 12345678" maxlength="12"
@@ -222,17 +244,26 @@
                         </div>
                     </div>
 
-                    <!-- Local y Tipo de Evento -->
+                    <!-- Local y Tipo de Evento (Adaptado a Categoría y Artículo) -->
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="bookingLocal">Local y Espacio *</label>
+                            <label for="bookingLocal">Artículo a Alquilar *</label>
                             <div class="input-wrapper">
-                                <i data-lucide="map-pin"></i>
+                                <i data-lucide="lollipop"></i>
                                 <select id="bookingLocal" required>
                                     <option value="" disabled selected>Seleccione...</option>
-                                    <option value="Los Pinos|Grande">Los Pinos - Grande</option>
-                                    <option value="Los Pinos|Pequeño">Los Pinos - Pequeño</option>
-                                    <option value="Polideportivo|Grande">Polideportivo - Grande</option>
+                                    <optgroup label="Carritos Snacks">
+                                        <option value="Carrito Snacks|Popcorn">Carrito de Popcorn</option>
+                                        <option value="Carrito Snacks|Algodón de Azúcar">Carrito de Algodón</option>
+                                        <option value="Carrito Snacks|Hot Dogs">Carrito de Hot Dogs</option>
+                                        <option value="Carrito Snacks|Manzanas Acarameladas">Manzanas Acarameladas</option>
+                                    </optgroup>
+                                    <optgroup label="Juegos Inflables">
+                                        <option value="Juego Inflable|Castillo Inflable">Castillo Inflable</option>
+                                        <option value="Juego Inflable|Tobogán Gigante">Tobogán Gigante</option>
+                                        <option value="Juego Inflable|Cama Elástica">Cama Elástica</option>
+                                        <option value="Juego Inflable|Toro Mecánico">Toro Mecánico</option>
+                                    </optgroup>
                                 </select>
                             </div>
                         </div>
@@ -241,7 +272,7 @@
                             <div class="input-wrapper">
                                 <i data-lucide="party-popper"></i>
                                 <input type="text" id="bookingTipoEvento" required
-                                    placeholder="Ej. Cumpleaños, Boda, Fiesta...">
+                                    placeholder="Ej. Cumpleaños, Fiesta infantil, Kermés...">
                             </div>
                         </div>
                     </div>
@@ -279,11 +310,9 @@
                             </div>
                         </div>
                     </div>
-                    <div
-                        style="font-size: 11px; color: var(--text-secondary); margin-top: -8px; margin-bottom: 12px; display: flex; align-items: center; gap: 4px;">
+                    <div style="font-size: 11px; color: var(--text-secondary); margin-top: -8px; margin-bottom: 12px; display: flex; align-items: center; gap: 4px;">
                         <i data-lucide="info" style="width: 12px; height: 12px;"></i>
-                        <span>Nota: Usa el formato de 24 horas (ej: 8:00 PM = 20:00). Las reservas que cruzan la
-                            medianoche se calculan automáticamente.</span>
+                        <span>Nota: Usa el formato de 24 horas. Las reservas que cruzan la medianoche se calculan automáticamente.</span>
                     </div>
 
                     <!-- Payment Information -->
@@ -367,7 +396,7 @@
                                 <i data-lucide="trash-2"></i> Eliminar
                             </button>
                             <button type="button" class="btn btn-copy-reservation" id="btnCopyReservation"
-                                style="background: #25d366; color: white;">
+                                style="background: #ec4899; color: white;">
                                 <i data-lucide="copy"></i> Copiar Detalles
                             </button>
                         </div>
@@ -382,36 +411,76 @@
 
     <!-- Settings Modal -->
     <div class="modal-backdrop" id="modalSettings">
-        <div class="modal-card">
+        <div class="modal-card modal-lg">
             <div class="modal-header">
-                <h3>Configuración de Supabase</h3>
+                <h3>Configuración de Supabase (Base de Datos en la Nube)</h3>
                 <button class="btn-close" id="btnCloseSettings"><i data-lucide="x"></i></button>
             </div>
             <div class="modal-body">
-                <p class="settings-intro">Ingresa la URL y la Key de Supabase para activar la sincronización en tiempo
-                    real.</p>
+                <p class="settings-intro">Ingresa el link de la base de datos y la contraseña para acceder al calendario de reservas.</p>
                 <form id="formSettings">
                     <div class="form-group">
-                        <label for="supabaseUrl">URL del Proyecto Supabase</label>
+                        <label for="supabaseUrl">URL DE LA BASE DE DATOS</label>
                         <div class="input-wrapper">
                             <i data-lucide="link-2"></i>
                             <input type="url" id="supabaseUrl" placeholder="https://xxxxxx.supabase.co" required>
                         </div>
                     </div>
                     <div class="form-group">
-                        <label for="supabaseKey">Clave Anon (Legacy Anon Key)</label>
+                        <label for="supabaseKey">Clave Anon de Supabase <span style="font-size:0.78em;color:#f87171;font-weight:500">(Pídele al administrador)</span></label>
                         <div class="input-wrapper">
                             <i data-lucide="key-round"></i>
-                            <input type="password" id="supabaseKey" placeholder="eyJhbGciOiJI..." required>
+                            <input type="password" id="supabaseKey" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." required>
                         </div>
+                        <small style="color:#94a3b8;margin-top:4px;display:block">Haz clic en <strong>Probar Conexión</strong> y luego en <strong>Guardar Credenciales</strong>.</small>
                     </div>
-                    <div class="settings-actions"
-                        style="margin-top: 20px; display: flex; gap: 12px; justify-content: flex-end;">
+                    <div class="settings-actions">
                         <button type="button" class="btn btn-secondary" id="btnTestSupabase">Probar Conexión</button>
                         <button type="submit" class="btn btn-primary">Guardar Credenciales</button>
                     </div>
-                    <div class="settings-feedback" id="settingsFeedback" style="margin-top: 12px;"></div>
+                    <div class="settings-feedback" id="settingsFeedback"></div>
                 </form>
+
+                <div class="sql-instructions">
+                    <h4><i data-lucide="terminal"></i> Pasos para Crear la Tabla en Supabase</h4>
+                    <ol>
+                        <li>Entra a tu panel de Supabase y selecciona tu proyecto.</li>
+                        <li>Ve al <strong>SQL Editor</strong> en el menú lateral izquierdo.</li>
+                        <li>Haz clic en <strong>New query</strong>, pega el siguiente SQL y presiona <strong>Run</strong>:</li>
+                    </ol>
+                    <div class="code-box">
+                        <pre id="sqlCode">
+-- 1. Tabla de reservas de carritos y juegos
+CREATE TABLE IF NOT EXISTS reservas_carritos (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  categoria TEXT NOT NULL,                  -- 'Carrito Snacks' o 'Juego Inflable'
+  item TEXT NOT NULL,                       -- 'Popcorn', 'Algodón', 'Castillo Inflable', etc.
+  nombre_cliente TEXT NOT NULL,
+  telefono_cliente TEXT,
+  fecha_reserva DATE NOT NULL,
+  hora_inicio TIME NOT NULL,
+  hora_fin TIME NOT NULL,
+  tipo_evento TEXT,                        -- Cumpleaños, Bautizo, Fiesta, etc.
+  monto_total DECIMAL(10,2) NOT NULL,      -- Costo total
+  monto_adelanto DECIMAL(10,2) DEFAULT 0.00,
+  medio_contacto TEXT DEFAULT 'WhatsApp',
+  estado_reserva TEXT DEFAULT 'Confirmado', -- Confirmado, Cancelado, Completado, Bloqueado
+  notas TEXT,
+  asesor_registro TEXT,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE reservas_carritos ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Acceso publico reservas_carritos" ON reservas_carritos FOR ALL USING (true) WITH CHECK (true);
+
+-- Habilitar acceso en tiempo real para esta tabla
+ALTER PUBLICATION supabase_realtime ADD TABLE reservas_carritos;
+                        </pre>
+                        <button class="btn btn-secondary btn-sm btn-copy" id="btnCopySql">
+                            <i data-lucide="copy"></i> Copiar SQL
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -452,8 +521,7 @@
                 <h3>Identificación de Operador</h3>
             </div>
             <div class="modal-body">
-                <p class="settings-intro" style="margin-bottom: 16px;">Ingresa tu nombre o alias para registrar el
-                    historial de cambios en el sistema.</p>
+                <p class="settings-intro" style="margin-bottom: 16px;">Ingresa tu nombre o alias para registrar el historial de cambios en el sistema.</p>
                 <form id="formUserOnboarding">
                     <div class="form-group">
                         <label for="onboardingName">Nombre / Alias *</label>
@@ -507,7 +575,7 @@
             <div class="modal-header"
                 style="display: flex; justify-content: space-between; align-items: center; padding: 20px 24px;">
                 <h3 style="display: flex; align-items: center; gap: 8px; margin: 0;">
-                    <i data-lucide="line-chart" style="color: var(--primary);"></i> Estadísticas y Finanzas de Locales
+                    <i data-lucide="line-chart" style="color: var(--primary);"></i> Estadísticas y Finanzas de Carritos & Juegos
                 </h3>
                 <div style="display: flex; align-items: center; gap: 12px;">
                     <button class="btn btn-secondary btn-sm" id="btnExportStatsExcel" title="Exportar a Excel"
@@ -527,7 +595,7 @@
                     </button>
                     <button class="tab-btn" data-tab="tab-ocupacion"
                         style="background: none; border: none; color: var(--text-secondary); font-weight: 500; cursor: pointer; padding: 6px 12px; font-size: 14px;">
-                        Ocupación
+                        Uso de Artículos
                     </button>
                     <button class="tab-btn" data-tab="tab-clientes"
                         style="background: none; border: none; color: var(--text-secondary); font-weight: 500; cursor: pointer; padding: 6px 12px; font-size: 14px;">
@@ -545,58 +613,25 @@
                         style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px;">
                         <div
                             style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px;">
-                            <span style="font-size: 12px; color: var(--text-muted); text-transform: uppercase;">Ganancia
-                                Estimada del Mes</span>
+                            <span style="font-size: 12px; color: var(--text-muted); text-transform: uppercase;">Ganancia Estimada del Mes</span>
                             <div id="statsIncomeMonth"
                                 style="font-size: 24px; font-weight: 700; color: #34d399; margin-top: 6px;">S/. 0.00
                             </div>
-                            <span id="statsCountMonth" style="font-size: 12px; color: var(--text-secondary);">0
-                                reservas</span>
+                            <span id="statsCountMonth" style="font-size: 12px; color: var(--text-secondary);">0 reservas</span>
                         </div>
                         <div
                             style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px;">
-                            <span style="font-size: 12px; color: var(--text-muted); text-transform: uppercase;">Cobrado
-                                en Depósito</span>
+                            <span style="font-size: 12px; color: var(--text-muted); text-transform: uppercase;">Cobrado en Depósito</span>
                             <div id="statsDepositoMonth"
                                 style="font-size: 24px; font-weight: 700; color: #60a5fa; margin-top: 6px;">S/. 0.00
                             </div>
                         </div>
                         <div
                             style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px;">
-                            <span style="font-size: 12px; color: var(--text-muted); text-transform: uppercase;">Yape /
-                                Otros Pagos</span>
+                            <span style="font-size: 12px; color: var(--text-muted); text-transform: uppercase;">Yape / Otros Pagos</span>
                             <div id="statsOtrosMonth"
                                 style="font-size: 24px; font-weight: 700; color: #fbbf24; margin-top: 6px;">S/. 0.00
                             </div>
-                        </div>
-                        <div
-                            style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px;">
-                            <span style="font-size: 12px; color: var(--text-muted); text-transform: uppercase;">Día y
-                                Noche</span>
-                            <div id="statsDayNightCount"
-                                style="font-size: 24px; font-weight: 700; color: #a78bfa; margin-top: 6px;">0
-                            </div>
-                            <span id="statsDayNightRevenue" style="font-size: 12px; color: var(--text-secondary);">S/.
-                                0.00</span>
-                        </div>
-                        <div
-                            style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px;">
-                            <span style="font-size: 12px; color: var(--text-muted); text-transform: uppercase;">Full
-                                Day</span>
-                            <div id="statsFullDayCount"
-                                style="font-size: 24px; font-weight: 700; color: #fbbf24; margin-top: 6px;">0
-                            </div>
-                            <span id="statsFullDayRevenue" style="font-size: 12px; color: var(--text-secondary);">S/.
-                                0.00</span>
-                        </div>
-                        <div
-                            style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px;">
-                            <span style="font-size: 12px; color: var(--text-muted); text-transform: uppercase;">Extras /
-                                Adicionales</span>
-                            <div id="statsExtrasMonth"
-                                style="font-size: 24px; font-weight: 700; color: #22d3ee; margin-top: 6px;">S/. 0.00
-                            </div>
-                            <span style="font-size: 12px; color: var(--text-secondary);">Personas y Horas</span>
                         </div>
                     </div>
 
@@ -607,12 +642,9 @@
                             <thead>
                                 <tr
                                     style="border-bottom: 1px solid var(--border-color); background: rgba(255, 255, 255, 0.03);">
-                                    <th style="padding: 12px 16px; color: var(--text-secondary);">Bungalow</th>
+                                    <th style="padding: 12px 16px; color: var(--text-secondary);">Artículo</th>
                                     <th style="padding: 12px 16px; color: var(--text-secondary);">Total Reservas</th>
-                                    <th style="padding: 12px 16px; color: var(--text-secondary);">Día y Noche</th>
-                                    <th style="padding: 12px 16px; color: var(--text-secondary);">Full Day</th>
-                                    <th style="padding: 12px 16px; color: var(--text-secondary);">Extras / Adicionales
-                                    </th>
+                                    <th style="padding: 12px 16px; color: var(--text-secondary);">Horas Alquiladas</th>
                                     <th style="padding: 12px 16px; color: var(--text-secondary);">Ingreso Estimado</th>
                                 </tr>
                             </thead>
@@ -625,8 +657,7 @@
 
                 <!-- Tab content: Ocupación -->
                 <div class="tab-content" id="tab-ocupacion" style="display: none;">
-                    <p style="color: var(--text-secondary); margin-bottom: 16px;">Grado de ocupación por cada Bungalow
-                        este mes:</p>
+                    <p style="color: var(--text-secondary); margin-bottom: 16px;">Grado de uso de cada artículo este mes (días con reserva):</p>
                     <div id="ocupacionContainer" style="display: flex; flex-direction: column; gap: 16px;">
                         <!-- Se llenará dinámicamente con barras de progreso -->
                     </div>
@@ -642,7 +673,7 @@
                                 <tr
                                     style="border-bottom: 1px solid var(--border-color); background: rgba(255, 255, 255, 0.03);">
                                     <th style="padding: 12px 16px; color: var(--text-secondary);">Nombre</th>
-                                    <th style="padding: 12px 16px; color: var(--text-secondary);">DNI</th>
+                                    <th style="padding: 12px 16px; color: var(--text-secondary);">DNI / Teléfono</th>
                                     <th style="padding: 12px 16px; color: var(--text-secondary);">Nro Reservas</th>
                                 </tr>
                             </thead>
@@ -655,8 +686,7 @@
 
                 <!-- Tab content: Asesores -->
                 <div class="tab-content" id="tab-asesores" style="display: none;">
-                    <p style="color: var(--text-secondary); margin-bottom: 16px;">Rendimiento de Asesores (Este mes):
-                    </p>
+                    <p style="color: var(--text-secondary); margin-bottom: 16px;">Rendimiento de Asesores (Este mes):</p>
                     <div
                         style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: var(--radius-md); overflow-x: auto; max-height: 300px;">
                         <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 14px;"
@@ -667,8 +697,7 @@
                                     <th style="padding: 12px 16px; color: var(--text-secondary);">Asesor</th>
                                     <th style="padding: 12px 16px; color: var(--text-secondary);">Reservas</th>
                                     <th style="padding: 12px 16px; color: var(--text-secondary);">Ingresos (S/.)</th>
-                                    <th style="padding: 12px 16px; color: var(--text-secondary);">Bungalows más
-                                        alquilados</th>
+                                    <th style="padding: 12px 16px; color: var(--text-secondary);">Artículos más alquilados</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -681,10 +710,8 @@
         </div>
     </div>
 
-
-
     <!-- Script triggers and main logic -->
-    <script src="locales.js"></script>
+    <script src="carritos.js"></script>
 </body>
 
 </html>

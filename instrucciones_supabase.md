@@ -259,3 +259,46 @@ ALTER PUBLICATION supabase_realtime ADD TABLE reservas_locales;
 
 4. Haz clic en **"Run"**. Deberías ver el mensaje **"Success. No rows returned"**. ¡El módulo de Locales está listo para conectarse!
 
+---
+
+## 🍭 Paso Especial: Configurar Base de Datos para Alquiler de Carritos y Juegos
+
+Para activar el módulo de **Carritos y Juegos Inflables**, debes crear la tabla correspondiente en tu base de datos de Supabase.
+
+1. Ve a **SQL Editor** (`>_`) en Supabase.
+2. Abre una pestaña nueva (**+ New query**).
+3. Pega y ejecuta el siguiente bloque SQL:
+
+```sql
+-- 1. Crear tabla para registrar las reservas de carritos y juegos
+CREATE TABLE IF NOT EXISTS reservas_carritos (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  categoria TEXT NOT NULL,                  -- 'Carrito Snacks' o 'Juego Inflable'
+  item TEXT NOT NULL,                       -- 'Popcorn', 'Algodón', 'Castillo Inflable', etc.
+  nombre_cliente TEXT NOT NULL,
+  telefono_cliente TEXT,
+  fecha_reserva DATE NOT NULL,
+  hora_inicio TIME NOT NULL,
+  hora_fin TIME NOT NULL,
+  tipo_evento TEXT,                        -- Cumpleaños, Bautizo, Fiesta, etc.
+  monto_total DECIMAL(10,2) NOT NULL,      -- Costo total
+  monto_adelanto DECIMAL(10,2) DEFAULT 0.00,
+  medio_contacto TEXT DEFAULT 'WhatsApp',
+  estado_reserva TEXT DEFAULT 'Confirmado', -- Confirmado, Cancelado, Completado, Bloqueado
+  notas TEXT,
+  asesor_registro TEXT,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Habilitar RLS (Row Level Security) obligatorio en Supabase
+ALTER TABLE reservas_carritos ENABLE ROW LEVEL SECURITY;
+
+-- Crear regla de acceso público
+CREATE POLICY "Acceso publico reservas_carritos" ON reservas_carritos FOR ALL USING (true) WITH CHECK (true);
+
+-- Habilitar tiempo real
+ALTER PUBLICATION supabase_realtime ADD TABLE reservas_carritos;
+```
+
+4. Haz clic en **"Run"**. Deberías ver el mensaje **"Success. No rows returned"**. ¡El módulo de Carritos y Juegos ya está listo para conectarse!
+

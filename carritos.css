@@ -1,0 +1,479 @@
+/* =============================================================
+   Carritos & Juegos Booking System Stylesheet - Sweet Candy Theme
+   ============================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap');
+
+:root {
+    /* Color Palette - Sweet Candy & Festival Fun */
+    --bg-primary: #fffbff;
+    --bg-secondary: #fef0f6;
+    --bg-card: rgba(255, 255, 255, 0.85);
+    --border-color: rgba(236, 72, 153, 0.15); /* Soft pink neon border */
+
+    --text-primary: #2e1065; /* Deep purple */
+    --text-secondary: #701a75; /* Deep magenta */
+    --text-muted: #db2777; /* Rose/Pink */
+
+    --primary: #ec4899; /* Cotton Candy Pink */
+    --primary-hover: #db2777;
+    --primary-glow: rgba(236, 72, 153, 0.3);
+
+    --accent: #06b6d4; /* Bubblegum Blue */
+    --accent-hover: #0891b2;
+    --accent-gold: #fbbf24; /* Popcorn Yellow */
+    
+    --danger: #ef4444;
+    --danger-hover: #dc2626;
+
+    --font-sans: 'Outfit', sans-serif;
+    --font-serif: 'Playfair Display', serif;
+    --radius-sm: 10px;
+    --radius-md: 16px;
+    --radius-lg: 24px;
+    --radius-xl: 32px;
+
+    --transition-smooth: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    --blur-strength: 16px;
+}
+
+/* Background Glow Blobs */
+.bg-glow {
+    position: fixed;
+    width: 450px;
+    height: 450px;
+    border-radius: 50%;
+    filter: blur(150px);
+    z-index: -2;
+    pointer-events: none;
+    opacity: 0.45;
+}
+.bg-glow-1 {
+    top: -10%;
+    left: 20%;
+    background: radial-gradient(circle, rgba(236, 72, 153, 0.45) 0%, rgba(6, 182, 212, 0.15) 100%);
+    animation: floatGlow1 20s infinite alternate ease-in-out;
+}
+.bg-glow-2 {
+    bottom: -10%;
+    right: 15%;
+    background: radial-gradient(circle, rgba(6, 182, 212, 0.4) 0%, rgba(251, 191, 36, 0.15) 100%);
+    animation: floatGlow2 25s infinite alternate ease-in-out;
+}
+.bg-glow-3 {
+    top: 45%;
+    left: 5%;
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(circle, rgba(251, 191, 36, 0.3) 0%, rgba(236, 72, 153, 0.1) 100%);
+    animation: floatGlow3 18s infinite alternate ease-in-out;
+}
+
+@keyframes floatGlow1 {
+    0% { transform: translate(0, 0) scale(1); }
+    100% { transform: translate(80px, 50px) scale(1.15); }
+}
+@keyframes floatGlow2 {
+    0% { transform: translate(0, 0) scale(1); }
+    100% { transform: translate(-60px, -90px) scale(1.2); }
+}
+@keyframes floatGlow3 {
+    0% { transform: translate(0, 0) scale(0.9); }
+    100% { transform: translate(40px, 40px) scale(1.1); }
+}
+
+body {
+    background: #fdfafd !important;
+    color: var(--text-primary) !important;
+    font-family: var(--font-sans) !important;
+    overflow-x: hidden;
+}
+
+/* Glassmorphic Sidebar with Pink Accent */
+.sidebar {
+    background: rgba(255, 255, 255, 0.7) !important;
+    border-right: 1px solid var(--border-color) !important;
+    backdrop-filter: blur(var(--blur-strength)) !important;
+    -webkit-backdrop-filter: blur(var(--blur-strength)) !important;
+    box-shadow: 10px 0 30px rgba(236, 72, 153, 0.04) !important;
+}
+
+/* Lollipop logo animation */
+.logo-icon {
+    animation: lollipopPulse 3s infinite ease-in-out;
+    color: var(--primary) !important;
+}
+
+@keyframes lollipopPulse {
+    0% { transform: scale(1) rotate(0deg); filter: drop-shadow(0 0 2px var(--primary)); }
+    50% { transform: scale(1.2) rotate(180deg); filter: drop-shadow(0 0 10px var(--accent)); }
+    100% { transform: scale(1) rotate(360deg); filter: drop-shadow(0 0 2px var(--primary)); }
+}
+
+.logo-area h2 {
+    font-family: var(--font-serif) !important;
+    color: var(--text-primary);
+}
+.logo-area h2 span {
+    color: var(--primary) !important;
+    font-weight: 700 !important;
+}
+
+/* Sidebar filter controls */
+.nav-filters h3 {
+    color: var(--text-muted) !important;
+    font-size: 11px !important;
+    letter-spacing: 1.5px;
+    border-bottom: 2px solid rgba(236, 72, 153, 0.1);
+    padding-bottom: 8px;
+    text-transform: uppercase;
+}
+
+/* Navigation Links */
+.btn-sidebar-action {
+    background: rgba(255, 255, 255, 0.55);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    transition: var(--transition-smooth);
+}
+.btn-sidebar-action:hover {
+    background: linear-gradient(135deg, rgba(236, 72, 153, 0.1), rgba(6, 182, 212, 0.1));
+    border-color: var(--primary);
+    box-shadow: 0 4px 15px rgba(236, 72, 153, 0.1);
+    transform: translateX(4px);
+}
+
+/* Main Cards - Frosted Glass Glassmorphism */
+.calendar-card {
+    background: rgba(255, 255, 255, 0.75) !important;
+    backdrop-filter: blur(var(--blur-strength)) !important;
+    -webkit-backdrop-filter: blur(var(--blur-strength)) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: var(--radius-lg) !important;
+    box-shadow: 0 8px 32px rgba(236, 72, 153, 0.05) !important;
+    transition: var(--transition-smooth);
+}
+.calendar-card:hover {
+    box-shadow: 0 12px 40px rgba(236, 72, 153, 0.08) !important;
+}
+
+/* Elegant glowing headers */
+.app-header h1 {
+    font-family: var(--font-serif) !important;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--text-primary), var(--primary));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* Neon buttons */
+.btn-primary {
+    background: linear-gradient(135deg, var(--primary), var(--accent)) !important;
+    color: white !important;
+    border: none !important;
+    box-shadow: 0 6px 20px var(--primary-glow) !important;
+    transition: var(--transition-smooth) !important;
+    position: relative;
+    overflow: hidden;
+}
+.btn-primary::after {
+    content: '';
+    position: absolute;
+    top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background: linear-gradient(to bottom right, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 80%);
+    transform: rotate(30deg);
+    transition: 0.5s;
+}
+.btn-primary:hover {
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 10px 25px rgba(6, 182, 212, 0.3) !important;
+}
+
+.btn-secondary {
+    background: rgba(255, 255, 255, 0.8) !important;
+    color: var(--primary) !important;
+    border: 1px solid var(--border-color) !important;
+    transition: var(--transition-smooth) !important;
+}
+.btn-secondary:hover {
+    border-color: var(--primary) !important;
+    box-shadow: 0 4px 15px rgba(236, 72, 153, 0.1) !important;
+    transform: translateY(-1px);
+}
+
+/* Modals styling: Sweet pop look */
+.modal-card {
+    background: rgba(255, 255, 255, 0.92) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border: 1px solid rgba(6, 182, 212, 0.3) !important; /* soft cyan border */
+    border-radius: var(--radius-xl) !important;
+    box-shadow: 0 25px 60px rgba(112, 26, 117, 0.12), 0 0 25px rgba(236, 72, 153, 0.1) !important;
+}
+
+.modal-header {
+    background: linear-gradient(to right, rgba(236, 72, 153, 0.05), rgba(6, 182, 212, 0.05)) !important;
+    border-bottom: 1px solid var(--border-color) !important;
+}
+
+/* Form items glow */
+.input-wrapper input, .input-wrapper select, .input-wrapper textarea {
+    background: rgba(255, 255, 255, 0.65) !important;
+    border: 1px solid rgba(236, 72, 153, 0.2) !important;
+    color: var(--text-primary) !important;
+    border-radius: var(--radius-sm) !important;
+    transition: var(--transition-smooth) !important;
+}
+.input-wrapper input:focus, .input-wrapper select:focus, .input-wrapper textarea:focus {
+    background: #ffffff !important;
+    border-color: var(--accent) !important;
+    box-shadow: 0 0 15px rgba(6, 182, 212, 0.2) !important;
+}
+
+/* FullCalendar customizations */
+.fc {
+    font-family: var(--font-sans) !important;
+}
+.fc-col-header-cell {
+    background: rgba(236, 72, 153, 0.05);
+    padding: 10px 0 !important;
+}
+.fc-daygrid-event {
+    border-radius: 6px !important;
+    padding: 3px 6px !important;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.05);
+    transition: var(--transition-smooth);
+}
+.fc-daygrid-event:hover {
+    transform: scale(1.03) translateY(-1px);
+    box-shadow: 0 5px 12px rgba(0,0,0,0.1);
+}
+
+/* Filter items checkmarks with custom colors */
+.filter-item input:checked+.custom-checkbox.color-b1 { background: #db2777; border-color: #db2777; } /* Popcorn */
+.filter-item input:checked+.custom-checkbox.color-b2 { background: #f43f5e; border-color: #f43f5e; } /* Algodon */
+.filter-item input:checked+.custom-checkbox.color-b3 { background: #ea580c; border-color: #ea580c; } /* Hot dogs */
+.filter-item input:checked+.custom-checkbox.color-b4 { background: #e11d48; border-color: #e11d48; } /* Manzanas */
+.filter-item input:checked+.custom-checkbox.color-b5 { background: #0284c7; border-color: #0284c7; } /* Castillo */
+.filter-item input:checked+.custom-checkbox.color-b6 { background: #0891b2; border-color: #0891b2; } /* Tobogan */
+.filter-item input:checked+.custom-checkbox.color-b7 { background: #0d9488; border-color: #0d9488; } /* Cama elastica */
+.filter-item input:checked+.custom-checkbox.color-b8 { background: #4f46e5; border-color: #4f46e5; } /* Toro mecanico */
+
+/* Legend items */
+.legend-item {
+    background: rgba(255, 255, 255, 0.5);
+    border: 1px solid var(--border-color);
+    padding: 8px 12px;
+    border-radius: 20px;
+}
+
+/* --- FullCalendar Contrast Fixes --- */
+.fc .fc-col-header-cell-cushion,
+.fc .fc-daygrid-day-number,
+.fc .fc-toolbar-title {
+    color: var(--text-primary) !important;
+}
+
+/* Make sure days are clickable and clearly visible */
+.fc .fc-daygrid-day-number {
+    font-weight: 600 !important;
+    font-size: 14px !important;
+}
+
+/* Event titles inside the calendar should have high contrast */
+.fc-event, .fc-event-title, .fc-event-time {
+    color: #ffffff !important;
+    font-weight: 500 !important;
+}
+
+/* Ensure buttons in toolbar have correct styling and contrast */
+.fc .fc-button-primary {
+    background-color: var(--primary) !important;
+    border-color: var(--primary) !important;
+    color: #ffffff !important;
+}
+.fc .fc-button-primary:hover {
+    background-color: var(--primary-hover) !important;
+    border-color: var(--primary-hover) !important;
+}
+.fc .fc-button-primary:disabled {
+    background-color: var(--text-muted) !important;
+    border-color: var(--text-muted) !important;
+    color: rgba(255,255,255,0.6) !important;
+}
+
+/* Force visible border lines for calendar cells */
+.fc-theme-standard td, 
+.fc-theme-standard th {
+    border: 1px solid rgba(236, 72, 153, 0.15) !important;
+}
+.fc-theme-standard .fc-scrollgrid {
+    border: 1px solid rgba(236, 72, 153, 0.25) !important;
+}
+
+/* Specific border line for day cell boundaries */
+.fc .fc-daygrid-day {
+    border: 1px solid rgba(236, 72, 153, 0.15) !important;
+}
+
+/* Make single-day timed (dot) events look like block events */
+.fc-daygrid-dot-event {
+    padding: 3px 6px !important;
+    border: none !important;
+    border-radius: 6px !important;
+}
+
+.fc-daygrid-dot-event .fc-event-dot {
+    display: none !important;
+}
+
+/* Event custom class backgrounds */
+.fc-event.event-popcorn { background-color: #db2777 !important; border-color: #db2777 !important; }
+.fc-event.event-algodon { background-color: #f43f5e !important; border-color: #f43f5e !important; }
+.fc-event.event-hotdogs { background-color: #ea580c !important; border-color: #ea580c !important; }
+.fc-event.event-manzanas { background-color: #e11d48 !important; border-color: #e11d48 !important; }
+.fc-event.event-castillo { background-color: #0284c7 !important; border-color: #0284c7 !important; }
+.fc-event.event-tobogan { background-color: #0891b2 !important; border-color: #0891b2 !important; }
+.fc-event.event-cama { background-color: #0d9488 !important; border-color: #0d9488 !important; }
+.fc-event.event-toro { background-color: #4f46e5 !important; border-color: #4f46e5 !important; }
+.fc-event.event-bloqueado { background-color: #ef4444 !important; border-color: #ef4444 !important; }
+
+/* Calendar Tooltip Styles */
+.calendar-tooltip {
+    position: absolute;
+    z-index: 99999;
+    background: rgba(46, 16, 101, 0.92); /* Dark purple premium background */
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(236, 72, 153, 0.25);
+    border-radius: 12px;
+    padding: 14px;
+    color: #fdfafd;
+    font-family: 'Outfit', sans-serif;
+    font-size: 13px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 16px -6px rgba(236, 72, 153, 0.1);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    transform: translateY(4px);
+    width: max-content;
+    max-width: 280px;
+    min-width: 200px;
+}
+
+.calendar-tooltip.show {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+}
+
+.tooltip-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.tooltip-categoria-carrito-snacks { color: #f43f5e; }
+.tooltip-categoria-juego-inflable { color: #06b6d4; }
+.tooltip-blocked { color: #ef4444; }
+
+.tooltip-body p {
+    margin: 4px 0;
+    line-height: 1.4;
+    color: #f5f3f7;
+}
+
+.tooltip-body p strong {
+    color: rgba(255, 255, 255, 0.65);
+    font-weight: 500;
+    margin-right: 4px;
+}
+
+/* --- Mobile Responsive Fixes for Calendar --- */
+@media (max-width: 768px) {
+    .calendar-scroll-wrapper {
+        width: 100% !important;
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
+        -webkit-overflow-scrolling: touch !important;
+        scrollbar-width: thin !important;
+        scrollbar-color: rgba(236, 72, 153, 0.3) transparent !important;
+    }
+    
+    .calendar-scroll-wrapper::-webkit-scrollbar {
+        height: 6px;
+    }
+    
+    .calendar-scroll-wrapper::-webkit-scrollbar-thumb {
+        background: rgba(236, 72, 153, 0.5);
+        border-radius: 3px;
+    }
+    
+    #calendar {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 320px !important;
+        margin: 0 auto;
+    }
+
+    .fc .fc-multimonth-title {
+        font-size: 14px !important;
+        font-weight: 600 !important;
+        padding: 8px 0 !important;
+        color: var(--primary) !important;
+    }
+
+    .fc .fc-multimonth-daygrid th,
+    .fc .fc-multimonth-daygrid td,
+    .fc .fc-multimonth-daygrid .fc-daygrid-day-number,
+    .fc .fc-multimonth-daygrid .fc-col-header-cell-cushion {
+        font-size: 11px !important;
+        padding: 4px 2px !important;
+    }
+
+    .fc .fc-daygrid-day-events {
+        display: flex !important;
+        flex-direction: row !important;
+        justify-content: center !important;
+        gap: 3px !important;
+        flex-wrap: wrap !important;
+        padding: 2px !important;
+        min-height: 12px !important;
+    }
+    
+    .fc-daygrid-event {
+        width: 8px !important;
+        height: 8px !important;
+        min-width: 8px !important;
+        border-radius: 50% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        font-size: 0 !important;
+        overflow: hidden !important;
+        display: inline-block !important;
+        box-shadow: none !important;
+        border: none !important;
+    }
+
+    .fc-event-title, .fc-event-time {
+        display: none !important;
+    }
+
+    .fc-header-toolbar {
+        flex-direction: column !important;
+        gap: 8px !important;
+    }
+    
+    .fc-header-toolbar .fc-toolbar-chunk {
+        display: flex;
+        justify-content: center;
+        width: 100%;
+    }
+}
