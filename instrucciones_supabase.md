@@ -261,16 +261,16 @@ ALTER PUBLICATION supabase_realtime ADD TABLE reservas_locales;
 
 ---
 
-## 🍭 Paso Especial: Configurar Base de Datos para Alquiler de Carritos y Juegos
+## 🍭 Paso Especial: Configurar Base de Datos para Alquiler de Carritos e inflables
 
-Para activar el módulo de **Carritos y Juegos Inflables**, debes crear la tabla correspondiente en tu base de datos de Supabase.
+Para activar el módulo de **Carritos e inflables**, debes crear la tabla correspondiente en tu base de datos de Supabase.
 
 1. Ve a **SQL Editor** (`>_`) en Supabase.
 2. Abre una pestaña nueva (**+ New query**).
 3. Pega y ejecuta el siguiente bloque SQL:
 
 ```sql
--- 1. Crear tabla para registrar las reservas de carritos y juegos
+-- 1. Crear tabla para registrar las reservas de carritos e inflables
 CREATE TABLE IF NOT EXISTS reservas_carritos (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   categoria TEXT NOT NULL,                  -- 'Carrito Snacks' o 'Juego Inflable'
@@ -300,5 +300,5 @@ CREATE POLICY "Acceso publico reservas_carritos" ON reservas_carritos FOR ALL US
 ALTER PUBLICATION supabase_realtime ADD TABLE reservas_carritos;
 ```
 
-4. Haz clic en **"Run"**. Deberías ver el mensaje **"Success. No rows returned"**. ¡El módulo de Carritos y Juegos ya está listo para conectarse!
+4. Haz clic en **"Run"**. Deberías ver el mensaje **"Success. No rows returned"**. ¡El módulo de Carritos e inflables ya está listo para conectarse!
 

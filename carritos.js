@@ -1,5 +1,5 @@
 // =======================================================
-// Carritos & Juegos Inflables - Sistema de Reservas
+// Carritos e inflables - Sistema de Reservas
 // =======================================================
 
 let dbMode = 'local';
@@ -802,7 +802,7 @@ function escapeHTML(str) {
 }
 
 // ----------------------------------------------------
-// Statistics Dashboard Engine - Carritos & Juegos
+// Statistics Dashboard Engine - Carritos e inflables
 // ----------------------------------------------------
 function openStatsAuthModal() {
     const isUnlocked = localStorage.getItem('canchapro_stats_unlocked') === 'true';
@@ -1089,7 +1089,7 @@ async function exportAllDataToExcel() {
     // Title Block
     summaryWs.mergeCells(sr, 1, sr, 5);
     const mainTitleCell = summaryWs.getCell(sr, 1);
-    styleTitle(mainTitleCell, "REPORTE GENERAL DE RESERVAS Y ESTADÍSTICAS - CARRITOS Y JUEGOS", 'FF0F766E', 'FFFFFFFF', 14);
+    styleTitle(mainTitleCell, "REPORTE GENERAL DE RESERVAS Y ESTADÍSTICAS - CARRITOS E INFLABLES", 'FF0F766E', 'FFFFFFFF', 14);
     summaryWs.getRow(sr).height = 40;
     sr += 2; // Blank row
 
@@ -1341,7 +1341,7 @@ async function exportAllDataToExcel() {
         const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
-        link.download = 'Reporte_Reservas_Carritos_y_Juegos.xlsx';
+        link.download = 'Reporte_Reservas_Carritos_e_inflables.xlsx';
         link.click();
     }).catch(err => {
         console.error("Error al exportar:", err);

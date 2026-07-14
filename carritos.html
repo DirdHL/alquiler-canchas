@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Diversión Kids - Alquiler de Carritos y Juegos</title>
+    <title>NUEVO HORIZONTE - Alquiler de Carritos e inflables</title>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -40,7 +40,7 @@
                 <div class="logo-title">
                     <i data-lucide="lollipop" class="logo-icon"
                         style="color: var(--primary); filter: drop-shadow(0 0 8px var(--primary-glow));"></i>
-                    <h2>Diversión <span>Kids</span><span class="logo-subtitle">Carritos & Juegos</span></h2>
+                    <h2>NUEVO <span>HORIZONTE</span><span class="logo-subtitle">Carritos e inflables</span></h2>
                 </div>
                 <button class="btn-close-sidebar" id="btnCloseSidebar">
                     <i data-lucide="x"></i>
@@ -52,7 +52,8 @@
                     <span class="status-dot disconnected" id="statusDot"></span>
                     <span class="status-text" id="statusText">Modo Sin Conexión (Local)</span>
                 </div>
-                <p class="status-desc" id="statusDesc">Accede con las credenciales de la base de datos para sincronizar con los demás asesores.</p>
+                <p class="status-desc" id="statusDesc">Accede con las credenciales de la base de datos para sincronizar
+                    con los demás asesores.</p>
                 <button class="btn btn-secondary btn-sm" id="btnOpenSettings">
                     <i data-lucide="database"></i> Ingresar Credenciales
                 </button>
@@ -172,7 +173,7 @@
             </div>
 
             <footer class="sidebar-footer">
-                <p>Carritos & Juegos &copy; 2026</p>
+                <p>Carritos e inflables &copy; 2026</p>
                 <p class="footer-note">Desarrollado por Rogger Dird Huaicama Lacerna</p>
             </footer>
         </aside>
@@ -185,7 +186,7 @@
                         <i data-lucide="menu"></i>
                     </button>
                     <div class="header-title">
-                        <h1>Calendario de Carritos y Juegos</h1>
+                        <h1>Calendario de Carritos e inflables</h1>
                         <p>Gestione el alquiler de carritos de snacks y juegos inflables por artículo y fecha.</p>
                     </div>
                 </div>
@@ -220,7 +221,8 @@
                             style="display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;">
                             <input type="checkbox" id="bookingIsBlock"
                                 style="width: 18px; height: 18px; cursor: pointer;">
-                            <span style="font-weight: 600; color: #f87171;">🔒 ¿Bloquear Artículo (Fuera de Servicio)?</span>
+                            <span style="font-weight: 600; color: #f87171;">🔒 ¿Bloquear Artículo (Fuera de
+                                Servicio)?</span>
                         </label>
                     </div>
 
@@ -256,7 +258,8 @@
                                         <option value="Carrito Snacks|Popcorn">Carrito de Popcorn</option>
                                         <option value="Carrito Snacks|Algodón de Azúcar">Carrito de Algodón</option>
                                         <option value="Carrito Snacks|Hot Dogs">Carrito de Hot Dogs</option>
-                                        <option value="Carrito Snacks|Manzanas Acarameladas">Manzanas Acarameladas</option>
+                                        <option value="Carrito Snacks|Manzanas Acarameladas">Manzanas Acarameladas
+                                        </option>
                                     </optgroup>
                                     <optgroup label="Juegos Inflables">
                                         <option value="Juego Inflable|Castillo Inflable">Castillo Inflable</option>
@@ -310,9 +313,11 @@
                             </div>
                         </div>
                     </div>
-                    <div style="font-size: 11px; color: var(--text-secondary); margin-top: -8px; margin-bottom: 12px; display: flex; align-items: center; gap: 4px;">
+                    <div
+                        style="font-size: 11px; color: var(--text-secondary); margin-top: -8px; margin-bottom: 12px; display: flex; align-items: center; gap: 4px;">
                         <i data-lucide="info" style="width: 12px; height: 12px;"></i>
-                        <span>Nota: Usa el formato de 24 horas. Las reservas que cruzan la medianoche se calculan automáticamente.</span>
+                        <span>Nota: Usa el formato de 24 horas. Las reservas que cruzan la medianoche se calculan
+                            automáticamente.</span>
                     </div>
 
                     <!-- Payment Information -->
@@ -417,7 +422,8 @@
                 <button class="btn-close" id="btnCloseSettings"><i data-lucide="x"></i></button>
             </div>
             <div class="modal-body">
-                <p class="settings-intro">Ingresa el link de la base de datos y la contraseña para acceder al calendario de reservas.</p>
+                <p class="settings-intro">Ingresa el link de la base de datos y la contraseña para acceder al calendario
+                    de reservas.</p>
                 <form id="formSettings">
                     <div class="form-group">
                         <label for="supabaseUrl">URL DE LA BASE DE DATOS</label>
@@ -427,12 +433,16 @@
                         </div>
                     </div>
                     <div class="form-group">
-                        <label for="supabaseKey">Clave Anon de Supabase <span style="font-size:0.78em;color:#f87171;font-weight:500">(Pídele al administrador)</span></label>
+                        <label for="supabaseKey">Clave Anon de Supabase <span
+                                style="font-size:0.78em;color:#f87171;font-weight:500">(Pídele al
+                                administrador)</span></label>
                         <div class="input-wrapper">
                             <i data-lucide="key-round"></i>
-                            <input type="password" id="supabaseKey" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." required>
+                            <input type="password" id="supabaseKey"
+                                placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." required>
                         </div>
-                        <small style="color:#94a3b8;margin-top:4px;display:block">Haz clic en <strong>Probar Conexión</strong> y luego en <strong>Guardar Credenciales</strong>.</small>
+                        <small style="color:#94a3b8;margin-top:4px;display:block">Haz clic en <strong>Probar
+                                Conexión</strong> y luego en <strong>Guardar Credenciales</strong>.</small>
                     </div>
                     <div class="settings-actions">
                         <button type="button" class="btn btn-secondary" id="btnTestSupabase">Probar Conexión</button>
@@ -446,11 +456,12 @@
                     <ol>
                         <li>Entra a tu panel de Supabase y selecciona tu proyecto.</li>
                         <li>Ve al <strong>SQL Editor</strong> en el menú lateral izquierdo.</li>
-                        <li>Haz clic en <strong>New query</strong>, pega el siguiente SQL y presiona <strong>Run</strong>:</li>
+                        <li>Haz clic en <strong>New query</strong>, pega el siguiente SQL y presiona
+                            <strong>Run</strong>:</li>
                     </ol>
                     <div class="code-box">
                         <pre id="sqlCode">
--- 1. Tabla de reservas de carritos y juegos
+-- 1. Tabla de reservas de carritos e inflables
 CREATE TABLE IF NOT EXISTS reservas_carritos (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   categoria TEXT NOT NULL,                  -- 'Carrito Snacks' o 'Juego Inflable'
@@ -521,7 +532,8 @@ ALTER PUBLICATION supabase_realtime ADD TABLE reservas_carritos;
                 <h3>Identificación de Operador</h3>
             </div>
             <div class="modal-body">
-                <p class="settings-intro" style="margin-bottom: 16px;">Ingresa tu nombre o alias para registrar el historial de cambios en el sistema.</p>
+                <p class="settings-intro" style="margin-bottom: 16px;">Ingresa tu nombre o alias para registrar el
+                    historial de cambios en el sistema.</p>
                 <form id="formUserOnboarding">
                     <div class="form-group">
                         <label for="onboardingName">Nombre / Alias *</label>
@@ -575,7 +587,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE reservas_carritos;
             <div class="modal-header"
                 style="display: flex; justify-content: space-between; align-items: center; padding: 20px 24px;">
                 <h3 style="display: flex; align-items: center; gap: 8px; margin: 0;">
-                    <i data-lucide="line-chart" style="color: var(--primary);"></i> Estadísticas y Finanzas de Carritos & Juegos
+                    <i data-lucide="line-chart" style="color: var(--primary);"></i> Estadísticas y Finanzas de Carritos e inflables
                 </h3>
                 <div style="display: flex; align-items: center; gap: 12px;">
                     <button class="btn btn-secondary btn-sm" id="btnExportStatsExcel" title="Exportar a Excel"
@@ -613,22 +625,26 @@ ALTER PUBLICATION supabase_realtime ADD TABLE reservas_carritos;
                         style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px;">
                         <div
                             style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px;">
-                            <span style="font-size: 12px; color: var(--text-muted); text-transform: uppercase;">Ganancia Estimada del Mes</span>
+                            <span style="font-size: 12px; color: var(--text-muted); text-transform: uppercase;">Ganancia
+                                Estimada del Mes</span>
                             <div id="statsIncomeMonth"
                                 style="font-size: 24px; font-weight: 700; color: #34d399; margin-top: 6px;">S/. 0.00
                             </div>
-                            <span id="statsCountMonth" style="font-size: 12px; color: var(--text-secondary);">0 reservas</span>
+                            <span id="statsCountMonth" style="font-size: 12px; color: var(--text-secondary);">0
+                                reservas</span>
                         </div>
                         <div
                             style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px;">
-                            <span style="font-size: 12px; color: var(--text-muted); text-transform: uppercase;">Cobrado en Depósito</span>
+                            <span style="font-size: 12px; color: var(--text-muted); text-transform: uppercase;">Cobrado
+                                en Depósito</span>
                             <div id="statsDepositoMonth"
                                 style="font-size: 24px; font-weight: 700; color: #60a5fa; margin-top: 6px;">S/. 0.00
                             </div>
                         </div>
                         <div
                             style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px;">
-                            <span style="font-size: 12px; color: var(--text-muted); text-transform: uppercase;">Yape / Otros Pagos</span>
+                            <span style="font-size: 12px; color: var(--text-muted); text-transform: uppercase;">Yape /
+                                Otros Pagos</span>
                             <div id="statsOtrosMonth"
                                 style="font-size: 24px; font-weight: 700; color: #fbbf24; margin-top: 6px;">S/. 0.00
                             </div>
@@ -657,7 +673,8 @@ ALTER PUBLICATION supabase_realtime ADD TABLE reservas_carritos;
 
                 <!-- Tab content: Ocupación -->
                 <div class="tab-content" id="tab-ocupacion" style="display: none;">
-                    <p style="color: var(--text-secondary); margin-bottom: 16px;">Grado de uso de cada artículo este mes (días con reserva):</p>
+                    <p style="color: var(--text-secondary); margin-bottom: 16px;">Grado de uso de cada artículo este mes
+                        (días con reserva):</p>
                     <div id="ocupacionContainer" style="display: flex; flex-direction: column; gap: 16px;">
                         <!-- Se llenará dinámicamente con barras de progreso -->
                     </div>
@@ -686,7 +703,8 @@ ALTER PUBLICATION supabase_realtime ADD TABLE reservas_carritos;
 
                 <!-- Tab content: Asesores -->
                 <div class="tab-content" id="tab-asesores" style="display: none;">
-                    <p style="color: var(--text-secondary); margin-bottom: 16px;">Rendimiento de Asesores (Este mes):</p>
+                    <p style="color: var(--text-secondary); margin-bottom: 16px;">Rendimiento de Asesores (Este mes):
+                    </p>
                     <div
                         style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: var(--radius-md); overflow-x: auto; max-height: 300px;">
                         <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 14px;"
@@ -697,7 +715,8 @@ ALTER PUBLICATION supabase_realtime ADD TABLE reservas_carritos;
                                     <th style="padding: 12px 16px; color: var(--text-secondary);">Asesor</th>
                                     <th style="padding: 12px 16px; color: var(--text-secondary);">Reservas</th>
                                     <th style="padding: 12px 16px; color: var(--text-secondary);">Ingresos (S/.)</th>
-                                    <th style="padding: 12px 16px; color: var(--text-secondary);">Artículos más alquilados</th>
+                                    <th style="padding: 12px 16px; color: var(--text-secondary);">Artículos más
+                                        alquilados</th>
                                 </tr>
                             </thead>
                             <tbody>
