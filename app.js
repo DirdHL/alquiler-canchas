@@ -2904,6 +2904,19 @@ function getColLetter(colIndex) {
     return letter;
 }
 
+function capitalizeName(name) {
+    if (!name || typeof name !== 'string') return name || '';
+    return name
+        .trim()
+        .toLowerCase()
+        .split(/\s+/)
+        .map(word => {
+            if (!word) return '';
+            return word.charAt(0).toUpperCase() + word.slice(1);
+        })
+        .join(' ');
+}
+
 async function exportAllDataToExcel() {
     try {
         // Check if we have events to export
@@ -3469,7 +3482,7 @@ async function exportAllDataToExcel() {
     const clientsMap = {};
     const activeAllEvents = allEvents.filter(e => e.sport !== 'Bloqueo');
     activeAllEvents.forEach(e => {
-        const name = (e.name || 'Desconocido').trim();
+        const name = capitalizeName(e.name || 'Desconocido');
         const dni = (e.dni || '').trim();
         const key = dni !== '' ? dni : `nodni_${name.toLowerCase()}`;
 
@@ -3487,7 +3500,7 @@ async function exportAllDataToExcel() {
             clientsMap[key].name = name;
         }
 
-        const advisor = (e.notes || '').trim();
+        const advisor = capitalizeName(e.notes || '');
         if (advisor && advisor.toLowerCase() !== 'sin asesor') {
             clientsMap[key].advisors.add(advisor);
         }
@@ -3633,11 +3646,11 @@ async function exportAllDataToExcel() {
                 fecha: e.date || '',
                 hora_inicio: e.start_time || '',
                 hora_fin: e.end_time || '',
-                cliente: e.name || '',
+                cliente: capitalizeName(e.name || ''),
                 dni: e.dni || '',
                 cancha: e.court || '',
                 deporte: e.sport || '',
-                asesor: e.notes || '',
+                asesor: capitalizeName(e.notes || ''),
                 pelota: (e.pelota === true || e.pelota === 'true') ? 'Sí' : 'No',
                 chaleco: (e.chaleco === true || e.chaleco === 'true') ? 'Sí' : 'No',
                 medio: e.medio || '',

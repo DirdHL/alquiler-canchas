@@ -1040,6 +1040,19 @@ function getColLetter(colIndex) {
     return letter;
 }
 
+function capitalizeName(name) {
+    if (!name || typeof name !== 'string') return name || '';
+    return name
+        .trim()
+        .toLowerCase()
+        .split(/\s+/)
+        .map(word => {
+            if (!word) return '';
+            return word.charAt(0).toUpperCase() + word.slice(1);
+        })
+        .join(' ');
+}
+
 async function exportAllDataToExcel() {
     if (!bookings || bookings.length === 0) {
         alert("No hay reservas registradas para exportar.");
@@ -1292,7 +1305,7 @@ async function exportAllDataToExcel() {
             const dataRow = worksheet.addRow({
                 sede: b.sede || '',
                 espacio: b.espacio || '',
-                cliente: b.nombre_cliente || '',
+                cliente: capitalizeName(b.nombre_cliente || ''),
                 celular: b.telefono_cliente || '',
                 fecha_reserva: b.fecha_reserva || '',
                 hora_inicio: b.hora_inicio || '',
@@ -1302,7 +1315,7 @@ async function exportAllDataToExcel() {
                 monto_adelanto: b.monto_adelanto ? parseFloat(b.monto_adelanto) : 0,
                 medio: b.medio_contacto || '',
                 estado: b.estado_reserva || '',
-                asesor: b.asesor_registro || '',
+                asesor: capitalizeName(b.asesor_registro || ''),
                 notas: b.notas || '',
                 registro: b.created_at ? new Date(b.created_at).toLocaleString('es-PE') : ''
             });

@@ -1893,6 +1893,19 @@ function getColLetter(colIndex) {
     return letter;
 }
 
+function capitalizeName(name) {
+    if (!name || typeof name !== 'string') return name || '';
+    return name
+        .trim()
+        .toLowerCase()
+        .split(/\s+/)
+        .map(word => {
+            if (!word) return '';
+            return word.charAt(0).toUpperCase() + word.slice(1);
+        })
+        .join(' ');
+}
+
 async function exportAllDataToExcel() {
     if (!bookings || bookings.length === 0) {
         alert("No hay reservas registradas para exportar.");
@@ -2323,7 +2336,7 @@ async function exportAllDataToExcel() {
     const activeAllExcelBookings = bookings.filter(b => b.estado_reserva !== 'Bloqueo' && b.estado_reserva !== 'Bloqueado');
     
     activeAllExcelBookings.forEach(b => {
-        const name = (b.nombre_cliente || 'Desconocido').trim();
+        const name = capitalizeName(b.nombre_cliente || 'Desconocido');
         const dni = (b.dni_cliente || '').trim();
         const key = dni !== '' ? dni : `nodni_${name.toLowerCase()}`;
 
@@ -2342,7 +2355,7 @@ async function exportAllDataToExcel() {
             clientsExcelMap[key].name = name;
         }
 
-        const advisor = (b.asesor_registro || '').trim();
+        const advisor = capitalizeName(b.asesor_registro || '');
         if (advisor && advisor.toLowerCase() !== 'sin asesor') {
             clientsExcelMap[key].advisors.add(advisor);
         }
@@ -2488,10 +2501,10 @@ async function exportAllDataToExcel() {
                 fecha_entrada: b.fecha_ingreso || '',
                 fecha_salida: b.fecha_salida || '',
                 horario: b.horario || '',
-                cliente: b.nombre_cliente || '',
+                cliente: capitalizeName(b.nombre_cliente || ''),
                 dni: b.dni_cliente || '',
                 telefono: b.telefono_cliente || '',
-                asesor: b.asesor_registro || '',
+                asesor: capitalizeName(b.asesor_registro || ''),
                 medio: b.medio_contacto || '',
                 tipo_pago: b.tipo_pago || '',
                 monto_total: b.monto_total ? parseFloat(b.monto_total) : 0,
