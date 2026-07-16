@@ -66,16 +66,19 @@ function setupEventListeners() {
             this.value = this.value.replace(/[^0-9]/g, '');
         });
     }
+
+    const bookingCategoria = document.getElementById('bookingCategoria');
+    if (bookingCategoria) {
+        bookingCategoria.addEventListener('change', function () {
+            updateBookingLocalOptions(this.value);
+        });
+    }
     
     // Filters
-    document.getElementById('filterPopcorn').addEventListener('change', renderCalendarEvents);
-    document.getElementById('filterAlgodon').addEventListener('change', renderCalendarEvents);
-    document.getElementById('filterHotDogs').addEventListener('change', renderCalendarEvents);
-    document.getElementById('filterManzanas').addEventListener('change', renderCalendarEvents);
-    document.getElementById('filterCastillo').addEventListener('change', renderCalendarEvents);
-    document.getElementById('filterTobogan').addEventListener('change', renderCalendarEvents);
-    document.getElementById('filterCamaElastica').addEventListener('change', renderCalendarEvents);
-    document.getElementById('filterToroMecanico').addEventListener('change', renderCalendarEvents);
+    const filterCarritos = document.getElementById('filterCarritosSnacks');
+    if (filterCarritos) filterCarritos.addEventListener('change', renderCalendarEvents);
+    const filterMagia = document.getElementById('filterMagiaRebote');
+    if (filterMagia) filterMagia.addEventListener('change', renderCalendarEvents);
 
     // Stats Event Listeners
     document.getElementById('btnOpenStats').addEventListener('click', () => openStatsAuthModal());
@@ -156,6 +159,102 @@ function runDynamicCalculations() {
     document.getElementById('bookingPendiente').value = Math.max(0, total - adelanto).toFixed(2);
 }
 
+function updateBookingLocalOptions(categoryValue, selectedValue = null) {
+    const bookingLocal = document.getElementById('bookingLocal');
+    if (!bookingLocal) return;
+
+    bookingLocal.innerHTML = '';
+
+    if (!categoryValue) {
+        bookingLocal.disabled = true;
+        const opt = document.createElement('option');
+        opt.value = '';
+        opt.disabled = true;
+        opt.selected = true;
+        opt.textContent = 'Seleccione categoría primero...';
+        bookingLocal.appendChild(opt);
+        return;
+    }
+
+    bookingLocal.disabled = false;
+    const placeholderOpt = document.createElement('option');
+    placeholderOpt.value = '';
+    placeholderOpt.disabled = true;
+    placeholderOpt.selected = !selectedValue;
+    placeholderOpt.textContent = 'Seleccione artículo...';
+    bookingLocal.appendChild(placeholderOpt);
+
+    const articles = {
+        'Carrito Snacks': [
+            { value: 'Carrito Snacks|Pop corn', text: 'Pop corn' },
+            { value: 'Carrito Snacks|Algodón dulce', text: 'Algodón dulce' },
+            { value: 'Carrito Snacks|Manzana acaramelada', text: 'Manzana acaramelada' },
+            { value: 'Carrito Snacks|Manzana achocolatada', text: 'Manzana achocolatada' },
+            { value: 'Carrito Snacks|Churros', text: 'Churros' },
+            { value: 'Carrito Snacks|Donuts', text: 'Donuts' },
+            { value: 'Carrito Snacks|Mazamorra morada', text: 'Mazamorra morada' },
+            { value: 'Carrito Snacks|Arroz con leche', text: 'Arroz con leche' },
+            { value: 'Carrito Snacks|Combinado', text: 'Combinado' },
+            { value: 'Carrito Snacks|Helado', text: 'Helado' },
+            { value: 'Carrito Snacks|Panchos', text: 'Panchos' },
+            { value: 'Carrito Snacks|Pan con hot dog', text: 'Pan con hot dog' },
+            { value: 'Carrito Snacks|Hamburguesa', text: 'Hamburguesa' },
+            { value: 'Carrito Snacks|Brochetas', text: 'Brochetas' },
+            { value: 'Carrito Snacks|Choripan', text: 'Choripan' },
+            { value: 'Carrito Snacks|Mini salchipapa', text: 'Mini salchipapa' },
+            { value: 'Carrito Snacks|Mini pan hot dog', text: 'Mini pan hot dog' },
+            { value: 'Carrito Snacks|Mini Burger', text: 'Mini Burger' },
+            { value: 'Carrito Snacks|Mini choripan', text: 'Mini choripan' },
+            { value: 'Carrito Snacks|Wafles', text: 'Wafles' },
+            { value: 'Carrito Snacks|Chicha morada', text: 'Chicha morada' },
+            { value: 'Carrito Snacks|Inca Kola 300 ml', text: 'Inca Kola 300 ml' },
+            { value: 'Carrito Snacks|Coca Cola 300 ml', text: 'Coca Cola 300 ml' },
+            { value: 'Carrito Snacks|Fanta 300 ml', text: 'Fanta 300 ml' },
+            { value: 'Carrito Snacks|Agua cielo kids', text: 'Agua cielo kids' }
+        ],
+        'Magia del rebote': [
+            { value: 'Magia del rebote|INFLABLE FUNCITY', text: 'INFLABLE FUNCITY' },
+            { value: 'Magia del rebote|Cuatruple Resbalin', text: 'Cuatruple Resbalin' },
+            { value: 'Magia del rebote|Escalando', text: 'Escalando' },
+            { value: 'Magia del rebote|Triple Resbalin', text: 'Triple Resbalin' },
+            { value: 'Magia del rebote|Pista de Obstaculos', text: 'Pista de Obstaculos' },
+            { value: 'Magia del rebote|Inflables de destreza', text: 'Inflables de destreza' },
+            { value: 'Magia del rebote|Castillo de obstaculos', text: 'Castillo de obstaculos' },
+            { value: 'Magia del rebote|Tobogan Arcohiris', text: 'Tobogan Arcohiris' },
+            { value: 'Magia del rebote|Castillo saltarin', text: 'Castillo saltarin' },
+            { value: 'Magia del rebote|Tortuga saltarina', text: 'Tortuga saltarina' },
+            { value: 'Magia del rebote|Bolikche Bunker', text: 'Bolikche Bunker' },
+            { value: 'Magia del rebote|Rueda Rueda', text: 'Rueda Rueda' },
+            { value: 'Magia del rebote|Campo de Fútbol', text: 'Campo de Fútbol' },
+            { value: 'Magia del rebote|Bumper Balls', text: 'Bumper Balls' }
+        ]
+    };
+
+    let found = false;
+    const categoryArticles = articles[categoryValue] || [];
+    categoryArticles.forEach(art => {
+        const opt = document.createElement('option');
+        opt.value = art.value;
+        opt.textContent = art.text;
+        if (selectedValue && (art.value === selectedValue || 
+            (selectedValue.startsWith('Juego Inflable|') && art.value === selectedValue.replace('Juego Inflable|', 'Magia del rebote|')))) {
+            opt.selected = true;
+            found = true;
+        }
+        bookingLocal.appendChild(opt);
+    });
+
+    if (selectedValue && !found) {
+        // Legacy option compatibility
+        const opt = document.createElement('option');
+        opt.value = selectedValue;
+        const parts = selectedValue.split('|');
+        opt.textContent = parts[1] || parts[0];
+        opt.selected = true;
+        bookingLocal.appendChild(opt);
+    }
+}
+
 function openModal(id) { document.getElementById(id).classList.add('active'); }
 function closeModal(id) { document.getElementById(id).classList.remove('active'); }
 
@@ -184,8 +283,17 @@ function openBookingModal(booking = null, defaultDate = null) {
         document.getElementById('bookingId').value = booking.id;
         document.getElementById('bookingName').value = booking.nombre_cliente || '';
         document.getElementById('bookingDni').value = booking.telefono_cliente || '';
-        document.getElementById('bookingLocal').value = `${booking.categoria}|${booking.item}`;
-        document.getElementById('bookingTipoEvento').value = booking.tipo_evento || '';
+        
+        // Cargar Categoría y Artículo dinámicamente
+        const categorySelect = document.getElementById('bookingCategoria');
+        if (categorySelect) {
+            let cat = booking.categoria || '';
+            if (cat === 'Juego Inflable') cat = 'Magia del rebote';
+            categorySelect.value = cat;
+            updateBookingLocalOptions(cat, `${booking.categoria}|${booking.item}`);
+        } else {
+            document.getElementById('bookingLocal').value = `${booking.categoria}|${booking.item}`;
+        }
         document.getElementById('bookingFecha').value = booking.fecha_reserva;
         document.getElementById('bookingHoraInicio').value = booking.hora_inicio.substring(0, 5);
         document.getElementById('bookingHoraFin').value = booking.hora_fin.substring(0, 5);
@@ -213,6 +321,13 @@ function openBookingModal(booking = null, defaultDate = null) {
     } else {
         document.getElementById('modalTitle').textContent = 'Nueva Reserva de Artículo';
         document.getElementById('btnDeleteBooking').classList.add('hidden');
+        
+        // Reset Categoría y Artículo
+        const categorySelect = document.getElementById('bookingCategoria');
+        if (categorySelect) {
+            categorySelect.value = '';
+        }
+        updateBookingLocalOptions('');
     }
     
     runDynamicCalculations();
@@ -232,7 +347,7 @@ async function handleSaveBooking(e) {
         fecha_reserva: document.getElementById('bookingFecha').value,
         hora_inicio: document.getElementById('bookingHoraInicio').value,
         hora_fin: document.getElementById('bookingHoraFin').value,
-        tipo_evento: document.getElementById('bookingTipoEvento').value,
+        tipo_evento: '',
         monto_total: parseFloat(document.getElementById('bookingTotal').value) || 0,
         monto_adelanto: parseFloat(document.getElementById('bookingAdelanto').value) || 0,
         medio_contacto: document.getElementById('bookingSource').value,
@@ -382,7 +497,7 @@ function initCalendar() {
                 const clientName = formatClientName(b.nombre_cliente);
                 const startTime = b.hora_inicio ? b.hora_inicio.substring(0, 5) : '';
                 const endTime = b.hora_fin ? b.hora_fin.substring(0, 5) : '';
-                const eventType = b.tipo_evento || 'Sin especificar';
+                const eventType = b.tipo_evento;
                 const advisor = b.asesor_registro || 'No asignado';
                 const categoria = b.categoria || 'Carritos';
                 const item = b.item || '';
@@ -412,7 +527,7 @@ function initCalendar() {
                         <div class="tooltip-body">
                             <p><strong>Cliente:</strong> ${clientName}</p>
                             <p><strong>Horario:</strong> ${startTime} - ${endTime}</p>
-                            <p><strong>Evento:</strong> ${eventType}</p>
+                            ${eventType ? `<p><strong>Evento:</strong> ${eventType}</p>` : ''}
                             <p><strong>Asesor@:</strong> ${advisor}</p>
                         </div>
                     `;
@@ -482,32 +597,27 @@ function renderCalendarEvents() {
     const events = [];
     bookings.forEach(b => {
         let filterId = '';
-        let color = '#ec4899'; // default cotton candy pink
-        let titlePrefix = '';
+        let color = '#ec4899'; 
+        let titlePrefix = `[${b.item || ''}]`;
         let customClass = '';
         
-        if (b.categoria === 'Carrito Snacks' && b.item === 'Popcorn') {
-            filterId = 'filterPopcorn'; color = '#db2777'; titlePrefix = '[Popcorn]'; customClass = 'event-popcorn';
-        } else if (b.categoria === 'Carrito Snacks' && b.item === 'Algodón de Azúcar') {
-            filterId = 'filterAlgodon'; color = '#f43f5e'; titlePrefix = '[Algodón]'; customClass = 'event-algodon';
-        } else if (b.categoria === 'Carrito Snacks' && b.item === 'Hot Dogs') {
-            filterId = 'filterHotDogs'; color = '#ea580c'; titlePrefix = '[HotDogs]'; customClass = 'event-hotdogs';
-        } else if (b.categoria === 'Carrito Snacks' && b.item === 'Manzanas Acarameladas') {
-            filterId = 'filterManzanas'; color = '#e11d48'; titlePrefix = '[Manzanas]'; customClass = 'event-manzanas';
-        } else if (b.categoria === 'Juego Inflable' && b.item === 'Castillo Inflable') {
-            filterId = 'filterCastillo'; color = '#0284c7'; titlePrefix = '[Castillo]'; customClass = 'event-castillo';
-        } else if (b.categoria === 'Juego Inflable' && b.item === 'Tobogán Gigante') {
-            filterId = 'filterTobogan'; color = '#0891b2'; titlePrefix = '[Tobogán]'; customClass = 'event-tobogan';
-        } else if (b.categoria === 'Juego Inflable' && b.item === 'Cama Elástica') {
-            filterId = 'filterCamaElastica'; color = '#0d9488'; titlePrefix = '[Cama]'; customClass = 'event-cama';
-        } else if (b.categoria === 'Juego Inflable' && b.item === 'Toro Mecánico') {
-            filterId = 'filterToroMecanico'; color = '#4f46e5'; titlePrefix = '[Toro]'; customClass = 'event-toro';
+        let cat = b.categoria;
+        if (cat === 'Juego Inflable') cat = 'Magia del rebote';
+
+        if (cat === 'Carrito Snacks') {
+            filterId = 'filterCarritosSnacks';
+            color = '#db2777'; 
+            customClass = 'event-popcorn';
+        } else if (cat === 'Magia del rebote') {
+            filterId = 'filterMagiaRebote';
+            color = '#0284c7';
+            customClass = 'event-castillo';
         }
         
         const filterEl = document.getElementById(filterId);
         if (filterEl && !filterEl.checked) return;
         
-        let title = `${titlePrefix} ${b.nombre_cliente} - ${b.tipo_evento}`;
+        let title = `${titlePrefix} ${b.nombre_cliente}${b.tipo_evento ? ' - ' + b.tipo_evento : ''}`;
         if (b.estado_reserva === 'Bloqueado') {
             title = `🔒 BLOQUEADO ${titlePrefix}`;
             color = '#ef4444';

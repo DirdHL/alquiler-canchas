@@ -60,47 +60,17 @@
             </div>
 
             <nav class="nav-filters">
-                <h3>Filtrar por Artículo</h3>
+                <h3>Filtrar por Categoría</h3>
                 <div class="filter-group">
                     <label class="filter-item">
-                        <input type="checkbox" id="filterPopcorn" checked>
+                        <input type="checkbox" id="filterCarritosSnacks" checked>
                         <span class="custom-checkbox color-b1"></span>
-                        Carrito Popcorn
+                        Carritos Snacks
                     </label>
                     <label class="filter-item">
-                        <input type="checkbox" id="filterAlgodon" checked>
+                        <input type="checkbox" id="filterMagiaRebote" checked>
                         <span class="custom-checkbox color-b2"></span>
-                        Carrito Algodón
-                    </label>
-                    <label class="filter-item">
-                        <input type="checkbox" id="filterHotDogs" checked>
-                        <span class="custom-checkbox color-b3"></span>
-                        Carrito Hot Dogs
-                    </label>
-                    <label class="filter-item">
-                        <input type="checkbox" id="filterManzanas" checked>
-                        <span class="custom-checkbox color-b4"></span>
-                        Manzanas Acarameladas
-                    </label>
-                    <label class="filter-item">
-                        <input type="checkbox" id="filterCastillo" checked>
-                        <span class="custom-checkbox color-b5"></span>
-                        Castillo Inflable
-                    </label>
-                    <label class="filter-item">
-                        <input type="checkbox" id="filterTobogan" checked>
-                        <span class="custom-checkbox color-b6"></span>
-                        Tobogán Gigante
-                    </label>
-                    <label class="filter-item">
-                        <input type="checkbox" id="filterCamaElastica" checked>
-                        <span class="custom-checkbox color-b7"></span>
-                        Cama Elástica
-                    </label>
-                    <label class="filter-item">
-                        <input type="checkbox" id="filterToroMecanico" checked>
-                        <span class="custom-checkbox color-b8"></span>
-                        Toro Mecánico
+                        Magia del rebote
                     </label>
                 </div>
 
@@ -237,46 +207,53 @@
 
                     <div class="form-row" id="rowClientDetails" style="grid-template-columns: 1fr;">
                         <div class="form-group">
-                            <label for="bookingDni">DNI / Teléfono</label>
+                            <label for="bookingDni">DNI *</label>
                             <div class="input-wrapper">
                                 <i data-lucide="credit-card"></i>
-                                <input type="text" id="bookingDni" placeholder="Ej. 12345678" maxlength="12"
-                                    inputmode="numeric" pattern="[0-9]*">
+                                <input type="text" id="bookingDni" placeholder="Ej. 12345678" maxlength="8"
+                                    inputmode="numeric" pattern="[0-9]*" required>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Local y Tipo de Evento (Adaptado a Categoría y Artículo) -->
+                    <!-- Categoría y Artículo a Alquilar -->
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="bookingLocal">Artículo a Alquilar *</label>
+                            <label for="bookingCategoria">Categoría *</label>
                             <div class="input-wrapper">
-                                <i data-lucide="lollipop"></i>
-                                <select id="bookingLocal" required>
+                                <i data-lucide="tag"></i>
+                                <select id="bookingCategoria" required>
                                     <option value="" disabled selected>Seleccione...</option>
-                                    <optgroup label="Carritos Snacks">
-                                        <option value="Carrito Snacks|Popcorn">Carrito de Popcorn</option>
-                                        <option value="Carrito Snacks|Algodón de Azúcar">Carrito de Algodón</option>
-                                        <option value="Carrito Snacks|Hot Dogs">Carrito de Hot Dogs</option>
-                                        <option value="Carrito Snacks|Manzanas Acarameladas">Manzanas Acarameladas
-                                        </option>
-                                    </optgroup>
-                                    <optgroup label="Juegos Inflables">
-                                        <option value="Juego Inflable|Castillo Inflable">Castillo Inflable</option>
-                                        <option value="Juego Inflable|Tobogán Gigante">Tobogán Gigante</option>
-                                        <option value="Juego Inflable|Cama Elástica">Cama Elástica</option>
-                                        <option value="Juego Inflable|Toro Mecánico">Toro Mecánico</option>
-                                    </optgroup>
+                                    <option value="Carrito Snacks">Carritos Snacks</option>
+                                    <option value="Magia del rebote">Magia del rebote</option>
                                 </select>
                             </div>
                         </div>
                         <div class="form-group">
-                            <label for="bookingTipoEvento">Tipo de Evento *</label>
+                            <label for="bookingLocal">Artículo a Alquilar *</label>
                             <div class="input-wrapper">
-                                <i data-lucide="party-popper"></i>
-                                <input type="text" id="bookingTipoEvento" required
-                                    placeholder="Ej. Cumpleaños, Fiesta infantil, Kermés...">
+                                <i data-lucide="lollipop"></i>
+                                <select id="bookingLocal" required disabled>
+                                    <option value="" disabled selected>Seleccione categoría primero...</option>
+                                </select>
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- Medio de Contacto -->
+                    <div class="form-group">
+                        <label for="bookingSource">Medio de Contacto *</label>
+                        <div class="input-wrapper">
+                            <i data-lucide="share-2"></i>
+                            <select id="bookingSource" required>
+                                <option value="Msg masivo" selected>Msg masivo</option>
+                                <option value="Facebook">Facebook</option>
+                                <option value="TikTok">TikTok</option>
+                                <option value="Instagram">Instagram</option>
+                                <option value="Estado WSP">Estado WSP</option>
+                                <option value="Presencial">Presencial</option>
+                                <option value="Afiche">Afiche</option>
+                            </select>
                         </div>
                     </div>
 
@@ -318,23 +295,6 @@
                         <i data-lucide="info" style="width: 12px; height: 12px;"></i>
                         <span>Nota: Usa el formato de 24 horas. Las reservas que cruzan la medianoche se calculan
                             automáticamente.</span>
-                    </div>
-
-                    <!-- Payment Information -->
-                    <div class="form-group">
-                        <label for="bookingSource">Medio de Contacto *</label>
-                        <div class="input-wrapper">
-                            <i data-lucide="share-2"></i>
-                            <select id="bookingSource" required>
-                                <option value="Msg masivo" selected>Msg masivo</option>
-                                <option value="Facebook">Facebook</option>
-                                <option value="TikTok">TikTok</option>
-                                <option value="Instagram">Instagram</option>
-                                <option value="Estado WSP">Estado WSP</option>
-                                <option value="Presencial">Presencial</option>
-                                <option value="Afiche">Afiche</option>
-                            </select>
-                        </div>
                     </div>
 
                     <div class="form-group hidden" id="customSourceGroup">
