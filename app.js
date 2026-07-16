@@ -822,6 +822,9 @@ function setupEventListeners() {
     if (bookingCourtInput) {
         bookingCourtInput.addEventListener('change', updateModalCalculatedTotal);
     }
+    if (bookingSportInput) {
+        bookingSportInput.addEventListener('change', updateModalCalculatedTotal);
+    }
     if (bookingDateInput) {
         bookingDateInput.addEventListener('change', updateModalCalculatedTotal);
     }
@@ -1465,17 +1468,22 @@ function updateModalCalculatedTotal() {
     if (bookingTotalContainer) bookingTotalContainer.style.display = 'flex';
 
     const court = bookingCourtInput.value;
+    const sport = bookingSportInput ? bookingSportInput.value : '';
     let courtRate = 0;
-    if (court === 'Grande') {
-        courtRate = parseFloat(localStorage.getItem('canchapro_rate_grande') || '25');
-    } else if (court === 'Pequeña') {
-        courtRate = parseFloat(localStorage.getItem('canchapro_rate_pequena') || '25');
-    } else if (court === 'Cancha Grande') {
-        courtRate = parseFloat(localStorage.getItem('canchapro_rate_grande') || '25');
-    } else if (court === 'Cancha Pequeña') {
-        courtRate = parseFloat(localStorage.getItem('canchapro_rate_pequena') || '25');
-    } else if (court === 'Cancha de Vóley') {
-        courtRate = parseFloat(localStorage.getItem('canchapro_rate_voley') || '25');
+    if (sport === 'Vóley') {
+        courtRate = 25;
+    } else {
+        if (court === 'Grande') {
+            courtRate = parseFloat(localStorage.getItem('canchapro_rate_grande') || '25');
+        } else if (court === 'Pequeña') {
+            courtRate = parseFloat(localStorage.getItem('canchapro_rate_pequena') || '25');
+        } else if (court === 'Cancha Grande') {
+            courtRate = parseFloat(localStorage.getItem('canchapro_rate_grande') || '25');
+        } else if (court === 'Cancha Pequeña') {
+            courtRate = parseFloat(localStorage.getItem('canchapro_rate_pequena') || '25');
+        } else if (court === 'Cancha de Vóley') {
+            courtRate = parseFloat(localStorage.getItem('canchapro_rate_voley') || '25');
+        }
     }
 
     const pelotaRate = parseFloat(localStorage.getItem('canchapro_rate_pelota') || '5');
@@ -1495,7 +1503,7 @@ function updateModalCalculatedTotal() {
     const chalecoVal = bookingChalecoInput.value === 'true';
 
     const courtIncome = durationHours * courtRate;
-    const pelotaIncome = pelotaVal ? pelotaRate : 0;
+    const pelotaIncome = (sport === 'Vóley') ? 0 : (pelotaVal ? pelotaRate : 0);
     const chalecoIncome = chalecoVal ? chalecoRate : 0;
     const total = courtIncome + pelotaIncome + chalecoIncome;
 
@@ -2303,7 +2311,7 @@ function updateDailySummary() {
                     <div class="summary-item-client">${escapeHTML(e.name)}</div>
                     ${(pelotaVal || chalecoVal) ? `
                     <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: -4px; margin-bottom: 2px;">
-                        ${pelotaVal ? `<span class="summary-detail-tag" style="color:#34d399;">⚽ Pelota</span>` : ''}
+                        ${pelotaVal ? `<span class="summary-detail-tag" style="color:#34d399;">${e.sport === 'Vóley' ? '🏐' : '⚽'} Pelota</span>` : ''}
                         ${chalecoVal ? `<span class="summary-detail-tag" style="color:#34d399;">🎽 Chaleco</span>` : ''}
                     </div>
                     ` : ''}
@@ -3833,10 +3841,14 @@ function getEventIncome(e) {
     }
 
     let courtRate = 0;
-    if (e.court === 'Grande') {
-        courtRate = parseFloat(localStorage.getItem('canchapro_rate_grande') || '25');
-    } else if (e.court === 'Pequeña') {
-        courtRate = parseFloat(localStorage.getItem('canchapro_rate_pequena') || '25');
+    if (e.sport === 'Vóley') {
+        courtRate = 25;
+    } else {
+        if (e.court === 'Grande') {
+            courtRate = parseFloat(localStorage.getItem('canchapro_rate_grande') || '25');
+        } else if (e.court === 'Pequeña') {
+            courtRate = parseFloat(localStorage.getItem('canchapro_rate_pequena') || '25');
+        }
     }
 
     const pelotaRate = parseFloat(localStorage.getItem('canchapro_rate_pelota') || '5');
@@ -3850,7 +3862,7 @@ function getEventIncome(e) {
     const durationHours = (end - start) / 60;
 
     const courtIncome = durationHours * courtRate;
-    const pelotaIncome = (e.pelota === true || e.pelota === 'true') ? pelotaRate : 0;
+    const pelotaIncome = (e.sport === 'Vóley') ? 0 : ((e.pelota === true || e.pelota === 'true') ? pelotaRate : 0);
     const chalecoIncome = (e.chaleco === true || e.chaleco === 'true') ? chalecoRate : 0;
 
     return {
