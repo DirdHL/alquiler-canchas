@@ -267,19 +267,31 @@
                             </small>
                         </div>
 
-                        <!-- Auto Check-out Checkbox (Shown on Checkin) -->
+                        <!-- Auto Check-out Custom Input (Shown on Checkin) -->
                         <div class="form-group" id="autoCheckoutToggleGroup"
                             style="display: none; text-align: left; margin: 15px 0; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: var(--radius-md);">
                             <label class="filter-item"
                                 style="color: var(--text-primary); cursor: pointer; display: flex; align-items: center; gap: 10px; font-size: 13.5px; font-weight: 500; margin: 0;">
-                                <input type="checkbox" id="autoCheckoutCheckbox" checked>
+                                <input type="checkbox" id="autoCheckoutEnabled" checked>
                                 <span class="custom-checkbox"
                                     style="border-color: var(--primary); width: 20px; height: 20px; border-radius: 6px; flex-shrink: 0;"></span>
-                                <span>⏰ Salida automática a las 6:00 PM</span>
+                                <span>⏰ Programar salida automática hoy</span>
                             </label>
+                            
+                            <div id="autoCheckoutDetails" style="display: flex; align-items: center; gap: 8px; margin-left: 30px; margin-top: 10px;">
+                                <span style="font-size: 13px; color: var(--text-secondary);">Salida a las:</span>
+                                <input type="text" id="autoCheckoutTimeInput" value="6:00" placeholder="e.g. 6:00" 
+                                    style="width: 80px; padding: 6px 10px; border: 1px solid var(--border-color); border-radius: 6px; background: rgba(255, 255, 255, 0.05); color: var(--text-primary); text-align: center; font-size: 13.5px; font-weight: 600;">
+                                <select id="autoCheckoutAmpmSelect" 
+                                    style="width: 75px; padding: 6px 10px; border: 1px solid var(--border-color); border-radius: 6px; background: rgba(255, 255, 255, 0.05); color: var(--text-primary); font-size: 13.5px; font-weight: 600; cursor: pointer;">
+                                    <option value="PM" selected>PM</option>
+                                    <option value="AM">AM</option>
+                                </select>
+                            </div>
+                            
                             <small
-                                style="color: var(--text-muted); display: block; margin-top: 6px; font-size: 11px; margin-left: 30px; line-height: 1.3;">
-                                Si dejas marcada esta opción, a las 6:00 PM se registrará tu salida de forma automática.
+                                style="color: var(--text-muted); display: block; margin-top: 8px; font-size: 11px; margin-left: 30px; line-height: 1.3;">
+                                Al cumplirse la hora y período seleccionados, el sistema registrará tu salida de forma automática.
                             </small>
                         </div>
 
