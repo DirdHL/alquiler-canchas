@@ -73,12 +73,7 @@ function setupEventListeners() {
             updateBookingLocalOptions(this.value);
         });
     }
-    
-    // Filters
-    const filterCarritos = document.getElementById('filterCarritosSnacks');
-    if (filterCarritos) filterCarritos.addEventListener('change', renderCalendarEvents);
-    const filterMagia = document.getElementById('filterMagiaRebote');
-    if (filterMagia) filterMagia.addEventListener('change', renderCalendarEvents);
+
 
     // Stats Event Listeners
     document.getElementById('btnOpenStats').addEventListener('click', () => openStatsAuthModal());
@@ -605,17 +600,12 @@ function renderCalendarEvents() {
         if (cat === 'Juego Inflable') cat = 'Magia del rebote';
 
         if (cat === 'Carrito Snacks') {
-            filterId = 'filterCarritosSnacks';
             color = '#db2777'; 
             customClass = 'event-popcorn';
         } else if (cat === 'Magia del rebote') {
-            filterId = 'filterMagiaRebote';
             color = '#0284c7';
             customClass = 'event-castillo';
         }
-        
-        const filterEl = document.getElementById(filterId);
-        if (filterEl && !filterEl.checked) return;
         
         let title = `${titlePrefix} ${b.nombre_cliente}${b.tipo_evento ? ' - ' + b.tipo_evento : ''}`;
         if (b.estado_reserva === 'Bloqueado') {
