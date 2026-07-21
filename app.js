@@ -200,6 +200,11 @@ const btnCloseHistory = document.getElementById('btnCloseHistory');
 const activityList = document.getElementById('activityList');
 const btnClearHistoryLocal = document.getElementById('btnClearHistoryLocal');
 
+// Tarifario Modal DOM Elements
+const modalTarifario = document.getElementById('modalTarifario');
+const btnOpenTarifario = document.getElementById('btnOpenTarifario');
+const btnCloseTarifario = document.getElementById('btnCloseTarifario');
+
 // Filters
 const filterCanchaGrande = document.getElementById('filterCanchaGrande');
 const filterCanchaPequena = document.getElementById('filterCanchaPequena');
@@ -522,6 +527,19 @@ function setupEventListeners() {
     if (btnCloseHistory) {
         btnCloseHistory.addEventListener('click', () => {
             closeModal(modalHistory);
+        });
+    }
+
+    // Tarifario Modal Actions
+    if (btnOpenTarifario && modalTarifario) {
+        btnOpenTarifario.addEventListener('click', () => {
+            closeSidebarDrawer();
+            openModal(modalTarifario);
+        });
+    }
+    if (btnCloseTarifario && modalTarifario) {
+        btnCloseTarifario.addEventListener('click', () => {
+            closeModal(modalTarifario);
         });
     }
     if (btnClearHistoryLocal) {
@@ -1458,6 +1476,130 @@ function parseSplitPayment(tipoPagoStr) {
     return null;
 }
 
+function calculateBookingIncome(params) {
+    const { date, startTime, endTime, court, sport, pelota, chaleco } = params;
+
+    if (sport === 'Bloqueo' || sport === 'bloqueo') {
+        return {
+            durationHours: 0,
+            courtIncome: 0,
+            pelotaIncome: 0,
+            chalecoIncome: 0,
+            total: 0,
+            equipmentIncluded: false
+        };
+    }
+
+    const cleanStart = startTime ? String(startTime).substring(0, 5) : '00:00';
+    const cleanEnd = endTime ? String(endTime).substring(0, 5) : '00:00';
+
+    let start = parseTimeToMinutes(cleanStart);
+    let end = parseTimeToMinutes(cleanEnd);
+    if (end <= start && cleanStart && cleanEnd && (cleanStart !== '00:00' || cleanEnd !== '00:00')) {
+        end += 1440;
+    }
+    const durationHours = (cleanStart && cleanEnd && end > start) ? (end - start) / 60 : 0;
+    if (durationHours <= 0) {
+        return {
+            durationHours: 0,
+            courtIncome: 0,
+            pelotaIncome: 0,
+            chalecoIncome: 0,
+            total: 0,
+            equipmentIncluded: false
+        };
+    }
+
+    // Determine day of week
+    let isWeekendTier = false; // Friday (5), Saturday (6), Sunday (0)
+    if (date) {
+        const parts = String(date).split('-');
+        if (parts.length === 3) {
+            const year = parseInt(parts[0], 10);
+            const month = parseInt(parts[1], 10) - 1;
+            const day = parseInt(parts[2], 10);
+            const dateObj = new Date(year, month, day);
+            const dow = dateObj.getDay();
+            if (dow === 0 || dow === 5 || dow === 6) {
+                isWeekendTier = true;
+            }
+        }
+    }
+
+    const courtStr = String(court || '');
+    const isGrande = courtStr.includes('Grande');
+    const isPequena = courtStr.includes('Pequeña');
+
+    let courtIncome = 0;
+    let equipmentIncluded = false;
+
+    if (sport === 'Vóley') {
+        const voleyRate = parseFloat(localStorage.getItem('canchapro_rate_voley') || '25');
+        courtIncome = durationHours * voleyRate;
+    } else if (isWeekendTier) {
+        const baseGrande = parseFloat(localStorage.getItem('canchapro_rate_grande') || '25');
+        const basePequena = parseFloat(localStorage.getItem('canchapro_rate_pequena') || '25');
+
+        const rateVieDom36Grande = parseFloat(localStorage.getItem('canchapro_rate_viedom_36_grande') || '50');
+        const rateVieDom36Pequena = parseFloat(localStorage.getItem('canchapro_rate_viedom_36_pequena') || '40');
+
+        const rateVieDom612Grande = parseFloat(localStorage.getItem('canchapro_rate_viedom_612_grande') || '60');
+        const rateVieDom612Pequena = parseFloat(localStorage.getItem('canchapro_rate_viedom_612_pequena') || '50');
+
+        let sumRateMins = 0;
+        let includedMinsCount = 0;
+
+        for (let m = start; m < end; m++) {
+            const mMod = m % 1440;
+            let minuteRate = isGrande ? baseGrande : basePequena;
+
+            if (mMod >= 900 && mMod < 1080) { // 3:00 pm to 6:00 pm
+                minuteRate = isGrande ? rateVieDom36Grande : rateVieDom36Pequena;
+                includedMinsCount++;
+            } else if (mMod >= 1080 && mMod < 1440) { // 6:00 pm to 12:00 am
+                minuteRate = isGrande ? rateVieDom612Grande : rateVieDom612Pequena;
+                includedMinsCount++;
+            } else if (mMod >= 0 && mMod < 360 && start >= 900) { // Late night continuation
+                minuteRate = isGrande ? rateVieDom612Grande : rateVieDom612Pequena;
+                includedMinsCount++;
+            }
+
+            sumRateMins += minuteRate;
+        }
+
+        courtIncome = sumRateMins / 60;
+        if (includedMinsCount > 0) {
+            equipmentIncluded = true;
+        }
+    } else {
+        // Lunes a Jueves (o tasa base general)
+        const baseGrande = parseFloat(localStorage.getItem('canchapro_rate_grande') || '25');
+        const basePequena = parseFloat(localStorage.getItem('canchapro_rate_pequena') || '25');
+        const rate = isGrande ? baseGrande : (isPequena ? basePequena : baseGrande);
+        courtIncome = durationHours * rate;
+    }
+
+    const pelotaRate = parseFloat(localStorage.getItem('canchapro_rate_pelota') || '5');
+    const chalecoRate = parseFloat(localStorage.getItem('canchapro_rate_chaleco') || '5');
+
+    const pelotaVal = pelota === true || pelota === 'true';
+    const chalecoVal = chaleco === true || chaleco === 'true';
+
+    const pelotaIncome = (sport === 'Vóley' || equipmentIncluded) ? 0 : (pelotaVal ? pelotaRate : 0);
+    const chalecoIncome = equipmentIncluded ? 0 : (chalecoVal ? chalecoRate : 0);
+
+    const total = courtIncome + pelotaIncome + chalecoIncome;
+
+    return {
+        durationHours,
+        courtIncome,
+        pelotaIncome,
+        chalecoIncome,
+        total,
+        equipmentIncluded
+    };
+}
+
 function updateModalCalculatedTotal() {
     const isBlock = bookingIsBlockInput ? bookingIsBlockInput.checked : false;
     
@@ -1467,58 +1609,41 @@ function updateModalCalculatedTotal() {
     }
     if (bookingTotalContainer) bookingTotalContainer.style.display = 'flex';
 
-    const court = bookingCourtInput.value;
+    const court = bookingCourtInput ? bookingCourtInput.value : '';
     const sport = bookingSportInput ? bookingSportInput.value : '';
-    let courtRate = 0;
-    if (sport === 'Vóley') {
-        courtRate = 25;
-    } else {
-        if (court === 'Grande') {
-            courtRate = parseFloat(localStorage.getItem('canchapro_rate_grande') || '25');
-        } else if (court === 'Pequeña') {
-            courtRate = parseFloat(localStorage.getItem('canchapro_rate_pequena') || '25');
-        } else if (court === 'Cancha Grande') {
-            courtRate = parseFloat(localStorage.getItem('canchapro_rate_grande') || '25');
-        } else if (court === 'Cancha Pequeña') {
-            courtRate = parseFloat(localStorage.getItem('canchapro_rate_pequena') || '25');
-        } else if (court === 'Cancha de Vóley') {
-            courtRate = parseFloat(localStorage.getItem('canchapro_rate_voley') || '25');
-        }
-    }
+    const date = bookingDateInput ? bookingDateInput.value : '';
+    const startTime = bookingStartTimeInput ? bookingStartTimeInput.value : '';
+    const endTime = bookingEndTimeInput ? bookingEndTimeInput.value : '';
 
-    const pelotaRate = parseFloat(localStorage.getItem('canchapro_rate_pelota') || '5');
-    const chalecoRate = parseFloat(localStorage.getItem('canchapro_rate_chaleco') || '5');
+    const pelotaVal = bookingPelotaInput ? bookingPelotaInput.value === 'true' : false;
+    const chalecoVal = bookingChalecoInput ? bookingChalecoInput.value === 'true' : false;
 
-    const startTime = bookingStartTimeInput.value;
-    const endTime = bookingEndTimeInput.value;
-
-    let start = startTime ? parseTimeToMinutes(startTime) : 0;
-    let end = endTime ? parseTimeToMinutes(endTime) : 0;
-    if (end <= start && startTime && endTime) {
-        end += 1440;
-    }
-    const durationHours = (startTime && endTime) ? (end - start) / 60 : 0;
-
-    const pelotaVal = bookingPelotaInput.value === 'true';
-    const chalecoVal = bookingChalecoInput.value === 'true';
-
-    const courtIncome = durationHours * courtRate;
-    const pelotaIncome = (sport === 'Vóley') ? 0 : (pelotaVal ? pelotaRate : 0);
-    const chalecoIncome = chalecoVal ? chalecoRate : 0;
-    const total = courtIncome + pelotaIncome + chalecoIncome;
+    const inc = calculateBookingIncome({
+        date,
+        startTime,
+        endTime,
+        court,
+        sport,
+        pelota: pelotaVal,
+        chaleco: chalecoVal
+    });
 
     if (bookingTotalValue) {
-        bookingTotalValue.textContent = `S/. ${total.toFixed(2)}`;
+        let totalHtml = `S/. ${inc.total.toFixed(2)}`;
+        if (inc.equipmentIncluded) {
+            totalHtml += ` <span style="font-size: 11px; color: #10b981; font-weight: 500; margin-left: 6px;">(Incluye pelota y chalecos)</span>`;
+        }
+        bookingTotalValue.innerHTML = totalHtml;
     }
 
     // Keep split payment Yape up to date if they change the total
     if (bookingPaymentTypeInput && bookingPaymentTypeInput.value === 'Dividido' && splitEfectivoInput && splitYapeInput) {
         const cashVal = parseFloat(splitEfectivoInput.value) || 0;
-        const yapeVal = Math.max(0, total - cashVal);
+        const yapeVal = Math.max(0, inc.total - cashVal);
         splitYapeInput.value = yapeVal.toFixed(2);
     }
 
-    return total;
+    return inc.total;
 }
 
 // Handle saving a booking (Create or Update)
@@ -3756,6 +3881,12 @@ function openStatsDashboard() {
 function buildRatesForm() {
     if (!ratesFormRow) return;
     ratesFormRow.innerHTML = `
+        <div style="grid-column: 1 / -1; margin-bottom: 8px;">
+            <h4 style="margin: 0 0 4px 0; color: var(--primary); display: flex; align-items: center; gap: 6px; font-size: 15px;">
+                <i data-lucide="calendar"></i> Tarifas Lunes a Jueves (y General)
+            </h4>
+            <p style="margin: 0; font-size: 12px; color: var(--text-muted);">Precios base por hora y equipamiento extra.</p>
+        </div>
         <div class="form-group">
             <label for="rateGrande">Hora Cancha Grande (S/.) *</label>
             <div class="input-wrapper">
@@ -3784,6 +3915,48 @@ function buildRatesForm() {
                 <input type="number" id="rateChaleco" required min="0" step="0.5" value="${localStorage.getItem('canchapro_rate_chaleco') || '5'}">
             </div>
         </div>
+
+        <div style="grid-column: 1 / -1; margin-top: 16px; margin-bottom: 8px;">
+            <h4 style="margin: 0 0 4px 0; color: #f59e0b; display: flex; align-items: center; gap: 6px; font-size: 15px;">
+                <i data-lucide="clock"></i> Tarifas Viernes a Domingo (3:00 PM a 6:00 PM)
+            </h4>
+            <p style="margin: 0; font-size: 12px; color: var(--text-muted);">Incluye pelota y chalecos sin costo adicional.</p>
+        </div>
+        <div class="form-group">
+            <label for="rateVieDom36Grande">Cancha Grande (S/.) *</label>
+            <div class="input-wrapper">
+                <i data-lucide="dollar-sign"></i>
+                <input type="number" id="rateVieDom36Grande" required min="0" step="0.5" value="${localStorage.getItem('canchapro_rate_viedom_36_grande') || '50'}">
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="rateVieDom36Pequena">Cancha Pequeña (S/.) *</label>
+            <div class="input-wrapper">
+                <i data-lucide="dollar-sign"></i>
+                <input type="number" id="rateVieDom36Pequena" required min="0" step="0.5" value="${localStorage.getItem('canchapro_rate_viedom_36_pequena') || '40'}">
+            </div>
+        </div>
+
+        <div style="grid-column: 1 / -1; margin-top: 16px; margin-bottom: 8px;">
+            <h4 style="margin: 0 0 4px 0; color: #ec4899; display: flex; align-items: center; gap: 6px; font-size: 15px;">
+                <i data-lucide="moon"></i> Tarifas Viernes a Domingo (6:00 PM a 12:00 AM)
+            </h4>
+            <p style="margin: 0; font-size: 12px; color: var(--text-muted);">Incluye pelota y chalecos sin costo adicional.</p>
+        </div>
+        <div class="form-group">
+            <label for="rateVieDom612Grande">Cancha Grande (S/.) *</label>
+            <div class="input-wrapper">
+                <i data-lucide="dollar-sign"></i>
+                <input type="number" id="rateVieDom612Grande" required min="0" step="0.5" value="${localStorage.getItem('canchapro_rate_viedom_612_grande') || '60'}">
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="rateVieDom612Pequena">Cancha Pequeña (S/.) *</label>
+            <div class="input-wrapper">
+                <i data-lucide="dollar-sign"></i>
+                <input type="number" id="rateVieDom612Pequena" required min="0" step="0.5" value="${localStorage.getItem('canchapro_rate_viedom_612_pequena') || '50'}">
+            </div>
+        </div>
     `;
     if (window.lucide) lucide.createIcons();
 }
@@ -3795,10 +3968,20 @@ function handleStatsRatesSave(e) {
     const rPelota = document.getElementById('ratePelota').value;
     const rChaleco = document.getElementById('rateChaleco').value;
 
+    const r36Grande = document.getElementById('rateVieDom36Grande').value;
+    const r36Pequena = document.getElementById('rateVieDom36Pequena').value;
+    const r612Grande = document.getElementById('rateVieDom612Grande').value;
+    const r612Pequena = document.getElementById('rateVieDom612Pequena').value;
+
     localStorage.setItem('canchapro_rate_grande', rGrande);
     localStorage.setItem('canchapro_rate_pequena', rPequena);
     localStorage.setItem('canchapro_rate_pelota', rPelota);
     localStorage.setItem('canchapro_rate_chaleco', rChaleco);
+
+    localStorage.setItem('canchapro_rate_viedom_36_grande', r36Grande);
+    localStorage.setItem('canchapro_rate_viedom_36_pequena', r36Pequena);
+    localStorage.setItem('canchapro_rate_viedom_612_grande', r612Grande);
+    localStorage.setItem('canchapro_rate_viedom_612_pequena', r612Pequena);
 
     statsRatesFeedback.className = 'settings-feedback success';
     statsRatesFeedback.textContent = '¡Tarifas guardadas y aplicadas con éxito! ✅';
@@ -3830,48 +4013,15 @@ function isSameBusinessWeek(eventDateStr, currentBusinessDateStr) {
 }
 
 function getEventIncome(e) {
-    if (e.sport === 'Bloqueo') {
-        return {
-            durationHours: 0,
-            courtIncome: 0,
-            pelotaIncome: 0,
-            chalecoIncome: 0,
-            total: 0
-        };
-    }
-
-    let courtRate = 0;
-    if (e.sport === 'Vóley') {
-        courtRate = 25;
-    } else {
-        if (e.court === 'Grande') {
-            courtRate = parseFloat(localStorage.getItem('canchapro_rate_grande') || '25');
-        } else if (e.court === 'Pequeña') {
-            courtRate = parseFloat(localStorage.getItem('canchapro_rate_pequena') || '25');
-        }
-    }
-
-    const pelotaRate = parseFloat(localStorage.getItem('canchapro_rate_pelota') || '5');
-    const chalecoRate = parseFloat(localStorage.getItem('canchapro_rate_chaleco') || '5');
-
-    let start = parseTimeToMinutes(e.start_time);
-    let end = parseTimeToMinutes(e.end_time);
-    if (end <= start) {
-        end += 1440;
-    }
-    const durationHours = (end - start) / 60;
-
-    const courtIncome = durationHours * courtRate;
-    const pelotaIncome = (e.sport === 'Vóley') ? 0 : ((e.pelota === true || e.pelota === 'true') ? pelotaRate : 0);
-    const chalecoIncome = (e.chaleco === true || e.chaleco === 'true') ? chalecoRate : 0;
-
-    return {
-        durationHours,
-        courtIncome,
-        pelotaIncome,
-        chalecoIncome,
-        total: courtIncome + pelotaIncome + chalecoIncome
-    };
+    return calculateBookingIncome({
+        date: e.date,
+        startTime: e.start_time,
+        endTime: e.end_time,
+        court: e.court,
+        sport: e.sport,
+        pelota: e.pelota,
+        chaleco: e.chaleco
+    });
 }
 
 function updateStatsDashboard() {

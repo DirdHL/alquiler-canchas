@@ -81,6 +81,10 @@
                 </div>
 
                 <h3>Opciones</h3>
+                <button class="btn btn-secondary btn-sm btn-sidebar-action" id="btnOpenTarifario"
+                    style="margin-bottom: 8px; background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.3); color: #34d399;">
+                    <i data-lucide="badge-dollar-sign"></i> Ver Tarifario Actual
+                </button>
                 <button class="btn btn-secondary btn-sm btn-sidebar-action" id="btnOpenHistory"
                     style="margin-bottom: 8px;">
                     <i data-lucide="history"></i> Historial de Cambios
@@ -103,7 +107,7 @@
                     style="text-decoration: none; display: flex; align-items: center; gap: 8px; margin-top: 8px;">
                     <i data-lucide="lollipop" style="width: 16px; height: 16px;"></i> Carritos e inflables
                 </a>
-</nav>
+            </nav>
 
             <div class="stats-card">
                 <h3>Resumen de Hoy</h3>
@@ -604,15 +608,64 @@ ALTER PUBLICATION supabase_realtime ADD TABLE reservas, historial;
             <div class="modal-body" style="padding-top: 16px;">
                 <div style="display: flex; gap: 8px; margin-bottom: 16px; align-items: center;">
                     <div style="position: relative; flex: 1;">
-                        <i data-lucide="search" style="width: 16px; height: 16px; position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none;"></i>
-                        <input type="text" id="historySearchInput" placeholder="Buscar operador o actividad..." style="width: 100%; padding: 8px 12px 8px 32px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); border-radius: var(--radius-md); color: var(--text-primary); font-size: 13px;">
+                        <i data-lucide="search"
+                            style="width: 16px; height: 16px; position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none;"></i>
+                        <input type="text" id="historySearchInput" placeholder="Buscar operador o actividad..."
+                            style="width: 100%; padding: 8px 12px 8px 32px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); border-radius: var(--radius-md); color: var(--text-primary); font-size: 13px;">
                     </div>
-                    <button class="btn btn-secondary btn-sm" id="btnClearHistoryLocal" style="display: none; margin: 0; white-space: nowrap;">
+                    <button class="btn btn-secondary btn-sm" id="btnClearHistoryLocal"
+                        style="display: none; margin: 0; white-space: nowrap;">
                         <i data-lucide="trash-2"></i> Limpiar Local
                     </button>
                 </div>
                 <div class="activity-list" id="activityList">
                     <p class="no-activity">No hay actividad registrada.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Tarifario de Canchas Sintéticas -->
+    <div class="modal-backdrop" id="modalTarifario">
+        <div class="modal-card modal-sm" style="max-width: 440px;">
+            <div class="modal-header">
+                <h3 style="display: flex; align-items: center; gap: 8px; margin: 0;">
+                    <i data-lucide="badge-dollar-sign" style="color: var(--primary);"></i> Tarifario Canchas Sintéticas
+                </h3>
+                <button class="btn-close" id="btnCloseTarifario"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body" style="padding: 20px;">
+                <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px; margin-bottom: 16px;">
+                    <h4 style="margin: 0 0 10px 0; color: var(--primary); font-size: 15px; display: flex; align-items: center; gap: 6px;">
+                        <i data-lucide="calendar" style="width: 16px; height: 16px;"></i> 🗓️ Lunes a Jueves
+                    </h4>
+                    <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: var(--text-secondary); line-height: 1.6;">
+                        <li><strong>S/ 25 por hora</strong></li>
+                        <li><strong>Pelota:</strong> S/ 5</li>
+                        <li><strong>Chalecos:</strong> S/ 5</li>
+                    </ul>
+                </div>
+
+                <div style="background: rgba(245, 158, 11, 0.05); border: 1px solid rgba(245, 158, 11, 0.2); border-radius: var(--radius-md); padding: 16px;">
+                    <h4 style="margin: 0 0 10px 0; color: #f59e0b; font-size: 15px; display: flex; align-items: center; gap: 6px;">
+                        <i data-lucide="sun-medium" style="width: 16px; height: 16px;"></i> 🗓️ Viernes a Domingo
+                    </h4>
+
+                    <div style="margin-bottom: 12px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 6px;">
+                        <strong style="color: #fbbf24; font-size: 13px;">🕒 De 3:00 p. m. a 6:00 p. m.</strong>
+                        <ul style="margin: 6px 0 0 0; padding-left: 20px; font-size: 13px; color: var(--text-secondary); line-height: 1.5;">
+                            <li><strong>Cancha grande:</strong> S/ 50 por hora <span style="color: #34d399; font-size: 11px;">*(incluye pelota y chalecos)*</span></li>
+                            <li><strong>Cancha pequeña:</strong> S/ 40 por hora <span style="color: #34d399; font-size: 11px;">*(incluye pelota y chalecos)*</span></li>
+                        </ul>
+                    </div>
+
+                    <div style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 6px;">
+                        <strong style="color: #f472b6; font-size: 13px;">🌙 De 6:00 p. m. a 12:00 a. m.</strong>
+                        <ul style="margin: 6px 0 0 0; padding-left: 20px; font-size: 13px; color: var(--text-secondary); line-height: 1.5;">
+                            <li><strong>Cancha grande:</strong> S/ 60 por hora <span style="color: #34d399; font-size: 11px;">*(incluye pelota y chalecos)*</span></li>
+                            <li><strong>Cancha pequeña:</strong> S/ 50 por hora <span style="color: #34d399; font-size: 11px;">*(incluye pelota y chalecos)*</span></li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </div>
