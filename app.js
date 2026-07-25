@@ -175,6 +175,12 @@ const splitEfectivoInput = document.getElementById('splitEfectivo');
 const splitYapeInput = document.getElementById('splitYape');
 const bookingTotalContainer = document.getElementById('bookingTotalContainer');
 const bookingTotalValue = document.getElementById('bookingTotalValue');
+const bookingPriceInput = document.getElementById('bookingPriceInput');
+const btnResetPrice = document.getElementById('btnResetPrice');
+const bookingTotalNote = document.getElementById('bookingTotalNote');
+
+let isPriceUserModified = false;
+let currentAutoCalculatedTotal = 0;
 
 const modalSettings = document.getElementById('modalSettings');
 const btnOpenSettings = document.getElementById('btnOpenSettings');
@@ -1297,9 +1303,27 @@ function openBookingModal(booking = null, defaults = null) {
         populateAsesoresDropdown(activeUser);
     }
 
+    isPriceUserModified = false;
     updateModalCalculatedTotal();
     openModal(modalBooking);
     lucide.createIcons(); // Refresh modal icons
+}
+
+if (bookingPriceInput) {
+    bookingPriceInput.addEventListener('input', () => {
+        isPriceUserModified = true;
+        updateModalCalculatedTotal();
+    });
+}
+
+if (btnResetPrice) {
+    btnResetPrice.addEventListener('click', () => {
+        isPriceUserModified = false;
+        if (bookingPriceInput) {
+            bookingPriceInput.value = currentAutoCalculatedTotal.toFixed(2);
+        }
+        updateModalCalculatedTotal();
+    });
 }
 
 function closeBookingModal() {
@@ -1628,9 +1652,23 @@ function updateModalCalculatedTotal() {
         chaleco: chalecoVal
     });
 
+    currentAutoCalculatedTotal = inc.total;
+
+    let finalTotal = currentAutoCalculatedTotal;
+
+    if (bookingPriceInput) {
+        if (!isPriceUserModified || bookingPriceInput.value === '') {
+            bookingPriceInput.value = currentAutoCalculatedTotal.toFixed(2);
+            if (bookingTotalNote) bookingTotalNote.textContent = inc.equipmentIncluded ? "Calculado (incluye pelota y chalecos)" : "Calculado automáticamente";
+        } else {
+            finalTotal = parseFloat(bookingPriceInput.value) || 0;
+            if (bookingTotalNote) bookingTotalNote.textContent = "Modificado manualmente";
+        }
+    }
+
     if (bookingTotalValue) {
-        let totalHtml = `S/. ${inc.total.toFixed(2)}`;
-        if (inc.equipmentIncluded) {
+        let totalHtml = `S/. ${finalTotal.toFixed(2)}`;
+        if (inc.equipmentIncluded && !isPriceUserModified) {
             totalHtml += ` <span style="font-size: 11px; color: #10b981; font-weight: 500; margin-left: 6px;">(Incluye pelota y chalecos)</span>`;
         }
         bookingTotalValue.innerHTML = totalHtml;
@@ -1639,11 +1677,11 @@ function updateModalCalculatedTotal() {
     // Keep split payment Yape up to date if they change the total
     if (bookingPaymentTypeInput && bookingPaymentTypeInput.value === 'Dividido' && splitEfectivoInput && splitYapeInput) {
         const cashVal = parseFloat(splitEfectivoInput.value) || 0;
-        const yapeVal = Math.max(0, inc.total - cashVal);
+        const yapeVal = Math.max(0, finalTotal - cashVal);
         splitYapeInput.value = yapeVal.toFixed(2);
     }
 
-    return inc.total;
+    return finalTotal;
 }
 
 // Handle saving a booking (Create or Update)
