@@ -39,6 +39,25 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // 6. Load Initial Data
     await fetchBookings();
+
+    // 7. Background Auto-Sync Fallback & Tab Visibility Listeners
+    setInterval(() => {
+        if (dbMode === 'supabase' && supabaseClient) {
+            fetchBookings();
+        }
+    }, 15000);
+
+    window.addEventListener('focus', () => {
+        if (dbMode === 'supabase' && supabaseClient) {
+            fetchBookings();
+        }
+    });
+
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden && dbMode === 'supabase' && supabaseClient) {
+            fetchBookings();
+        }
+    });
 });
 
 // Load Operator Session
@@ -904,27 +923,33 @@ function updateBungalowAvailability() {
 // Database Sincronización
 // ----------------------------------------------------
 async function initDatabase() {
-    const url = localStorage.getItem('canchapro_supabase_url');
-    const key = localStorage.getItem('canchapro_supabase_key');
+    const url = localStorage.getItem('canchapro_supabase_url') || localStorage.getItem('canchapro_supabase_url_poli');
+    const key = localStorage.getItem('canchapro_supabase_key') || localStorage.getItem('canchapro_supabase_key_poli');
 
     if (url && key) {
         try {
-            // Test reachability first
-            const reachable = await checkSupabaseReachable(url);
-            if (reachable) {
-                supabaseClient = supabase.createClient(url, key);
+            supabaseClient = supabase.createClient(url, key);
+
+            // Directly test query on reservas_bungalows table
+            const { data, error } = await supabaseClient.from('reservas_bungalows').select('id').limit(1);
+
+            if (!error) {
                 dbMode = 'supabase';
 
                 const statusDot = document.getElementById('statusDot');
-                statusDot.className = 'status-dot connected';
-                document.getElementById('statusText').textContent = 'Conectado a la Nube (Supabase)';
-                document.getElementById('statusDesc').textContent = 'Las reservas de Bungalows se sincronizan automáticamente en tiempo real.';
+                if (statusDot) statusDot.className = 'status-dot connected';
+                const statusText = document.getElementById('statusText');
+                if (statusText) statusText.textContent = 'Conectado a la Nube (Supabase)';
+                const statusDesc = document.getElementById('statusDesc');
+                if (statusDesc) statusDesc.textContent = 'Las reservas de Bungalows se sincronizan automáticamente en tiempo real.';
 
                 // Fetch active advisors list
                 await fetchAdvisors();
 
                 setupRealtimeListener();
                 return;
+            } else {
+                console.warn("Tabla 'reservas_bungalows' no accesible o error Supabase:", error.message);
             }
         } catch (e) {
             console.error("Fallo al inicializar Supabase client:", e);
@@ -934,9 +959,11 @@ async function initDatabase() {
     // Local fallback status
     dbMode = 'local';
     const statusDot = document.getElementById('statusDot');
-    statusDot.className = 'status-dot disconnected';
-    document.getElementById('statusText').textContent = 'Modo Local (Sin Conexión)';
-    document.getElementById('statusDesc').textContent = 'Los datos se guardan en este navegador. Configura la base de datos para compartir con otros asesores.';
+    if (statusDot) statusDot.className = 'status-dot disconnected';
+    const statusText = document.getElementById('statusText');
+    if (statusText) statusText.textContent = 'Modo Local (Sin Conexión)';
+    const statusDesc = document.getElementById('statusDesc');
+    if (statusDesc) statusDesc.textContent = 'Los datos se guardan en este navegador. Configura la base de datos para compartir con otros asesores.';
 
     // Fetch active advisors list
     fetchAdvisors();
@@ -945,10 +972,10 @@ async function initDatabase() {
 async function checkSupabaseReachable(url) {
     try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 4000); // 4s timeout
-        const res = await fetch(`${url}/rest/v1/`, { method: 'OPTIONS', signal: controller.signal });
+        const timeoutId = setTimeout(() => controller.abort(), 4000);
+        const res = await fetch(`${url}/rest/v1/`, { method: 'GET', signal: controller.signal });
         clearTimeout(timeoutId);
-        return res.ok || res.status === 401; // 401 unauthorized is fine (means API reachable)
+        return res.ok || res.status === 401 || res.status === 400;
     } catch (e) {
         return false;
     }
@@ -963,21 +990,29 @@ function setupRealtimeListener() {
 
     realtimeChannel = supabaseClient.channel('realtime_db_bungalows')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'reservas_bungalows' }, async (payload) => {
-            console.log("Cambio en base de datos recibido en tiempo real:", payload);
+            console.log("Cambio en base de datos recibido en tiempo real (Bungalows):", payload);
             await fetchBookings();
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'personal_asesores' }, async () => {
-            // Refetch active advisors list when it changes
             await fetchAdvisors();
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'historial' }, async () => {
-            // Update history modal if active
             const modal = document.getElementById('modalHistory');
             if (modal && modal.classList.contains('active')) {
                 openHistoryModal();
             }
         })
-        .subscribe();
+        .subscribe((status, err) => {
+            console.log("Estado de suscripción Realtime Bungalows:", status);
+            if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+                console.warn("Reintentando reconexión a Realtime Bungalows en 5 segundos...");
+                setTimeout(() => {
+                    if (dbMode === 'supabase' && supabaseClient) {
+                        setupRealtimeListener();
+                    }
+                }, 5000);
+            }
+        });
 }
 
 // Fetch all bookings
