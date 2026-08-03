@@ -1207,7 +1207,7 @@ function updateEmployeeStats() {
     if (targetGoal === 0 && !s.lunes && currentDayIndex > 1) targetGoal = 48.0; // fallback legacy
 
     const baseWeeklyOwed = Math.max(0, targetGoal - weeklyTotal);
-    const weeklyOvertime = Math.max(0, weeklyTotal - targetGoal);
+    const weeklyOvertime = Math.max(0, weeklyTotal - fullWeekGoal);
     const weeklyOwed = Math.max(0, baseWeeklyOwed + weeklyAdjustmentsOwed - weeklyOvertime);
     const percent = Math.min(100, fullWeekGoal > 0 ? (weeklyTotal / fullWeekGoal) * 100 : 0);
 
