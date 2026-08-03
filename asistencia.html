@@ -195,11 +195,18 @@
                         <p>Registro de horas trabajadas y cumplimiento del límite semanal del personal.</p>
                     </div>
                 </div>
-                <!-- Admin Actions Button -->
-                <button class="btn btn-secondary" id="btnAdminActions"
-                    style="border-color: var(--primary); color: var(--primary);">
-                    <i data-lucide="shield-check"></i> <span class="btn-text">Registrar Feriado / Permiso</span>
-                </button>
+                <div style="display: flex; gap: 10px;">
+                    <!-- Admin Schedules Button -->
+                    <button class="btn btn-secondary" id="btnAdminSchedules"
+                        style="border-color: var(--primary); color: var(--primary);">
+                        <i data-lucide="calendar-clock"></i> <span class="btn-text">Configurar Horarios</span>
+                    </button>
+                    <!-- Admin Actions Button -->
+                    <button class="btn btn-secondary" id="btnAdminActions"
+                        style="border-color: var(--primary); color: var(--primary);">
+                        <i data-lucide="shield-check"></i> <span class="btn-text">Registrar Feriado / Permiso</span>
+                    </button>
+                </div>
             </header>
 
             <!-- Dashboard Grid -->
@@ -277,21 +284,23 @@
                                     style="border-color: var(--primary); width: 20px; height: 20px; border-radius: 6px; flex-shrink: 0;"></span>
                                 <span>⏰ Programar salida automática hoy</span>
                             </label>
-                            
-                            <div id="autoCheckoutDetails" style="display: flex; align-items: center; gap: 8px; margin-left: 30px; margin-top: 10px;">
+
+                            <div id="autoCheckoutDetails"
+                                style="display: flex; align-items: center; gap: 8px; margin-left: 30px; margin-top: 10px;">
                                 <span style="font-size: 13px; color: var(--text-secondary);">Salida a las:</span>
-                                <input type="text" id="autoCheckoutTimeInput" value="6:00" placeholder="e.g. 6:00" 
+                                <input type="text" id="autoCheckoutTimeInput" value="6:00" placeholder="e.g. 6:00"
                                     style="width: 80px; padding: 6px 10px; border: 1px solid var(--border-color); border-radius: 6px; background: rgba(255, 255, 255, 0.05); color: var(--text-primary); text-align: center; font-size: 13.5px; font-weight: 600;">
-                                <select id="autoCheckoutAmpmSelect" 
+                                <select id="autoCheckoutAmpmSelect"
                                     style="width: 75px; padding: 6px 10px; border: 1px solid var(--border-color); border-radius: 6px; background: rgba(255, 255, 255, 0.05); color: var(--text-primary); font-size: 13.5px; font-weight: 600; cursor: pointer;">
                                     <option value="PM" selected>PM</option>
                                     <option value="AM">AM</option>
                                 </select>
                             </div>
-                            
+
                             <small
                                 style="color: var(--text-muted); display: block; margin-top: 8px; font-size: 11px; margin-left: 30px; line-height: 1.3;">
-                                Al cumplirse la hora y período seleccionados, el sistema registrará tu salida de forma automática.
+                                Al cumplirse la hora y período seleccionados, el sistema registrará tu salida de forma
+                                automática.
                             </small>
                         </div>
 
@@ -314,54 +323,27 @@
                         <div class="goal-progress-container">
                             <div class="goal-progress-bar" id="goalProgressBar"></div>
                         </div>
-                        <div class="goal-progress-text">
+                        <div class="goal-progress-text" style="display: none;">
                             <span id="progressCurrentText">0.0 h acumuladas</span>
-                            <span>Meta: 48 h / sem</span>
+                            <span id="weeklyGoalText">Meta: 48 h / sem</span>
                         </div>
-
-                        <div class="metrics-row">
+                        <div class="metrics-row" style="grid-template-columns: 1fr 1fr; margin-top: 10px;">
                             <div class="metric-box">
                                 <div style="font-size: 20px; margin-bottom: 2px;">☀️</div>
                                 <div class="val" id="metricWorkedHours">0.0</div>
                                 <div class="lbl">Presenciales</div>
                             </div>
                             <div class="metric-box">
-                                <div style="font-size: 20px; margin-bottom: 2px;">🌈</div>
-                                <div class="val" id="metricJustifiedHours" style="color: var(--primary);">0.0</div>
-                                <div class="lbl">Justificadas</div>
-                            </div>
-                            <div class="metric-box">
                                 <div style="font-size: 20px; margin-bottom: 2px;">⭐</div>
-                                <div class="val" id="metricOwedHours" style="color: #f59e0b;">48.0</div>
+                                <div class="val" id="metricOwedHours" style="color: #f59e0b;">0.0</div>
                                 <div class="lbl">Se Deben</div>
                             </div>
                         </div>
-                    </div>
 
-                    <!-- Detailed Stats Card -->
-                    <div class="progress-card" style="margin-top: 20px;">
-                        <h3
-                            style="margin-bottom: 16px; display: flex; align-items: center; gap: 8px; font-size: 15px; color: var(--text-primary);">
-                            <i data-lucide="bar-chart-3" style="color: #60a5fa; width: 18px; height: 18px;"></i>
-                            Resumen Mensual
-                        </h3>
-
-                        <div style="display: flex; flex-direction: column; gap: 12px; font-size: 13px;">
-                            <div
-                                style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
-                                <span style="color: var(--text-secondary);">Horas Presenciales:</span>
-                                <strong id="statsWorkedHours">0.0 h</strong>
-                            </div>
-                            <div
-                                style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
-                                <span style="color: var(--text-secondary);">Horas Justificadas:</span>
-                                <strong id="statsJustifiedHours" style="color: #c084fc;">0.0 h</strong>
-                            </div>
-                            <div style="display: flex; justify-content: space-between;">
-                                <span style="color: var(--text-secondary);">Horas que se Deben:</span>
-                                <strong id="statsOwedHours" style="color: #f87171;">0.0 h</strong>
-                            </div>
-                        </div>
+                        <button id="btnEmployeeReport" class="btn btn-secondary"
+                            style="width: 100%; margin-top: 20px; font-size: 13px; background: rgba(255, 51, 133, 0.05);">
+                            <i data-lucide="file-text"></i> Ver Reporte Mensual Completo
+                        </button>
                     </div>
                 </div>
 
@@ -372,9 +354,11 @@
                             <i data-lucide="rainbow" style="color: var(--primary);"></i>
                             Historial de Marcaciones
                         </h3>
-                        <button class="btn btn-secondary" id="btnToggleLayout" style="font-size: 12.5px; padding: 6px 12px; display: flex; align-items: center; gap: 6px; border-color: var(--primary); color: var(--primary); background: transparent; cursor: pointer; border-radius: var(--radius-sm);">
+                        <button class="btn btn-secondary" id="btnToggleLayout"
+                            style="font-size: 12.5px; padding: 6px 12px; display: flex; align-items: center; gap: 6px; border-color: var(--primary); color: var(--primary); background: transparent; cursor: pointer; border-radius: var(--radius-sm);">
                             <i data-lucide="arrow-left" class="toggle-icon-left" style="width: 14px; height: 14px;"></i>
-                            <i data-lucide="arrow-right" class="toggle-icon-right" style="width: 14px; height: 14px;"></i>
+                            <i data-lucide="arrow-right" class="toggle-icon-right"
+                                style="width: 14px; height: 14px;"></i>
                             <span id="toggleLayoutText">Ver completo</span>
                         </button>
                     </div>
@@ -391,6 +375,7 @@
                         <div class="filter-input-group">
                             <label for="filterMonth">Mes de Registro</label>
                             <select id="filterMonth">
+
                                 <!-- Populated dynamically (current month and previous months) -->
                             </select>
                         </div>
@@ -587,13 +572,16 @@
                         <div style="display: flex; gap: 10px; align-items: center;">
                             <div class="input-wrapper" style="flex: 1; margin: 0;">
                                 <i data-lucide="clock"></i>
-                                <input type="number" id="adminRegisterHours" value="8" min="0" max="24" placeholder="Horas" required>
+                                <input type="number" id="adminRegisterHours" value="8" min="0" max="24"
+                                    placeholder="Horas" required>
                                 <span style="font-size: 13px; color: var(--text-secondary); margin-left: 8px;">h</span>
                             </div>
                             <div class="input-wrapper" style="flex: 1; margin: 0;">
                                 <i data-lucide="clock"></i>
-                                <input type="number" id="adminRegisterMinutes" value="0" min="0" max="59" placeholder="Minutos" required>
-                                <span style="font-size: 13px; color: var(--text-secondary); margin-left: 8px;">min</span>
+                                <input type="number" id="adminRegisterMinutes" value="0" min="0" max="59"
+                                    placeholder="Minutos" required>
+                                <span
+                                    style="font-size: 13px; color: var(--text-secondary); margin-left: 8px;">min</span>
                             </div>
                         </div>
                         <small style="color: var(--text-muted); margin-top: 6px; display: block;">
@@ -644,14 +632,14 @@
                 <div class="guide-section-card">
                     <div class="guide-card-header">
                         <i data-lucide="calendar" class="guide-icon purple"></i>
-                        <h4>1. La Meta Semanal (48 Horas)</h4>
+                        <h4>1. La Meta Semanal (Horario Personalizado)</h4>
                     </div>
                     <p class="guide-card-desc">
-                        Cada colaborador tiene una meta de <strong>48 horas acumuladas</strong> por semana. Las horas se
-                        acumulan de <strong>lunes a sábado</strong>.
+                        Cada colaborador tiene una meta de horas semanales basada en su <strong>horario
+                            personalizado</strong> establecido por administración.
                     </p>
                     <ul class="guide-list">
-                        <li>El porcentaje de progreso en la barra se calcula en base a esta meta semanal.</li>
+                        <li>El porcentaje de progreso en la barra se calcula en base a tu meta semanal específica.</li>
                         <li>Las horas totales de la semana son la suma de las <strong>horas presenciales</strong> más
                             las <strong>horas justificadas</strong>.</li>
                         <li>El progreso se reinicia automáticamente cada lunes.</li>
@@ -713,15 +701,284 @@
                         El resumen mensual te dice si estás al día o si debes horas acumuladas en el mes:
                     </p>
                     <ul class="guide-list">
-                        <li><strong>Horas Requeridas:</strong> Se calculan a razón de <strong>8 horas por día
-                                laborable</strong> de lunes a sábado (los domingos están excluidos) para todo el mes completo.</li>
-                        <li><strong>Horas que se Deben:</strong> Es la diferencia entre las horas requeridas de todo el mes y lo que has sumado realmente. Si ya cumpliste o superaste la meta mensual, verás <strong>0 h</strong>.</li>
+                        <li><strong>Horas Requeridas:</strong> Se calculan de acuerdo a tu <strong>horario
+                                establecido</strong> para todo el mes completo (ej. 8 horas de lunes a sábado, 0 horas
+                            el domingo).</li>
+                        <li><strong>Horas que se Deben:</strong> Es la diferencia entre las horas requeridas de todo el
+                            mes y lo que has sumado realmente. Si ya cumpliste o superaste la meta mensual, verás
+                            <strong>0 h</strong>.
+                        </li>
+                        <li><strong>Horas Extra:</strong> Si tus horas adeudadas llegan a 0 y sigues trabajando, el
+                            tiempo adicional se acumulará como Horas Extra del mes.</li>
                     </ul>
                 </div>
             </div>
             <div class="modal-actions" style="border-top: 1px solid var(--border-color); padding: 16px 24px;">
                 <button class="btn btn-primary" id="btnCloseGuideBtn"
                     style="width: 100%; background: var(--primary); box-shadow: 0 4px 14px var(--primary-glow);">¡Entendido!</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Configurar Horarios -->
+    <div class="modal-backdrop" id="modalAdminSchedules">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 style="display: flex; align-items: center; gap: 8px;">
+                    <i data-lucide="calendar-clock" class="sun-header-spin" style="color: var(--sun-gold);"></i>
+                    Configurar Horarios del Personal
+                </h3>
+                <button class="btn-close" id="btnCloseAdminSchedules"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="formAdminSchedules">
+                    <div class="form-group">
+                        <label for="adminScheduleEmployeeSelect">Seleccionar Trabajador *</label>
+                        <div class="input-wrapper">
+                            <i data-lucide="user"></i>
+                            <select id="adminScheduleEmployeeSelect" required>
+                                <!-- Dynamic options -->
+                            </select>
+                        </div>
+                    </div>
+
+                    <p class="settings-intro"
+                        style="margin-bottom: 12px; font-size: 13px; color: var(--text-secondary);">
+                        Define la hora de entrada, salida y horas de almuerzo. Desmarca la casilla si es su día libre.
+                    </p>
+
+                    <div class="schedule-grid-advanced" style="display: flex; flex-direction: column; gap: 8px;">
+                        <!-- Lunes -->
+                        <div class="schedule-adv-row"
+                            style="display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.02); padding: 8px; border: 1px solid var(--border-color); border-radius: 6px;">
+                            <label
+                                style="display: flex; align-items: center; gap: 6px; width: 90px; cursor: pointer; font-size: 13px; font-weight: 500;">
+                                <input type="checkbox" id="schLunesActive" checked>
+                                Lunes
+                            </label>
+                            <input type="time" id="schLunesIn" value="09:00"
+                                style="padding: 4px; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.2); color: var(--text-primary); width: 85px;">
+                            <span style="font-size: 12px; color: var(--text-muted);">a</span>
+                            <input type="time" id="schLunesOut" value="18:00"
+                                style="padding: 4px; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.2); color: var(--text-primary); width: 85px;">
+                            <input type="number" id="schLunesLunch" min="0" max="5" step="0.5" value="1"
+                                style="padding: 4px; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.2); color: var(--text-primary); width: 50px; text-align: center;"
+                                title="Horas de almuerzo">
+                            <span style="font-size: 11px; color: var(--text-muted);">h alm.</span>
+                        </div>
+
+                        <!-- Martes -->
+                        <div class="schedule-adv-row"
+                            style="display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.02); padding: 8px; border: 1px solid var(--border-color); border-radius: 6px;">
+                            <label
+                                style="display: flex; align-items: center; gap: 6px; width: 90px; cursor: pointer; font-size: 13px; font-weight: 500;">
+                                <input type="checkbox" id="schMartesActive" checked>
+                                Martes
+                            </label>
+                            <input type="time" id="schMartesIn" value="09:00"
+                                style="padding: 4px; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.2); color: var(--text-primary); width: 85px;">
+                            <span style="font-size: 12px; color: var(--text-muted);">a</span>
+                            <input type="time" id="schMartesOut" value="18:00"
+                                style="padding: 4px; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.2); color: var(--text-primary); width: 85px;">
+                            <input type="number" id="schMartesLunch" min="0" max="5" step="0.5" value="1"
+                                style="padding: 4px; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.2); color: var(--text-primary); width: 50px; text-align: center;"
+                                title="Horas de almuerzo">
+                            <span style="font-size: 11px; color: var(--text-muted);">h alm.</span>
+                        </div>
+
+                        <!-- Miércoles -->
+                        <div class="schedule-adv-row"
+                            style="display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.02); padding: 8px; border: 1px solid var(--border-color); border-radius: 6px;">
+                            <label
+                                style="display: flex; align-items: center; gap: 6px; width: 90px; cursor: pointer; font-size: 13px; font-weight: 500;">
+                                <input type="checkbox" id="schMiercolesActive" checked>
+                                Miércoles
+                            </label>
+                            <input type="time" id="schMiercolesIn" value="09:00"
+                                style="padding: 4px; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.2); color: var(--text-primary); width: 85px;">
+                            <span style="font-size: 12px; color: var(--text-muted);">a</span>
+                            <input type="time" id="schMiercolesOut" value="18:00"
+                                style="padding: 4px; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.2); color: var(--text-primary); width: 85px;">
+                            <input type="number" id="schMiercolesLunch" min="0" max="5" step="0.5" value="1"
+                                style="padding: 4px; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.2); color: var(--text-primary); width: 50px; text-align: center;"
+                                title="Horas de almuerzo">
+                            <span style="font-size: 11px; color: var(--text-muted);">h alm.</span>
+                        </div>
+
+                        <!-- Jueves -->
+                        <div class="schedule-adv-row"
+                            style="display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.02); padding: 8px; border: 1px solid var(--border-color); border-radius: 6px;">
+                            <label
+                                style="display: flex; align-items: center; gap: 6px; width: 90px; cursor: pointer; font-size: 13px; font-weight: 500;">
+                                <input type="checkbox" id="schJuevesActive" checked>
+                                Jueves
+                            </label>
+                            <input type="time" id="schJuevesIn" value="09:00"
+                                style="padding: 4px; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.2); color: var(--text-primary); width: 85px;">
+                            <span style="font-size: 12px; color: var(--text-muted);">a</span>
+                            <input type="time" id="schJuevesOut" value="18:00"
+                                style="padding: 4px; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.2); color: var(--text-primary); width: 85px;">
+                            <input type="number" id="schJuevesLunch" min="0" max="5" step="0.5" value="1"
+                                style="padding: 4px; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.2); color: var(--text-primary); width: 50px; text-align: center;"
+                                title="Horas de almuerzo">
+                            <span style="font-size: 11px; color: var(--text-muted);">h alm.</span>
+                        </div>
+
+                        <!-- Viernes -->
+                        <div class="schedule-adv-row"
+                            style="display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.02); padding: 8px; border: 1px solid var(--border-color); border-radius: 6px;">
+                            <label
+                                style="display: flex; align-items: center; gap: 6px; width: 90px; cursor: pointer; font-size: 13px; font-weight: 500;">
+                                <input type="checkbox" id="schViernesActive" checked>
+                                Viernes
+                            </label>
+                            <input type="time" id="schViernesIn" value="09:00"
+                                style="padding: 4px; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.2); color: var(--text-primary); width: 85px;">
+                            <span style="font-size: 12px; color: var(--text-muted);">a</span>
+                            <input type="time" id="schViernesOut" value="18:00"
+                                style="padding: 4px; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.2); color: var(--text-primary); width: 85px;">
+                            <input type="number" id="schViernesLunch" min="0" max="5" step="0.5" value="1"
+                                style="padding: 4px; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.2); color: var(--text-primary); width: 50px; text-align: center;"
+                                title="Horas de almuerzo">
+                            <span style="font-size: 11px; color: var(--text-muted);">h alm.</span>
+                        </div>
+
+                        <!-- Sábado -->
+                        <div class="schedule-adv-row"
+                            style="display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.02); padding: 8px; border: 1px solid var(--border-color); border-radius: 6px;">
+                            <label
+                                style="display: flex; align-items: center; gap: 6px; width: 90px; cursor: pointer; font-size: 13px; font-weight: 500;">
+                                <input type="checkbox" id="schSabadoActive" checked>
+                                Sábado
+                            </label>
+                            <input type="time" id="schSabadoIn" value="09:00"
+                                style="padding: 4px; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.2); color: var(--text-primary); width: 85px;">
+                            <span style="font-size: 12px; color: var(--text-muted);">a</span>
+                            <input type="time" id="schSabadoOut" value="18:00"
+                                style="padding: 4px; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.2); color: var(--text-primary); width: 85px;">
+                            <input type="number" id="schSabadoLunch" min="0" max="5" step="0.5" value="1"
+                                style="padding: 4px; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.2); color: var(--text-primary); width: 50px; text-align: center;"
+                                title="Horas de almuerzo">
+                            <span style="font-size: 11px; color: var(--text-muted);">h alm.</span>
+                        </div>
+
+                        <!-- Domingo -->
+                        <div class="schedule-adv-row sunday"
+                            style="display: flex; align-items: center; gap: 6px; background: rgba(255, 107, 107, 0.05); padding: 8px; border: 1px solid rgba(255, 107, 107, 0.3); border-radius: 6px;">
+                            <label
+                                style="display: flex; align-items: center; gap: 6px; width: 90px; cursor: pointer; font-size: 13px; font-weight: 500; color: #ff6b6b;">
+                                <input type="checkbox" id="schDomingoActive">
+                                Domingo
+                            </label>
+                            <input type="time" id="schDomingoIn" value="09:00"
+                                style="padding: 4px; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.2); color: var(--text-primary); width: 85px;">
+                            <span style="font-size: 12px; color: var(--text-muted);">a</span>
+                            <input type="time" id="schDomingoOut" value="18:00"
+                                style="padding: 4px; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.2); color: var(--text-primary); width: 85px;">
+                            <input type="number" id="schDomingoLunch" min="0" max="5" step="0.5" value="0"
+                                style="padding: 4px; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.2); color: var(--text-primary); width: 50px; text-align: center;"
+                                title="Horas de almuerzo">
+                            <span style="font-size: 11px; color: var(--text-muted);">h alm.</span>
+                        </div>
+                    </div>
+
+                    <div class="modal-actions" style="margin-top: 20px;">
+                        <button type="submit" class="btn btn-primary" id="btnSaveSchedule"
+                            style="width: 100%; background: var(--primary); box-shadow: 0 4px 14px var(--primary-glow);">Guardar
+                            Horario</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Employee Detailed Report -->
+    <div class="modal-backdrop" id="modalEmployeeReport">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 style="display: flex; align-items: center; gap: 8px; color: var(--primary);">
+                    <i data-lucide="file-spreadsheet"></i> Mi Reporte Detallado
+                </h3>
+                <button class="btn-close" id="btnCloseEmployeeReport"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body" style="display: flex; flex-direction: column; gap: 16px;">
+                <p style="font-size: 13.5px; color: var(--text-secondary); margin-bottom: 0;">Resumen del mes
+                    seleccionado para <strong id="reportEmployeeName">...</strong>.</p>
+
+                <div class="schedule-grid" style="margin-top: 0;">
+                    <div class="schedule-day-row">
+                        <label>Días Laborados</label>
+                        <span id="statsDaysWorked" style="font-weight: 700; font-size: 14px;">0 días</span>
+                    </div>
+                    <div class="schedule-day-row">
+                        <label>Días Justificados (Feriados/Permisos)</label>
+                        <span id="statsDaysJustified" style="font-weight: 700; font-size: 14px; color: #c084fc;">0
+                            días</span>
+                    </div>
+
+                    <div class="schedule-day-row" style="align-items: center;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <label style="margin: 0;">Horas que se Deben (Tardanzas/Faltas)</label>
+                            <button id="btnAdjustOwedHours" class="btn btn-secondary" type="button" style="padding: 2px 8px; font-size: 11px; height: 24px; display: flex; align-items: center; gap: 4px; border-color: #f87171; color: #f87171; background: rgba(248, 113, 113, 0.1); cursor: pointer;" title="Ajustar horas debidas (Requiere clave admin)">
+                                <i data-lucide="plus-minus" style="width: 12px; height: 12px;"></i> +/-
+                            </button>
+                        </div>
+                        <span id="modalStatsOwedHours" style="font-weight: 700; font-size: 14px; color: #f87171;">0 h</span>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Adjust Hours Owed (Ajuste Manual de Deuda) -->
+    <div class="modal-backdrop" id="modalAdjustHours">
+        <div class="modal-card modal-sm" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3 style="display: flex; align-items: center; gap: 8px; color: var(--primary);">
+                    <i data-lucide="sliders" style="color: #f59e0b;"></i> Ajustar Deuda de Horas
+                </h3>
+                <button class="btn-close" id="btnCloseAdjustHours" type="button"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <p class="settings-intro" style="margin-bottom: 16px; font-size: 13px; color: var(--text-secondary);">
+                    Modifica manualmente el saldo de horas debidas para <strong id="adjustEmployeeName">...</strong>.
+                </p>
+                <form id="formAdjustHours">
+                    <div class="form-group" style="margin-bottom: 14px;">
+                        <label>Tipo de Ajuste *</label>
+                        <div style="display: flex; gap: 12px; margin-top: 6px;">
+                            <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; color: #f87171;">
+                                <input type="radio" name="adjustAction" value="add" checked> 🔴 Sumar a la deuda (+ Deuda)
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; color: #34d399;">
+                                <input type="radio" name="adjustAction" value="subtract"> 🟢 Descontar deuda (- Deuda)
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 14px;">
+                        <label for="adjustHoursAmount">Cantidad de Horas *</label>
+                        <div class="input-wrapper">
+                            <i data-lucide="clock"></i>
+                            <input type="number" id="adjustHoursAmount" required min="0.01" step="any" placeholder="Ej. 14, 1.5 o 2" style="width: 100%;">
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 14px;">
+                        <label for="adjustNotes">Motivo / Observación *</label>
+                        <div class="input-wrapper">
+                            <i data-lucide="file-text"></i>
+                            <input type="text" id="adjustNotes" required placeholder="Ej. Ajuste autorizado por administración" style="width: 100%;">
+                        </div>
+                    </div>
+
+                    <div class="modal-actions" style="margin-top: 18px;">
+                        <button type="submit" class="btn btn-primary" style="width: 100%; background: var(--primary); box-shadow: 0 4px 14px var(--primary-glow);">
+                            Guardar Ajuste
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>

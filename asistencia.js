@@ -7,6 +7,7 @@ let supabaseClient = null;
 let allAttendanceRecords = [];
 let employeeList = ['Admin', 'Rogger', 'Vicky'];
 let activeEmployeesList = ['Admin', 'Rogger', 'Vicky'];
+let employeeSchedules = {}; // { 'Nombre': { lunes: 8, martes: 8, ... } }
 let selectedEmployeeName = '';
 let realtimeChannel = null;
 let adminAuthCallback = null;
@@ -58,6 +59,7 @@ const progressCurrentText = document.getElementById('progressCurrentText');
 const metricWorkedHours = document.getElementById('metricWorkedHours');
 const metricJustifiedHours = document.getElementById('metricJustifiedHours');
 const metricOwedHours = document.getElementById('metricOwedHours');
+const weeklyGoalText = document.getElementById('weeklyGoalText');
 
 const filterEmployee = document.getElementById('filterEmployee');
 const filterMonth = document.getElementById('filterMonth');
@@ -93,6 +95,12 @@ const adminRegisterMinutes = document.getElementById('adminRegisterMinutes');
 const adminRegisterNotes = document.getElementById('adminRegisterNotes');
 const adminRegisterError = document.getElementById('adminRegisterError');
 
+const btnAdminSchedules = document.getElementById('btnAdminSchedules');
+const modalAdminSchedules = document.getElementById('modalAdminSchedules');
+const btnCloseAdminSchedules = document.getElementById('btnCloseAdminSchedules');
+const formAdminSchedules = document.getElementById('formAdminSchedules');
+const adminScheduleEmployeeSelect = document.getElementById('adminScheduleEmployeeSelect');
+
 const modalUserOnboarding = document.getElementById('modalUserOnboarding');
 const formUserOnboarding = document.getElementById('formUserOnboarding');
 const onboardingNameInput = document.getElementById('onboardingName');
@@ -121,6 +129,22 @@ const autoCheckoutEnabled = document.getElementById('autoCheckoutEnabled');
 const autoCheckoutDetails = document.getElementById('autoCheckoutDetails');
 const autoCheckoutTimeInput = document.getElementById('autoCheckoutTimeInput');
 const autoCheckoutAmpmSelect = document.getElementById('autoCheckoutAmpmSelect');
+
+// Employee Report Modal Elements
+const btnEmployeeReport = document.getElementById('btnEmployeeReport');
+const modalEmployeeReport = document.getElementById('modalEmployeeReport');
+const btnCloseEmployeeReport = document.getElementById('btnCloseEmployeeReport');
+const reportEmployeeName = document.getElementById('reportEmployeeName');
+const modalStatsOwedHours = document.getElementById('modalStatsOwedHours');
+
+// Adjust Hours Elements
+const btnAdjustOwedHours = document.getElementById('btnAdjustOwedHours');
+const modalAdjustHours = document.getElementById('modalAdjustHours');
+const btnCloseAdjustHours = document.getElementById('btnCloseAdjustHours');
+const formAdjustHours = document.getElementById('formAdjustHours');
+const adjustEmployeeName = document.getElementById('adjustEmployeeName');
+const adjustHoursAmount = document.getElementById('adjustHoursAmount');
+const adjustNotes = document.getElementById('adjustNotes');
 
 // Sidebar toggle for mobile drawer
 const sidebar = document.getElementById('sidebar');
@@ -326,14 +350,20 @@ async function fetchAttendanceRecords() {
                 console.warn("Table personal_asistencia not found or failed, using localStorage fallback:", empErr.message);
                 loadActiveEmployeesFromLocal();
             }
+
+            // 3. Fetch schedules
+            await fetchSchedulesSupabase();
+
         } else {
             allAttendanceRecords = getLocalAttendance();
             loadActiveEmployeesFromLocal();
+            loadSchedulesFromLocal();
         }
     } catch (err) {
         console.error("Error fetching attendance:", err);
         allAttendanceRecords = getLocalAttendance();
         loadActiveEmployeesFromLocal();
+        loadSchedulesFromLocal();
     }
 
     // Refresh dynamic list of employee names based on records and defaults
@@ -427,11 +457,17 @@ function populateEmployeeDropdowns() {
 
     // 3. Admin register employee dropdown (Active employees only)
     adminEmployeeSelect.innerHTML = '';
+    adminScheduleEmployeeSelect.innerHTML = '';
     activeEmployees.forEach(name => {
-        const option = document.createElement('option');
-        option.value = name;
-        option.textContent = getEmployeeNameWithEmoji(name);
-        adminEmployeeSelect.appendChild(option);
+        const option1 = document.createElement('option');
+        option1.value = name;
+        option1.textContent = getEmployeeNameWithEmoji(name);
+        adminEmployeeSelect.appendChild(option1);
+
+        const option2 = document.createElement('option');
+        option2.value = name;
+        option2.textContent = getEmployeeNameWithEmoji(name);
+        adminScheduleEmployeeSelect.appendChild(option2);
     });
 
     // Restore selections if valid
@@ -443,6 +479,43 @@ function populateEmployeeDropdowns() {
     }
     if (activeEmployees.includes(currentAdminVal)) {
         adminEmployeeSelect.value = currentAdminVal;
+        if(adminScheduleEmployeeSelect.querySelector(`option[value="${currentAdminVal}"]`)) {
+            adminScheduleEmployeeSelect.value = currentAdminVal;
+        }
+    }
+}
+
+// ---- Schedules Logic ----
+async function fetchSchedulesSupabase() {
+    try {
+        const { data, error } = await supabaseClient.from('horarios_personal').select('*');
+        if (error) throw error;
+        
+        employeeSchedules = {};
+        if (data && data.length > 0) {
+            data.forEach(row => {
+                if (row.schedule_data) {
+                    employeeSchedules[row.employee_name] = row.schedule_data;
+                }
+            });
+            localStorage.setItem('canchapro_schedules', JSON.stringify(employeeSchedules));
+        }
+    } catch (err) {
+        console.warn("Table horarios_personal not found or failed, using localStorage fallback:", err.message);
+        loadSchedulesFromLocal();
+    }
+}
+
+function loadSchedulesFromLocal() {
+    try {
+        let saved = localStorage.getItem('canchapro_schedules');
+        if (saved) {
+            employeeSchedules = JSON.parse(saved);
+        } else {
+            employeeSchedules = {};
+        }
+    } catch (e) {
+        employeeSchedules = {};
     }
 }
 
@@ -814,15 +887,11 @@ async function handleEmployeeChange() {
         if (autoCheckoutToggleGroup) {
             autoCheckoutToggleGroup.style.display = 'block';
             if (autoCheckoutEnabled) {
-                if (currentHour < 18) {
-                    autoCheckoutEnabled.checked = true;
-                    if (autoCheckoutDetails) autoCheckoutDetails.style.display = 'flex';
-                    if (autoCheckoutTimeInput) autoCheckoutTimeInput.value = '6:00';
-                    if (autoCheckoutAmpmSelect) autoCheckoutAmpmSelect.value = 'PM';
-                } else {
-                    autoCheckoutEnabled.checked = false;
-                    if (autoCheckoutDetails) autoCheckoutDetails.style.display = 'none';
-                }
+                const defaultAuto = getDefaultAutoCheckoutForEmployeeToday(selectedEmployeeName);
+                autoCheckoutEnabled.checked = true;
+                if (autoCheckoutDetails) autoCheckoutDetails.style.display = 'flex';
+                if (autoCheckoutTimeInput) autoCheckoutTimeInput.value = defaultAuto.timeVal;
+                if (autoCheckoutAmpmSelect) autoCheckoutAmpmSelect.value = defaultAuto.ampm;
             }
         }
 
@@ -846,15 +915,11 @@ async function handleEmployeeChange() {
         if (autoCheckoutToggleGroup) {
             autoCheckoutToggleGroup.style.display = 'block';
             if (autoCheckoutEnabled) {
-                if (currentHour < 18) {
-                    autoCheckoutEnabled.checked = true;
-                    if (autoCheckoutDetails) autoCheckoutDetails.style.display = 'flex';
-                    if (autoCheckoutTimeInput) autoCheckoutTimeInput.value = '6:00';
-                    if (autoCheckoutAmpmSelect) autoCheckoutAmpmSelect.value = 'PM';
-                } else {
-                    autoCheckoutEnabled.checked = false;
-                    if (autoCheckoutDetails) autoCheckoutDetails.style.display = 'none';
-                }
+                const defaultAuto = getDefaultAutoCheckoutForEmployeeToday(selectedEmployeeName);
+                autoCheckoutEnabled.checked = true;
+                if (autoCheckoutDetails) autoCheckoutDetails.style.display = 'flex';
+                if (autoCheckoutTimeInput) autoCheckoutTimeInput.value = defaultAuto.timeVal;
+                if (autoCheckoutAmpmSelect) autoCheckoutAmpmSelect.value = defaultAuto.ampm;
             }
         }
 
@@ -1023,6 +1088,7 @@ async function handleToggleAttendance() {
 function updateEmployeeStats() {
     const selectedName = selectedEmployeeName || employeeSelect.value;
     progressEmployeeTitle.textContent = selectedName ? `Progreso de ${getEmployeeNameWithEmoji(selectedName)}` : 'Progreso de Horas';
+    if (reportEmployeeName) reportEmployeeName.textContent = selectedName ? getEmployeeNameWithEmoji(selectedName) : '...';
 
     if (!selectedName) {
         // Reset metrics UI
@@ -1060,33 +1126,108 @@ function updateEmployeeStats() {
 
     let weeklyWorked = 0;
     let weeklyJustified = 0;
+    let weeklyAdjustmentsOwed = 0;
+
     weekRecords.forEach(r => {
         const hours = getRealHoursCredited(r);
         if (r.type === 'Trabajo') {
             weeklyWorked += hours;
         } else if (r.type === 'Feriado' || r.type === 'Permiso') {
             weeklyJustified += hours;
+        } else if (r.type === 'Ajuste') {
+            // Ajuste no altera presenciales trabajadas, solo ajusta la deuda
+            weeklyAdjustmentsOwed += (-hours);
         }
     });
 
     const weeklyTotal = weeklyWorked + weeklyJustified;
-    const targetGoal = 48.0;
-    const weeklyOwed = Math.max(0, targetGoal - weeklyTotal);
-    const percent = Math.min(100, (weeklyTotal / targetGoal) * 100);
+    const s = employeeSchedules[selectedName] || {};
+    
+    // Helper to calculate duration from a day obj
+    const getHoursFromDay = (dayObj) => {
+        if (!dayObj || !dayObj.active) return 0;
+        return calculateScheduledNetHours(dayObj.in, dayObj.out);
+    };
 
-    progressPercentageText.textContent = `${percent.toFixed(0)}%`;
-    goalProgressBar.style.width = `${percent}%`;
-    progressCurrentText.textContent = `${formatHoursToHHMM(weeklyTotal, true)} acumuladas esta semana`;
-    if (metricWorkedHours) metricWorkedHours.textContent = formatHoursToHHMM(weeklyWorked, false);
-    if (metricJustifiedHours) metricJustifiedHours.textContent = formatHoursToHHMM(weeklyJustified, false);
+    // Convert currentDayOfWeek to 1..7 (1=Lunes, 7=Domingo)
+    let currentDayOfWeek = now.getDay();
+    let currentDayIndex = currentDayOfWeek === 0 ? 7 : currentDayOfWeek;
+    
+    let targetGoal = 0;
+    const dayKeys = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
+    
+    const todayStrStr = getLocalDateString(now);
+    const hasRecordToday = weekRecords.some(r => r.date === todayStrStr);
+    
+    let fullWeekGoal = 0;
+    const todayRecords = weekRecords.filter(r => r.date === todayStrStr);
+
+    for (let i = 1; i <= 7; i++) {
+        const dKey = dayKeys[i - 1];
+        const dayHours = getHoursFromDay(s[dKey]);
+        
+        fullWeekGoal += dayHours;
+        
+        if (i < currentDayIndex) {
+            // Pasado: siempre se suma a la meta del día
+            targetGoal += dayHours;
+        } else if (i === currentDayIndex) {
+            // Hoy: si ya terminó el turno suma todo. Si está trabajando, la expectativa se ajusta a lo trabajado para evitar horas extra falsas.
+            if (todayRecords.length > 0) {
+                const hasFinishedShift = todayRecords.some(r => r.check_out);
+                if (hasFinishedShift) {
+                    targetGoal += dayHours;
+                } else {
+                    let todayWorked = 0;
+                    todayRecords.forEach(r => {
+                        todayWorked += getRealHoursCredited(r);
+                    });
+
+                    let todayExpected = todayWorked;
+
+                    const dayObj = s[dKey];
+                    if (dayObj && dayObj.active && dayObj.in) {
+                        const firstRecord = todayRecords[0];
+                        if (firstRecord && firstRecord.check_in) {
+                            const inTime = firstRecord.check_in.substring(0, 5);
+                            const decIn = Number(inTime.split(':')[0]) + Number(inTime.split(':')[1]) / 60;
+                            const decSchedIn = Number(dayObj.in.split(':')[0]) + Number(dayObj.in.split(':')[1]) / 60;
+                            if (decIn > decSchedIn) {
+                                todayExpected += (decIn - decSchedIn);
+                            }
+                        }
+                    }
+                    targetGoal += Math.min(dayHours, todayExpected);
+                }
+            }
+        }
+    }
+    
+    if (fullWeekGoal === 0 && !s.lunes) fullWeekGoal = 48.0; // fallback legacy
+    if (targetGoal === 0 && !s.lunes && currentDayIndex > 1) targetGoal = 48.0; // fallback legacy
+
+    const baseWeeklyOwed = Math.max(0, targetGoal - weeklyTotal);
+    const weeklyOvertime = Math.max(0, weeklyTotal - targetGoal);
+    const weeklyOwed = Math.max(0, baseWeeklyOwed + weeklyAdjustmentsOwed - weeklyOvertime);
+    const percent = Math.min(100, fullWeekGoal > 0 ? (weeklyTotal / fullWeekGoal) * 100 : 0);
+
+    if (typeof progressPercentageText !== 'undefined' && progressPercentageText) {
+        progressPercentageText.textContent = `${percent.toFixed(0)}%`;
+    }
+    
+    // Presenciales suma trabajadas + justificadas según lo solicitado
+    if (metricWorkedHours) metricWorkedHours.textContent = formatHoursToHHMM(weeklyTotal, false);
     if (metricOwedHours) metricOwedHours.textContent = formatHoursToHHMM(weeklyOwed, false);
 
-    if (percent < 30) {
-        goalProgressBar.style.background = 'var(--progress-low, #ff758c)';
-    } else if (percent < 80) {
-        goalProgressBar.style.background = 'var(--progress-medium, #fbd07c)';
-    } else {
-        goalProgressBar.style.background = 'var(--progress-high, var(--rainbow-gradient))';
+    if (goalProgressBar) {
+        goalProgressBar.style.width = `${percent}%`;
+        if (percent < 30) {
+            goalProgressBar.style.background = 'var(--progress-low, #ff758c)';
+        } else if (percent < 80) {
+            goalProgressBar.style.background = 'var(--progress-medium, #fbd07c)';
+        } else {
+            goalProgressBar.style.background = 'var(--progress-high, var(--rainbow-gradient))';
+        }
     }
 
     // --- 2. MONTHLY ACCUMULATED STATS ---
@@ -1098,25 +1239,32 @@ function updateEmployeeStats() {
 
     let workedHours = 0;
     let justifiedHours = 0;
-    let daysWorked = 0;
-    let daysJustified = 0;
+    let monthAdjustmentsOwed = 0;
+    const workedDates = new Set();
+    const justifiedDates = new Set();
 
     monthRecords.forEach(r => {
         const hours = getRealHoursCredited(r);
         if (r.type === 'Trabajo') {
             workedHours += hours;
-            if (r.check_in) {
-                daysWorked++;
+            if (r.check_in && r.date) {
+                workedDates.add(r.date);
             }
         } else if (r.type === 'Feriado' || r.type === 'Permiso') {
             justifiedHours += hours;
-            daysJustified++;
+            if (r.date) {
+                justifiedDates.add(r.date);
+            }
+        } else if (r.type === 'Ajuste') {
+            // Ajuste de horas modifica directamente la deuda acumulada del mes
+            monthAdjustmentsOwed += (-hours);
         }
     });
 
+    const daysWorked = workedDates.size;
+    const daysJustified = justifiedDates.size;
     const totalMonthHours = workedHours + justifiedHours;
 
-    // Calculate Monthly Overtime (Horas Extra del Mes)
     // We group by weeks (Monday-Sunday) whose Sunday date falls within the selected month.
     let monthlyOvertime = 0;
     const employeeAllRecords = allAttendanceRecords.filter(r => r.employee_name === selectedName);
@@ -1155,13 +1303,21 @@ function updateEmployeeStats() {
             weekTotal += getRealHoursCredited(wr);
         });
 
-        if (weekTotal > 48) {
-            monthlyOvertime += (weekTotal - 48);
+        if (weekTotal > targetGoal) {
+            monthlyOvertime += (weekTotal - targetGoal);
         }
     });
 
-    const expectedHours = getExpectedHoursForMonth(selectedMonth);
-    const hoursOwed = Math.max(0, expectedHours - totalMonthHours);
+    const expectedHours = getExpectedHoursForMonth(selectedMonth, selectedName);
+    
+    // Balance calculation (as requested by user):
+    // Extra hours should first deduct from owed hours.
+    // If balance is negative, we owe hours and have 0 extra.
+    // If balance is positive, we owe 0 hours and have extra.
+    const baseMonthOwed = Math.max(0, expectedHours - totalMonthHours);
+    const monthOvertime = Math.max(0, totalMonthHours - expectedHours);
+    let hoursOwed = Math.max(0, baseMonthOwed + monthAdjustmentsOwed - monthOvertime);
+    monthlyOvertime = Math.max(0, monthOvertime - monthAdjustmentsOwed);
 
 
     if (labelRequiredHours) {
@@ -1172,6 +1328,9 @@ function updateEmployeeStats() {
     }
     if (statsOwedHours) {
         statsOwedHours.textContent = formatHoursToHHMM(hoursOwed, true);
+    }
+    if (modalStatsOwedHours) {
+        modalStatsOwedHours.textContent = formatHoursToHHMM(hoursOwed, true);
     }
     if (statsWorkedHours) statsWorkedHours.textContent = formatHoursToHHMM(workedHours, true);
     if (statsJustifiedHours) statsJustifiedHours.textContent = formatHoursToHHMM(justifiedHours, true);
@@ -1245,8 +1404,10 @@ function renderAttendanceTable() {
         else if (r.type === 'Feriado') typeBadgeClass += ' feriado';
         else if (r.type === 'Permiso') typeBadgeClass += ' permiso';
         else if (r.type === 'Falta') typeBadgeClass += ' falta';
+        else if (r.type === 'Ajuste') typeBadgeClass += ' ajuste';
 
-        const typeLabel = r.type === 'Trabajo' ? 'Trabajo Presencial' : (r.type === 'Falta' ? 'Falta / Inasistencia' : r.type);
+        const typeStyle = r.type === 'Ajuste' ? 'style="background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3);"' : '';
+        const typeLabel = r.type === 'Trabajo' ? 'Trabajo Presencial' : (r.type === 'Falta' ? 'Falta / Inasistencia' : (r.type === 'Ajuste' ? 'Ajuste Manual' : r.type));
 
         // Calculate actual hours and see if lunch was deducted
         const realHours = getRealHoursCredited(r);
@@ -1261,7 +1422,7 @@ function renderAttendanceTable() {
                 <td data-label="Entrada">${inFormatted}</td>
                 <td data-label="Salida">${outFormatted}</td>
                 <td data-label="Horas Abonadas" style="font-weight: 600;">${formatHoursToHHMM(realHours, true)}${lunchIcon}</td>
-                <td data-label="Tipo"><span class="${typeBadgeClass}">${typeLabel}</span></td>
+                <td data-label="Tipo"><span class="${typeBadgeClass}" ${typeStyle}>${typeLabel}</span></td>
                 <td data-label="Notas" style="font-size: 11px; color: var(--text-secondary); max-width: 220px; word-break: break-word; line-height: 1.3;" title="${escapeHTML(r.notes || '')}">
                     ${escapeHTML(r.notes || '')}
                 </td>
@@ -1613,6 +1774,75 @@ function setupEventListeners() {
     formAdminRegister.addEventListener('submit', handleAdminRegisterSubmit);
     adminRegisterType.addEventListener('change', toggleAdminEmployeeSelect);
 
+    // Employee Report Dialog
+    if (btnEmployeeReport) {
+        btnEmployeeReport.addEventListener('click', () => {
+            const selectedName = selectedEmployeeName || employeeSelect.value;
+            if (!selectedName) {
+                alert("Por favor selecciona un colaborador primero.");
+                return;
+            }
+            openModal(modalEmployeeReport);
+        });
+    }
+    if (btnCloseEmployeeReport) {
+        btnCloseEmployeeReport.addEventListener('click', () => closeModal(modalEmployeeReport));
+    }
+
+    // Schedule Admin Modal
+    if (btnAdminSchedules) {
+        btnAdminSchedules.addEventListener('click', () => {
+            const sessionAuth = sessionStorage.getItem('canchapro_admin_authenticated');
+            if (sessionAuth === 'true') {
+                openAdminSchedulesModal();
+            } else {
+                adminAuthCallback = openAdminSchedulesModal;
+                openModal(modalAdminAuth);
+                adminPasswordInput.value = '';
+                adminAuthError.style.display = 'none';
+                setTimeout(() => adminPasswordInput.focus(), 100);
+            }
+        });
+    }
+    if (btnCloseAdminSchedules) btnCloseAdminSchedules.addEventListener('click', () => closeModal(modalAdminSchedules));
+    if (formAdminSchedules) formAdminSchedules.addEventListener('submit', handleAdminSchedulesSubmit);
+    if (adminScheduleEmployeeSelect) {
+        adminScheduleEmployeeSelect.addEventListener('change', (e) => {
+            loadScheduleIntoForm(e.target.value);
+        });
+    }
+
+    // Adjust Owed Hours Dialog (+/-)
+    if (btnAdjustOwedHours) {
+        btnAdjustOwedHours.addEventListener('click', () => {
+            const selectedName = selectedEmployeeName || filterEmployee.value;
+            if (!selectedName || selectedName === 'todos') {
+                alert("Por favor selecciona un colaborador primero.");
+                return;
+            }
+
+            const openAdjustModal = () => {
+                if (adjustEmployeeName) adjustEmployeeName.textContent = selectedName;
+                if (adjustHoursAmount) adjustHoursAmount.value = '';
+                if (adjustNotes) adjustNotes.value = '';
+                openModal(modalAdjustHours);
+            };
+
+            const sessionAuth = sessionStorage.getItem('canchapro_admin_authenticated');
+            if (sessionAuth === 'true') {
+                openAdjustModal();
+            } else {
+                adminAuthCallback = openAdjustModal;
+                openModal(modalAdminAuth);
+                adminPasswordInput.value = '';
+                adminAuthError.style.display = 'none';
+                setTimeout(() => adminPasswordInput.focus(), 100);
+            }
+        });
+    }
+    if (btnCloseAdjustHours) btnCloseAdjustHours.addEventListener('click', () => closeModal(modalAdjustHours));
+    if (formAdjustHours) formAdjustHours.addEventListener('submit', handleAdjustHoursSubmit);
+
     // Toggle layout width (expand/collapse table)
     const btnToggleLayout = document.getElementById('btnToggleLayout');
     const attendanceLayout = document.getElementById('attendanceLayout');
@@ -1767,6 +1997,50 @@ function formatHoursToHHMM(hoursDecimal, includeSuffix = true) {
     }
 }
 
+function getDefaultAutoCheckoutForEmployeeToday(employeeName) {
+    const sch = employeeSchedules[employeeName] || {};
+    const now = new Date();
+    const dayIndex = now.getDay();
+    let dayObj;
+    switch (dayIndex) {
+        case 1: dayObj = sch.lunes; break;
+        case 2: dayObj = sch.martes; break;
+        case 3: dayObj = sch.miercoles; break;
+        case 4: dayObj = sch.jueves; break;
+        case 5: dayObj = sch.viernes; break;
+        case 6: dayObj = sch.sabado; break;
+        case 0: dayObj = sch.domingo; break;
+    }
+    
+    if (dayObj && dayObj.active && dayObj.out) {
+        const [hStr, mStr] = dayObj.out.split(':');
+        let h = parseInt(hStr, 10);
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        h = h % 12;
+        h = h ? h : 12;
+        const timeVal = mStr && mStr !== '00' ? `${h}:${mStr}` : `${h}:00`;
+        return { timeVal, ampm };
+    }
+    
+    return { timeVal: '6:00', ampm: 'PM' };
+}
+
+function calculateScheduledNetHours(inTimeStr, outTimeStr) {
+    if (!inTimeStr || !outTimeStr) return 0;
+    const toDec = (t) => {
+        const parts = t.substring(0, 5).split(':');
+        return Number(parts[0]) + Number(parts[1]) / 60;
+    };
+    const decIn = toDec(inTimeStr);
+    const decOut = toDec(outTimeStr);
+    let elapsed = decOut - decIn;
+    if (elapsed <= 0) return 0;
+    
+    // Descontar la intersección con el horario de almuerzo de 13:00 a 14:00
+    const overlap = Math.max(0, Math.min(decOut, 14.0) - Math.max(decIn, 13.0));
+    return Math.max(0, elapsed - overlap);
+}
+
 function formatDateDDMMYYYY(dateStr) {
     if (!dateStr || !dateStr.includes('-')) return '';
     const parts = dateStr.split('-');
@@ -1790,25 +2064,185 @@ function escapeHTML(str) {
     );
 }
 
-// Calculate expected working hours for a given month (Mon-Sat, 8h/day) for the entire month.
-function getExpectedHoursForMonth(yearMonthStr) {
+// Calculate expected working hours for a given month based on employee's custom schedule
+function getExpectedHoursForMonth(yearMonthStr, employeeName) {
     const [year, month] = yearMonthStr.split('-').map(Number);
     const jsMonth = month - 1;
 
-    const lastDay = new Date(year, month, 0).getDate();
+    const today = new Date();
+    const todayStr = getLocalDateString(today);
+    const isCurrentMonth = (today.getFullYear() === year && today.getMonth() === jsMonth);
+    
+    let lastDay = new Date(year, month, 0).getDate();
+    if (isCurrentMonth) {
+        lastDay = today.getDate();
+    }
 
-    let workingDays = 0;
+    const sch = employeeSchedules[employeeName] || {};
+    
+    const getDayObj = (dayIndex) => {
+        switch (dayIndex) {
+            case 1: return sch.lunes;
+            case 2: return sch.martes;
+            case 3: return sch.miercoles;
+            case 4: return sch.jueves;
+            case 5: return sch.viernes;
+            case 6: return sch.sabado;
+            case 0: return sch.domingo;
+        }
+        return null;
+    };
+
+    const getHoursForDayObj = (dayObj, dayIndex) => {
+        if (dayObj && dayObj.active) {
+            return calculateScheduledNetHours(dayObj.in, dayObj.out);
+        } else if (!sch.lunes) {
+            return dayIndex === 0 ? 0 : 8;
+        }
+        return 0;
+    };
+
+    let totalExpected = 0;
+
     for (let day = 1; day <= lastDay; day++) {
-        const date = new Date(year, jsMonth, day);
-        const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-        if (dayOfWeek !== 0) { // Exclude Sunday
-            workingDays++;
+        const dateObj = new Date(year, jsMonth, day);
+        const dateStr = getLocalDateString(dateObj);
+        const dayOfWeek = dateObj.getDay();
+        const dayObj = getDayObj(dayOfWeek);
+        const fullDayHours = getHoursForDayObj(dayObj, dayOfWeek);
+
+        if (isCurrentMonth && dateStr === todayStr) {
+            // Evaluación inteligente del día de HOY durante el turno
+            const todayRecords = allAttendanceRecords.filter(r => 
+                r.employee_name === employeeName && r.date === todayStr
+            );
+
+            if (todayRecords.length > 0) {
+                const hasFinishedShift = todayRecords.some(r => r.check_out);
+                if (hasFinishedShift) {
+                    totalExpected += fullDayHours;
+                } else {
+                    // Turno en progreso: la expectativa de hoy equivale a lo que lleva laborado hasta el momento
+                    // para no declarar ni horas extra ni deudas irreales mientras trabaja.
+                    let todayWorked = 0;
+                    todayRecords.forEach(r => {
+                        todayWorked += getRealHoursCredited(r);
+                    });
+
+                    let todayExpected = todayWorked;
+
+                    if (dayObj && dayObj.active && dayObj.in) {
+                        const firstRecord = todayRecords[0];
+                        if (firstRecord && firstRecord.check_in) {
+                            const inTime = firstRecord.check_in.substring(0, 5);
+                            const decIn = Number(inTime.split(':')[0]) + Number(inTime.split(':')[1]) / 60;
+                            const decSchedIn = Number(dayObj.in.split(':')[0]) + Number(dayObj.in.split(':')[1]) / 60;
+                            
+                            if (decIn > decSchedIn) {
+                                todayExpected += (decIn - decSchedIn);
+                            }
+                        }
+                    }
+                    totalExpected += Math.min(fullDayHours, todayExpected);
+                }
+            }
+        } else {
+            // Días pasados del mes
+            totalExpected += fullDayHours;
         }
     }
-    return workingDays * 8;
+    
+    return totalExpected;
 }
 
-// Get real credited hours, deducting 1 hour for lunch if it's a Trabajo shift > 5 hours
+// Modal functions for schedules
+function openAdminSchedulesModal() {
+    openModal(modalAdminSchedules);
+    if (adminScheduleEmployeeSelect.value) {
+        loadScheduleIntoForm(adminScheduleEmployeeSelect.value);
+    }
+}
+
+function loadScheduleIntoForm(employeeName) {
+    const sch = employeeSchedules[employeeName] || {};
+    
+    const days = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo'];
+    
+    days.forEach(d => {
+        const key = d.toLowerCase();
+        const obj = sch[key];
+        
+        const chk = document.getElementById(`sch${d}Active`);
+        const timeIn = document.getElementById(`sch${d}In`);
+        const timeOut = document.getElementById(`sch${d}Out`);
+        const lunch = document.getElementById(`sch${d}Lunch`);
+        
+        if (obj) {
+            chk.checked = obj.active;
+            timeIn.value = obj.in || "09:00";
+            timeOut.value = obj.out || "18:00";
+            lunch.value = obj.lunch !== undefined ? obj.lunch : 1;
+        } else {
+            // Default
+            chk.checked = (key !== 'domingo');
+            timeIn.value = "09:00";
+            timeOut.value = "18:00";
+            lunch.value = 1;
+        }
+    });
+}
+
+async function handleAdminSchedulesSubmit(e) {
+    e.preventDefault();
+    const empName = adminScheduleEmployeeSelect.value;
+    if (!empName) return;
+
+    const days = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo'];
+    const scheduleData = {};
+    
+    days.forEach(d => {
+        const key = d.toLowerCase();
+        scheduleData[key] = {
+            active: document.getElementById(`sch${d}Active`).checked,
+            in: document.getElementById(`sch${d}In`).value,
+            out: document.getElementById(`sch${d}Out`).value,
+            lunch: Number(document.getElementById(`sch${d}Lunch`).value) || 0
+        };
+    });
+
+    const newSch = {
+        employee_name: empName,
+        schedule_data: scheduleData,
+        updated_at: new Date().toISOString()
+    };
+
+    try {
+        if (dbMode === 'supabase' && supabaseClient) {
+            const { error } = await supabaseClient
+                .from('horarios_personal')
+                .upsert(newSch, { onConflict: 'employee_name' });
+            
+            if (error) throw error;
+        }
+        
+        // Update local state
+        employeeSchedules[empName] = scheduleData;
+        localStorage.setItem('canchapro_schedules', JSON.stringify(employeeSchedules));
+        
+        await addHistoryEntry('editar', `actualizó el horario avanzado de ${empName}`);
+        
+        closeModal(modalAdminSchedules);
+        
+        // Refresh UI
+        updateEmployeeStats();
+        
+    } catch (err) {
+        console.error("Error saving schedule:", err);
+        alert("Error al guardar el horario: " + err.message);
+    }
+}
+
+// Get real credited hours, deducting overlap with 13:00 to 14:00 for lunch
 function getRealHoursCredited(r) {
     if (r.type !== 'Trabajo' || !r.check_in || !r.check_out) {
         return Number(r.hours_credited || 0);
@@ -1820,11 +2254,24 @@ function getRealHoursCredited(r) {
     // Usamos solo las horas y minutos (HH:MM) para evitar diferencias de segundos
     const inTime = r.check_in.substring(0, 5);
     const outTime = r.check_out.substring(0, 5);
-    const elapsed = calculateDurationInHours(r.date, inTime, r.date, outTime);
+    
+    const toDec = (t) => {
+        const parts = t.split(':');
+        return Number(parts[0]) + Number(parts[1]) / 60;
+    };
+    
+    const decIn = toDec(inTime);
+    const decOut = toDec(outTime);
+    
+    let elapsed = decOut - decIn;
+    if (elapsed < 0) elapsed = 0; // Prevents negative on cross-midnight but usually they end at 23:59 max
 
-    if (elapsed > 5 && !noLunch) {
-        return Math.max(0, elapsed - 1);
+    // Descontar la intersección con el horario fijo de 13:00 a 14:00 (1 PM a 2 PM)
+    if (!noLunch) {
+        const overlap = Math.max(0, Math.min(decOut, 14.0) - Math.max(decIn, 13.0));
+        elapsed = Math.max(0, elapsed - overlap);
     }
+
     return elapsed;
 }
 
@@ -1929,6 +2376,72 @@ async function checkAndProcessAutoCheckouts() {
     if (updatedAny) {
         await fetchAttendanceRecords();
         handleEmployeeChange();
+    }
+}
+
+async function handleAdjustHoursSubmit(e) {
+    e.preventDefault();
+    const targetName = selectedEmployeeName || filterEmployee.value;
+    if (!targetName || targetName === 'todos') return;
+
+    const action = document.querySelector('input[name="adjustAction"]:checked').value;
+    const amount = parseFloat(adjustHoursAmount.value);
+    const notesText = adjustNotes.value.trim();
+
+    if (isNaN(amount) || amount <= 0) {
+        alert("Por favor ingresa una cantidad válida de horas.");
+        return;
+    }
+
+    const creditedVal = action === 'add' ? -amount : amount;
+    const actionLabel = action === 'add' ? `+${amount}h a la deuda` : `-${amount}h a la deuda`;
+    const fullNotes = `[Ajuste ${actionLabel}] ${notesText}`;
+    
+    // Si hay un mes de filtro seleccionado distinto al mes actual, asignamos el ajuste al 1er día de ese mes
+    const filterSelectedMonth = filterMonth ? filterMonth.value : '';
+    const todayObj = new Date();
+    const currentYYYYMM = getLocalDateString(todayObj).substring(0, 7);
+    
+    let recordDate = getLocalDateString(todayObj);
+    if (filterSelectedMonth && filterSelectedMonth !== currentYYYYMM) {
+        recordDate = `${filterSelectedMonth}-01`;
+    }
+
+    const newRecord = {
+        id: generateUUID(),
+        employee_name: targetName,
+        date: recordDate,
+        check_in: null,
+        check_out: null,
+        hours_credited: Number(creditedVal.toFixed(2)),
+        type: 'Ajuste',
+        notes: fullNotes
+    };
+
+    try {
+        if (dbMode === 'supabase' && supabaseClient) {
+            const { error } = await supabaseClient
+                .from('asistencias')
+                .insert([newRecord]);
+            if (error) throw error;
+        } else {
+            const localList = getLocalAttendance();
+            localList.unshift(newRecord);
+            saveLocalAttendance(localList);
+        }
+
+        allAttendanceRecords.unshift(newRecord);
+        await addHistoryEntry('crear', `registró un ajuste de horas para ${targetName} (${actionLabel})`);
+
+        closeModal(modalAdjustHours);
+        
+        // Refresh interface
+        updateEmployeeStats();
+        renderAttendanceTable();
+
+    } catch (err) {
+        console.error("Error saving adjustment:", err);
+        alert("Error al guardar el ajuste: " + err.message);
     }
 }
 

@@ -302,3 +302,36 @@ ALTER PUBLICATION supabase_realtime ADD TABLE reservas_carritos;
 
 4. Haz clic en **"Run"**. Deberías ver el mensaje **"Success. No rows returned"**. ¡El módulo de Carritos e inflables ya está listo para conectarse!
 
+---
+
+## 🕒 Paso Especial: Configurar Base de Datos para Horarios de Personal
+
+Para poder establecer horarios específicos para cada trabajador y que la meta de horas no sea siempre de 48h fijas, debes crear esta tabla.
+
+1. Ve a **SQL Editor** (`>_`) en Supabase.
+2. Abre una pestaña nueva (**+ New query**).
+3. Pega y ejecuta el siguiente bloque SQL:
+
+```sql
+-- IMPORTANTE: Borramos la tabla anterior si existe para evitar conflictos con la nueva estructura
+DROP TABLE IF EXISTS horarios_personal;
+
+-- 1. Crear tabla para los horarios personalizados detallados del personal
+CREATE TABLE IF NOT EXISTS horarios_personal (
+  employee_name TEXT PRIMARY KEY,
+  schedule_data JSONB NOT NULL DEFAULT '{}'::jsonb,
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Habilitar RLS (Row Level Security) obligatorio en Supabase
+ALTER TABLE horarios_personal ENABLE ROW LEVEL SECURITY;
+
+-- Crear regla de acceso público
+CREATE POLICY "Acceso publico horarios_personal" ON horarios_personal FOR ALL USING (true) WITH CHECK (true);
+
+-- Habilitar tiempo real
+ALTER PUBLICATION supabase_realtime ADD TABLE horarios_personal;
+```
+
+4. Haz clic en **"Run"**. Deberías ver el mensaje **"Success. No rows returned"**. ¡Tu sistema de horarios dinámicos ya está activado en la nube!
+

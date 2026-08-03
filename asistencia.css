@@ -1255,3 +1255,44 @@ select option {
 .attendance-layout:not(.expanded-table) .toggle-icon-right {
     display: none !important;
 }
+
+/* Schedule Configuration Modal */
+.schedule-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 15px;
+}
+
+.schedule-day-row {
+    display: flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 8px 12px;
+}
+
+.schedule-day-row label {
+    flex: 1;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.schedule-day-row.sunday label {
+    color: var(--danger);
+}
+
+.schedule-day-row input {
+    width: 70px;
+    padding: 6px 10px;
+    text-align: center;
+    font-weight: 600;
+}
+
+.schedule-day-row span {
+    margin-left: 8px;
+    font-size: 13px;
+    color: var(--text-secondary);
+}
