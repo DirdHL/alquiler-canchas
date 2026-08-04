@@ -883,15 +883,21 @@ async function handleEmployeeChange() {
         // Workday completed or shift completed -> Action: CHECK IN AGAIN
         if (lunchToggleGroup) lunchToggleGroup.style.display = 'none';
 
-        // Show auto-checkout options
+        // Show auto-checkout options (only before 5:59 PM / 18:00)
+        const isPastAutoCheckoutCutoff = (currentHour > 17) || (currentHour === 17 && currentMin >= 59);
         if (autoCheckoutToggleGroup) {
-            autoCheckoutToggleGroup.style.display = 'block';
-            if (autoCheckoutEnabled) {
-                const defaultAuto = getDefaultAutoCheckoutForEmployeeToday(selectedEmployeeName);
-                autoCheckoutEnabled.checked = true;
-                if (autoCheckoutDetails) autoCheckoutDetails.style.display = 'flex';
-                if (autoCheckoutTimeInput) autoCheckoutTimeInput.value = defaultAuto.timeVal;
-                if (autoCheckoutAmpmSelect) autoCheckoutAmpmSelect.value = defaultAuto.ampm;
+            if (isPastAutoCheckoutCutoff) {
+                autoCheckoutToggleGroup.style.display = 'none';
+                if (autoCheckoutEnabled) autoCheckoutEnabled.checked = false;
+            } else {
+                autoCheckoutToggleGroup.style.display = 'block';
+                if (autoCheckoutEnabled) {
+                    const defaultAuto = getDefaultAutoCheckoutForEmployeeToday(selectedEmployeeName);
+                    autoCheckoutEnabled.checked = true;
+                    if (autoCheckoutDetails) autoCheckoutDetails.style.display = 'flex';
+                    if (autoCheckoutTimeInput) autoCheckoutTimeInput.value = defaultAuto.timeVal;
+                    if (autoCheckoutAmpmSelect) autoCheckoutAmpmSelect.value = defaultAuto.ampm;
+                }
             }
         }
 
@@ -911,15 +917,21 @@ async function handleEmployeeChange() {
         // No attendance recorded today -> Action: CHECK IN
         if (lunchToggleGroup) lunchToggleGroup.style.display = 'none';
 
-        // Show auto-checkout options
+        // Show auto-checkout options (only before 5:59 PM / 18:00)
+        const isPastAutoCheckoutCutoff = (currentHour > 17) || (currentHour === 17 && currentMin >= 59);
         if (autoCheckoutToggleGroup) {
-            autoCheckoutToggleGroup.style.display = 'block';
-            if (autoCheckoutEnabled) {
-                const defaultAuto = getDefaultAutoCheckoutForEmployeeToday(selectedEmployeeName);
-                autoCheckoutEnabled.checked = true;
-                if (autoCheckoutDetails) autoCheckoutDetails.style.display = 'flex';
-                if (autoCheckoutTimeInput) autoCheckoutTimeInput.value = defaultAuto.timeVal;
-                if (autoCheckoutAmpmSelect) autoCheckoutAmpmSelect.value = defaultAuto.ampm;
+            if (isPastAutoCheckoutCutoff) {
+                autoCheckoutToggleGroup.style.display = 'none';
+                if (autoCheckoutEnabled) autoCheckoutEnabled.checked = false;
+            } else {
+                autoCheckoutToggleGroup.style.display = 'block';
+                if (autoCheckoutEnabled) {
+                    const defaultAuto = getDefaultAutoCheckoutForEmployeeToday(selectedEmployeeName);
+                    autoCheckoutEnabled.checked = true;
+                    if (autoCheckoutDetails) autoCheckoutDetails.style.display = 'flex';
+                    if (autoCheckoutTimeInput) autoCheckoutTimeInput.value = defaultAuto.timeVal;
+                    if (autoCheckoutAmpmSelect) autoCheckoutAmpmSelect.value = defaultAuto.ampm;
+                }
             }
         }
 
