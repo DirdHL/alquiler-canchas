@@ -16,8 +16,10 @@ let isTotalManuallyEdited = false;
 let selectedDate = new Date();
 
 // Constants
-const PRICE_WEEKDAY = 160.00; // Lun-Jue
-const PRICE_WEEKEND = 180.00; // Vie-Dom
+const PRICE_WEEKDAY = 160.00; // Lun-Jue (Día y Noche / Full Day)
+const PRICE_WEEKEND = 180.00; // Vie-Dom (Día y Noche / Full Day)
+const PRICE_EXTENDED_WEEKDAY = 320.00; // Lun-Jue (Horario Extendido)
+const PRICE_EXTENDED_WEEKEND = 360.00; // Vie-Dom (Horario Extendido)
 const EXTRA_GUEST_FEE = 35.00; // Costo por 5to adulto o extra (actualizado a S/. 35)
 
 // Initialize Page
@@ -145,7 +147,7 @@ function setupEventListeners() {
         }
     });
 
-    // Handle schedule change (Full Day vs Dia y Noche)
+    // Handle schedule change (Full Day, Día y Noche, Horario Extendido)
     document.getElementById('bookingHorario').addEventListener('change', (e) => {
         const horario = e.target.value;
         const checkIn = document.getElementById('bookingCheckIn').value;
@@ -158,7 +160,7 @@ function setupEventListeners() {
                 checkOutInput.disabled = true;
             }
         } else {
-            // Día y Noche check-out is next day by default
+            // Día y Noche y Horario Extendido: check-out default al día siguiente
             checkOutInput.disabled = false;
             if (checkIn) {
                 const checkInDate = new Date(checkIn + 'T00:00:00');
@@ -732,10 +734,13 @@ function calculateBasePrice(checkInStr, checkOutStr, horario) {
     if (!checkInStr || !checkOutStr) return 0;
     const start = new Date(checkInStr + 'T00:00:00');
 
+    const weekdayFee = (horario === 'Horario Extendido') ? PRICE_EXTENDED_WEEKDAY : PRICE_WEEKDAY;
+    const weekendFee = (horario === 'Horario Extendido') ? PRICE_EXTENDED_WEEKEND : PRICE_WEEKEND;
+
     if (horario === 'Full Day') {
         const dayOfWeek = start.getDay(); // 0 = Sunday, 5 = Friday, 6 = Saturday
         const isWeekend = (dayOfWeek === 0 || dayOfWeek === 5 || dayOfWeek === 6);
-        return isWeekend ? PRICE_WEEKEND : PRICE_WEEKDAY;
+        return isWeekend ? weekendFee : weekdayFee;
     } else {
         const end = new Date(checkOutStr + 'T00:00:00');
         let totalBase = 0;
@@ -744,14 +749,14 @@ function calculateBasePrice(checkInStr, checkOutStr, horario) {
         while (current < end) {
             const dayOfWeek = current.getDay();
             const isWeekend = (dayOfWeek === 0 || dayOfWeek === 5 || dayOfWeek === 6);
-            totalBase += isWeekend ? PRICE_WEEKEND : PRICE_WEEKDAY;
+            totalBase += isWeekend ? weekendFee : weekdayFee;
             current.setDate(current.getDate() + 1);
         }
 
         if (totalBase === 0) {
             const dayOfWeek = start.getDay();
             const isWeekend = (dayOfWeek === 0 || dayOfWeek === 5 || dayOfWeek === 6);
-            totalBase = isWeekend ? PRICE_WEEKEND : PRICE_WEEKDAY;
+            totalBase = isWeekend ? weekendFee : weekdayFee;
         }
         return totalBase;
     }
@@ -1319,6 +1324,10 @@ function getBookingInterval(checkInStr, checkOutStr, horarioStr, extraHours = 0)
         // Full Day: 9:00 AM to 6:00 PM on check-in day
         start = new Date(checkInStr + 'T09:00:00');
         end = new Date(checkInStr + 'T18:00:00');
+    } else if (horarioStr === 'Horario Extendido') {
+        // Horario Extendido: 9:00 AM on check-in day to 6:00 PM (18:00) on check-out day
+        start = new Date(checkInStr + 'T09:00:00');
+        end = new Date(checkOutStr + 'T18:00:00');
     } else {
         // Día y Noche: 3:00 PM on check-in day to 12:00 PM on check-out day
         start = new Date(checkInStr + 'T15:00:00');
@@ -1682,9 +1691,17 @@ function updateAvailabilityGrid() {
                         </div>`;
                     } else {
                         // Classify the day
-                        const startHour = b.horario === 'Full Day' ? '9:00 AM' : '3:00 PM';
-                        let endHour = b.horario === 'Full Day' ? '6:00 PM' : '12:00 PM';
-                        if (b.horario !== 'Full Day' && (b.horas_extras || 0) > 0) {
+                        let startHour = '3:00 PM';
+                        let endHour = '12:00 PM';
+                        if (b.horario === 'Full Day') {
+                            startHour = '9:00 AM';
+                            endHour = '6:00 PM';
+                        } else if (b.horario === 'Horario Extendido') {
+                            startHour = '9:00 AM';
+                            endHour = '6:00 PM';
+                        }
+
+                        if (b.horario !== 'Full Day' && b.horario !== 'Horario Extendido' && (b.horas_extras || 0) > 0) {
                             let hh = 12 + b.horas_extras;
                             let daysOverflow = Math.floor(hh / 24);
                             hh = hh % 24;
