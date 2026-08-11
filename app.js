@@ -1695,7 +1695,21 @@ async function handleSaveBooking(e) {
         btnSave.textContent = 'Guardando...';
     }
 
-    const id = bookingIdInput.value || crypto.randomUUID();
+    let newId = '';
+    try {
+        if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+            newId = crypto.randomUUID();
+        }
+    } catch (e) {
+        console.warn("crypto.randomUUID failed:", e);
+    }
+    if (!newId) {
+        newId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
+    }
+    const id = bookingIdInput.value || newId;
     const isBlock = bookingIsBlockInput ? bookingIsBlockInput.checked : false;
     if (isBlock) {
         if (!requestAdminPassword("guardar este bloqueo")) {
@@ -1816,7 +1830,9 @@ async function handleSaveBooking(e) {
                 query = supabaseClient.from('reservas').update(bookingData).eq('id', id);
             } else {
                 // Insertar nuevo
-                query = supabaseClient.from('reservas').insert([bookingData]);
+                const insertData = { ...bookingData };
+                delete insertData.id;
+                query = supabaseClient.from('reservas').insert([insertData]);
             }
 
             const { error } = await query;
