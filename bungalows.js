@@ -282,6 +282,17 @@ function setupEventListeners() {
         });
     });
 
+    const filterAsesorSelect = document.getElementById('filterAsesor');
+    if (filterAsesorSelect) {
+        filterAsesorSelect.addEventListener('change', () => {
+            if (calendar) {
+                calendar.refetchEvents();
+                updateDailySummaryList();
+                updateAvailabilityGrid();
+            }
+        });
+    }
+
     // Daily Summary Tabs switching (same as polideportivo)
     const btnTabReservations = document.getElementById('btnTabReservations');
     const btnTabAvailability = document.getElementById('btnTabAvailability');
@@ -1035,6 +1046,7 @@ async function fetchBookings() {
     }
 
     // Refresh views
+    populateFilterAsesoresDropdown();
     if (calendar) {
         calendar.refetchEvents();
     }
@@ -1400,10 +1412,22 @@ function initCalendar() {
                 };
             });
 
-            // Filter out disabled bungalows from the sidebar filters
+            // Filter out disabled bungalows and advisor filter from the sidebar filters
+            const filterAsesorVal = document.getElementById('filterAsesor') ? document.getElementById('filterAsesor').value : 'TODOS';
             const filteredEvents = fcEvents.filter(event => {
                 const bNo = event.extendedProps.bungalow_numero;
-                return document.getElementById(`filterB${bNo}`).checked;
+                const bChecked = document.getElementById(`filterB${bNo}`) ? document.getElementById(`filterB${bNo}`).checked : true;
+                if (!bChecked) return false;
+
+                if (filterAsesorVal && filterAsesorVal !== 'TODOS') {
+                    const asesorRes = (event.extendedProps.asesor_registro || '').trim();
+                    if (filterAsesorVal === 'SIN_ASESOR') {
+                        if (asesorRes !== '' && asesorRes !== 'Sin Asesor') return false;
+                    } else {
+                        if (asesorRes !== filterAsesorVal) return false;
+                    }
+                }
+                return true;
             });
 
             successCallback(filteredEvents);
@@ -1471,10 +1495,21 @@ function updateDailySummaryList() {
     }
 
     // Find bookings that cover the activeDate
+    const filterAsesorVal = document.getElementById('filterAsesor') ? document.getElementById('filterAsesor').value : 'TODOS';
     const activeToday = bookings.filter(b => {
         // Filter by checkbox filters
         const filterEl = document.getElementById(`filterB${b.bungalow_numero}`);
         if (filterEl && !filterEl.checked) return false;
+
+        // Filter by Asesor
+        if (filterAsesorVal && filterAsesorVal !== 'TODOS') {
+            const asesorRes = (b.asesor_registro || '').trim();
+            if (filterAsesorVal === 'SIN_ASESOR') {
+                if (asesorRes !== '' && asesorRes !== 'Sin Asesor') return false;
+            } else {
+                if (asesorRes !== filterAsesorVal) return false;
+            }
+        }
 
         const start = new Date(b.fecha_ingreso + 'T00:00:00');
         const end = new Date(b.fecha_salida + 'T00:00:00');
@@ -1597,9 +1632,20 @@ function updateAvailabilityGrid() {
             html += `<td style="padding: 6px 8px; border-bottom: 1px solid var(--border-color); vertical-align: top; text-align: center; ${isFilterChecked ? '' : 'opacity: 0.4; pointer-events: none;'}">`;
 
             // Find all close/relevant bookings for this bungalow on this date (within 2 days window)
+            const filterAsesorVal = document.getElementById('filterAsesor') ? document.getElementById('filterAsesor').value : 'TODOS';
             const D = slot.dateStr;
             const relevantBookings = bookings.filter(b => {
                 if (b.bungalow_numero !== bNum) return false;
+
+                if (filterAsesorVal && filterAsesorVal !== 'TODOS') {
+                    const asesorRes = (b.asesor_registro || '').trim();
+                    if (filterAsesorVal === 'SIN_ASESOR') {
+                        if (asesorRes !== '' && asesorRes !== 'Sin Asesor') return false;
+                    } else {
+                        if (asesorRes !== filterAsesorVal) return false;
+                    }
+                }
+
                 const bStart = new Date(b.fecha_ingreso + 'T00:00:00');
                 const bEnd = new Date(b.fecha_salida + 'T00:00:00');
                 const gridDate = new Date(D + 'T00:00:00');
@@ -3311,6 +3357,42 @@ function populateAsesoresDropdown(selectedValue = '') {
     }
 }
 
+function populateFilterAsesoresDropdown() {
+    const filterSelect = document.getElementById('filterAsesor');
+    if (!filterSelect) return;
+
+    const currentVal = filterSelect.value || 'TODOS';
+    filterSelect.innerHTML = '<option value="TODOS">Todos los asesores</option>';
+
+    // Obtener lista completa incluyendo asesores de las reservas existentes
+    const advisorSet = new Set(activeAdvisorsList);
+    if (typeof bookings !== 'undefined' && Array.isArray(bookings)) {
+        bookings.forEach(b => {
+            if (b.asesor_registro && b.asesor_registro.trim() && b.asesor_registro !== 'Sin Asesor') {
+                advisorSet.add(b.asesor_registro.trim());
+            }
+        });
+    }
+
+    const sortedAdvisors = Array.from(advisorSet).filter(a => a).sort();
+    sortedAdvisors.forEach(asesorName => {
+        const opt = document.createElement('option');
+        opt.value = asesorName;
+        opt.textContent = asesorName;
+        filterSelect.appendChild(opt);
+    });
+
+    const optSin = document.createElement('option');
+    optSin.value = 'SIN_ASESOR';
+    optSin.textContent = 'Sin Asesor';
+    filterSelect.appendChild(optSin);
+
+    filterSelect.value = currentVal;
+    if (filterSelect.value !== currentVal) {
+        filterSelect.value = 'TODOS';
+    }
+}
+
 async function fetchAdvisors() {
     if (dbMode === 'supabase' && supabaseClient) {
         try {
@@ -3341,6 +3423,7 @@ async function fetchAdvisors() {
         const currentVal = select.value;
         populateAsesoresDropdown(currentVal);
     }
+    populateFilterAsesoresDropdown();
 }
 
 function loadActiveAdvisorsFromLocal() {
