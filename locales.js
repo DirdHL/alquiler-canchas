@@ -11,6 +11,7 @@ let activeOperator = 'Invitado';
 
 document.addEventListener('DOMContentLoaded', async () => {
     lucide.createIcons();
+    initSidebarState();
     setupEventListeners();
     loadOperatorSession();
     await initDatabase();
@@ -27,8 +28,13 @@ function loadOperatorSession() {
 }
 
 function setupEventListeners() {
-    document.getElementById('btnToggleSidebar').addEventListener('click', () => document.getElementById('sidebar').classList.toggle('active'));
-    document.getElementById('btnCloseSidebar').addEventListener('click', () => document.getElementById('sidebar').classList.remove('active'));
+    const btnToggleSidebar = document.getElementById('btnToggleSidebar');
+    const btnCloseSidebar = document.getElementById('btnCloseSidebar');
+    const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+
+    if (btnToggleSidebar) btnToggleSidebar.addEventListener('click', toggleSidebarHandler);
+    if (btnCloseSidebar) btnCloseSidebar.addEventListener('click', closeSidebarDrawer);
+    if (sidebarBackdrop) sidebarBackdrop.addEventListener('click', closeSidebarDrawer);
     document.getElementById('btnNewReservation').addEventListener('click', () => openBookingModal());
     document.getElementById('btnCloseBooking').addEventListener('click', () => closeModal('modalBooking'));
     document.getElementById('btnOpenSettings').addEventListener('click', () => openModal('modalSettings'));
@@ -48,10 +54,8 @@ function setupEventListeners() {
     }
     if (btnClearHistoryLocal) {
         btnClearHistoryLocal.addEventListener('click', () => {
-            if (confirm("¿Estás seguro de que deseas limpiar el historial local? Esto no afectará la base de datos Supabase.")) {
-                localStorage.removeItem('canchapro_historial_locales');
-                openHistoryModal();
-            }
+            localStorage.removeItem('canchapro_historial_locales');
+            renderHistoryList();
         });
     }
 

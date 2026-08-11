@@ -27,10 +27,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 1. Initialize Lucide Icons
     lucide.createIcons();
 
-    // 2. Set Up Event Listeners
+    // 2. Initialize Sidebar Collapsed State
+    initSidebarState();
+
+    // 3. Set Up Event Listeners
     setupEventListeners();
 
-    // 3. Load Active Operator
+    // 4. Load Active Operator
     loadOperatorSession();
 
     // 4. Initialize Database
@@ -76,9 +79,9 @@ function loadOperatorSession() {
 // Set Up Event Listeners
 function setupEventListeners() {
     // Navigation / Sidebars
-    document.getElementById('btnToggleSidebar').addEventListener('click', toggleSidebar);
-    document.getElementById('btnCloseSidebar').addEventListener('click', toggleSidebar);
-    document.getElementById('sidebarBackdrop').addEventListener('click', toggleSidebar);
+    document.getElementById('btnToggleSidebar').addEventListener('click', toggleSidebarHandler);
+    document.getElementById('btnCloseSidebar').addEventListener('click', closeSidebarDrawer);
+    document.getElementById('sidebarBackdrop').addEventListener('click', closeSidebarDrawer);
 
     // Modal triggers
     document.getElementById('btnNewReservation').addEventListener('click', () => openBookingModal());
@@ -93,7 +96,9 @@ function setupEventListeners() {
     });
     document.getElementById('btnCloseHistory').addEventListener('click', () => closeModal('modalHistory'));
     if (historySearchInput) {
-        historySearchInput.addEventListener('input', openHistoryModal);
+        historySearchInput.addEventListener('input', (e) => {
+            renderHistoryList(e.target.value.trim());
+        });
     }
     if (btnClearHistoryLocal) {
         btnClearHistoryLocal.addEventListener('click', () => {
@@ -3654,3 +3659,53 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 });
+
+function toggleSidebarHandler() {
+    const sidebar = document.getElementById('sidebar');
+    const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+    if (window.innerWidth <= 1024) {
+        if (sidebar) {
+            const isOpen = sidebar.classList.toggle('open') || sidebar.classList.toggle('active');
+            if (sidebarBackdrop) sidebarBackdrop.classList.toggle('active', isOpen);
+        }
+    } else {
+        const appContainer = document.querySelector('.app-container');
+        if (appContainer) {
+            const isCollapsed = appContainer.classList.toggle('sidebar-collapsed');
+            localStorage.setItem('canchapro_sidebar_collapsed', isCollapsed ? 'true' : 'false');
+        }
+    }
+}
+
+function closeSidebarDrawer() {
+    const sidebar = document.getElementById('sidebar');
+    const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+    if (window.innerWidth <= 1024) {
+        if (sidebar) {
+            sidebar.classList.remove('open');
+            sidebar.classList.remove('active');
+        }
+        if (sidebarBackdrop) sidebarBackdrop.classList.remove('active');
+    } else {
+        const appContainer = document.querySelector('.app-container');
+        if (appContainer) {
+            appContainer.classList.add('sidebar-collapsed');
+            localStorage.setItem('canchapro_sidebar_collapsed', 'true');
+        }
+    }
+}
+
+function initSidebarState() {
+    const savedState = localStorage.getItem('canchapro_sidebar_collapsed');
+    const isCollapsed = savedState === null ? true : savedState === 'true';
+    const appContainer = document.querySelector('.app-container');
+    if (!appContainer) return;
+
+    if (window.innerWidth > 1024) {
+        if (isCollapsed) {
+            appContainer.classList.add('sidebar-collapsed');
+        } else {
+            appContainer.classList.remove('sidebar-collapsed');
+        }
+    }
+}

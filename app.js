@@ -258,7 +258,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // 4. Initialize Calendar
     initCalendar();
 
-    // 5. Set up Event Listeners
+    // 5. Initialize Sidebar Collapsed State
+    initSidebarState();
+
+    // 6. Set up Event Listeners
     setupEventListeners();
 
     // 6. Update stats initially
@@ -441,9 +444,9 @@ function formatTime(date) {
 
 // Event Listeners Setup
 function setupEventListeners() {
-    // Mobile Sidebar Drawer Actions
+    // Mobile Sidebar Drawer Actions & Desktop Toggle
     if (btnToggleSidebar) {
-        btnToggleSidebar.addEventListener('click', openSidebarDrawer);
+        btnToggleSidebar.addEventListener('click', toggleSidebarHandler);
     }
     if (btnCloseSidebar) {
         btnCloseSidebar.addEventListener('click', closeSidebarDrawer);
@@ -1330,17 +1333,64 @@ function closeBookingModal() {
     closeModal(modalBooking);
 }
 
-// Mobile sidebar controls
+// Mobile sidebar controls & Desktop Collapsible Sidebar
+function toggleSidebarHandler() {
+    if (window.innerWidth <= 1024) {
+        if (sidebar) {
+            const isOpen = sidebar.classList.toggle('open');
+            if (sidebarBackdrop) sidebarBackdrop.classList.toggle('active', isOpen);
+        }
+    } else {
+        const appContainer = document.querySelector('.app-container');
+        if (appContainer) {
+            const isCollapsed = appContainer.classList.toggle('sidebar-collapsed');
+            localStorage.setItem('canchapro_sidebar_collapsed', isCollapsed ? 'true' : 'false');
+        }
+    }
+    updateBodyScroll();
+}
+
 function openSidebarDrawer() {
-    if (sidebar) sidebar.classList.add('open');
-    if (sidebarBackdrop) sidebarBackdrop.classList.add('active');
+    if (window.innerWidth <= 1024) {
+        if (sidebar) sidebar.classList.add('open');
+        if (sidebarBackdrop) sidebarBackdrop.classList.add('active');
+    } else {
+        const appContainer = document.querySelector('.app-container');
+        if (appContainer) {
+            appContainer.classList.remove('sidebar-collapsed');
+            localStorage.setItem('canchapro_sidebar_collapsed', 'false');
+        }
+    }
     updateBodyScroll();
 }
 
 function closeSidebarDrawer() {
-    if (sidebar) sidebar.classList.remove('open');
-    if (sidebarBackdrop) sidebarBackdrop.classList.remove('active');
+    if (window.innerWidth <= 1024) {
+        if (sidebar) sidebar.classList.remove('open');
+        if (sidebarBackdrop) sidebarBackdrop.classList.remove('active');
+    } else {
+        const appContainer = document.querySelector('.app-container');
+        if (appContainer) {
+            appContainer.classList.add('sidebar-collapsed');
+            localStorage.setItem('canchapro_sidebar_collapsed', 'true');
+        }
+    }
     updateBodyScroll();
+}
+
+function initSidebarState() {
+    const savedState = localStorage.getItem('canchapro_sidebar_collapsed');
+    const isCollapsed = savedState === null ? true : savedState === 'true';
+    const appContainer = document.querySelector('.app-container');
+    if (!appContainer) return;
+
+    if (window.innerWidth > 1024) {
+        if (isCollapsed) {
+            appContainer.classList.add('sidebar-collapsed');
+        } else {
+            appContainer.classList.remove('sidebar-collapsed');
+        }
+    }
 }
 
 // Modal helper controls
