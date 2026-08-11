@@ -143,7 +143,8 @@ const modalAdjustHours = document.getElementById('modalAdjustHours');
 const btnCloseAdjustHours = document.getElementById('btnCloseAdjustHours');
 const formAdjustHours = document.getElementById('formAdjustHours');
 const adjustEmployeeName = document.getElementById('adjustEmployeeName');
-const adjustHoursAmount = document.getElementById('adjustHoursAmount');
+const adjustHours = document.getElementById('adjustHours');
+const adjustMinutes = document.getElementById('adjustMinutes');
 const adjustNotes = document.getElementById('adjustNotes');
 
 // Sidebar toggle for mobile drawer
@@ -163,10 +164,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // 3. Check Operator Identity
     checkOperatorIdentity();
 
-    // 4. Setup Event Listeners
+    // 4. Initialize Sidebar Collapsed state
+    initSidebarState();
+
+    // 5. Setup Event Listeners
     setupEventListeners();
 
-    // 5. Connect to database
+    // 6. Connect to database
     loadDatabaseSettings();
 });
 
@@ -1172,7 +1176,7 @@ function updateEmployeeStats() {
     const hasRecordToday = weekRecords.some(r => r.date === todayStrStr);
     
     let fullWeekGoal = 0;
-    const todayRecords = weekRecords.filter(r => r.date === todayStrStr);
+    const todayWorkRecords = weekRecords.filter(r => r.date === todayStrStr && r.type === 'Trabajo');
 
     for (let i = 1; i <= 7; i++) {
         const dKey = dayKeys[i - 1];
@@ -1185,13 +1189,13 @@ function updateEmployeeStats() {
             targetGoal += dayHours;
         } else if (i === currentDayIndex) {
             // Hoy: si ya terminó el turno suma todo. Si está trabajando, la expectativa se ajusta a lo trabajado para evitar horas extra falsas.
-            if (todayRecords.length > 0) {
-                const hasFinishedShift = todayRecords.some(r => r.check_out);
+            if (todayWorkRecords.length > 0) {
+                const hasFinishedShift = todayWorkRecords.some(r => r.check_out);
                 if (hasFinishedShift) {
                     targetGoal += dayHours;
                 } else {
                     let todayWorked = 0;
-                    todayRecords.forEach(r => {
+                    todayWorkRecords.forEach(r => {
                         todayWorked += getRealHoursCredited(r);
                     });
 
@@ -1199,7 +1203,7 @@ function updateEmployeeStats() {
 
                     const dayObj = s[dKey];
                     if (dayObj && dayObj.active && dayObj.in) {
-                        const firstRecord = todayRecords[0];
+                        const firstRecord = todayWorkRecords[0];
                         if (firstRecord && firstRecord.check_in) {
                             const inTime = firstRecord.check_in.substring(0, 5);
                             const decIn = Number(inTime.split(':')[0]) + Number(inTime.split(':')[1]) / 60;
@@ -1715,11 +1719,19 @@ function saveHistoryEntryLocal(entry) {
 
 // Setup Event Listeners
 function setupEventListeners() {
-    // Sidebar Mobile Drawer
+    // Sidebar Mobile Drawer & Desktop Collapse Toggle
     if (btnToggleSidebar) {
         btnToggleSidebar.addEventListener('click', () => {
-            sidebar.classList.add('open');
-            sidebarBackdrop.classList.add('active');
+            if (window.innerWidth <= 1024) {
+                const isOpen = sidebar.classList.toggle('open');
+                if (sidebarBackdrop) sidebarBackdrop.classList.toggle('active', isOpen);
+            } else {
+                const appContainer = document.querySelector('.app-container');
+                if (appContainer) {
+                    const isCollapsed = appContainer.classList.toggle('sidebar-collapsed');
+                    localStorage.setItem('canchapro_sidebar_collapsed', isCollapsed ? 'true' : 'false');
+                }
+            }
         });
     }
     if (btnCloseSidebar) {
@@ -1835,7 +1847,8 @@ function setupEventListeners() {
 
             const openAdjustModal = () => {
                 if (adjustEmployeeName) adjustEmployeeName.textContent = selectedName;
-                if (adjustHoursAmount) adjustHoursAmount.value = '';
+                if (adjustHours) adjustHours.value = '0';
+                if (adjustMinutes) adjustMinutes.value = '0';
                 if (adjustNotes) adjustNotes.value = '';
                 openModal(modalAdjustHours);
             };
@@ -1868,11 +1881,41 @@ function setupEventListeners() {
             }
         });
     }
+
+    // Export Excel Button (Public access, no password)
+    const btnExportExcel = document.getElementById('btnExportExcel');
+    if (btnExportExcel) {
+        btnExportExcel.addEventListener('click', exportAttendanceToExcel);
+    }
 }
 
 function closeSidebarDrawer() {
-    sidebar.classList.remove('open');
-    sidebarBackdrop.classList.remove('active');
+    if (window.innerWidth <= 1024) {
+        sidebar.classList.remove('open');
+        if (sidebarBackdrop) sidebarBackdrop.classList.remove('active');
+    } else {
+        const appContainer = document.querySelector('.app-container');
+        if (appContainer) {
+            appContainer.classList.add('sidebar-collapsed');
+            localStorage.setItem('canchapro_sidebar_collapsed', 'true');
+        }
+    }
+}
+
+function initSidebarState() {
+    const savedState = localStorage.getItem('canchapro_sidebar_collapsed');
+    // Default to true (hidden) if no preference saved yet, or if saved preference is 'true'
+    const isCollapsed = savedState === null ? true : savedState === 'true';
+    const appContainer = document.querySelector('.app-container');
+    if (!appContainer) return;
+
+    if (window.innerWidth > 1024) {
+        if (isCollapsed) {
+            appContainer.classList.add('sidebar-collapsed');
+        } else {
+            appContainer.classList.remove('sidebar-collapsed');
+        }
+    }
 }
 
 // Modal Helpers
@@ -1985,27 +2028,34 @@ function calculateDurationInHours(startDateStr, startTimeStr, endDateStr, endTim
 }
 
 function formatHoursText(hoursDecimal) {
-    const hours = Math.floor(hoursDecimal);
-    const minutes = Math.round((hoursDecimal - hours) * 60);
+    if (hoursDecimal === null || hoursDecimal === undefined || isNaN(hoursDecimal)) return '0 min';
+    const isNegative = hoursDecimal < 0;
+    const absVal = Math.abs(hoursDecimal);
+    const hours = Math.floor(absVal);
+    const minutes = Math.round((absVal - hours) * 60);
+    const sign = isNegative ? '-' : '';
 
     let text = '';
     if (hours > 0) text += `${hours} h `;
     if (minutes > 0 || hours === 0) text += `${minutes} min`;
-    return text.trim();
+    return (sign + text).trim();
 }
 
 function formatHoursToHHMM(hoursDecimal, includeSuffix = true) {
     if (hoursDecimal === null || hoursDecimal === undefined || isNaN(hoursDecimal)) {
         return includeSuffix ? '0 h' : '0';
     }
-    const totalMinutes = Math.round(hoursDecimal * 60);
+    const isNegative = hoursDecimal < 0;
+    const absVal = Math.abs(hoursDecimal);
+    const totalMinutes = Math.round(absVal * 60);
     const h = Math.floor(totalMinutes / 60);
     const m = totalMinutes % 60;
+    const sign = isNegative ? '-' : '';
 
     if (m === 0) {
-        return includeSuffix ? `${h} h` : `${h}`;
+        return includeSuffix ? `${sign}${h} h` : `${sign}${h}`;
     } else {
-        return includeSuffix ? `${h}:${String(m).padStart(2, '0')} h` : `${h}:${String(m).padStart(2, '0')}`;
+        return includeSuffix ? `${sign}${h}:${String(m).padStart(2, '0')} h` : `${sign}${h}:${String(m).padStart(2, '0')}`;
     }
 }
 
@@ -2125,26 +2175,26 @@ function getExpectedHoursForMonth(yearMonthStr, employeeName) {
 
         if (isCurrentMonth && dateStr === todayStr) {
             // Evaluación inteligente del día de HOY durante el turno
-            const todayRecords = allAttendanceRecords.filter(r => 
-                r.employee_name === employeeName && r.date === todayStr
+            const todayWorkRecords = allAttendanceRecords.filter(r => 
+                r.employee_name === employeeName && r.date === todayStr && r.type === 'Trabajo'
             );
 
-            if (todayRecords.length > 0) {
-                const hasFinishedShift = todayRecords.some(r => r.check_out);
+            if (todayWorkRecords.length > 0) {
+                const hasFinishedShift = todayWorkRecords.some(r => r.check_out);
                 if (hasFinishedShift) {
                     totalExpected += fullDayHours;
                 } else {
                     // Turno en progreso: la expectativa de hoy equivale a lo que lleva laborado hasta el momento
                     // para no declarar ni horas extra ni deudas irreales mientras trabaja.
                     let todayWorked = 0;
-                    todayRecords.forEach(r => {
+                    todayWorkRecords.forEach(r => {
                         todayWorked += getRealHoursCredited(r);
                     });
 
                     let todayExpected = todayWorked;
 
                     if (dayObj && dayObj.active && dayObj.in) {
-                        const firstRecord = todayRecords[0];
+                        const firstRecord = todayWorkRecords[0];
                         if (firstRecord && firstRecord.check_in) {
                             const inTime = firstRecord.check_in.substring(0, 5);
                             const decIn = Number(inTime.split(':')[0]) + Number(inTime.split(':')[1]) / 60;
@@ -2397,16 +2447,29 @@ async function handleAdjustHoursSubmit(e) {
     if (!targetName || targetName === 'todos') return;
 
     const action = document.querySelector('input[name="adjustAction"]:checked').value;
-    const amount = parseFloat(adjustHoursAmount.value);
+    const hoursVal = parseInt(adjustHours ? adjustHours.value : '0') || 0;
+    const minutesVal = parseInt(adjustMinutes ? adjustMinutes.value : '0') || 0;
     const notesText = adjustNotes.value.trim();
 
-    if (isNaN(amount) || amount <= 0) {
-        alert("Por favor ingresa una cantidad válida de horas.");
+    const amount = hoursVal + (minutesVal / 60);
+
+    if (amount <= 0) {
+        alert("Por favor ingresa un tiempo válido mayor a 0 minutos.");
         return;
     }
 
     const creditedVal = action === 'add' ? -amount : amount;
-    const actionLabel = action === 'add' ? `+${amount}h a la deuda` : `-${amount}h a la deuda`;
+
+    let timeStr = '';
+    if (hoursVal > 0 && minutesVal > 0) {
+        timeStr = `${hoursVal}:${minutesVal < 10 ? '0' + minutesVal : minutesVal} h`;
+    } else if (hoursVal > 0) {
+        timeStr = `${hoursVal} h`;
+    } else {
+        timeStr = `${minutesVal} min`;
+    }
+
+    const actionLabel = action === 'add' ? `+${timeStr} a la deuda` : `-${timeStr} a la deuda`;
     const fullNotes = `[Ajuste ${actionLabel}] ${notesText}`;
     
     // Si hay un mes de filtro seleccionado distinto al mes actual, asignamos el ajuste al 1er día de ese mes
@@ -2459,3 +2522,257 @@ async function handleAdjustHoursSubmit(e) {
 
 // Expose handleDeleteRecord globally for inline onclick
 window.handleDeleteRecord = handleDeleteRecord;
+
+// Export Attendance Data & Monthly Summary to Excel (.xlsx)
+async function exportAttendanceToExcel() {
+    try {
+        if (typeof ExcelJS === 'undefined') {
+            alert("La librería de Excel aún se está cargando. Por favor reintenta en un momento.");
+            return;
+        }
+
+        const selectedEmp = filterEmployee ? filterEmployee.value : 'todos';
+        const selectedMonth = filterMonth ? filterMonth.value : '';
+        const selectedWeek = filterWeek ? filterWeek.value : 'todas';
+
+        // Filter records matching active UI selection
+        let recordsToExport = [...allAttendanceRecords];
+        if (selectedEmp && selectedEmp !== 'todos') {
+            recordsToExport = recordsToExport.filter(r => r.employee_name === selectedEmp);
+        }
+        if (selectedMonth) {
+            recordsToExport = recordsToExport.filter(r => r.date && r.date.startsWith(selectedMonth));
+        }
+        if (selectedWeek && selectedWeek !== 'todas') {
+            recordsToExport = recordsToExport.filter(r => {
+                if (!r.date) return false;
+                const parts = r.date.split('-');
+                const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+                const { monday } = getMondayAndSundayOfDate(d);
+                return getLocalDateString(monday) === selectedWeek;
+            });
+        }
+
+        const workbook = new ExcelJS.Workbook();
+        workbook.creator = 'CanchaPro / Nuevo Horizonte';
+        workbook.created = new Date();
+
+        // -------------------------------------------------------------
+        // HOJA 1: HISTORIAL DE MARCACIONES
+        // -------------------------------------------------------------
+        const sheet1 = workbook.addWorksheet('Historial de Marcaciones');
+
+        // Banner Title
+        sheet1.mergeCells('A1:G1');
+        const titleCell = sheet1.getCell('A1');
+        titleCell.value = 'NUEVO HORIZONTE - CONTROL DE ASISTENCIA Y REGISTRO DE HORAS';
+        titleCell.font = { name: 'Outfit', size: 13, bold: true, color: { argb: 'FFFFFFFF' } };
+        titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFF3385' } };
+        titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+        sheet1.getRow(1).height = 30;
+
+        // Subtitle Context
+        sheet1.mergeCells('A2:G2');
+        const subCell = sheet1.getCell('A2');
+        const empText = selectedEmp === 'todos' ? 'Todos los Colaboradores' : selectedEmp;
+        subCell.value = `Filtros: Personal [${empText}] | Mes [${selectedMonth || 'Todos'}] | Fecha de Generación: ${new Date().toLocaleDateString('es-ES')} ${new Date().toLocaleTimeString('es-ES')}`;
+        subCell.font = { name: 'Outfit', size: 9.5, italic: true, color: { argb: 'FF830B42' } };
+        subCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFEEFF4' } };
+        subCell.alignment = { horizontal: 'center', vertical: 'middle' };
+        sheet1.getRow(2).height = 20;
+
+        sheet1.getRow(3).height = 8; // Spacer
+
+        // Table Header Columns
+        const columnsDef = [
+            { header: 'Colaborador', key: 'colaborador', width: 22 },
+            { header: 'Fecha', key: 'fecha', width: 14 },
+            { header: 'Entrada', key: 'entrada', width: 14 },
+            { header: 'Salida', key: 'salida', width: 14 },
+            { header: 'Horas Abonadas', key: 'horas', width: 18 },
+            { header: 'Tipo de Registro', key: 'tipo', width: 22 },
+            { header: 'Notas / Motivo', key: 'notas', width: 42 }
+        ];
+
+        const headerRow = sheet1.getRow(4);
+        headerRow.height = 24;
+
+        columnsDef.forEach((col, i) => {
+            const cell = headerRow.getCell(i + 1);
+            cell.value = col.header;
+            cell.font = { name: 'Outfit', size: 10.5, bold: true, color: { argb: 'FFFFFFFF' } };
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF830B42' } };
+            cell.alignment = { horizontal: i === 4 ? 'right' : (i >= 1 && i <= 3 ? 'center' : 'left'), vertical: 'middle' };
+            cell.border = {
+                top: { style: 'thin', color: { argb: 'FFFFCCD8' } },
+                left: { style: 'thin', color: { argb: 'FFFFCCD8' } },
+                bottom: { style: 'medium', color: { argb: 'FFFF3385' } },
+                right: { style: 'thin', color: { argb: 'FFFFCCD8' } }
+            };
+        });
+
+        // Rows
+        let rowIdx = 5;
+        recordsToExport.forEach(r => {
+            const realHours = getRealHoursCredited(r);
+            const dateParts = r.date ? r.date.split('-') : [];
+            const formattedDate = dateParts.length === 3 ? `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}` : r.date;
+            
+            const row = sheet1.getRow(rowIdx);
+            row.height = 20;
+
+            const isAlt = rowIdx % 2 === 0;
+            const bgHex = isAlt ? 'FFFFF5F8' : 'FFFFFFFF';
+
+            row.getCell(1).value = r.employee_name;
+            row.getCell(2).value = formattedDate;
+            row.getCell(3).value = r.check_in ? formatTime12h(r.check_in) : '--:--';
+            row.getCell(4).value = r.check_out ? formatTime12h(r.check_out) : '--:--';
+            row.getCell(5).value = formatHoursToHHMM(realHours, true);
+            row.getCell(6).value = r.type === 'Trabajo' ? 'Trabajo Presencial' : r.type;
+            row.getCell(7).value = r.notes || '';
+
+            for (let c = 1; c <= 7; c++) {
+                const cell = row.getCell(c);
+                cell.font = { name: 'Outfit', size: 10 };
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bgHex } };
+                cell.border = {
+                    top: { style: 'thin', color: { argb: 'FFFFE5EC' } },
+                    left: { style: 'thin', color: { argb: 'FFFFE5EC' } },
+                    bottom: { style: 'thin', color: { argb: 'FFFFE5EC' } },
+                    right: { style: 'thin', color: { argb: 'FFFFE5EC' } }
+                };
+                if (c >= 2 && c <= 4) cell.alignment = { horizontal: 'center', vertical: 'middle' };
+                else if (c === 5) cell.alignment = { horizontal: 'right', vertical: 'middle' };
+                else cell.alignment = { horizontal: 'left', vertical: 'middle' };
+            }
+            rowIdx++;
+        });
+
+        columnsDef.forEach((col, i) => {
+            sheet1.getColumn(i + 1).width = col.width;
+        });
+
+        // -------------------------------------------------------------
+        // HOJA 2: RESUMEN DEL PERSONAL (TABLA EJECUTIVA PARA LA JEFA)
+        // -------------------------------------------------------------
+        const sheet2 = workbook.addWorksheet('Resumen del Personal');
+
+        sheet2.mergeCells('A1:G1');
+        const s2Title = sheet2.getCell('A1');
+        s2Title.value = `RESUMEN EJECUTIVO DEL PERSONAL (${selectedMonth || 'Mes Seleccionado'})`;
+        s2Title.font = { name: 'Outfit', size: 13, bold: true, color: { argb: 'FFFFFFFF' } };
+        s2Title.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF830B42' } };
+        s2Title.alignment = { horizontal: 'center', vertical: 'middle' };
+        sheet2.getRow(1).height = 30;
+
+        const summaryCols = [
+            { header: 'Colaborador', width: 22 },
+            { header: 'Días Laborados', width: 16 },
+            { header: 'Días Justificados', width: 18 },
+            { header: 'Horas Requeridas', width: 18 },
+            { header: 'Horas Abonadas Totales', width: 22 },
+            { header: 'Deuda de Horas', width: 18 },
+            { header: 'Horas Extra', width: 16 }
+        ];
+
+        const s2HeaderRow = sheet2.getRow(3);
+        s2HeaderRow.height = 24;
+        summaryCols.forEach((col, i) => {
+            const cell = s2HeaderRow.getCell(i + 1);
+            cell.value = col.header;
+            cell.font = { name: 'Outfit', size: 10.5, bold: true, color: { argb: 'FFFFFFFF' } };
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFF3385' } };
+            cell.alignment = { horizontal: i > 0 ? 'center' : 'left', vertical: 'middle' };
+            cell.border = {
+                top: { style: 'thin', color: { argb: 'FFFFCCD8' } },
+                left: { style: 'thin', color: { argb: 'FFFFCCD8' } },
+                bottom: { style: 'medium', color: { argb: 'FF830B42' } },
+                right: { style: 'thin', color: { argb: 'FFFFCCD8' } }
+            };
+        });
+
+        const targetEmps = (selectedEmp && selectedEmp !== 'todos') ? [selectedEmp] : activeEmployeesList;
+        let s2RowIdx = 4;
+
+        targetEmps.forEach(empName => {
+            const empMonthRecords = allAttendanceRecords.filter(r =>
+                r.employee_name === empName &&
+                r.date && r.date.startsWith(selectedMonth)
+            );
+
+            let worked = 0;
+            let justified = 0;
+            let monthAdjustments = 0;
+            const workedDates = new Set();
+            const justifiedDates = new Set();
+
+            empMonthRecords.forEach(r => {
+                const hours = getRealHoursCredited(r);
+                if (r.type === 'Trabajo') {
+                    worked += hours;
+                    if (r.check_in && r.date) workedDates.add(r.date);
+                } else if (r.type === 'Feriado' || r.type === 'Permiso') {
+                    justified += hours;
+                    if (r.date) justifiedDates.add(r.date);
+                } else if (r.type === 'Ajuste') {
+                    monthAdjustments += (-hours);
+                }
+            });
+
+            const totalHours = worked + justified;
+            const expectedHours = getExpectedHoursForMonth(selectedMonth, empName);
+            const baseOwed = Math.max(0, expectedHours - totalHours);
+            const monthOvertime = Math.max(0, totalHours - expectedHours);
+            const owedHours = Math.max(0, baseOwed + monthAdjustments - monthOvertime);
+            const extraHours = Math.max(0, monthOvertime - monthAdjustments);
+
+            const row = sheet2.getRow(s2RowIdx);
+            row.height = 20;
+            const isAlt = s2RowIdx % 2 === 0;
+            const bgHex = isAlt ? 'FFFFF5F8' : 'FFFFFFFF';
+
+            row.getCell(1).value = empName;
+            row.getCell(2).value = `${workedDates.size} días`;
+            row.getCell(3).value = `${justifiedDates.size} días`;
+            row.getCell(4).value = formatHoursToHHMM(expectedHours, true);
+            row.getCell(5).value = formatHoursToHHMM(totalHours, true);
+            row.getCell(6).value = formatHoursToHHMM(owedHours, true);
+            row.getCell(7).value = formatHoursToHHMM(extraHours, true);
+
+            for (let c = 1; c <= 7; c++) {
+                const cell = row.getCell(c);
+                cell.font = { name: 'Outfit', size: 10 };
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bgHex } };
+                cell.border = {
+                    top: { style: 'thin', color: { argb: 'FFFFE5EC' } },
+                    left: { style: 'thin', color: { argb: 'FFFFE5EC' } },
+                    bottom: { style: 'thin', color: { argb: 'FFFFE5EC' } },
+                    right: { style: 'thin', color: { argb: 'FFFFE5EC' } }
+                };
+                if (c === 6 && owedHours > 0) {
+                    cell.font = { name: 'Outfit', size: 10, bold: true, color: { argb: 'FFF43F5E' } };
+                }
+                cell.alignment = { horizontal: c > 1 ? 'center' : 'left', vertical: 'middle' };
+            }
+            s2RowIdx++;
+        });
+
+        summaryCols.forEach((col, i) => {
+            sheet2.getColumn(i + 1).width = col.width;
+        });
+
+        // Trigger Download
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        const dateStr = selectedMonth ? selectedMonth : getLocalDateString(new Date());
+        link.download = `Reporte_Asistencias_Nuevo_Horizonte_${dateStr}.xlsx`;
+        link.click();
+
+    } catch (err) {
+        console.error("Error al exportar Excel:", err);
+        alert("Ocurrió un error al generar el archivo Excel: " + err.message);
+    }
+}

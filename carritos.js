@@ -11,6 +11,7 @@ let activeOperator = 'Invitado';
 
 document.addEventListener('DOMContentLoaded', async () => {
     lucide.createIcons();
+    initSidebarState();
     setupEventListeners();
     loadOperatorSession();
     await initDatabase();
@@ -27,8 +28,13 @@ function loadOperatorSession() {
 }
 
 function setupEventListeners() {
-    document.getElementById('btnToggleSidebar').addEventListener('click', () => document.getElementById('sidebar').classList.toggle('active'));
-    document.getElementById('btnCloseSidebar').addEventListener('click', () => document.getElementById('sidebar').classList.remove('active'));
+    const btnToggleSidebar = document.getElementById('btnToggleSidebar');
+    const btnCloseSidebar = document.getElementById('btnCloseSidebar');
+    const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+
+    if (btnToggleSidebar) btnToggleSidebar.addEventListener('click', toggleSidebarHandler);
+    if (btnCloseSidebar) btnCloseSidebar.addEventListener('click', closeSidebarDrawer);
+    if (sidebarBackdrop) sidebarBackdrop.addEventListener('click', closeSidebarDrawer);
     document.getElementById('btnNewReservation').addEventListener('click', () => openBookingModal());
     document.getElementById('btnCloseBooking').addEventListener('click', () => closeModal('modalBooking'));
     document.getElementById('btnOpenSettings').addEventListener('click', () => openModal('modalSettings'));
@@ -55,11 +61,6 @@ function setupEventListeners() {
             }
         });
     }
-
-    // Dynamic calculations
-    document.getElementById('bookingTotal').addEventListener('input', runDynamicCalculations);
-    document.getElementById('bookingAdelanto').addEventListener('input', runDynamicCalculations);
-
     const bookingDniInput = document.getElementById('bookingDni');
     if (bookingDniInput) {
         bookingDniInput.addEventListener('input', function () {
@@ -1447,4 +1448,54 @@ async function exportAllDataToExcel() {
         console.error("Error al exportar:", err);
         alert("Ocurrió un error al generar el archivo Excel: " + err.message);
     });
+}
+
+function toggleSidebarHandler() {
+    const sidebar = document.getElementById('sidebar');
+    const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+    if (window.innerWidth <= 1024) {
+        if (sidebar) {
+            const isOpen = sidebar.classList.toggle('open') || sidebar.classList.toggle('active');
+            if (sidebarBackdrop) sidebarBackdrop.classList.toggle('active', isOpen);
+        }
+    } else {
+        const appContainer = document.querySelector('.app-container');
+        if (appContainer) {
+            const isCollapsed = appContainer.classList.toggle('sidebar-collapsed');
+            localStorage.setItem('canchapro_sidebar_collapsed', isCollapsed ? 'true' : 'false');
+        }
+    }
+}
+
+function closeSidebarDrawer() {
+    const sidebar = document.getElementById('sidebar');
+    const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+    if (window.innerWidth <= 1024) {
+        if (sidebar) {
+            sidebar.classList.remove('open');
+            sidebar.classList.remove('active');
+        }
+        if (sidebarBackdrop) sidebarBackdrop.classList.remove('active');
+    } else {
+        const appContainer = document.querySelector('.app-container');
+        if (appContainer) {
+            appContainer.classList.add('sidebar-collapsed');
+            localStorage.setItem('canchapro_sidebar_collapsed', 'true');
+        }
+    }
+}
+
+function initSidebarState() {
+    const savedState = localStorage.getItem('canchapro_sidebar_collapsed');
+    const isCollapsed = savedState === null ? true : savedState === 'true';
+    const appContainer = document.querySelector('.app-container');
+    if (!appContainer) return;
+
+    if (window.innerWidth > 1024) {
+        if (isCollapsed) {
+            appContainer.classList.add('sidebar-collapsed');
+        } else {
+            appContainer.classList.remove('sidebar-collapsed');
+        }
+    }
 }
