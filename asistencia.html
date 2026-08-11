@@ -15,6 +15,8 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <!-- Supabase JS CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- ExcelJS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
     <!-- Custom CSS -->
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="asistencia.css">
@@ -25,7 +27,7 @@
     <div class="sun-decoration-bg"></div>
     <div class="rainbow-decoration-bg"></div>
 
-    <div class="app-container">
+    <div class="app-container sidebar-collapsed">
         <!-- Sidebar Backdrop for Mobile -->
         <div class="sidebar-backdrop-overlay" id="sidebarBackdrop"></div>
 
@@ -181,8 +183,9 @@
 
             <header class="app-header">
                 <div class="header-left">
-                    <button class="btn btn-secondary btn-menu" id="btnToggleSidebar">
+                    <button class="btn btn-secondary btn-menu" id="btnToggleSidebar" title="Mostrar / Ocultar Menú Lateral">
                         <i data-lucide="menu"></i>
+                        <span style="font-size: 13px; font-weight: 600; margin-left: 4px;">Menú</span>
                     </button>
                     <div class="header-title">
                         <h1>
@@ -354,13 +357,21 @@
                             <i data-lucide="rainbow" style="color: var(--primary);"></i>
                             Historial de Marcaciones
                         </h3>
-                        <button class="btn btn-secondary" id="btnToggleLayout"
-                            style="font-size: 12.5px; padding: 6px 12px; display: flex; align-items: center; gap: 6px; border-color: var(--primary); color: var(--primary); background: transparent; cursor: pointer; border-radius: var(--radius-sm);">
-                            <i data-lucide="arrow-left" class="toggle-icon-left" style="width: 14px; height: 14px;"></i>
-                            <i data-lucide="arrow-right" class="toggle-icon-right"
-                                style="width: 14px; height: 14px;"></i>
-                            <span id="toggleLayoutText">Ver completo</span>
-                        </button>
+                        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                            <button class="btn btn-secondary" id="btnExportExcel"
+                                style="font-size: 12.5px; padding: 6px 12px; display: flex; align-items: center; gap: 6px; border-color: #10b981; color: #10b981; background: rgba(16, 185, 129, 0.08); cursor: pointer; border-radius: var(--radius-sm); font-weight: 600;"
+                                title="Descargar reporte en formato Excel (.xlsx) libremente">
+                                <i data-lucide="file-spreadsheet" style="width: 15px; height: 15px;"></i>
+                                <span>Descargar Excel</span>
+                            </button>
+                            <button class="btn btn-secondary" id="btnToggleLayout"
+                                style="font-size: 12.5px; padding: 6px 12px; display: flex; align-items: center; gap: 6px; border-color: var(--primary); color: var(--primary); background: transparent; cursor: pointer; border-radius: var(--radius-sm);">
+                                <i data-lucide="arrow-left" class="toggle-icon-left" style="width: 14px; height: 14px;"></i>
+                                <i data-lucide="arrow-right" class="toggle-icon-right"
+                                    style="width: 14px; height: 14px;"></i>
+                                <span id="toggleLayoutText">Ver completo</span>
+                            </button>
+                        </div>
                     </div>
 
                     <!-- Filters -->
