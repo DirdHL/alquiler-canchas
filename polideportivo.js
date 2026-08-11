@@ -1451,14 +1451,29 @@ async function fetchBookings() {
     let bookings = [];
     if (dbMode === 'supabase' && supabaseClient) {
         try {
-            const { data, error } = await supabaseClient
-                .from('reservas')
-                .select('*')
-                .order('date', { ascending: true })
-                .order('start_time', { ascending: true });
+            let allData = [];
+            let from = 0;
+            const step = 1000;
+            let hasMore = true;
 
-            if (error) throw error;
-            bookings = data || [];
+            while (hasMore) {
+                const { data, error } = await supabaseClient
+                    .from('reservas')
+                    .select('*')
+                    .order('date', { ascending: true })
+                    .order('start_time', { ascending: true })
+                    .range(from, from + step - 1);
+
+                if (error) throw error;
+                if (data && data.length > 0) {
+                    allData = allData.concat(data);
+                    from += step;
+                    if (data.length < step) hasMore = false;
+                } else {
+                    hasMore = false;
+                }
+            }
+            bookings = allData;
         } catch (err) {
             console.error("Fallo al obtener de Supabase, usando respaldo local:", err);
             bookings = getLocalBookings();
@@ -1833,21 +1848,24 @@ async function handleSaveBooking(e) {
     };
 
     try {
-        if (dbMode === 'supabase' && supabaseClient) {
-            // Guardar en Supabase
-            let query;
-            if (bookingIdInput.value) {
-                // Actualizar
-                query = supabaseClient.from('reservas').update(bookingData).eq('id', id);
-            } else {
-                // Insertar nuevo
-                const insertData = { ...bookingData };
-                delete insertData.id;
-                query = supabaseClient.from('reservas').insert([insertData]);
-            }
+            let currentPayload = bookingData;
+            if (dbMode === 'supabase' && supabaseClient) {
+                // Guardar en Supabase
+                let query;
+                if (bookingIdInput.value) {
+                    // Actualizar
+                    query = supabaseClient.from('reservas').update(bookingData).eq('id', id);
+                } else {
+                    // Insertar nuevo
+                    const insertData = { ...bookingData };
+                    delete insertData.id;
+                    currentPayload = insertData;
+                    query = supabaseClient.from('reservas').insert([insertData]);
+                }
 
-            const { error } = await query;
-            if (error) throw error;
+                const res = await query;
+                const error = res.error;
+                if (error) throw error;
         } else {
             // Guardar en LocalStorage
             let localList = getLocalBookings();

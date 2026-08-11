@@ -1040,13 +1040,28 @@ function setupRealtimeListener() {
 async function fetchBookings() {
     if (dbMode === 'supabase' && supabaseClient) {
         try {
-            const { data, error } = await supabaseClient
-                .from('reservas_bungalows')
-                .select('*')
-                .order('fecha_ingreso', { ascending: true });
+            let allData = [];
+            let from = 0;
+            const step = 1000;
+            let hasMore = true;
 
-            if (error) throw error;
-            bookings = data || [];
+            while (hasMore) {
+                const { data, error } = await supabaseClient
+                    .from('reservas_bungalows')
+                    .select('*')
+                    .order('fecha_ingreso', { ascending: true })
+                    .range(from, from + step - 1);
+
+                if (error) throw error;
+                if (data && data.length > 0) {
+                    allData = allData.concat(data);
+                    from += step;
+                    if (data.length < step) hasMore = false;
+                } else {
+                    hasMore = false;
+                }
+            }
+            bookings = allData;
         } catch (err) {
             console.error("Fallo al obtener de Supabase, usando respaldo local:", err);
             loadLocalBookingsFallback();

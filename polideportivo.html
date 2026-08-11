@@ -21,6 +21,14 @@
     <!-- Custom CSS -->
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="polideportivo.css">
+    <script>
+        window.addEventListener('error', function(e) { 
+            alert('⛔ ERROR JS EN LA PÁGINA ⛔\nArchivo: ' + e.filename + '\nLínea: ' + e.lineno + '\nMensaje: ' + e.message); 
+        });
+        window.addEventListener('unhandledrejection', function(e) { 
+            alert('⛔ PROMESA RECHAZADA ⛔\n' + e.reason); 
+        });
+    </script>
 </head>
 
 <body>
@@ -280,7 +288,7 @@
                 <button class="btn-close" id="btnCloseBooking"><i data-lucide="x"></i></button>
             </div>
             <div class="modal-body">
-                <form id="formBooking">
+                <form id="formBooking" novalidate>
                     <input type="hidden" id="bookingId">
 
                     <div class="form-group" style="margin-bottom: 16px;">
