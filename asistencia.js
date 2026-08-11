@@ -143,7 +143,8 @@ const modalAdjustHours = document.getElementById('modalAdjustHours');
 const btnCloseAdjustHours = document.getElementById('btnCloseAdjustHours');
 const formAdjustHours = document.getElementById('formAdjustHours');
 const adjustEmployeeName = document.getElementById('adjustEmployeeName');
-const adjustHoursAmount = document.getElementById('adjustHoursAmount');
+const adjustHours = document.getElementById('adjustHours');
+const adjustMinutes = document.getElementById('adjustMinutes');
 const adjustNotes = document.getElementById('adjustNotes');
 
 // Sidebar toggle for mobile drawer
@@ -1172,7 +1173,7 @@ function updateEmployeeStats() {
     const hasRecordToday = weekRecords.some(r => r.date === todayStrStr);
     
     let fullWeekGoal = 0;
-    const todayRecords = weekRecords.filter(r => r.date === todayStrStr);
+    const todayWorkRecords = weekRecords.filter(r => r.date === todayStrStr && r.type === 'Trabajo');
 
     for (let i = 1; i <= 7; i++) {
         const dKey = dayKeys[i - 1];
@@ -1185,13 +1186,13 @@ function updateEmployeeStats() {
             targetGoal += dayHours;
         } else if (i === currentDayIndex) {
             // Hoy: si ya terminó el turno suma todo. Si está trabajando, la expectativa se ajusta a lo trabajado para evitar horas extra falsas.
-            if (todayRecords.length > 0) {
-                const hasFinishedShift = todayRecords.some(r => r.check_out);
+            if (todayWorkRecords.length > 0) {
+                const hasFinishedShift = todayWorkRecords.some(r => r.check_out);
                 if (hasFinishedShift) {
                     targetGoal += dayHours;
                 } else {
                     let todayWorked = 0;
-                    todayRecords.forEach(r => {
+                    todayWorkRecords.forEach(r => {
                         todayWorked += getRealHoursCredited(r);
                     });
 
@@ -1199,7 +1200,7 @@ function updateEmployeeStats() {
 
                     const dayObj = s[dKey];
                     if (dayObj && dayObj.active && dayObj.in) {
-                        const firstRecord = todayRecords[0];
+                        const firstRecord = todayWorkRecords[0];
                         if (firstRecord && firstRecord.check_in) {
                             const inTime = firstRecord.check_in.substring(0, 5);
                             const decIn = Number(inTime.split(':')[0]) + Number(inTime.split(':')[1]) / 60;
@@ -1835,7 +1836,8 @@ function setupEventListeners() {
 
             const openAdjustModal = () => {
                 if (adjustEmployeeName) adjustEmployeeName.textContent = selectedName;
-                if (adjustHoursAmount) adjustHoursAmount.value = '';
+                if (adjustHours) adjustHours.value = '0';
+                if (adjustMinutes) adjustMinutes.value = '0';
                 if (adjustNotes) adjustNotes.value = '';
                 openModal(modalAdjustHours);
             };
@@ -1985,27 +1987,34 @@ function calculateDurationInHours(startDateStr, startTimeStr, endDateStr, endTim
 }
 
 function formatHoursText(hoursDecimal) {
-    const hours = Math.floor(hoursDecimal);
-    const minutes = Math.round((hoursDecimal - hours) * 60);
+    if (hoursDecimal === null || hoursDecimal === undefined || isNaN(hoursDecimal)) return '0 min';
+    const isNegative = hoursDecimal < 0;
+    const absVal = Math.abs(hoursDecimal);
+    const hours = Math.floor(absVal);
+    const minutes = Math.round((absVal - hours) * 60);
+    const sign = isNegative ? '-' : '';
 
     let text = '';
     if (hours > 0) text += `${hours} h `;
     if (minutes > 0 || hours === 0) text += `${minutes} min`;
-    return text.trim();
+    return (sign + text).trim();
 }
 
 function formatHoursToHHMM(hoursDecimal, includeSuffix = true) {
     if (hoursDecimal === null || hoursDecimal === undefined || isNaN(hoursDecimal)) {
         return includeSuffix ? '0 h' : '0';
     }
-    const totalMinutes = Math.round(hoursDecimal * 60);
+    const isNegative = hoursDecimal < 0;
+    const absVal = Math.abs(hoursDecimal);
+    const totalMinutes = Math.round(absVal * 60);
     const h = Math.floor(totalMinutes / 60);
     const m = totalMinutes % 60;
+    const sign = isNegative ? '-' : '';
 
     if (m === 0) {
-        return includeSuffix ? `${h} h` : `${h}`;
+        return includeSuffix ? `${sign}${h} h` : `${sign}${h}`;
     } else {
-        return includeSuffix ? `${h}:${String(m).padStart(2, '0')} h` : `${h}:${String(m).padStart(2, '0')}`;
+        return includeSuffix ? `${sign}${h}:${String(m).padStart(2, '0')} h` : `${sign}${h}:${String(m).padStart(2, '0')}`;
     }
 }
 
@@ -2125,26 +2134,26 @@ function getExpectedHoursForMonth(yearMonthStr, employeeName) {
 
         if (isCurrentMonth && dateStr === todayStr) {
             // Evaluación inteligente del día de HOY durante el turno
-            const todayRecords = allAttendanceRecords.filter(r => 
-                r.employee_name === employeeName && r.date === todayStr
+            const todayWorkRecords = allAttendanceRecords.filter(r => 
+                r.employee_name === employeeName && r.date === todayStr && r.type === 'Trabajo'
             );
 
-            if (todayRecords.length > 0) {
-                const hasFinishedShift = todayRecords.some(r => r.check_out);
+            if (todayWorkRecords.length > 0) {
+                const hasFinishedShift = todayWorkRecords.some(r => r.check_out);
                 if (hasFinishedShift) {
                     totalExpected += fullDayHours;
                 } else {
                     // Turno en progreso: la expectativa de hoy equivale a lo que lleva laborado hasta el momento
                     // para no declarar ni horas extra ni deudas irreales mientras trabaja.
                     let todayWorked = 0;
-                    todayRecords.forEach(r => {
+                    todayWorkRecords.forEach(r => {
                         todayWorked += getRealHoursCredited(r);
                     });
 
                     let todayExpected = todayWorked;
 
                     if (dayObj && dayObj.active && dayObj.in) {
-                        const firstRecord = todayRecords[0];
+                        const firstRecord = todayWorkRecords[0];
                         if (firstRecord && firstRecord.check_in) {
                             const inTime = firstRecord.check_in.substring(0, 5);
                             const decIn = Number(inTime.split(':')[0]) + Number(inTime.split(':')[1]) / 60;
@@ -2397,16 +2406,29 @@ async function handleAdjustHoursSubmit(e) {
     if (!targetName || targetName === 'todos') return;
 
     const action = document.querySelector('input[name="adjustAction"]:checked').value;
-    const amount = parseFloat(adjustHoursAmount.value);
+    const hoursVal = parseInt(adjustHours ? adjustHours.value : '0') || 0;
+    const minutesVal = parseInt(adjustMinutes ? adjustMinutes.value : '0') || 0;
     const notesText = adjustNotes.value.trim();
 
-    if (isNaN(amount) || amount <= 0) {
-        alert("Por favor ingresa una cantidad válida de horas.");
+    const amount = hoursVal + (minutesVal / 60);
+
+    if (amount <= 0) {
+        alert("Por favor ingresa un tiempo válido mayor a 0 minutos.");
         return;
     }
 
     const creditedVal = action === 'add' ? -amount : amount;
-    const actionLabel = action === 'add' ? `+${amount}h a la deuda` : `-${amount}h a la deuda`;
+
+    let timeStr = '';
+    if (hoursVal > 0 && minutesVal > 0) {
+        timeStr = `${hoursVal}:${minutesVal < 10 ? '0' + minutesVal : minutesVal} h`;
+    } else if (hoursVal > 0) {
+        timeStr = `${hoursVal} h`;
+    } else {
+        timeStr = `${minutesVal} min`;
+    }
+
+    const actionLabel = action === 'add' ? `+${timeStr} a la deuda` : `-${timeStr} a la deuda`;
     const fullNotes = `[Ajuste ${actionLabel}] ${notesText}`;
     
     // Si hay un mes de filtro seleccionado distinto al mes actual, asignamos el ajuste al 1er día de ese mes

@@ -958,11 +958,23 @@
                     </div>
 
                     <div class="form-group" style="margin-bottom: 14px;">
-                        <label for="adjustHoursAmount">Cantidad de Horas *</label>
-                        <div class="input-wrapper">
-                            <i data-lucide="clock"></i>
-                            <input type="number" id="adjustHoursAmount" required min="0.01" step="any" placeholder="Ej. 14, 1.5 o 2" style="width: 100%;">
+                        <label>Tiempo a Ajustar (Horas y Minutos) *</label>
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <div class="input-wrapper" style="flex: 1; margin: 0;">
+                                <i data-lucide="clock"></i>
+                                <input type="number" id="adjustHours" min="0" value="0" placeholder="Horas" required style="width: 100%;">
+                                <span style="font-size: 13px; color: var(--text-secondary); margin-left: 6px;">h</span>
+                            </div>
+                            <span style="font-size: 18px; font-weight: 700; color: var(--text-secondary);">:</span>
+                            <div class="input-wrapper" style="flex: 1; margin: 0;">
+                                <i data-lucide="clock"></i>
+                                <input type="number" id="adjustMinutes" min="0" max="59" value="0" placeholder="Minutos" required style="width: 100%;">
+                                <span style="font-size: 13px; color: var(--text-secondary); margin-left: 6px;">min</span>
+                            </div>
                         </div>
+                        <small style="color: var(--text-muted); margin-top: 6px; display: block;">
+                            Ejemplo: Para 2 horas con 30 minutos (2:30), ingresa 2 en horas y 30 en minutos.
+                        </small>
                     </div>
 
                     <div class="form-group" style="margin-bottom: 14px;">
