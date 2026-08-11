@@ -1367,3 +1367,53 @@ async function exportAllDataToExcel() {
         alert("Ocurrió un error al generar el archivo Excel: " + err.message);
     });
 }
+
+function toggleSidebarHandler() {
+    const sidebar = document.getElementById('sidebar');
+    const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+    if (window.innerWidth <= 1024) {
+        if (sidebar) {
+            const isOpen = sidebar.classList.toggle('open') || sidebar.classList.toggle('active');
+            if (sidebarBackdrop) sidebarBackdrop.classList.toggle('active', isOpen);
+        }
+    } else {
+        const appContainer = document.querySelector('.app-container');
+        if (appContainer) {
+            const isCollapsed = appContainer.classList.toggle('sidebar-collapsed');
+            localStorage.setItem('canchapro_sidebar_collapsed', isCollapsed ? 'true' : 'false');
+        }
+    }
+}
+
+function closeSidebarDrawer() {
+    const sidebar = document.getElementById('sidebar');
+    const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+    if (window.innerWidth <= 1024) {
+        if (sidebar) {
+            sidebar.classList.remove('open');
+            sidebar.classList.remove('active');
+        }
+        if (sidebarBackdrop) sidebarBackdrop.classList.remove('active');
+    } else {
+        const appContainer = document.querySelector('.app-container');
+        if (appContainer) {
+            appContainer.classList.add('sidebar-collapsed');
+            localStorage.setItem('canchapro_sidebar_collapsed', 'true');
+        }
+    }
+}
+
+function initSidebarState() {
+    const savedState = localStorage.getItem('canchapro_sidebar_collapsed');
+    const isCollapsed = savedState === null ? true : savedState === 'true';
+    const appContainer = document.querySelector('.app-container');
+    if (!appContainer) return;
+
+    if (window.innerWidth > 1024) {
+        if (isCollapsed) {
+            appContainer.classList.add('sidebar-collapsed');
+        } else {
+            appContainer.classList.remove('sidebar-collapsed');
+        }
+    }
+}

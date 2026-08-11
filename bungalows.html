@@ -56,47 +56,6 @@
             </div>
 
             <nav class="nav-filters">
-                <h3>Filtrar por Bungalow</h3>
-                <div class="filter-group">
-                    <label class="filter-item">
-                        <input type="checkbox" id="filterB1" checked>
-                        <span class="custom-checkbox color-b1"></span>
-                        Bungalow 1
-                    </label>
-                    <label class="filter-item">
-                        <input type="checkbox" id="filterB2" checked>
-                        <span class="custom-checkbox color-b2"></span>
-                        Bungalow 2
-                    </label>
-                    <label class="filter-item">
-                        <input type="checkbox" id="filterB3" checked>
-                        <span class="custom-checkbox color-b3"></span>
-                        Bungalow 3
-                    </label>
-                    <label class="filter-item">
-                        <input type="checkbox" id="filterB4" checked>
-                        <span class="custom-checkbox color-b4"></span>
-                        Bungalow 4
-                    </label>
-                    <label class="filter-item">
-                        <input type="checkbox" id="filterB5" checked>
-                        <span class="custom-checkbox color-b5"></span>
-                        Bungalow 5
-                    </label>
-                    <label class="filter-item">
-                        <input type="checkbox" id="filterB6" checked>
-                        <span class="custom-checkbox color-b6"></span>
-                        Bungalow 6
-                    </label>
-                </div>
-
-                <h3>Filtrar por Asesor</h3>
-                <div class="filter-group" style="margin-bottom: 12px;">
-                    <select id="filterAsesor" class="form-control" style="width: 100%; font-size: 13px; padding: 6px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: #ffffff; color: var(--text-primary); cursor: pointer;">
-                        <option value="TODOS">Todos los asesores</option>
-                    </select>
-                </div>
-
                 <h3>Opciones</h3>
                 <button class="btn btn-secondary btn-sm btn-sidebar-action" id="btnOpenHistory"
                     style="margin-bottom: 8px;">
@@ -188,6 +147,58 @@
                     <i data-lucide="plus"></i> <span class="btn-text">Nueva Reserva</span>
                 </button>
             </header>
+
+            <!-- Top Quick Filters Bar -->
+            <div class="top-filters-card" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+                <!-- Left: Asesor -->
+                <div class="top-filter-section">
+                    <span class="top-filter-label">
+                        <i data-lucide="user-check" style="width: 15px; height: 15px; color: var(--primary);"></i> Asesor:
+                    </span>
+                    <select id="filterAsesor" class="form-control" style="font-size: 13px; padding: 6px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: #ffffff; color: var(--text-primary); cursor: pointer; min-width: 160px; font-weight: 500;">
+                        <option value="TODOS">Todos los asesores</option>
+                    </select>
+                </div>
+
+                <!-- Right: Bungalows -->
+                <div class="top-filter-section">
+                    <span class="top-filter-label">
+                        <i data-lucide="home" style="width: 15px; height: 15px; color: var(--primary);"></i> Bungalows:
+                    </span>
+                    <div class="top-filter-items">
+                        <label class="filter-item">
+                            <input type="checkbox" id="filterB1" checked>
+                            <span class="custom-checkbox color-b1"></span>
+                            B1
+                        </label>
+                        <label class="filter-item">
+                            <input type="checkbox" id="filterB2" checked>
+                            <span class="custom-checkbox color-b2"></span>
+                            B2
+                        </label>
+                        <label class="filter-item">
+                            <input type="checkbox" id="filterB3" checked>
+                            <span class="custom-checkbox color-b3"></span>
+                            B3
+                        </label>
+                        <label class="filter-item">
+                            <input type="checkbox" id="filterB4" checked>
+                            <span class="custom-checkbox color-b4"></span>
+                            B4
+                        </label>
+                        <label class="filter-item">
+                            <input type="checkbox" id="filterB5" checked>
+                            <span class="custom-checkbox color-b5"></span>
+                            B5
+                        </label>
+                        <label class="filter-item">
+                            <input type="checkbox" id="filterB6" checked>
+                            <span class="custom-checkbox color-b6"></span>
+                            B6
+                        </label>
+                    </div>
+                </div>
+            </div>
 
             <!-- Calendar Container -->
             <div class="calendar-card">

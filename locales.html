@@ -60,25 +60,6 @@
             </div>
 
             <nav class="nav-filters">
-                <h3>Filtrar por Local</h3>
-                <div class="filter-group">
-                    <label class="filter-item">
-                        <input type="checkbox" id="filterLosPinosGrande" checked>
-                        <span class="custom-checkbox color-b1"></span>
-                        Los Pinos (Grande)
-                    </label>
-                    <label class="filter-item">
-                        <input type="checkbox" id="filterLosPinosPequeno" checked>
-                        <span class="custom-checkbox color-b2"></span>
-                        Los Pinos (Pequeño)
-                    </label>
-                    <label class="filter-item">
-                        <input type="checkbox" id="filterPolideportivoGrande" checked>
-                        <span class="custom-checkbox color-b3"></span>
-                        Polideportivo (Grande)
-                    </label>
-                </div>
-
                 <h3>Opciones</h3>
                 <button class="btn btn-secondary btn-sm btn-sidebar-action" id="btnOpenHistory"
                     style="margin-bottom: 8px;">
@@ -172,6 +153,34 @@
                     <i data-lucide="plus"></i> <span class="btn-text">Nueva Reserva</span>
                 </button>
             </header>
+
+            <!-- Top Quick Filters Bar -->
+            <div class="top-filters-card">
+                <div class="top-filters-group">
+                    <div class="top-filter-section">
+                        <span class="top-filter-label">
+                            <i data-lucide="map-pin" style="width: 15px; height: 15px; color: var(--primary);"></i> Locales:
+                        </span>
+                        <div class="top-filter-items">
+                            <label class="filter-item">
+                                <input type="checkbox" id="filterLosPinosGrande" checked>
+                                <span class="custom-checkbox color-b1"></span>
+                                Los Pinos (Grande)
+                            </label>
+                            <label class="filter-item">
+                                <input type="checkbox" id="filterLosPinosPequeno" checked>
+                                <span class="custom-checkbox color-b2"></span>
+                                Los Pinos (Pequeño)
+                            </label>
+                            <label class="filter-item">
+                                <input type="checkbox" id="filterPolideportivoGrande" checked>
+                                <span class="custom-checkbox color-b3"></span>
+                                Polideportivo (Grande)
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             <!-- Calendar Container -->
             <div class="calendar-card">

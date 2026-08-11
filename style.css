@@ -2412,3 +2412,58 @@ select option {
         transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease, width 0.3s ease, padding 0.3s ease;
     }
 }
+
+/* Top Quick Filters Bar (Above Calendar) */
+.top-filters-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 12px 18px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 14px;
+    backdrop-filter: blur(var(--blur-strength));
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
+.top-filters-group {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.top-filter-section {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.top-filter-label {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+}
+
+.top-filter-items {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.top-filter-items .filter-item {
+    font-size: 13px;
+    font-weight: 600;
+    margin: 0;
+    cursor: pointer;
+    user-select: none;
+}

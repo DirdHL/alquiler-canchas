@@ -54,45 +54,6 @@
             </div>
 
             <nav class="nav-filters">
-                <h3>Filtrar por Cancha</h3>
-
-                <div class="filter-section-title">Fútbol</div>
-                <div class="filter-sub-list">
-                    <label class="filter-item">
-                        <input type="checkbox" id="filterCanchaGrande" checked>
-                        <span class="custom-checkbox color-grande"></span>
-                        Cancha Grande
-                    </label>
-                    <label class="filter-item">
-                        <input type="checkbox" id="filterCanchaPequena" checked>
-                        <span class="custom-checkbox color-pequena"></span>
-                        Cancha Pequeña
-                    </label>
-                </div>
-
-                <div class="filter-section-title">Vóley</div>
-                <div class="filter-sub-list">
-                    <label class="filter-item">
-                        <input type="checkbox" id="filterCanchaVoley" checked>
-                        <span class="custom-checkbox color-voley"></span>
-                        Cancha de Vóley
-                    </label>
-                </div>
-
-                <h3>Filtrar por Deporte</h3>
-                <div class="filter-group">
-                    <label class="filter-item">
-                        <input type="checkbox" id="filterFutbol" checked>
-                        <span class="custom-checkbox color-futbol"></span>
-                        <i data-lucide="trophy" class="inline-icon"></i> Fútbol
-                    </label>
-                    <label class="filter-item">
-                        <input type="checkbox" id="filterVoley" checked>
-                        <span class="custom-checkbox color-voley"></span>
-                        <i data-lucide="volleyball" class="inline-icon"></i> Vóley
-                    </label>
-                </div>
-
                 <h3>Opciones</h3>
                 <button class="btn btn-secondary btn-sm btn-sidebar-action" id="btnOpenHistory"
                     style="margin-bottom: 8px;">
@@ -188,6 +149,52 @@
                     <i data-lucide="plus"></i> <span class="btn-text">Nueva Reserva</span>
                 </button>
             </header>
+
+            <!-- Top Quick Filters Bar -->
+            <div class="top-filters-card">
+                <div class="top-filters-group">
+                    <div class="top-filter-section">
+                        <span class="top-filter-label">
+                            <i data-lucide="layout-grid" style="width: 15px; height: 15px; color: var(--primary);"></i> Canchas:
+                        </span>
+                        <div class="top-filter-items">
+                            <label class="filter-item">
+                                <input type="checkbox" id="filterCanchaGrande" checked>
+                                <span class="custom-checkbox color-grande"></span>
+                                Grande
+                            </label>
+                            <label class="filter-item">
+                                <input type="checkbox" id="filterCanchaPequena" checked>
+                                <span class="custom-checkbox color-pequena"></span>
+                                Pequeña
+                            </label>
+                            <label class="filter-item">
+                                <input type="checkbox" id="filterCanchaVoley" checked>
+                                <span class="custom-checkbox color-voley"></span>
+                                Vóley
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="top-filter-section" style="border-left: 1px solid var(--border-color); padding-left: 14px;">
+                        <span class="top-filter-label">
+                            <i data-lucide="trophy" style="width: 15px; height: 15px; color: var(--primary);"></i> Deporte:
+                        </span>
+                        <div class="top-filter-items">
+                            <label class="filter-item">
+                                <input type="checkbox" id="filterFutbol" checked>
+                                <span class="custom-checkbox color-futbol"></span>
+                                Fútbol
+                            </label>
+                            <label class="filter-item">
+                                <input type="checkbox" id="filterVoley" checked>
+                                <span class="custom-checkbox color-voley"></span>
+                                Vóley
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             <!-- Calendar Container -->
             <div class="calendar-card">
