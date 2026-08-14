@@ -45,6 +45,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 5.1 Initialize Availability Checker
     initAvailabilityChecker();
 
+    // 5.2 Initialize Advisors Announcement Alert
+    initAdvisorsAlert();
+
     // 6. Load Initial Data
     await fetchBookings();
 
@@ -2072,6 +2075,49 @@ function initAvailabilityChecker() {
     }
 
     updateAvailabilityChecker();
+}
+
+function initAdvisorsAlert() {
+    const alertEl = document.getElementById('advisorsUpdateAlert');
+    const closeBtn = document.getElementById('btnCloseAdvisorsAlert');
+    if (!alertEl) return;
+
+    // Configuración de expiración de 3 días (72 horas)
+    const STORAGE_KEY_EXPIRED = 'canchapro_advisors_alert_expiry_v1';
+    const STORAGE_KEY_CLOSED = 'canchapro_advisors_alert_dismissed_v1';
+
+    const now = Date.now();
+    let expiry = localStorage.getItem(STORAGE_KEY_EXPIRED);
+    if (!expiry) {
+        // 3 días = 3 * 24 * 60 * 60 * 1000 = 259,200,000 ms
+        expiry = now + (3 * 24 * 60 * 60 * 1000);
+        localStorage.setItem(STORAGE_KEY_EXPIRED, expiry);
+    } else {
+        expiry = parseInt(expiry);
+    }
+
+    const isClosed = localStorage.getItem(STORAGE_KEY_CLOSED) === 'true';
+
+    // Si ya pasaron los 3 días o la asesora ya lo cerró voluntariamente
+    if (now > expiry || isClosed) {
+        alertEl.style.display = 'none';
+        return;
+    }
+
+    // Mostrar el cartel destacado
+    alertEl.style.display = 'flex';
+
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+            alertEl.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+            alertEl.style.opacity = '0';
+            alertEl.style.transform = 'translateY(-8px)';
+            setTimeout(() => {
+                alertEl.style.display = 'none';
+            }, 300);
+            localStorage.setItem(STORAGE_KEY_CLOSED, 'true');
+        });
+    }
 }
 
 function updateAvailabilityChecker() {

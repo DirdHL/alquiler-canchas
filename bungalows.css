@@ -574,6 +574,126 @@ body {
 }
 
 /* =============================================================
+   Cartel de Aviso Destacado para Asesoras (Rojo / Atención)
+   ============================================================= */
+.advisors-update-alert {
+    background: linear-gradient(135deg, #fff5f5, #fee2e2);
+    border: 2px solid #ef4444;
+    border-radius: var(--radius-md);
+    padding: 14px 18px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    box-shadow: 0 4px 14px rgba(239, 68, 68, 0.15);
+    position: relative;
+    animation: alertPulse 2.5s infinite alternate ease-in-out;
+}
+
+@keyframes alertPulse {
+    0% {
+        box-shadow: 0 4px 14px rgba(239, 68, 68, 0.15);
+        border-color: #ef4444;
+    }
+    100% {
+        box-shadow: 0 6px 20px rgba(239, 68, 68, 0.28);
+        border-color: #dc2626;
+    }
+}
+
+.alert-icon-box {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: #ef4444;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+}
+
+.alert-icon-box svg {
+    width: 22px;
+    height: 22px;
+}
+
+.alert-content-box {
+    flex: 1;
+    color: #991b1b;
+}
+
+.alert-header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.alert-headline {
+    font-size: 15px;
+    font-weight: 800;
+    color: #b91c1c;
+    letter-spacing: 0.2px;
+}
+
+.alert-badge-timer {
+    font-size: 11px;
+    font-weight: 700;
+    background: rgba(239, 68, 68, 0.12);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #dc2626;
+    padding: 2px 8px;
+    border-radius: 12px;
+}
+
+.alert-text {
+    font-size: 13px;
+    margin: 4px 0 6px 0;
+    line-height: 1.45;
+    color: #7f1d1d;
+}
+
+.alert-instructions {
+    font-size: 12.5px;
+    font-weight: 600;
+    background: rgba(255, 255, 255, 0.7);
+    border-left: 4px solid #ef4444;
+    padding: 6px 12px;
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    color: #991b1b;
+}
+
+.alert-close-btn {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    border-radius: 6px;
+    color: #b91c1c;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.alert-close-btn:hover {
+    background: #ef4444;
+    color: #ffffff;
+    border-color: #ef4444;
+}
+
+.alert-close-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* =============================================================
    Pestañas de Navegación de Bungalows (B1 a B6 y Ver Todos)
    ============================================================= */
 .bungalow-tabs-container {

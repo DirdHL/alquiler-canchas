@@ -218,6 +218,33 @@
                 </div>
             </div>
 
+            <!-- Notice Alert Banner for Advisors (Auto-expires in 3 days or closeable) -->
+            <div id="advisorsUpdateAlert" class="advisors-update-alert" style="display: none;">
+                <div class="alert-icon-box">
+                    <i data-lucide="bell-ring"></i>
+                </div>
+                <div class="alert-content-box">
+                    <div class="alert-header-row">
+                        <strong class="alert-headline">📢 ¡AVISO IMPORTANTE!</strong>
+                        <span class="alert-badge-timer">⏳ Mensaje temporal (3 días)</span>
+                    </div>
+                    <p class="alert-text">
+                        <strong>¿No ves todas las reservas? ¡Tranquila, no han desaparecido!</strong> Ahora cada
+                        Bungalow (B1 al B6) tiene su <strong>propio calendario independiente</strong> para mayor orden y
+                        claridad.
+                    </p>
+                    <div class="alert-instructions">
+                        👉 Haz clic en las pestañas <strong>[Bungalow 1]</strong>, <strong>[Bungalow 2]</strong>, etc.,
+                        para ver cada uno por separado, o haz clic en <strong>[Ver Todos]</strong> para ver todos juntos
+                        como antes.
+                    </div>
+                </div>
+                <button type="button" class="alert-close-btn" id="btnCloseAdvisorsAlert"
+                    title="Entendido / Cerrar aviso">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+
             <!-- Bungalow Navigation Tabs Bar -->
             <div class="bungalow-tabs-container">
                 <div class="bungalow-tabs" id="bungalowTabs">
