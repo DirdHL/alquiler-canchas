@@ -157,52 +157,6 @@
                 </button>
             </header>
 
-            <!-- Bungalow Navigation Tabs Bar -->
-            <div class="bungalow-tabs-container">
-                <div class="bungalow-tabs" id="bungalowTabs">
-                    <button type="button" class="bungalow-tab active" data-bungalow="1">
-                        <span class="tab-color-dot color-b1"></span>
-                        <span>Bungalow 1</span>
-                    </button>
-                    <button type="button" class="bungalow-tab" data-bungalow="2">
-                        <span class="tab-color-dot color-b2"></span>
-                        <span>Bungalow 2</span>
-                    </button>
-                    <button type="button" class="bungalow-tab" data-bungalow="3">
-                        <span class="tab-color-dot color-b3"></span>
-                        <span>Bungalow 3</span>
-                    </button>
-                    <button type="button" class="bungalow-tab" data-bungalow="4">
-                        <span class="tab-color-dot color-b4"></span>
-                        <span>Bungalow 4</span>
-                    </button>
-                    <button type="button" class="bungalow-tab" data-bungalow="5">
-                        <span class="tab-color-dot color-b5"></span>
-                        <span>Bungalow 5</span>
-                    </button>
-                    <button type="button" class="bungalow-tab" data-bungalow="6">
-                        <span class="tab-color-dot color-b6"></span>
-                        <span>Bungalow 6</span>
-                    </button>
-                    <button type="button" class="bungalow-tab" data-bungalow="all">
-                        <i data-lucide="layout-grid"></i>
-                        <span>Ver Todos</span>
-                    </button>
-                </div>
-
-                <!-- Right: Asesor Filter -->
-                <div class="top-filter-section">
-                    <span class="top-filter-label">
-                        <i data-lucide="user-check" style="width: 15px; height: 15px; color: var(--primary);"></i>
-                        Asesor:
-                    </span>
-                    <select id="filterAsesor" class="form-control"
-                        style="font-size: 13px; padding: 6px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: #ffffff; color: var(--text-primary); cursor: pointer; min-width: 160px; font-weight: 500;">
-                        <option value="TODOS">Todos los asesores</option>
-                    </select>
-                </div>
-            </div>
-
             <!-- Smart Availability Quick Checker Card ("¿Qué bungalows están disponibles?") -->
             <div class="availability-checker-card">
                 <div class="checker-header">
@@ -261,6 +215,52 @@
                 <!-- Instant 6-Bungalow Status Results Grid -->
                 <div class="checker-results-grid" id="checkerResultsGrid">
                     <!-- Populated dynamically by JS -->
+                </div>
+            </div>
+
+            <!-- Bungalow Navigation Tabs Bar -->
+            <div class="bungalow-tabs-container">
+                <div class="bungalow-tabs" id="bungalowTabs">
+                    <button type="button" class="bungalow-tab active" data-bungalow="1">
+                        <span class="tab-color-dot color-b1"></span>
+                        <span>Bungalow 1</span>
+                    </button>
+                    <button type="button" class="bungalow-tab" data-bungalow="2">
+                        <span class="tab-color-dot color-b2"></span>
+                        <span>Bungalow 2</span>
+                    </button>
+                    <button type="button" class="bungalow-tab" data-bungalow="3">
+                        <span class="tab-color-dot color-b3"></span>
+                        <span>Bungalow 3</span>
+                    </button>
+                    <button type="button" class="bungalow-tab" data-bungalow="4">
+                        <span class="tab-color-dot color-b4"></span>
+                        <span>Bungalow 4</span>
+                    </button>
+                    <button type="button" class="bungalow-tab" data-bungalow="5">
+                        <span class="tab-color-dot color-b5"></span>
+                        <span>Bungalow 5</span>
+                    </button>
+                    <button type="button" class="bungalow-tab" data-bungalow="6">
+                        <span class="tab-color-dot color-b6"></span>
+                        <span>Bungalow 6</span>
+                    </button>
+                    <button type="button" class="bungalow-tab" data-bungalow="all">
+                        <i data-lucide="layout-grid"></i>
+                        <span>Ver Todos</span>
+                    </button>
+                </div>
+
+                <!-- Right: Asesor Filter -->
+                <div class="top-filter-section">
+                    <span class="top-filter-label">
+                        <i data-lucide="user-check" style="width: 15px; height: 15px; color: var(--primary);"></i>
+                        Asesor:
+                    </span>
+                    <select id="filterAsesor" class="form-control"
+                        style="font-size: 13px; padding: 6px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: #ffffff; color: var(--text-primary); cursor: pointer; min-width: 160px; font-weight: 500;">
+                        <option value="TODOS">Todos los asesores</option>
+                    </select>
                 </div>
             </div>
 
