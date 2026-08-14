@@ -14,6 +14,7 @@ let activeOperator = 'Invitado';
 let activeAdvisorsList = [];
 let isTotalManuallyEdited = false;
 let selectedDate = new Date();
+let currentBungalowTab = '1'; // Pestaña de Bungalow activa por defecto (Bungalow 1)
 
 // Constants
 const PRICE_WEEKDAY = 160.00; // Tarifa diaria Lun-Jue (Día y Noche / Full Day / Por día de Horario Extendido)
@@ -276,10 +277,22 @@ function setupEventListeners() {
         runDynamicCalculations();
     });
 
-    // Calendar filters
-    const bungalowsFilters = ['filterB1', 'filterB2', 'filterB3', 'filterB4', 'filterB5', 'filterB6'];
-    bungalowsFilters.forEach(id => {
-        document.getElementById(id).addEventListener('change', () => {
+    // Bungalow Navigation Tabs (B1 a B6 y Ver Todos)
+    const bungalowTabButtons = document.querySelectorAll('.bungalow-tab');
+    bungalowTabButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            bungalowTabButtons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentBungalowTab = btn.dataset.bungalow;
+
+            // Actualizar título principal
+            const mainTitle = document.getElementById('mainPageTitle');
+            if (mainTitle) {
+                mainTitle.textContent = currentBungalowTab === 'all'
+                    ? 'Calendario - Todos los Bungalows'
+                    : `Calendario - Bungalow ${currentBungalowTab}`;
+            }
+
             if (calendar) {
                 calendar.refetchEvents();
                 updateDailySummaryList();
@@ -341,10 +354,10 @@ function setupEventListeners() {
     });
 
     // Modal Stats Tab triggers
-    const tabButtons = document.querySelectorAll('.stats-tabs .tab-btn');
-    tabButtons.forEach(btn => {
+    const statsTabButtons = document.querySelectorAll('.stats-tabs .tab-btn');
+    statsTabButtons.forEach(btn => {
         btn.addEventListener('click', (e) => {
-            tabButtons.forEach(b => {
+            statsTabButtons.forEach(b => {
                 b.classList.remove('active');
                 b.style.color = 'var(--text-secondary)';
                 b.style.borderBottom = 'none';
@@ -577,6 +590,18 @@ function openBookingModal(dateStr = null) {
     const checkInDate = new Date(checkInVal + 'T00:00:00');
     checkInDate.setDate(checkInDate.getDate() + 1);
     document.getElementById('bookingCheckOut').value = checkInDate.toISOString().split('T')[0];
+
+    // Preseleccionar el bungalow de la pestaña activa si no es 'all'
+    if (currentBungalowTab !== 'all') {
+        const bNum = parseInt(currentBungalowTab);
+        const chk = document.querySelector(`input[name="bungalowSelect"][value="${bNum}"]`);
+        if (chk) {
+            chk.checked = true;
+            document.getElementById('bookingBungalow').value = bNum;
+        }
+        updateNinosLimit();
+        updatePersonasLimit();
+    }
 
     // Prepopulate operator dynamically
     populateAsesoresDropdown('');
@@ -1446,16 +1471,36 @@ function initCalendar() {
             updateAvailabilityGrid();
         },
         events: function (info, successCallback, failureCallback) {
-            const isSmallScreen = window.innerWidth <= 1028;
+            const isSmallScreen = window.innerWidth <= 768;
             const fcEvents = bookings.map(b => {
                 const isBlocked = b.estado_reserva === 'Bloqueado';
+                
+                // Calcular horas de entrada y salida
+                let startHour = '3:00 PM';
+                let endHour = '12:00 PM';
+                if (b.horario === 'Full Day' || b.horario === 'Horario Extendido') {
+                    startHour = '9:00 AM';
+                    endHour = '6:00 PM';
+                }
+                if (b.horario !== 'Full Day' && b.horario !== 'Horario Extendido' && (b.horas_extras || 0) > 0) {
+                    let hh = 12 + b.horas_extras;
+                    let ampm = (hh % 24) >= 12 ? 'PM' : 'AM';
+                    let displayHr = (hh % 24) % 12;
+                    displayHr = displayHr ? displayHr : 12;
+                    endHour = `${displayHr}:00 ${ampm}`;
+                }
+
+                const timeStr = `${startHour} a ${endHour}`;
                 let title = "";
-                if (isSmallScreen) {
-                    title = isBlocked ? `🔒 B${b.bungalow_numero}` : `B${b.bungalow_numero}`;
+                if (isBlocked) {
+                    const reason = (b.nombre_cliente && !b.nombre_cliente.startsWith('🔒')) ? b.nombre_cliente : 'Bloqueado';
+                    title = `🔒 B${b.bungalow_numero}: ${reason}`;
                 } else {
-                    title = isBlocked
-                        ? `🔒 B${b.bungalow_numero} BLOQUEADO`
-                        : `B${b.bungalow_numero}: ${b.nombre_cliente} (${b.horario})`;
+                    if (isSmallScreen) {
+                        title = `B${b.bungalow_numero}: ${b.nombre_cliente} (${timeStr})`;
+                    } else {
+                        title = `B${b.bungalow_numero}: ${b.nombre_cliente} | ${b.horario} (${timeStr})`;
+                    }
                 }
 
                 // For FullCalendar display, the end date is exclusive.
@@ -1464,13 +1509,24 @@ function initCalendar() {
                 checkOutDate.setDate(checkOutDate.getDate() + 1);
                 const exclusiveCheckOutStr = checkOutDate.toISOString().split('T')[0];
 
+                let eventClass = 'event-horario-dianoche';
+                if (isBlocked) {
+                    eventClass = 'event-bungalow-blocked';
+                } else if (b.horario === 'Full Day') {
+                    eventClass = 'event-horario-fullday';
+                } else if (b.horario === 'Horario Extendido') {
+                    eventClass = 'event-horario-extendido';
+                } else {
+                    eventClass = 'event-horario-dianoche';
+                }
+
                 return {
                     id: b.id,
                     title: title,
                     start: b.fecha_ingreso,
                     end: exclusiveCheckOutStr,
                     allDay: true,
-                    className: isBlocked ? 'event-bungalow-blocked' : `event-bungalow-${b.bungalow_numero}`,
+                    className: eventClass,
                     extendedProps: b
                 };
             });
@@ -1479,8 +1535,11 @@ function initCalendar() {
             const filterAsesorVal = document.getElementById('filterAsesor') ? document.getElementById('filterAsesor').value : 'TODOS';
             const filteredEvents = fcEvents.filter(event => {
                 const bNo = event.extendedProps.bungalow_numero;
-                const bChecked = document.getElementById(`filterB${bNo}`) ? document.getElementById(`filterB${bNo}`).checked : true;
-                if (!bChecked) return false;
+                
+                // Filtrar según la pestaña activa (B1 a B6 o Todos)
+                if (currentBungalowTab !== 'all' && bNo !== parseInt(currentBungalowTab)) {
+                    return false;
+                }
 
                 if (filterAsesorVal && filterAsesorVal !== 'TODOS') {
                     const asesorRes = (event.extendedProps.asesor_registro || '').trim();
@@ -1560,9 +1619,10 @@ function updateDailySummaryList() {
     // Find bookings that cover the activeDate
     const filterAsesorVal = document.getElementById('filterAsesor') ? document.getElementById('filterAsesor').value : 'TODOS';
     const activeToday = bookings.filter(b => {
-        // Filter by checkbox filters
-        const filterEl = document.getElementById(`filterB${b.bungalow_numero}`);
-        if (filterEl && !filterEl.checked) return false;
+        // Filtrar según la pestaña activa
+        if (currentBungalowTab !== 'all' && b.bungalow_numero !== parseInt(currentBungalowTab)) {
+            return false;
+        }
 
         // Filter by Asesor
         if (filterAsesorVal && filterAsesorVal !== 'TODOS') {
@@ -1689,10 +1749,9 @@ function updateAvailabilityGrid() {
         html += `<td style="padding: 10px 16px; font-weight: 600; color: var(--text-primary); border-bottom: 1px solid var(--border-color);">${slot.displayDate}</td>`;
 
         bungalows.forEach(bNum => {
-            const filterEl = document.getElementById(`filterB${bNum}`);
-            const isFilterChecked = filterEl ? filterEl.checked : true;
+            const isTabActive = (currentBungalowTab === 'all' || parseInt(currentBungalowTab) === bNum);
 
-            html += `<td style="padding: 6px 8px; border-bottom: 1px solid var(--border-color); vertical-align: top; text-align: center; ${isFilterChecked ? '' : 'opacity: 0.4; pointer-events: none;'}">`;
+            html += `<td style="padding: 6px 8px; border-bottom: 1px solid var(--border-color); vertical-align: top; text-align: center; ${isTabActive ? '' : 'opacity: 0.35;'}">`;
 
             // Find all close/relevant bookings for this bungalow on this date (within 2 days window)
             const filterAsesorVal = document.getElementById('filterAsesor') ? document.getElementById('filterAsesor').value : 'TODOS';

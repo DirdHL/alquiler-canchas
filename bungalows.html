@@ -147,8 +147,8 @@
                         <span style="font-size: 13px; font-weight: 600; margin-left: 4px;">Menú</span>
                     </button>
                     <div class="header-title">
-                        <h1>Calendario de Bungalows</h1>
-                        <p>Gestione el hospedaje, tarifas de fin de semana y turnos.</p>
+                        <h1 id="mainPageTitle">Calendario - Bungalow 1</h1>
+                        <p>Gestione el hospedaje, turnos y disponibilidad de cada bungalow.</p>
                     </div>
                 </div>
                 <button class="btn btn-primary" id="btnNewReservation">
@@ -156,9 +156,40 @@
                 </button>
             </header>
 
-            <!-- Top Quick Filters Bar -->
-            <div class="top-filters-card" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
-                <!-- Left: Asesor -->
+            <!-- Bungalow Navigation Tabs Bar -->
+            <div class="bungalow-tabs-container">
+                <div class="bungalow-tabs" id="bungalowTabs">
+                    <button type="button" class="bungalow-tab active" data-bungalow="1">
+                        <i data-lucide="home"></i>
+                        <span>Bungalow 1</span>
+                    </button>
+                    <button type="button" class="bungalow-tab" data-bungalow="2">
+                        <i data-lucide="home"></i>
+                        <span>Bungalow 2</span>
+                    </button>
+                    <button type="button" class="bungalow-tab" data-bungalow="3">
+                        <i data-lucide="home"></i>
+                        <span>Bungalow 3</span>
+                    </button>
+                    <button type="button" class="bungalow-tab" data-bungalow="4">
+                        <i data-lucide="home"></i>
+                        <span>Bungalow 4</span>
+                    </button>
+                    <button type="button" class="bungalow-tab" data-bungalow="5">
+                        <i data-lucide="home"></i>
+                        <span>Bungalow 5</span>
+                    </button>
+                    <button type="button" class="bungalow-tab" data-bungalow="6">
+                        <i data-lucide="home"></i>
+                        <span>Bungalow 6</span>
+                    </button>
+                    <button type="button" class="bungalow-tab" data-bungalow="all">
+                        <i data-lucide="layout-grid"></i>
+                        <span>Ver Todos</span>
+                    </button>
+                </div>
+
+                <!-- Right: Asesor Filter -->
                 <div class="top-filter-section">
                     <span class="top-filter-label">
                         <i data-lucide="user-check" style="width: 15px; height: 15px; color: var(--primary);"></i> Asesor:
@@ -167,49 +198,30 @@
                         <option value="TODOS">Todos los asesores</option>
                     </select>
                 </div>
-
-                <!-- Right: Bungalows -->
-                <div class="top-filter-section">
-                    <span class="top-filter-label">
-                        <i data-lucide="home" style="width: 15px; height: 15px; color: var(--primary);"></i> Bungalows:
-                    </span>
-                    <div class="top-filter-items">
-                        <label class="filter-item">
-                            <input type="checkbox" id="filterB1" checked>
-                            <span class="custom-checkbox color-b1"></span>
-                            B1
-                        </label>
-                        <label class="filter-item">
-                            <input type="checkbox" id="filterB2" checked>
-                            <span class="custom-checkbox color-b2"></span>
-                            B2
-                        </label>
-                        <label class="filter-item">
-                            <input type="checkbox" id="filterB3" checked>
-                            <span class="custom-checkbox color-b3"></span>
-                            B3
-                        </label>
-                        <label class="filter-item">
-                            <input type="checkbox" id="filterB4" checked>
-                            <span class="custom-checkbox color-b4"></span>
-                            B4
-                        </label>
-                        <label class="filter-item">
-                            <input type="checkbox" id="filterB5" checked>
-                            <span class="custom-checkbox color-b5"></span>
-                            B5
-                        </label>
-                        <label class="filter-item">
-                            <input type="checkbox" id="filterB6" checked>
-                            <span class="custom-checkbox color-b6"></span>
-                            B6
-                        </label>
-                    </div>
-                </div>
             </div>
 
             <!-- Calendar Container -->
             <div class="calendar-card">
+                <!-- Schedule Type Legend -->
+                <div class="calendar-schedule-legend"
+                    style="display: flex; gap: 16px; align-items: center; justify-content: flex-end; padding-bottom: 12px; margin-bottom: 14px; border-bottom: 1px solid var(--border-color); font-size: 12px; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <span style="width: 12px; height: 12px; border-radius: 3px; background: linear-gradient(135deg, #f59e0b, #d97706); display: inline-block; box-shadow: 0 1px 3px rgba(0,0,0,0.15);"></span>
+                        <span style="color: var(--text-secondary); font-weight: 600;">☀️ Full Day (Cuadro completo)</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <span style="width: 12px; height: 12px; border-radius: 3px; background: linear-gradient(135deg, #10b981, #059669); display: inline-block; box-shadow: 0 1px 3px rgba(0,0,0,0.15);"></span>
+                        <span style="color: var(--text-secondary); font-weight: 600;">🌙 Día y Noche (½ día ing. / ½ día sal.)</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <span style="width: 12px; height: 12px; border-radius: 3px; background: linear-gradient(135deg, #8b5cf6, #6d28d9); display: inline-block; box-shadow: 0 1px 3px rgba(0,0,0,0.15);"></span>
+                        <span style="color: var(--text-secondary); font-weight: 600;">✨ Horario Extendido (Cuadro completo)</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <span style="width: 12px; height: 12px; border-radius: 3px; background: linear-gradient(135deg, #64748b, #475569); display: inline-block; box-shadow: 0 1px 3px rgba(0,0,0,0.15);"></span>
+                        <span style="color: var(--text-secondary); font-weight: 600;">🔒 Bloqueado</span>
+                    </div>
+                </div>
                 <div class="calendar-scroll-wrapper">
                     <div id="calendar"></div>
                 </div>
