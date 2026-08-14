@@ -1456,8 +1456,8 @@ function initCalendar() {
         initialView: 'dayGridMonth',
         locale: 'es',
         firstDay: 1, // Lunes
-        // Desactiva el resize automático para que el min-width del CSS se respete
-        handleWindowResize: false,
+        handleWindowResize: true,
+        dayMaxEvents: false, // Muestra todos los eventos sin ocultar nada
         headerToolbar: {
             left: 'prev,next today',
             center: 'title',

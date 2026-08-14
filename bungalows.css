@@ -1854,35 +1854,25 @@ body {
         min-height: auto !important;
     }
 
-    /* ── SCROLL DEL CALENDARIO (enfoque ChatGPT) ── */
+    /* ── CALENDARIO FULL WIDTH SIN SLIDER HORIZONTAL ── */
     .calendar-scroll-wrapper {
-        width: 100%;
-        overflow-x: auto;
-        overflow-y: hidden;
-        -webkit-overflow-scrolling: touch;
+        width: 100% !important;
+        overflow-x: visible !important;
+        overflow-y: visible !important;
     }
 
-    /* Forzar que el contenedor externo del calendario sea ancho */
-    #calendar {
-        min-width: 700px;
-    }
-
-    /* Forzar que los elementos INTERNOS de FullCalendar también sean anchos */
-    /* Sin esto, FC comprime sus tablas internas para adaptarse al contenedor */
-    .fc {
-        min-width: 700px !important;
-    }
-
+    #calendar,
+    .fc,
     .fc-scrollgrid,
     .fc-daygrid-body,
     .fc-col-header {
-        min-width: 700px !important;
+        width: 100% !important;
+        min-width: 0 !important;
     }
 
-    /* Cada columna de día mínimo 100px → 7 × 100 = 700px */
     .fc-daygrid-day,
     .fc-col-header-cell {
-        min-width: 100px !important;
+        min-width: 0 !important;
     }
 
     /* Toolbar compacto */
@@ -2261,25 +2251,14 @@ body {
 
     .calendar-scroll-wrapper {
         width: 100% !important;
-        overflow-x: auto !important;
-        overflow-y: hidden !important;
-        -webkit-overflow-scrolling: touch !important;
-        scrollbar-width: thin !important;
-        scrollbar-color: var(--accent) transparent !important;
-    }
-
-    .calendar-scroll-wrapper::-webkit-scrollbar {
-        height: 6px;
-    }
-
-    .calendar-scroll-wrapper::-webkit-scrollbar-thumb {
-        background: var(--accent);
-        border-radius: 3px;
+        overflow-x: visible !important;
+        overflow-y: visible !important;
     }
 
     #calendar,
     .fc {
-        min-width: 750px !important;
+        width: 100% !important;
+        min-width: 0 !important;
     }
 
     /* Mapa de disponibilidad scrollable y táctil */
