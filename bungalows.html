@@ -24,11 +24,11 @@
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="bungalows.css">
     <script>
-        window.addEventListener('error', function(e) { 
-            alert('⛔ ERROR JS EN LA PÁGINA ⛔\nArchivo: ' + e.filename + '\nLínea: ' + e.lineno + '\nMensaje: ' + e.message); 
+        window.addEventListener('error', function (e) {
+            alert('⛔ ERROR JS EN LA PÁGINA ⛔\nArchivo: ' + e.filename + '\nLínea: ' + e.lineno + '\nMensaje: ' + e.message);
         });
-        window.addEventListener('unhandledrejection', function(e) { 
-            alert('⛔ PROMESA RECHAZADA ⛔\n' + e.reason); 
+        window.addEventListener('unhandledrejection', function (e) {
+            alert('⛔ PROMESA RECHAZADA ⛔\n' + e.reason);
         });
     </script>
 </head>
@@ -142,7 +142,8 @@
         <main class="main-content">
             <header class="app-header">
                 <div class="header-left">
-                    <button class="btn btn-secondary btn-menu" id="btnToggleSidebar" title="Mostrar / Ocultar Menú Lateral">
+                    <button class="btn btn-secondary btn-menu" id="btnToggleSidebar"
+                        title="Mostrar / Ocultar Menú Lateral">
                         <i data-lucide="menu"></i>
                         <span style="font-size: 13px; font-weight: 600; margin-left: 4px;">Menú</span>
                     </button>
@@ -192,11 +193,74 @@
                 <!-- Right: Asesor Filter -->
                 <div class="top-filter-section">
                     <span class="top-filter-label">
-                        <i data-lucide="user-check" style="width: 15px; height: 15px; color: var(--primary);"></i> Asesor:
+                        <i data-lucide="user-check" style="width: 15px; height: 15px; color: var(--primary);"></i>
+                        Asesor:
                     </span>
-                    <select id="filterAsesor" class="form-control" style="font-size: 13px; padding: 6px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: #ffffff; color: var(--text-primary); cursor: pointer; min-width: 160px; font-weight: 500;">
+                    <select id="filterAsesor" class="form-control"
+                        style="font-size: 13px; padding: 6px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: #ffffff; color: var(--text-primary); cursor: pointer; min-width: 160px; font-weight: 500;">
                         <option value="TODOS">Todos los asesores</option>
                     </select>
+                </div>
+            </div>
+
+            <!-- Smart Availability Quick Checker Card ("¿Qué bungalows están disponibles?") -->
+            <div class="availability-checker-card">
+                <div class="checker-header">
+                    <div class="checker-header-left">
+                        <div class="checker-icon-badge">
+                            <i data-lucide="sparkles"></i>
+                        </div>
+                        <div>
+                            <h3 class="checker-title"
+                                style="display: flex; align-items: center; flex-wrap: wrap; gap: 6px;">
+                                ¿Qué bungalows están disponibles?
+                                <span
+                                    style="font-size: 10px; background: rgba(245, 158, 11, 0.15); color: #b45309; border: 1px solid rgba(245, 158, 11, 0.35); padding: 2px 7px; border-radius: 4px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">En
+                                    Pruebas</span>
+                            </h3>
+                            <p class="checker-subtitle">Consulta disponibilidad en tiempo real por fecha y turno.</p>
+                        </div>
+                    </div>
+                    <div class="checker-quick-buttons">
+                        <button type="button" class="btn btn-secondary btn-sm" id="btnQuickToday">Hoy</button>
+                        <button type="button" class="btn btn-secondary btn-sm" id="btnQuickTomorrow">Mañana</button>
+                        <button type="button" class="btn btn-secondary btn-sm" id="btnQuickWeekend">Fin de
+                            Semana</button>
+                    </div>
+                </div>
+
+                <!-- Aviso de Fase de Pruebas / Feedback -->
+                <div class="checker-beta-notice"
+                    style="display: flex; align-items: center; gap: 8px; background: rgba(245, 158, 11, 0.08); border: 1px dashed rgba(245, 158, 11, 0.35); border-radius: var(--radius-sm); padding: 8px 12px; margin-bottom: 14px; font-size: 12px; color: #92400e; line-height: 1.35;">
+                    <i data-lucide="flask-conical"
+                        style="width: 16px; height: 16px; color: #d97706; flex-shrink: 0;"></i>
+                    <span><strong>Zona en pruebas:</strong> Esta función está en evaluación y puede contener
+                        observaciones. Todo feedback o sugerencia del equipo será muy agradecido para asegurar que sea
+                        100% certero.</span>
+                </div>
+
+                <div class="checker-form-grid">
+                    <div class="checker-field">
+                        <label for="checkDateIn"><i data-lucide="calendar"></i> Fecha Ingreso:</label>
+                        <input type="date" id="checkDateIn" class="form-control">
+                    </div>
+                    <div class="checker-field">
+                        <label for="checkHorario"><i data-lucide="clock"></i> Turno / Horario:</label>
+                        <select id="checkHorario" class="form-control">
+                            <option value="Día y Noche" selected>🌙 Día y Noche (3:00 PM a 12:00 PM)</option>
+                            <option value="Full Day">☀️ Full Day (9:00 AM a 6:00 PM)</option>
+                            <option value="Horario Extendido">✨ Horario Extendido (9:00 AM a 6:00 PM sgte)</option>
+                        </select>
+                    </div>
+                    <div class="checker-field">
+                        <label for="checkDateOut"><i data-lucide="calendar-check"></i> Fecha Salida:</label>
+                        <input type="date" id="checkDateOut" class="form-control">
+                    </div>
+                </div>
+
+                <!-- Instant 6-Bungalow Status Results Grid -->
+                <div class="checker-results-grid" id="checkerResultsGrid">
+                    <!-- Populated dynamically by JS -->
                 </div>
             </div>
 
@@ -206,20 +270,28 @@
                 <div class="calendar-schedule-legend"
                     style="display: flex; gap: 18px; align-items: center; justify-content: flex-end; padding-bottom: 12px; margin-bottom: 14px; border-bottom: 1px solid var(--border-color); font-size: 12px; flex-wrap: wrap;">
                     <div style="display: flex; align-items: center; gap: 6px;">
-                        <span style="display: inline-block; width: 5px; height: 14px; background: #38bdf8; border-radius: 2px;"></span>
-                        <span style="color: var(--text-secondary); font-weight: 600;">☀️🌙 <strong>Día y Noche:</strong> Línea Celeste (½ día ing. / ½ día sal.)</span>
+                        <span
+                            style="display: inline-block; width: 5px; height: 14px; background: #38bdf8; border-radius: 2px;"></span>
+                        <span style="color: var(--text-secondary); font-weight: 600;">☀️🌙 <strong>Día y Noche:</strong>
+                            Línea Celeste (½ día ing. / ½ día sal.)</span>
                     </div>
                     <div style="display: flex; align-items: center; gap: 6px;">
-                        <span style="display: inline-block; width: 5px; height: 14px; background: #fbbf24; border-radius: 2px;"></span>
-                        <span style="color: var(--text-secondary); font-weight: 600;">☀️ <strong>Full Day:</strong> Línea Amarilla (9 AM a 6 PM)</span>
+                        <span
+                            style="display: inline-block; width: 5px; height: 14px; background: #fbbf24; border-radius: 2px;"></span>
+                        <span style="color: var(--text-secondary); font-weight: 600;">☀️ <strong>Full Day:</strong>
+                            Línea Amarilla (9 AM a 6 PM)</span>
                     </div>
                     <div style="display: flex; align-items: center; gap: 6px;">
-                        <span style="display: inline-block; width: 5px; height: 14px; background: #e879f9; border-radius: 2px;"></span>
-                        <span style="color: var(--text-secondary); font-weight: 600;">✨ <strong>Extendido:</strong> Línea Fucsia (9 AM a 6 PM sgte)</span>
+                        <span
+                            style="display: inline-block; width: 5px; height: 14px; background: #e879f9; border-radius: 2px;"></span>
+                        <span style="color: var(--text-secondary); font-weight: 600;">✨ <strong>Extendido:</strong>
+                            Línea Fucsia (9 AM a 6 PM sgte)</span>
                     </div>
                     <div style="display: flex; align-items: center; gap: 6px;">
-                        <span style="display: inline-block; width: 5px; height: 14px; background: #94a3b8; border-radius: 2px;"></span>
-                        <span style="color: var(--text-secondary); font-weight: 600;">🔒 <strong>Bloqueado</strong></span>
+                        <span
+                            style="display: inline-block; width: 5px; height: 14px; background: #94a3b8; border-radius: 2px;"></span>
+                        <span style="color: var(--text-secondary); font-weight: 600;">🔒
+                            <strong>Bloqueado</strong></span>
                     </div>
                 </div>
                 <div class="calendar-scroll-wrapper">
@@ -394,9 +466,11 @@
                         <div class="input-wrapper">
                             <i data-lucide="clock"></i>
                             <select id="bookingHorario" required>
-                                <option value="Día y Noche" selected>Día y Noche (3:00 PM - 12:00 PM del día sgte)</option>
+                                <option value="Día y Noche" selected>Día y Noche (3:00 PM - 12:00 PM del día sgte)
+                                </option>
                                 <option value="Full Day">Full Day (9:00 AM - 6:00 PM del mismo día)</option>
-                                <option value="Horario Extendido">Horario Extendido (9:00 AM - 6:00 PM del día sgte)</option>
+                                <option value="Horario Extendido">Horario Extendido (9:00 AM - 6:00 PM del día sgte)
+                                </option>
                             </select>
                         </div>
                     </div>
@@ -509,7 +583,8 @@
                                 <i data-lucide="baby"></i>
                                 <input type="number" id="bookingNinoPequeno" min="0" max="1" value="0">
                             </div>
-                            <small class="text-secondary" id="bookingNinosHelp">Máximo 1 niño gratis por bungalow.</small>
+                            <small class="text-secondary" id="bookingNinosHelp">Máximo 1 niño gratis por
+                                bungalow.</small>
                         </div>
                         <div class="form-group">
                             <label for="bookingNinosAdicionales">Niños Adicionales</label>
@@ -877,7 +952,8 @@
                         style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px;">
                         <div
                             style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px;">
-                            <span id="labelIncome" style="font-size: 12px; color: var(--text-muted); text-transform: uppercase;">Ganancia
+                            <span id="labelIncome"
+                                style="font-size: 12px; color: var(--text-muted); text-transform: uppercase;">Ganancia
                                 Estimada del Mes</span>
                             <div id="statsIncomeMonth"
                                 style="font-size: 24px; font-weight: 700; color: #34d399; margin-top: 6px;">S/. 0.00
@@ -887,7 +963,8 @@
                         </div>
                         <div
                             style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px;">
-                            <span id="labelDeposito" style="font-size: 12px; color: var(--text-muted); text-transform: uppercase;">Cobrado
+                            <span id="labelDeposito"
+                                style="font-size: 12px; color: var(--text-muted); text-transform: uppercase;">Cobrado
                                 en Depósito</span>
                             <div id="statsDepositoMonth"
                                 style="font-size: 24px; font-weight: 700; color: #60a5fa; margin-top: 6px;">S/. 0.00
@@ -895,7 +972,8 @@
                         </div>
                         <div
                             style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px;">
-                            <span id="labelOtros" style="font-size: 12px; color: var(--text-muted); text-transform: uppercase;">Yape /
+                            <span id="labelOtros"
+                                style="font-size: 12px; color: var(--text-muted); text-transform: uppercase;">Yape /
                                 Otros Pagos</span>
                             <div id="statsOtrosMonth"
                                 style="font-size: 24px; font-weight: 700; color: #fbbf24; margin-top: 6px;">S/. 0.00
@@ -923,7 +1001,8 @@
                         </div>
                         <div
                             style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px;">
-                            <span id="labelExtras" style="font-size: 12px; color: var(--text-muted); text-transform: uppercase;">Extras /
+                            <span id="labelExtras"
+                                style="font-size: 12px; color: var(--text-muted); text-transform: uppercase;">Extras /
                                 Adicionales</span>
                             <div id="statsExtrasMonth"
                                 style="font-size: 24px; font-weight: 700; color: #22d3ee; margin-top: 6px;">S/. 0.00
@@ -957,7 +1036,8 @@
 
                 <!-- Tab content: Ocupación -->
                 <div class="tab-content" id="tab-ocupacion" style="display: none;">
-                    <p id="labelOccupancy" style="color: var(--text-secondary); margin-bottom: 16px;">Grado de ocupación por cada Bungalow este mes:</p>
+                    <p id="labelOccupancy" style="color: var(--text-secondary); margin-bottom: 16px;">Grado de ocupación
+                        por cada Bungalow este mes:</p>
                     <div id="ocupacionContainer" style="display: flex; flex-direction: column; gap: 16px;">
                         <!-- Se llenará dinámicamente con barras de progreso -->
                     </div>
@@ -987,7 +1067,8 @@
 
                 <!-- Tab content: Asesores -->
                 <div class="tab-content" id="tab-asesores" style="display: none;">
-                    <p id="labelAsesores" style="color: var(--text-secondary); margin-bottom: 16px;">Rendimiento de Asesores (Este mes):</p>
+                    <p id="labelAsesores" style="color: var(--text-secondary); margin-bottom: 16px;">Rendimiento de
+                        Asesores (Este mes):</p>
                     <div
                         style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: var(--radius-md); overflow-x: auto; max-height: 300px;">
                         <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 14px;"

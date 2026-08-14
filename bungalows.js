@@ -42,6 +42,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 5. Initialize Calendar
     initCalendar();
 
+    // 5.1 Initialize Availability Checker
+    initAvailabilityChecker();
+
     // 6. Load Initial Data
     await fetchBookings();
 
@@ -1136,6 +1139,7 @@ async function fetchBookings() {
     updateDailySummaryList();
     updateAvailabilityGrid();
     updateDashboardStats();
+    updateAvailabilityChecker();
 }
 
 function loadLocalBookingsFallback() {
@@ -1971,6 +1975,197 @@ window.openBookingEditModalById = function (id) {
     if (booking) {
         openBookingEditModal(booking);
     }
+};
+
+// ----------------------------------------------------
+// Smart Availability Checker Functions
+// ----------------------------------------------------
+function initAvailabilityChecker() {
+    const checkDateIn = document.getElementById('checkDateIn');
+    const checkHorario = document.getElementById('checkHorario');
+    const checkDateOut = document.getElementById('checkDateOut');
+    const btnQuickToday = document.getElementById('btnQuickToday');
+    const btnQuickTomorrow = document.getElementById('btnQuickTomorrow');
+    const btnQuickWeekend = document.getElementById('btnQuickWeekend');
+
+    if (!checkDateIn || !checkDateOut || !checkHorario) return;
+
+    // Default dates (Hoy -> Mañana)
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowStr = tomorrow.toISOString().split('T')[0];
+
+    checkDateIn.value = todayStr;
+    checkDateOut.value = tomorrowStr;
+
+    // Listeners para cambio de horario y fechas
+    checkHorario.addEventListener('change', () => {
+        const horario = checkHorario.value;
+        const inDate = new Date(checkDateIn.value + 'T00:00:00');
+        if (horario === 'Full Day') {
+            checkDateOut.value = checkDateIn.value;
+            checkDateOut.disabled = true;
+        } else {
+            checkDateOut.disabled = false;
+            inDate.setDate(inDate.getDate() + 1);
+            checkDateOut.value = inDate.toISOString().split('T')[0];
+        }
+        updateAvailabilityChecker();
+    });
+
+    checkDateIn.addEventListener('change', () => {
+        const horario = checkHorario.value;
+        const inDate = new Date(checkDateIn.value + 'T00:00:00');
+        if (horario === 'Full Day') {
+            checkDateOut.value = checkDateIn.value;
+        } else {
+            inDate.setDate(inDate.getDate() + 1);
+            checkDateOut.value = inDate.toISOString().split('T')[0];
+        }
+        updateAvailabilityChecker();
+    });
+
+    checkDateOut.addEventListener('change', updateAvailabilityChecker);
+
+    if (btnQuickToday) {
+        btnQuickToday.addEventListener('click', () => {
+            checkDateIn.value = todayStr;
+            checkHorario.value = 'Día y Noche';
+            checkDateOut.disabled = false;
+            checkDateOut.value = tomorrowStr;
+            updateAvailabilityChecker();
+        });
+    }
+
+    if (btnQuickTomorrow) {
+        btnQuickTomorrow.addEventListener('click', () => {
+            const nextDay = new Date(today);
+            nextDay.setDate(nextDay.getDate() + 1);
+            const nextNextDay = new Date(today);
+            nextNextDay.setDate(nextNextDay.getDate() + 2);
+
+            checkDateIn.value = nextDay.toISOString().split('T')[0];
+            checkHorario.value = 'Día y Noche';
+            checkDateOut.disabled = false;
+            checkDateOut.value = nextNextDay.toISOString().split('T')[0];
+            updateAvailabilityChecker();
+        });
+    }
+
+    if (btnQuickWeekend) {
+        btnQuickWeekend.addEventListener('click', () => {
+            const sat = new Date();
+            const dayOfWeek = sat.getDay();
+            const daysUntilSat = (6 - dayOfWeek + 7) % 7 || 7;
+            sat.setDate(sat.getDate() + daysUntilSat);
+            const mon = new Date(sat);
+            mon.setDate(mon.getDate() + 2);
+
+            checkDateIn.value = sat.toISOString().split('T')[0];
+            checkHorario.value = 'Día y Noche';
+            checkDateOut.disabled = false;
+            checkDateOut.value = mon.toISOString().split('T')[0];
+            updateAvailabilityChecker();
+        });
+    }
+
+    updateAvailabilityChecker();
+}
+
+function updateAvailabilityChecker() {
+    const checkDateIn = document.getElementById('checkDateIn');
+    const checkHorario = document.getElementById('checkHorario');
+    const checkDateOut = document.getElementById('checkDateOut');
+    const resultsEl = document.getElementById('checkerResultsGrid');
+
+    if (!checkDateIn || !checkDateOut || !checkHorario || !resultsEl) return;
+
+    const inStr = checkDateIn.value;
+    const outStr = checkDateOut.value;
+    const horario = checkHorario.value;
+
+    if (!inStr || !outStr) {
+        resultsEl.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 10px;">Seleccione una fecha válida</div>';
+        return;
+    }
+
+    const price = calculateBasePrice(inStr, outStr, horario);
+    const bungalows = [1, 2, 3, 4, 5, 6];
+    let html = '';
+
+    bungalows.forEach(bNum => {
+        const collision = checkBookingCollision(null, bNum, inStr, outStr, horario, 0);
+
+        if (!collision) {
+            // Bungalow Disponible
+            html += `
+            <div class="checker-bungalow-card available" onclick="quickBookFromChecker(${bNum}, '${inStr}', '${outStr}', '${horario}')" title="Clic para reservar Bungalow ${bNum}">
+                <div class="checker-card-header">
+                    <div class="checker-card-name">
+                        <span class="tab-color-dot color-b${bNum}"></span>
+                        <span>B${bNum}</span>
+                    </div>
+                    <span class="checker-status-badge free">Libre</span>
+                </div>
+                <div class="checker-card-body">
+                    <strong>Tarifa base:</strong><br>S/. ${price.toFixed(2)}
+                </div>
+                <div class="checker-card-action">
+                    <button type="button" class="btn-book"><i data-lucide="plus"></i> Reservar</button>
+                </div>
+            </div>`;
+        } else {
+            // Bungalow Ocupado / Bloqueado
+            const isBlocked = collision.estado_reserva === 'Bloqueado';
+            let clientName = collision.nombre_cliente || 'Ocupado';
+            if (clientName.startsWith('🔒 Bloqueo: ')) clientName = clientName.replace('🔒 Bloqueo: ', '');
+            else if (clientName.startsWith('🔒 Bloqueo:')) clientName = clientName.replace('🔒 Bloqueo:', '');
+
+            html += `
+            <div class="checker-bungalow-card occupied" onclick="openBookingEditModalById('${collision.id}')" title="Ocupado por ${escapeHTML(clientName)} - Clic para ver detalles">
+                <div class="checker-card-header">
+                    <div class="checker-card-name">
+                        <span class="tab-color-dot color-b${bNum}"></span>
+                        <span>B${bNum}</span>
+                    </div>
+                    <span class="checker-status-badge busy">${isBlocked ? 'Bloqueo' : 'Ocupado'}</span>
+                </div>
+                <div class="checker-card-body">
+                    <strong>${escapeHTML(clientName)}</strong><br>
+                    <small style="color: var(--text-muted); font-size: 10px;">${collision.horario}</small>
+                </div>
+                <div class="checker-card-action">
+                    <span style="font-size: 10px; color: var(--text-secondary); font-weight: 600;">Ver reserva &rarr;</span>
+                </div>
+            </div>`;
+        }
+    });
+
+    resultsEl.innerHTML = html;
+    if (window.lucide) lucide.createIcons();
+}
+
+window.quickBookFromChecker = function (bNum, inStr, outStr, horario) {
+    openBookingModal(inStr);
+    
+    // Marcar el bungalow
+    const chkList = document.querySelectorAll('input[name="bungalowSelect"]');
+    chkList.forEach(chk => {
+        chk.checked = (parseInt(chk.value) === bNum);
+    });
+    document.getElementById('bookingBungalow').value = bNum;
+
+    // Configurar fechas y horario
+    document.getElementById('bookingCheckIn').value = inStr;
+    document.getElementById('bookingHorario').value = horario;
+    document.getElementById('bookingCheckOut').disabled = (horario === 'Full Day');
+    document.getElementById('bookingCheckOut').value = outStr;
+
+    updateNinosLimit();
+    updatePersonasLimit();
+    runDynamicCalculations();
 };
 
 function escapeHTML(str) {

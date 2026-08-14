@@ -677,6 +677,272 @@ body {
     }
 }
 
+/* =============================================================
+   Smart Availability Quick Checker Card ("¿Qué bungalows están disponibles?")
+   ============================================================= */
+.availability-checker-card {
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 16px 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 16px rgba(62, 53, 43, 0.05);
+    background: linear-gradient(to bottom, #ffffff, #faf7f0);
+}
+
+.checker-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding-bottom: 14px;
+    border-bottom: 1px solid rgba(188, 174, 151, 0.25);
+    margin-bottom: 14px;
+}
+
+.checker-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.checker-icon-badge {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, rgba(5, 150, 105, 0.15), rgba(5, 150, 105, 0.05));
+    border: 1px solid rgba(5, 150, 105, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary);
+    flex-shrink: 0;
+}
+
+.checker-icon-badge svg {
+    width: 20px;
+    height: 20px;
+}
+
+.checker-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+    font-family: var(--font-sans);
+}
+
+.checker-subtitle {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin: 2px 0 0 0;
+}
+
+.checker-quick-buttons {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.checker-quick-buttons .btn-sm {
+    padding: 5px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: var(--radius-sm);
+}
+
+.checker-form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.checker-field label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 5px;
+}
+
+.checker-field label svg {
+    width: 14px;
+    height: 14px;
+    color: var(--primary);
+}
+
+.checker-field input,
+.checker-field select {
+    width: 100%;
+    padding: 8px 12px;
+    font-size: 13px;
+    font-weight: 500;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background: #ffffff;
+    color: var(--text-primary);
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.checker-field input:focus,
+.checker-field select:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.1);
+}
+
+.checker-results-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 10px;
+}
+
+.checker-bungalow-card {
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: all 0.2s ease;
+    position: relative;
+    cursor: pointer;
+    min-height: 96px;
+}
+
+.checker-bungalow-card.available {
+    border-color: rgba(5, 150, 105, 0.35);
+    background: linear-gradient(to bottom, #ffffff, rgba(5, 150, 105, 0.04));
+}
+
+.checker-bungalow-card.available:hover {
+    border-color: var(--primary);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(5, 150, 105, 0.15);
+}
+
+.checker-bungalow-card.occupied {
+    border-color: rgba(239, 68, 68, 0.25);
+    background: linear-gradient(to bottom, #ffffff, rgba(239, 68, 68, 0.03));
+    opacity: 0.9;
+}
+
+.checker-bungalow-card.occupied:hover {
+    border-color: rgba(239, 68, 68, 0.5);
+    transform: translateY(-1px);
+}
+
+.checker-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    margin-bottom: 6px;
+}
+
+.checker-card-name {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.checker-status-badge {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 4px;
+    text-transform: uppercase;
+}
+
+.checker-status-badge.free {
+    background: rgba(5, 150, 105, 0.12);
+    color: #047857;
+    border: 1px solid rgba(5, 150, 105, 0.3);
+}
+
+.checker-status-badge.busy {
+    background: rgba(239, 68, 68, 0.1);
+    color: #b91c1c;
+    border: 1px solid rgba(239, 68, 68, 0.25);
+}
+
+.checker-card-body {
+    font-size: 11px;
+    color: var(--text-secondary);
+    line-height: 1.3;
+    margin-bottom: 6px;
+}
+
+.checker-card-body strong {
+    color: var(--text-primary);
+}
+
+.checker-card-action {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: auto;
+}
+
+.checker-card-action .btn-book {
+    width: 100%;
+    padding: 4px 6px;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 4px;
+    background: var(--primary);
+    color: #ffffff;
+    border: none;
+    cursor: pointer;
+    text-align: center;
+    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+}
+
+.checker-card-action .btn-book:hover {
+    background: var(--primary-hover);
+}
+
+.checker-card-action .btn-book svg {
+    width: 12px;
+    height: 12px;
+}
+
+@media (max-width: 1100px) {
+    .checker-results-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .checker-form-grid {
+        grid-template-columns: 1fr;
+    }
+    .checker-results-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .checker-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .checker-quick-buttons {
+        width: 100%;
+    }
+    .checker-quick-buttons button {
+        flex: 1;
+    }
+}
+
 /* Availability grid badges specific to each Bungalow */
 .availability-booked-badge.bungalow-1 {
     background: rgba(46, 125, 50, 0.1) !important;
