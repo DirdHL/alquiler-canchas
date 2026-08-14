@@ -340,15 +340,58 @@ body {
 
 /* Custom Calendar Event Blocks (Rustic organic look) */
 .fc-event {
-    border-radius: 4px !important;
-    padding: 3px 6px !important;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+    border-radius: 5px !important;
+    padding: 4px 6px !important;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1) !important;
+    white-space: normal !important;
 }
 
 .fc-event-main {
     color: #ffffff !important;
-    font-weight: 600 !important;
+    font-weight: 500 !important;
     font-size: 11px !important;
+    white-space: normal !important;
+    overflow: visible !important;
+}
+
+/* Multi-line Event Card Inside Calendar */
+.fc-event-custom-card {
+    width: 100%;
+    color: #ffffff;
+    line-height: 1.3;
+}
+
+.fc-event-custom-card.multi-line {
+    white-space: normal !important;
+    word-break: break-word;
+    padding: 2px 0;
+}
+
+.fc-event-custom-card .fc-event-line-1 {
+    font-weight: 700;
+    font-size: 11.5px;
+    color: #ffffff;
+    margin-bottom: 2px;
+}
+
+.fc-event-custom-card .fc-event-line-2 {
+    font-weight: 600;
+    font-size: 10.5px;
+    opacity: 0.95;
+}
+
+.fc-event-custom-card .fc-event-line-3 {
+    font-weight: 600;
+    font-size: 10px;
+    opacity: 0.95;
+    margin-top: 1px;
+}
+
+.fc-event-custom-card.compact .fc-event-line-compact {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 11px;
 }
 
 /* =============================================================

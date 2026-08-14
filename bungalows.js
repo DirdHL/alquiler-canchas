@@ -1470,6 +1470,57 @@ function initCalendar() {
             updateDailySummaryList();
             updateAvailabilityGrid();
         },
+        eventContent: function (arg) {
+            const b = arg.event.extendedProps;
+            if (!b) return { html: arg.event.title };
+
+            const isBlocked = b.estado_reserva === 'Bloqueado';
+            if (isBlocked) {
+                const reason = (b.nombre_cliente && !b.nombre_cliente.startsWith('🔒')) ? b.nombre_cliente : 'Bloqueado';
+                return {
+                    html: `<div class="fc-event-custom-card multi-line">
+                        <div class="fc-event-line-1">🔒 <strong>B${b.bungalow_numero} BLOQUEADO</strong></div>
+                        <div class="fc-event-line-2">${escapeHTML(reason)}</div>
+                    </div>`
+                };
+            }
+
+            let startHour = '3:00 PM';
+            let endHour = '12:00 PM';
+            if (b.horario === 'Full Day' || b.horario === 'Horario Extendido') {
+                startHour = '9:00 AM';
+                endHour = '6:00 PM';
+            }
+            if (b.horario !== 'Full Day' && b.horario !== 'Horario Extendido' && (b.horas_extras || 0) > 0) {
+                let hh = 12 + b.horas_extras;
+                let ampm = (hh % 24) >= 12 ? 'PM' : 'AM';
+                let displayHr = (hh % 24) % 12;
+                displayHr = displayHr ? displayHr : 12;
+                endHour = `${displayHr}:00 ${ampm}`;
+            }
+
+            let emoji = '☀️🌙';
+            if (b.horario === 'Full Day') emoji = '☀️';
+            else if (b.horario === 'Horario Extendido') emoji = '✨';
+
+            if (currentBungalowTab !== 'all') {
+                // Vista de Bungalow Individual: Mostrar toda la información aprovechando el espacio vertical
+                return {
+                    html: `<div class="fc-event-custom-card multi-line">
+                        <div class="fc-event-line-1">${emoji} <strong>${escapeHTML(b.nombre_cliente)}</strong></div>
+                        <div class="fc-event-line-2">${escapeHTML(b.horario)}</div>
+                        <div class="fc-event-line-3">🕒 ${startHour} a ${endHour}</div>
+                    </div>`
+                };
+            } else {
+                // Vista "Ver Todos": Más compacto para que entren varios
+                return {
+                    html: `<div class="fc-event-custom-card compact">
+                        <div class="fc-event-line-compact"><strong>${emoji} B${b.bungalow_numero}:</strong> ${escapeHTML(b.nombre_cliente)} (${startHour} - ${endHour})</div>
+                    </div>`
+                };
+            }
+        },
         events: function (info, successCallback, failureCallback) {
             const isSmallScreen = window.innerWidth <= 768;
             const fcEvents = bookings.map(b => {
