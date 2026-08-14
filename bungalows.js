@@ -16,10 +16,8 @@ let isTotalManuallyEdited = false;
 let selectedDate = new Date();
 
 // Constants
-const PRICE_WEEKDAY = 160.00; // Lun-Jue (Día y Noche / Full Day)
-const PRICE_WEEKEND = 180.00; // Vie-Dom (Día y Noche / Full Day)
-const PRICE_EXTENDED_WEEKDAY = 320.00; // Lun-Jue (Horario Extendido)
-const PRICE_EXTENDED_WEEKEND = 360.00; // Vie-Dom (Horario Extendido)
+const PRICE_WEEKDAY = 160.00; // Tarifa diaria Lun-Jue (Día y Noche / Full Day / Por día de Horario Extendido)
+const PRICE_WEEKEND = 180.00; // Tarifa diaria Vie-Dom (Día y Noche / Full Day / Por día de Horario Extendido)
 const EXTRA_GUEST_FEE = 30.00; // Costo por persona adicional (actualizado a S/. 30)
 const EXTRA_CHILD_FEE = 25.00; // Costo por niño adicional (S/. 25)
 
@@ -744,14 +742,42 @@ function calculateBasePrice(checkInStr, checkOutStr, horario) {
     if (!checkInStr || !checkOutStr) return 0;
     const start = new Date(checkInStr + 'T00:00:00');
 
-    const weekdayFee = (horario === 'Horario Extendido') ? PRICE_EXTENDED_WEEKDAY : PRICE_WEEKDAY;
-    const weekendFee = (horario === 'Horario Extendido') ? PRICE_EXTENDED_WEEKEND : PRICE_WEEKEND;
-
     if (horario === 'Full Day') {
         const dayOfWeek = start.getDay(); // 0 = Sunday, 5 = Friday, 6 = Saturday
         const isWeekend = (dayOfWeek === 0 || dayOfWeek === 5 || dayOfWeek === 6);
-        return isWeekend ? weekendFee : weekdayFee;
+        return isWeekend ? PRICE_WEEKEND : PRICE_WEEKDAY;
+    } else if (horario === 'Horario Extendido') {
+        // Horario Extendido: Desde las 9:00 AM del ingreso hasta las 6:00 PM de la salida
+        // Abarca todos los días enteros del rango (de fecha_ingreso hasta fecha_salida inclusive)
+        const end = new Date(checkOutStr + 'T00:00:00');
+        let totalBase = 0;
+        let current = new Date(start);
+
+        while (current <= end) {
+            const dayOfWeek = current.getDay(); // 0 = Sun, 1 = Mon, ..., 5 = Fri, 6 = Sat
+            let isWeekend = (dayOfWeek === 0 || dayOfWeek === 5 || dayOfWeek === 6);
+
+            // Si es lunes y es parte de la extensión de una estadía de fin de semana (viene del domingo)
+            if (dayOfWeek === 1 && current > start) {
+                const prevDay = new Date(current);
+                prevDay.setDate(prevDay.getDate() - 1);
+                if (prevDay.getDay() === 0 && prevDay >= start) {
+                    isWeekend = true;
+                }
+            }
+
+            totalBase += isWeekend ? PRICE_WEEKEND : PRICE_WEEKDAY;
+            current.setDate(current.getDate() + 1);
+        }
+
+        if (totalBase === 0) {
+            const dayOfWeek = start.getDay();
+            const isWeekend = (dayOfWeek === 0 || dayOfWeek === 5 || dayOfWeek === 6);
+            totalBase = isWeekend ? PRICE_WEEKEND : PRICE_WEEKDAY;
+        }
+        return totalBase;
     } else {
+        // Día y Noche: 3:00 PM a 12:00 PM del día siguiente (por noches)
         const end = new Date(checkOutStr + 'T00:00:00');
         let totalBase = 0;
         let current = new Date(start);
@@ -759,14 +785,14 @@ function calculateBasePrice(checkInStr, checkOutStr, horario) {
         while (current < end) {
             const dayOfWeek = current.getDay();
             const isWeekend = (dayOfWeek === 0 || dayOfWeek === 5 || dayOfWeek === 6);
-            totalBase += isWeekend ? weekendFee : weekdayFee;
+            totalBase += isWeekend ? PRICE_WEEKEND : PRICE_WEEKDAY;
             current.setDate(current.getDate() + 1);
         }
 
         if (totalBase === 0) {
             const dayOfWeek = start.getDay();
             const isWeekend = (dayOfWeek === 0 || dayOfWeek === 5 || dayOfWeek === 6);
-            totalBase = isWeekend ? weekendFee : weekdayFee;
+            totalBase = isWeekend ? PRICE_WEEKEND : PRICE_WEEKDAY;
         }
         return totalBase;
     }
