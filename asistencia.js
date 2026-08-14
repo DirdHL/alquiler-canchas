@@ -483,7 +483,7 @@ function populateEmployeeDropdowns() {
     }
     if (activeEmployees.includes(currentAdminVal)) {
         adminEmployeeSelect.value = currentAdminVal;
-        if(adminScheduleEmployeeSelect.querySelector(`option[value="${currentAdminVal}"]`)) {
+        if (adminScheduleEmployeeSelect.querySelector(`option[value="${currentAdminVal}"]`)) {
             adminScheduleEmployeeSelect.value = currentAdminVal;
         }
     }
@@ -494,7 +494,7 @@ async function fetchSchedulesSupabase() {
     try {
         const { data, error } = await supabaseClient.from('horarios_personal').select('*');
         if (error) throw error;
-        
+
         employeeSchedules = {};
         if (data && data.length > 0) {
             data.forEach(row => {
@@ -1050,8 +1050,8 @@ async function handleToggleAttendance() {
                     btnToggleAttendance.disabled = false;
                     btnToggleAttendance.className = 'btn btn-primary';
                     const hasShiftsToday = employeeShiftsToday.length > 0 && employeeShiftsToday[employeeShiftsToday.length - 1].check_out;
-                    btnToggleAttendance.innerHTML = hasShiftsToday ? 
-                        '<i data-lucide="play"></i> Iniciar Nuevo Turno (Check-In)' : 
+                    btnToggleAttendance.innerHTML = hasShiftsToday ?
+                        '<i data-lucide="play"></i> Iniciar Nuevo Turno (Check-In)' :
                         '<i data-lucide="log-in"></i> Marcar Entrada (Check-In)';
                     btnToggleAttendance.style.background = 'var(--primary)';
                     btnToggleAttendance.style.boxShadow = '0 4px 14px var(--primary-glow)';
@@ -1158,7 +1158,7 @@ function updateEmployeeStats() {
 
     const weeklyTotal = weeklyWorked + weeklyJustified;
     const s = employeeSchedules[selectedName] || {};
-    
+
     // Helper to calculate duration from a day obj
     const getHoursFromDay = (dayObj) => {
         if (!dayObj || !dayObj.active) return 0;
@@ -1168,22 +1168,22 @@ function updateEmployeeStats() {
     // Convert currentDayOfWeek to 1..7 (1=Lunes, 7=Domingo)
     let currentDayOfWeek = now.getDay();
     let currentDayIndex = currentDayOfWeek === 0 ? 7 : currentDayOfWeek;
-    
+
     let targetGoal = 0;
     const dayKeys = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
-    
+
     const todayStrStr = getLocalDateString(now);
     const hasRecordToday = weekRecords.some(r => r.date === todayStrStr);
-    
+
     let fullWeekGoal = 0;
     const todayWorkRecords = weekRecords.filter(r => r.date === todayStrStr && r.type === 'Trabajo');
 
     for (let i = 1; i <= 7; i++) {
         const dKey = dayKeys[i - 1];
         const dayHours = getHoursFromDay(s[dKey]);
-        
+
         fullWeekGoal += dayHours;
-        
+
         if (i < currentDayIndex) {
             // Pasado: siempre se suma a la meta del día
             targetGoal += dayHours;
@@ -1218,7 +1218,7 @@ function updateEmployeeStats() {
             }
         }
     }
-    
+
     if (fullWeekGoal === 0 && !s.lunes) fullWeekGoal = 48.0; // fallback legacy
     if (targetGoal === 0 && !s.lunes && currentDayIndex > 1) targetGoal = 48.0; // fallback legacy
 
@@ -1230,7 +1230,7 @@ function updateEmployeeStats() {
     if (typeof progressPercentageText !== 'undefined' && progressPercentageText) {
         progressPercentageText.textContent = `${percent.toFixed(0)}%`;
     }
-    
+
     // Presenciales suma trabajadas + justificadas según lo solicitado
     if (metricWorkedHours) metricWorkedHours.textContent = formatHoursToHHMM(weeklyTotal, false);
     if (metricOwedHours) metricOwedHours.textContent = formatHoursToHHMM(weeklyOwed, false);
@@ -1325,7 +1325,7 @@ function updateEmployeeStats() {
     });
 
     const expectedHours = getExpectedHoursForMonth(selectedMonth, selectedName);
-    
+
     // Balance calculation (as requested by user):
     // Extra hours should first deduct from owed hours.
     // If balance is negative, we owe hours and have 0 extra.
@@ -1542,7 +1542,7 @@ async function handleAdminRegisterSubmit(e) {
     const type = adminRegisterType.value;
     const date = adminRegisterDate.value;
     const isFalta = type === 'Falta';
-    
+
     let hours = 0;
     if (!isFalta) {
         const hrsVal = Number(adminRegisterHours.value || 0);
@@ -2073,7 +2073,7 @@ function getDefaultAutoCheckoutForEmployeeToday(employeeName) {
         case 6: dayObj = sch.sabado; break;
         case 0: dayObj = sch.domingo; break;
     }
-    
+
     if (dayObj && dayObj.active && dayObj.out) {
         const [hStr, mStr] = dayObj.out.split(':');
         let h = parseInt(hStr, 10);
@@ -2083,7 +2083,7 @@ function getDefaultAutoCheckoutForEmployeeToday(employeeName) {
         const timeVal = mStr && mStr !== '00' ? `${h}:${mStr}` : `${h}:00`;
         return { timeVal, ampm };
     }
-    
+
     return { timeVal: '6:00', ampm: 'PM' };
 }
 
@@ -2097,7 +2097,7 @@ function calculateScheduledNetHours(inTimeStr, outTimeStr) {
     const decOut = toDec(outTimeStr);
     let elapsed = decOut - decIn;
     if (elapsed <= 0) return 0;
-    
+
     // Descontar la intersección con el horario de almuerzo de 13:00 a 14:00
     const overlap = Math.max(0, Math.min(decOut, 14.0) - Math.max(decIn, 13.0));
     return Math.max(0, elapsed - overlap);
@@ -2134,14 +2134,14 @@ function getExpectedHoursForMonth(yearMonthStr, employeeName) {
     const today = new Date();
     const todayStr = getLocalDateString(today);
     const isCurrentMonth = (today.getFullYear() === year && today.getMonth() === jsMonth);
-    
+
     let lastDay = new Date(year, month, 0).getDate();
     if (isCurrentMonth) {
         lastDay = today.getDate();
     }
 
     const sch = employeeSchedules[employeeName] || {};
-    
+
     const getDayObj = (dayIndex) => {
         switch (dayIndex) {
             case 1: return sch.lunes;
@@ -2175,7 +2175,7 @@ function getExpectedHoursForMonth(yearMonthStr, employeeName) {
 
         if (isCurrentMonth && dateStr === todayStr) {
             // Evaluación inteligente del día de HOY durante el turno
-            const todayWorkRecords = allAttendanceRecords.filter(r => 
+            const todayWorkRecords = allAttendanceRecords.filter(r =>
                 r.employee_name === employeeName && r.date === todayStr && r.type === 'Trabajo'
             );
 
@@ -2199,7 +2199,7 @@ function getExpectedHoursForMonth(yearMonthStr, employeeName) {
                             const inTime = firstRecord.check_in.substring(0, 5);
                             const decIn = Number(inTime.split(':')[0]) + Number(inTime.split(':')[1]) / 60;
                             const decSchedIn = Number(dayObj.in.split(':')[0]) + Number(dayObj.in.split(':')[1]) / 60;
-                            
+
                             if (decIn > decSchedIn) {
                                 todayExpected += (decIn - decSchedIn);
                             }
@@ -2213,7 +2213,7 @@ function getExpectedHoursForMonth(yearMonthStr, employeeName) {
             totalExpected += fullDayHours;
         }
     }
-    
+
     return totalExpected;
 }
 
@@ -2227,18 +2227,18 @@ function openAdminSchedulesModal() {
 
 function loadScheduleIntoForm(employeeName) {
     const sch = employeeSchedules[employeeName] || {};
-    
+
     const days = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo'];
-    
+
     days.forEach(d => {
         const key = d.toLowerCase();
         const obj = sch[key];
-        
+
         const chk = document.getElementById(`sch${d}Active`);
         const timeIn = document.getElementById(`sch${d}In`);
         const timeOut = document.getElementById(`sch${d}Out`);
         const lunch = document.getElementById(`sch${d}Lunch`);
-        
+
         if (obj) {
             chk.checked = obj.active;
             timeIn.value = obj.in || "09:00";
@@ -2261,7 +2261,7 @@ async function handleAdminSchedulesSubmit(e) {
 
     const days = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo'];
     const scheduleData = {};
-    
+
     days.forEach(d => {
         const key = d.toLowerCase();
         scheduleData[key] = {
@@ -2283,21 +2283,21 @@ async function handleAdminSchedulesSubmit(e) {
             const { error } = await supabaseClient
                 .from('horarios_personal')
                 .upsert(newSch, { onConflict: 'employee_name' });
-            
+
             if (error) throw error;
         }
-        
+
         // Update local state
         employeeSchedules[empName] = scheduleData;
         localStorage.setItem('canchapro_schedules', JSON.stringify(employeeSchedules));
-        
+
         await addHistoryEntry('editar', `actualizó el horario avanzado de ${empName}`);
-        
+
         closeModal(modalAdminSchedules);
-        
+
         // Refresh UI
         updateEmployeeStats();
-        
+
     } catch (err) {
         console.error("Error saving schedule:", err);
         alert("Error al guardar el horario: " + err.message);
@@ -2316,15 +2316,15 @@ function getRealHoursCredited(r) {
     // Usamos solo las horas y minutos (HH:MM) para evitar diferencias de segundos
     const inTime = r.check_in.substring(0, 5);
     const outTime = r.check_out.substring(0, 5);
-    
+
     const toDec = (t) => {
         const parts = t.split(':');
         return Number(parts[0]) + Number(parts[1]) / 60;
     };
-    
+
     const decIn = toDec(inTime);
     const decOut = toDec(outTime);
-    
+
     let elapsed = decOut - decIn;
     if (elapsed < 0) elapsed = 0; // Prevents negative on cross-midnight but usually they end at 23:59 max
 
@@ -2344,11 +2344,11 @@ async function checkAndProcessAutoCheckouts() {
     const currentTimeStr = getLocalTimeString(now);
 
     // Find shifts that are open and have either the [Auto-6PM] tag or the new [Auto-HH:MM] tag
-    const pendingShifts = allAttendanceRecords.filter(r => 
-        r.type === 'Trabajo' && 
-        r.check_in && 
-        !r.check_out && 
-        r.notes && 
+    const pendingShifts = allAttendanceRecords.filter(r =>
+        r.type === 'Trabajo' &&
+        r.check_in &&
+        !r.check_out &&
+        r.notes &&
         (r.notes.includes('[Auto-6PM]') || r.notes.includes('[Auto-'))
     );
 
@@ -2358,7 +2358,7 @@ async function checkAndProcessAutoCheckouts() {
 
     for (const shift of pendingShifts) {
         let autoOutTime = '18:00:00'; // Default fallback
-        
+
         // Parse the scheduled checkout time from the notes
         const match = shift.notes.match(/\[Auto-(\d{2}:\d{2})\]/);
         if (match) {
@@ -2376,7 +2376,7 @@ async function checkAndProcessAutoCheckouts() {
         if (isPastDate || isTodayAndPastTime) {
             const inTimeHHMM = shift.check_in.substring(0, 5);
             const outTimeHHMM = autoOutTime.substring(0, 5);
-            
+
             const diffHours = calculateDurationInHours(shift.date, inTimeHHMM, shift.date, outTimeHHMM);
             const tookLunch = true; // Default to taking lunch for a standard full day
             const lunchDeducted = diffHours > 5 && tookLunch;
@@ -2471,12 +2471,12 @@ async function handleAdjustHoursSubmit(e) {
 
     const actionLabel = action === 'add' ? `+${timeStr} a la deuda` : `-${timeStr} a la deuda`;
     const fullNotes = `[Ajuste ${actionLabel}] ${notesText}`;
-    
+
     // Si hay un mes de filtro seleccionado distinto al mes actual, asignamos el ajuste al 1er día de ese mes
     const filterSelectedMonth = filterMonth ? filterMonth.value : '';
     const todayObj = new Date();
     const currentYYYYMM = getLocalDateString(todayObj).substring(0, 7);
-    
+
     let recordDate = getLocalDateString(todayObj);
     if (filterSelectedMonth && filterSelectedMonth !== currentYYYYMM) {
         recordDate = `${filterSelectedMonth}-01`;
@@ -2509,7 +2509,7 @@ async function handleAdjustHoursSubmit(e) {
         await addHistoryEntry('crear', `registró un ajuste de horas para ${targetName} (${actionLabel})`);
 
         closeModal(modalAdjustHours);
-        
+
         // Refresh interface
         updateEmployeeStats();
         renderAttendanceTable();
@@ -2617,7 +2617,7 @@ async function exportAttendanceToExcel() {
             const realHours = getRealHoursCredited(r);
             const dateParts = r.date ? r.date.split('-') : [];
             const formattedDate = dateParts.length === 3 ? `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}` : r.date;
-            
+
             const row = sheet1.getRow(rowIdx);
             row.height = 20;
 

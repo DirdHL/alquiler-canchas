@@ -1354,6 +1354,7 @@ body {
         height: 5px;
         width: 4px;
     }
+
     .availability-grid-wrapper::-webkit-scrollbar-thumb {
         background: var(--accent);
         border-radius: 99px;
@@ -1399,6 +1400,25 @@ body {
 
 
 
+/* Grilla de ocupación (Personas, Adicionales, Niños menores 7, Niños adicionales) */
+.occupancy-grid {
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 12px !important;
+}
+
+@media (max-width: 768px) {
+    .occupancy-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .occupancy-grid {
+        grid-template-columns: 1fr !important;
+    }
+}
+
 /* ============================================================
    Bungalows: Sidebar desliza desde la DERECHA en móvil
    ============================================================ */
@@ -1425,7 +1445,8 @@ body {
 /* ──────────────────────────────────────────────────────────────────────────
    1. GLOBAL OVERFLOW & PREVENCIÓN DE SCROLL HORIZONTAL
    ────────────────────────────────────────────────────────────────────────── */
-html, body {
+html,
+body {
     overflow-x: hidden !important;
     width: 100% !important;
 }
@@ -1434,6 +1455,7 @@ html, body {
    2. CONFIGURACIÓN GENERAL PARA DISPOSITIVOS TÁCTILES (Móviles & Tablets)
    ────────────────────────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
+
     /* Touch Target Sizing (Mínimo 44px de alto para botones e inputs) */
     .btn,
     .btn-secondary,
@@ -1494,11 +1516,13 @@ html, body {
     .main-content {
         padding: 20px 24px !important;
     }
+
     .app-header h1 {
         font-size: 28px !important;
     }
+
     /* Optimizar espaciado en la tabla de disponibilidad */
-    .availability-table th, 
+    .availability-table th,
     .availability-table td {
         padding: 8px 12px !important;
     }
@@ -1509,6 +1533,7 @@ html, body {
    Convertimos el Sidebar en un Drawer
    ========================================== */
 @media (max-width: 1024px) {
+
     /* El contenedor principal pasa de Grid de 2 columnas a Flujo en Bloque */
     .app-container {
         display: block !important;
@@ -1555,7 +1580,7 @@ html, body {
         align-items: center;
         justify-content: center;
     }
-    
+
     .btn-close-sidebar {
         display: flex !important;
         align-items: center !important;
@@ -1577,13 +1602,16 @@ html, body {
    BREAKPOINT: 992px (Tablets Medianas)
    ========================================== */
 @media (max-width: 992px) {
+
     /* Modales responsivos */
     .modal-card {
         max-width: 90% !important;
     }
+
     .modal-lg {
         max-width: 95% !important;
     }
+
     .fc .fc-toolbar-title {
         font-size: 18px !important;
     }
@@ -1603,9 +1631,11 @@ html, body {
         flex-wrap: wrap !important;
         gap: 16px !important;
     }
+
     .header-left {
         flex: 1 !important;
     }
+
     .app-header .btn-primary {
         width: auto !important;
     }
@@ -1616,15 +1646,17 @@ html, body {
         align-items: stretch !important;
         gap: 12px !important;
     }
+
     .summary-header-container h3 {
         text-align: center !important;
     }
-    
+
     /* Tabs adaptativas */
     .summary-tabs {
         width: 100% !important;
         display: flex !important;
     }
+
     .summary-tabs .tab-btn {
         flex: 1 !important;
         justify-content: center !important;
@@ -1640,6 +1672,7 @@ html, body {
         gap: 8px !important;
         padding: 10px !important;
     }
+
     .legend-item {
         font-size: 11px !important;
         padding: 6px 10px !important;
@@ -1654,7 +1687,7 @@ html, body {
         border-radius: var(--radius-md) !important;
         overflow: hidden !important;
     }
-    
+
     .calendar-scroll-wrapper {
         width: 100% !important;
         overflow-x: auto !important;
@@ -1663,15 +1696,18 @@ html, body {
         scrollbar-width: thin !important;
         scrollbar-color: var(--accent) transparent !important;
     }
+
     .calendar-scroll-wrapper::-webkit-scrollbar {
         height: 6px;
     }
+
     .calendar-scroll-wrapper::-webkit-scrollbar-thumb {
         background: var(--accent);
         border-radius: 3px;
     }
-    
-    #calendar, .fc {
+
+    #calendar,
+    .fc {
         min-width: 750px !important;
     }
 
@@ -1682,35 +1718,40 @@ html, body {
         -webkit-overflow-scrolling: touch !important;
         max-height: 400px !important;
     }
+
     .availability-table {
         min-width: 580px !important;
         table-layout: auto !important;
     }
+
     .availability-table th {
         font-size: 11px !important;
         padding: 8px 6px !important;
         white-space: nowrap !important;
     }
+
     .availability-table td {
         padding: 6px 4px !important;
     }
+
     .availability-slot-btn {
         padding: 4px 6px !important;
         font-size: 10px !important;
         min-height: 32px !important;
     }
+
     .availability-card {
         padding: 4px 6px !important;
         border-radius: 4px !important;
     }
-    
+
     /* Scroll seguro en tablas de reportes y clientes */
     #tableStatsReport,
     #tableStatsClients,
     #tableStatsAsesores {
         min-width: 600px !important;
     }
-    
+
     /* Historial sin overflow de texto */
     .activity-list p {
         word-break: break-word !important;
@@ -1724,23 +1765,28 @@ html, body {
    BREAKPOINT: 640px (Móviles Paisaje)
    ========================================== */
 @media (max-width: 640px) {
+
     /* Stack modal actions verticalmente */
     .modal-actions {
         flex-direction: column !important;
         gap: 12px !important;
         align-items: stretch !important;
     }
-    .left-actions, .right-actions {
+
+    .left-actions,
+    .right-actions {
         width: 100% !important;
         flex-direction: column !important;
         gap: 8px !important;
     }
-    .left-actions .btn, .right-actions .btn {
+
+    .left-actions .btn,
+    .right-actions .btn {
         width: 100% !important;
     }
-    
+
     /* Grid de tarjetas financieras de estadísticas */
-    #tab-report > div:nth-child(2) {
+    #tab-report>div:nth-child(2) {
         grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)) !important;
         gap: 10px !important;
     }
@@ -1753,17 +1799,19 @@ html, body {
     .main-content {
         padding: 12px !important;
     }
-    
+
     /* Header compacto */
     .app-header {
         flex-direction: column !important;
         align-items: stretch !important;
         gap: 12px !important;
     }
+
     .header-left {
         width: 100% !important;
         justify-content: flex-start !important;
     }
+
     .app-header .btn-primary {
         width: 100% !important;
     }
@@ -1772,16 +1820,18 @@ html, body {
     .modal-backdrop {
         padding: 10px 8px !important;
     }
+
     .modal-card {
         width: 98% !important;
         border-radius: var(--radius-md) !important;
     }
+
     .modal-body {
         padding: 16px !important;
     }
-    
+
     /* Desglose de Costos en 2 columnas */
-    #formBooking > div[style*="rgba(245, 158, 11"] {
+    #formBooking>div[style*="rgba(245, 158, 11"] {
         grid-template-columns: repeat(2, 1fr) !important;
         gap: 10px !important;
         padding: 10px !important;
@@ -1792,32 +1842,36 @@ html, body {
    BREAKPOINT: 480px (Móviles Verticales)
    ========================================== */
 @media (max-width: 480px) {
+
     /* Grid de Bungalows en Modal en 2 columnas muy táctiles */
     .bungalows-grid {
         grid-template-columns: repeat(2, 1fr) !important;
         gap: 8px !important;
     }
+
     .bungalow-card-label {
         padding: 8px 6px !important;
         font-size: 11px !important;
         gap: 6px !important;
     }
+
     .checkbox-box {
         width: 15px !important;
         height: 15px !important;
     }
-    
+
     /* Grid de Reportes Financieros en 2 columnas */
-    #tab-report > div:nth-child(2) {
+    #tab-report>div:nth-child(2) {
         grid-template-columns: repeat(2, 1fr) !important;
         gap: 8px !important;
     }
-    
+
     /* Barra de herramientas del Mapa de Disponibilidad apilada */
-    .availability-toolbar > div {
+    .availability-toolbar>div {
         flex-direction: column !important;
         align-items: stretch !important;
     }
+
     .availability-toolbar label {
         text-align: center;
         margin-bottom: 4px;
@@ -1831,6 +1885,7 @@ html, body {
     .app-header h1 {
         font-size: 24px !important;
     }
+
     .app-header p {
         font-size: 12px !important;
     }
@@ -1843,11 +1898,12 @@ html, body {
 }
 
 @media (max-width: 390px) {
+
     /* Desglose de costos a 1 columna */
-    #formBooking > div[style*="rgba(245, 158, 11"] {
+    #formBooking>div[style*="rgba(245, 158, 11"] {
         grid-template-columns: 1fr !important;
     }
-    
+
     /* Slider horizontal de pestañas de estadísticas */
     .stats-tabs {
         display: flex !important;
@@ -1857,6 +1913,7 @@ html, body {
         padding-bottom: 6px !important;
         gap: 6px !important;
     }
+
     .stats-tabs .tab-btn {
         flex-shrink: 0 !important;
         font-size: 12px !important;
@@ -1871,6 +1928,7 @@ html, body {
     .fc .fc-toolbar-title {
         font-size: 14px !important;
     }
+
     .fc .fc-button {
         font-size: 11px !important;
         padding: 4px 6px !important;
@@ -1881,6 +1939,7 @@ html, body {
     .app-header h1 {
         font-size: 20px !important;
     }
+
     /* Grid de bungalows en 1 columna si el viewport es extremadamente angosto */
     .bungalows-grid {
         grid-template-columns: 1fr !important;
@@ -1894,12 +1953,15 @@ html, body {
     .main-content {
         padding: 8px !important;
     }
+
     .app-header h1 {
         font-size: 18px !important;
     }
+
     .modal-body {
         padding: 10px !important;
     }
+
     .availability-legend-container {
         grid-template-columns: 1fr !important;
     }

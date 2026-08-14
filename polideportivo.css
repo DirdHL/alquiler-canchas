@@ -48,11 +48,12 @@ body {
    ========================================== */
 .fc {
     --fc-today-bg-color: rgba(16, 185, 129, 0.15) !important;
-    --fc-border-color: rgba(255, 255, 255, 0.22) !important; /* High-contrast white grid borders */
+    --fc-border-color: rgba(255, 255, 255, 0.22) !important;
+    /* High-contrast white grid borders */
 }
 
 /* Make grid lines highly visible */
-.fc-theme-standard td, 
+.fc-theme-standard td,
 .fc-theme-standard th {
     border: 1px solid rgba(255, 255, 255, 0.22) !important;
 }
@@ -94,7 +95,8 @@ body {
 }
 
 .fc .fc-col-header-cell.fc-day-today a {
-    color: #34d399 !important; /* Bright mint color for today header text */
+    color: #34d399 !important;
+    /* Bright mint color for today header text */
 }
 
 /* FullCalendar Navigation Toolbar */
@@ -249,7 +251,8 @@ body {
 
 /* Make labels in the "Resumen de Hoy" card highly readable */
 .stats-card .stat-label {
-    color: #cbd5e1 !important; /* Light slate gray */
+    color: #cbd5e1 !important;
+    /* Light slate gray */
 }
 
 .stats-card .stat-value {
@@ -258,7 +261,8 @@ body {
 
 /* Make "Reportes" button text and border highly visible */
 #btnOpenStats {
-    color: #34d399 !important; /* Bright mint green */
+    color: #34d399 !important;
+    /* Bright mint green */
     border-color: rgba(52, 211, 153, 0.4) !important;
     background: rgba(16, 185, 129, 0.08) !important;
 }
@@ -271,7 +275,8 @@ body {
 
 /* Make "Operador Activo" label highly visible */
 .user-label {
-    color: #cbd5e1 !important; /* Light readable gray */
+    color: #cbd5e1 !important;
+    /* Light readable gray */
 }
 
 .user-name {

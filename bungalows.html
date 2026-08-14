@@ -473,8 +473,8 @@
                         </select>
                     </div>
 
-                    <!-- Occupancy: Standard guests, Additional guests, and little child -->
-                    <div class="form-row" id="rowOccupancy" style="grid-template-columns: 1fr 1fr 1fr;">
+                    <!-- Occupancy: Standard guests, Additional guests, free child under 7, and additional children -->
+                    <div class="form-row occupancy-grid" id="rowOccupancy">
                         <div class="form-group">
                             <label for="bookingPersonas">Personas *</label>
                             <div class="input-wrapper">
@@ -489,15 +489,23 @@
                                 <i data-lucide="users"></i>
                                 <input type="number" id="bookingAdicionales" min="0" max="10" value="0">
                             </div>
-                            <small class="text-secondary">Adicionales pagan S/. 35 c/u por noche.</small>
+                            <small class="text-secondary">Pagan S/. 30 c/u por noche.</small>
                         </div>
                         <div class="form-group">
-                            <label for="bookingNinoPequeno">Niños menores de 7</label>
+                            <label for="bookingNinoPequeno">Niños menores de 7 (Gratis)</label>
                             <div class="input-wrapper">
                                 <i data-lucide="baby"></i>
                                 <input type="number" id="bookingNinoPequeno" min="0" max="1" value="0">
                             </div>
-                            <small class="text-secondary" id="bookingNinosHelp">Máximo 1 niño por bungalow.</small>
+                            <small class="text-secondary" id="bookingNinosHelp">Máximo 1 niño gratis por bungalow.</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="bookingNinosAdicionales">Niños Adicionales</label>
+                            <div class="input-wrapper">
+                                <i data-lucide="smile"></i>
+                                <input type="number" id="bookingNinosAdicionales" min="0" max="10" value="0">
+                            </div>
+                            <small class="text-secondary">Pagan S/. 25 c/u por noche.</small>
                         </div>
                     </div>
 

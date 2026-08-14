@@ -21,11 +21,11 @@
     <!-- Custom CSS -->
     <link rel="stylesheet" href="style.css">
     <script>
-        window.addEventListener('error', function(e) { 
-            alert('⛔ ERROR JS EN LA PÁGINA ⛔\nArchivo: ' + e.filename + '\nLínea: ' + e.lineno + '\nMensaje: ' + e.message); 
+        window.addEventListener('error', function (e) {
+            alert('⛔ ERROR JS EN LA PÁGINA ⛔\nArchivo: ' + e.filename + '\nLínea: ' + e.lineno + '\nMensaje: ' + e.message);
         });
-        window.addEventListener('unhandledrejection', function(e) { 
-            alert('⛔ PROMESA RECHAZADA ⛔\n' + e.reason); 
+        window.addEventListener('unhandledrejection', function (e) {
+            alert('⛔ PROMESA RECHAZADA ⛔\n' + e.reason);
         });
     </script>
 </head>
@@ -142,7 +142,8 @@
         <main class="main-content">
             <header class="app-header">
                 <div class="header-left">
-                    <button class="btn btn-secondary btn-menu" id="btnToggleSidebar" title="Mostrar / Ocultar Menú Lateral">
+                    <button class="btn btn-secondary btn-menu" id="btnToggleSidebar"
+                        title="Mostrar / Ocultar Menú Lateral">
                         <i data-lucide="menu"></i>
                         <span style="font-size: 13px; font-weight: 600; margin-left: 4px;">Menú</span>
                     </button>
@@ -161,7 +162,8 @@
                 <div class="top-filters-group">
                     <div class="top-filter-section">
                         <span class="top-filter-label">
-                            <i data-lucide="layout-grid" style="width: 15px; height: 15px; color: var(--primary);"></i> Canchas:
+                            <i data-lucide="layout-grid" style="width: 15px; height: 15px; color: var(--primary);"></i>
+                            Canchas:
                         </span>
                         <div class="top-filter-items">
                             <label class="filter-item">
@@ -177,9 +179,11 @@
                         </div>
                     </div>
 
-                    <div class="top-filter-section" style="border-left: 1px solid var(--border-color); padding-left: 14px;">
+                    <div class="top-filter-section"
+                        style="border-left: 1px solid var(--border-color); padding-left: 14px;">
                         <span class="top-filter-label">
-                            <i data-lucide="trophy" style="width: 15px; height: 15px; color: var(--primary);"></i> Deporte:
+                            <i data-lucide="trophy" style="width: 15px; height: 15px; color: var(--primary);"></i>
+                            Deporte:
                         </span>
                         <div class="top-filter-items">
                             <label class="filter-item">
@@ -1017,7 +1021,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE reservas, historial;
                                     <table
                                         style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
                                         <thead>
-                                            <tr  
+                                            <tr
                                                 style="border-bottom: 1px solid var(--border-color); color: var(--text-secondary);">
                                                 <th style="padding: 8px 4px; font-weight: 600;">Artículo</th>
                                                 <th style="padding: 8px 4px; font-weight: 600; text-align: right;">Hoy

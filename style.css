@@ -49,7 +49,8 @@
 
 html,
 body {
-    overflow-x: clip; /* 'clip' recorta visualmente pero NO bloquea scroll interno */
+    overflow-x: clip;
+    /* 'clip' recorta visualmente pero NO bloquea scroll interno */
     width: 100%;
 }
 
@@ -484,6 +485,7 @@ body.no-scroll {
     border-color: rgba(139, 92, 246, 0.3) !important;
     color: #a78bfa !important;
 }
+
 .btn-sidebar-action.btn-canchas:hover {
     background: rgba(139, 92, 246, 0.2) !important;
     border-color: rgba(139, 92, 246, 0.5) !important;
@@ -495,6 +497,7 @@ body.no-scroll {
     border-color: rgba(16, 185, 129, 0.3) !important;
     color: #10b981 !important;
 }
+
 .btn-sidebar-action.btn-polideportivo:hover {
     background: rgba(16, 185, 129, 0.2) !important;
     border-color: rgba(16, 185, 129, 0.5) !important;
@@ -506,6 +509,7 @@ body.no-scroll {
     border-color: rgba(239, 68, 68, 0.3) !important;
     color: #ef4444 !important;
 }
+
 .btn-sidebar-action.btn-locales:hover {
     background: rgba(239, 68, 68, 0.2) !important;
     border-color: rgba(239, 68, 68, 0.5) !important;
@@ -517,6 +521,7 @@ body.no-scroll {
     border-color: rgba(245, 158, 11, 0.3) !important;
     color: #f59e0b !important;
 }
+
 .btn-sidebar-action.btn-bungalows:hover {
     background: rgba(245, 158, 11, 0.2) !important;
     border-color: rgba(245, 158, 11, 0.5) !important;
@@ -1377,7 +1382,8 @@ body.no-scroll {
 @media (max-width: 900px) {
     .app-container {
         grid-template-columns: 1fr;
-        overflow-x: clip; /* Permite scroll horizontal en elementos hijos */
+        overflow-x: clip;
+        /* Permite scroll horizontal en elementos hijos */
     }
 
     .sidebar {
@@ -2336,7 +2342,7 @@ select option {
         padding-right: 20px !important;
     }
 
-    #modalStats .modal-header > div {
+    #modalStats .modal-header>div {
         width: 100% !important;
         justify-content: flex-start !important;
         gap: 8px !important;
@@ -2358,11 +2364,13 @@ select option {
         padding-bottom: 8px !important;
         gap: 8px !important;
         border-bottom: 1px solid var(--border-color) !important;
-        scrollbar-width: none !important; /* Firefox */
+        scrollbar-width: none !important;
+        /* Firefox */
     }
 
     #modalStats .stats-tabs::-webkit-scrollbar {
-        display: none !important; /* Safari and Chrome */
+        display: none !important;
+        /* Safari and Chrome */
     }
 
     #modalStats .stats-tabs .tab-btn {

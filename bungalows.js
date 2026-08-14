@@ -20,7 +20,8 @@ const PRICE_WEEKDAY = 160.00; // Lun-Jue (Día y Noche / Full Day)
 const PRICE_WEEKEND = 180.00; // Vie-Dom (Día y Noche / Full Day)
 const PRICE_EXTENDED_WEEKDAY = 320.00; // Lun-Jue (Horario Extendido)
 const PRICE_EXTENDED_WEEKEND = 360.00; // Vie-Dom (Horario Extendido)
-const EXTRA_GUEST_FEE = 35.00; // Costo por 5to adulto o extra (actualizado a S/. 35)
+const EXTRA_GUEST_FEE = 30.00; // Costo por persona adicional (actualizado a S/. 30)
+const EXTRA_CHILD_FEE = 25.00; // Costo por niño adicional (S/. 25)
 
 // Initialize Page
 document.addEventListener('DOMContentLoaded', async () => {
@@ -140,7 +141,7 @@ function setupEventListeners() {
     // Dynamic field change triggers for calculations
     const calcFields = [
         'bookingCheckIn', 'bookingCheckOut', 'bookingHorario',
-        'bookingPersonas', 'bookingAdicionales', 'bookingNinoPequeno',
+        'bookingPersonas', 'bookingAdicionales', 'bookingNinoPequeno', 'bookingNinosAdicionales',
         'bookingHorasExtras', 'bookingAdicionalHoras',
         'bookingTotal', 'bookingAdelanto', 'bookingPendiente'
     ];
@@ -266,7 +267,7 @@ function setupEventListeners() {
             document.getElementById('bookingDni').required = true;
             groupClientInfo.style.display = 'block';
             rowClientDetails.style.display = 'flex';
-            rowOccupancy.style.display = 'flex';
+            rowOccupancy.style.display = 'grid';
             rowExtras.style.display = 'flex';
             rowMedioPago.style.display = 'flex';
 
@@ -545,6 +546,8 @@ function openBookingModal(dateStr = null) {
     document.getElementById('bookingPendiente').value = '';
     const personasInput = document.getElementById('bookingPersonas');
     if (personasInput) personasInput.value = 4;
+    const ninosAdicInput = document.getElementById('bookingNinosAdicionales');
+    if (ninosAdicInput) ninosAdicInput.value = 0;
     updateNinosLimit();
     updatePersonasLimit();
 
@@ -556,7 +559,7 @@ function openBookingModal(dateStr = null) {
     // Reset visibility variables
     document.getElementById('groupClientInfo').style.display = 'block';
     document.getElementById('rowClientDetails').style.display = 'flex';
-    document.getElementById('rowOccupancy').style.display = 'flex';
+    document.getElementById('rowOccupancy').style.display = 'grid';
     document.getElementById('rowExtras').style.display = 'flex';
     document.getElementById('rowMedioPago').style.display = 'flex';
     document.getElementById('splitPaymentRow').classList.add('hidden');
@@ -617,11 +620,11 @@ function openBookingEditModal(booking) {
     document.getElementById('bookingHorario').value = booking.horario;
     document.getElementById('bookingCheckIn').value = booking.fecha_ingreso;
     document.getElementById('bookingCheckOut').value = booking.fecha_salida;
-    
+
     const totalAdults = booking.adultos || 4;
     const standardGuests = Math.min(4, totalAdults);
     const adicionales = Math.max(0, totalAdults - 4);
-    
+
     const personasInput = document.getElementById('bookingPersonas');
     if (personasInput) {
         personasInput.value = standardGuests;
@@ -629,6 +632,8 @@ function openBookingEditModal(booking) {
     updatePersonasLimit();
     document.getElementById('bookingAdicionales').value = adicionales;
     document.getElementById('bookingNinoPequeno').value = booking.ninos_gratis || 0;
+    const ninosAdicEdit = document.getElementById('bookingNinosAdicionales');
+    if (ninosAdicEdit) ninosAdicEdit.value = booking.ninos_pagantes || 0;
     document.getElementById('bookingHorasExtras').value = booking.horas_extras;
     document.getElementById('bookingAdicionalHoras').value = booking.adicional_horas;
     document.getElementById('bookingTotal').value = booking.monto_total;
@@ -697,7 +702,7 @@ function openBookingEditModal(booking) {
     } else {
         groupClientInfo.style.display = 'block';
         rowClientDetails.style.display = 'flex';
-        rowOccupancy.style.display = 'flex';
+        rowOccupancy.style.display = 'grid';
         rowExtras.style.display = 'flex';
         rowMedioPago.style.display = 'flex';
         document.getElementById('bookingName').required = true;
@@ -707,7 +712,7 @@ function openBookingEditModal(booking) {
     // Determinar si el total guardado es un total editado manualmente (descuento/acuerdo)
     const calcBase = calculateBasePrice(booking.fecha_ingreso, booking.fecha_salida, booking.horario);
     const nights = calculateNights(booking.fecha_ingreso, booking.fecha_salida, booking.horario);
-    const calcGuests = adicionales * EXTRA_GUEST_FEE * nights;
+    const calcGuests = (adicionales * EXTRA_GUEST_FEE + (booking.ninos_pagantes || 0) * EXTRA_CHILD_FEE) * nights;
     const calcExtras = booking.adicional_horas || 0;
     const expectedCalculatedTotal = calcBase + calcGuests + calcExtras;
 
@@ -796,6 +801,7 @@ function runDynamicCalculations() {
     const horario = document.getElementById('bookingHorario').value;
 
     const adicionales = parseInt(document.getElementById('bookingAdicionales').value) || 0;
+    const ninosAdicionales = parseInt(document.getElementById('bookingNinosAdicionales').value) || 0;
 
     const extraHours = parseInt(document.getElementById('bookingHorasExtras').value) || 0;
     const extraHoursPrice = parseFloat(document.getElementById('bookingAdicionalHoras').value) || 0;
@@ -815,8 +821,9 @@ function runDynamicCalculations() {
 
     // 3. Guests Occupancy Math
     // Standard capacity: 4 people.
-    // Additional guests are charged S/. 35 each per night.
-    const guestsFee = adicionales * EXTRA_GUEST_FEE * nights;
+    // Additional adults are charged S/. 30 each per night.
+    // Additional children are charged S/. 25 each per night.
+    const guestsFee = (adicionales * EXTRA_GUEST_FEE + ninosAdicionales * EXTRA_CHILD_FEE) * nights;
 
     // 4. Extras (Hours + Cuatrimotos)
     // Note: extraHoursPrice is the total extra hours amount already entered by the user
@@ -1151,6 +1158,7 @@ async function handleSaveBooking(e) {
 
     const adicionales = parseInt(document.getElementById('bookingAdicionales').value) || 0;
     const ninoPequeno = parseInt(document.getElementById('bookingNinoPequeno').value) || 0;
+    const ninosAdicionales = parseInt(document.getElementById('bookingNinosAdicionales').value) || 0;
     const extraHoursPrice = parseFloat(document.getElementById('bookingAdicionalHoras').value) || 0;
 
     const nights = calculateNights(checkIn, checkOut, horario);
@@ -1196,12 +1204,12 @@ async function handleSaveBooking(e) {
             // Main reservation gets additional guests/children, standard ones get base capacity
             const totalBaseGuests = parseInt(document.getElementById('bookingPersonas').value) || 4;
             const baseGuestsForBungalow = Math.min(4, Math.max(0, totalBaseGuests - index * 4));
-            
+
             payload.adultos = baseGuestsForBungalow + (index === 0 ? adicionales : 0);
             payload.ninos_gratis = (index < ninoPequeno) ? 1 : 0;
-            payload.ninos_pagantes = 0;
+            payload.ninos_pagantes = (index === 0 ? ninosAdicionales : 0);
             payload.precio_base = calculateBasePrice(checkIn, checkOut, horario);
-            payload.adicional_personas = (index === 0 ? adicionales * EXTRA_GUEST_FEE * nights : 0);
+            payload.adicional_personas = (index === 0 ? (adicionales * EXTRA_GUEST_FEE + ninosAdicionales * EXTRA_CHILD_FEE) * nights : 0);
             payload.horas_extras = (index === 0 ? extraHours : 0);
             payload.adicional_horas = (index === 0 ? extraHoursPrice : 0);
             payload.alquiler_cuatrimoto = 0;
@@ -1585,7 +1593,7 @@ function updateDailySummaryList() {
                         <i data-lucide="calendar"></i> ${checkInFormatted} al ${checkOutFormatted}
                     </span>
                     <span class="summary-detail-tag">
-                        <i data-lucide="users"></i> ${b.adultos || 4} pers.${b.ninos_gratis ? ` + ${b.ninos_gratis} niño(s)` : ''}
+                        <i data-lucide="users"></i> ${b.adultos || 4} pers.${((b.ninos_gratis || 0) + (b.ninos_pagantes || 0)) > 0 ? ` + ${(b.ninos_gratis || 0) + (b.ninos_pagantes || 0)} niño(s)` : ''}
                     </span>
                 </div>
                 <div class="summary-item-header" style="margin-top: 6px; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 8px;">
@@ -1915,6 +1923,7 @@ function copyReservationDetails() {
     const personas = parseInt(document.getElementById('bookingPersonas').value) || 4;
     const adicionales = parseInt(document.getElementById('bookingAdicionales').value) || 0;
     const ninos = parseInt(document.getElementById('bookingNinoPequeno').value) || 0;
+    const ninosAdic = parseInt(document.getElementById('bookingNinosAdicionales').value) || 0;
 
     const total = parseFloat(document.getElementById('bookingTotal').value) || 0;
     const adelanto = parseFloat(document.getElementById('bookingAdelanto').value) || 0;
@@ -1971,7 +1980,12 @@ function copyReservationDetails() {
     msg += `*Fecha Ingreso:* ${formattedIn}${checkInTime ? ` - ${checkInTime}` : ''}\n`;
     msg += `*Fecha Salida:* ${formattedOut}${checkOutTime ? ` - ${checkOutTime}` : ''}\n`;
     const totalPersonas = personas + adicionales;
-    msg += `*Cantidad:* ${totalPersonas}\n`;
+    const totalNinos = ninos + ninosAdic;
+    let cantidadStr = `${totalPersonas} persona${totalPersonas > 1 ? 's' : ''}`;
+    if (totalNinos > 0) {
+        cantidadStr += ` + ${totalNinos} niño(s)`;
+    }
+    msg += `*Cantidad:* ${cantidadStr}\n`;
 
     if (advisor && advisor !== '_add_new_' && advisor !== '_delete_') {
         msg += `*Asesor(a):* ${advisor}\n`;
@@ -2193,7 +2207,7 @@ async function exportAllDataToExcel() {
         const day = t.getDay();
         const diff = t.getDate() - day + (day === 0 ? -6 : 1);
         const mon = new Date(t.setDate(diff));
-        
+
         const weekDates = [];
         for (let i = 0; i < 7; i++) {
             const temp = new Date(mon);
@@ -2266,7 +2280,7 @@ async function exportAllDataToExcel() {
         const extraP = parseFloat(b.adicional_personas) || 0;
         const extraH = parseFloat(b.adicional_horas) || 0;
         const extra = extraP + extraH;
-        
+
         todayBungalowBase += (tot - extra);
         todayAdicionales += extra;
         todayTotal += tot;
@@ -2318,11 +2332,11 @@ async function exportAllDataToExcel() {
         c1.font = { name: 'Outfit', bold: true, size: 10, color: { argb: 'FF1E293B' } };
         c1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
         c1.alignment = { vertical: 'middle', horizontal: 'left' };
-        c1.border = { 
-            top: { style: 'thin', color: { argb: 'FFE2E8F0' } }, 
-            left: { style: 'thin', color: { argb: 'FFE2E8F0' } }, 
-            bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } }, 
-            right: { style: 'thin', color: { argb: 'FFE2E8F0' } } 
+        c1.border = {
+            top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+            left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+            bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+            right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
         };
 
         styleValue(summaryWs.getCell(sr, 2), val, true);
@@ -2355,11 +2369,11 @@ async function exportAllDataToExcel() {
         c1.font = { name: 'Outfit', bold: true, size: 10, color: { argb: 'FF1E293B' } };
         c1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
         c1.alignment = { vertical: 'middle', horizontal: 'left' };
-        c1.border = { 
-            top: { style: 'thin', color: { argb: 'FFE2E8F0' } }, 
-            left: { style: 'thin', color: { argb: 'FFE2E8F0' } }, 
-            bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } }, 
-            right: { style: 'thin', color: { argb: 'FFE2E8F0' } } 
+        c1.border = {
+            top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+            left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+            bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+            right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
         };
 
         styleValue(summaryWs.getCell(sr, 2), val, true);
@@ -2392,11 +2406,11 @@ async function exportAllDataToExcel() {
         c1.font = { name: 'Outfit', bold: true, size: 10, color: { argb: 'FF1E293B' } };
         c1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
         c1.alignment = { vertical: 'middle', horizontal: 'left' };
-        c1.border = { 
-            top: { style: 'thin', color: { argb: 'FFE2E8F0' } }, 
-            left: { style: 'thin', color: { argb: 'FFE2E8F0' } }, 
-            bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } }, 
-            right: { style: 'thin', color: { argb: 'FFE2E8F0' } } 
+        c1.border = {
+            top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+            left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+            bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+            right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
         };
 
         styleValue(summaryWs.getCell(sr, 2), val, true);
@@ -2452,7 +2466,7 @@ async function exportAllDataToExcel() {
     // Group active bookings by DNI (or Name if empty)
     const clientsExcelMap = {};
     const activeAllExcelBookings = bookings.filter(b => b.estado_reserva !== 'Bloqueo' && b.estado_reserva !== 'Bloqueado');
-    
+
     activeAllExcelBookings.forEach(b => {
         const name = capitalizeName(b.nombre_cliente || 'Desconocido');
         const dni = (b.dni_cliente || '').trim();
@@ -2784,7 +2798,7 @@ function loadStatsDashboard(period = 'month') {
         const day = temp.getDay();
         const diff = temp.getDate() - day + (day === 0 ? -6 : 1);
         const mon = new Date(temp.setDate(diff));
-        
+
         const weekDates = [];
         for (let i = 0; i < 7; i++) {
             const tempD = new Date(mon.getTime());

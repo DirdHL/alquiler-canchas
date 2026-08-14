@@ -44,7 +44,7 @@ function setupEventListeners() {
     document.getElementById('btnDeleteBooking').addEventListener('click', handleDeleteBooking);
     const historySearchInput = document.getElementById('historySearchInput');
     const btnClearHistoryLocal = document.getElementById('btnClearHistoryLocal');
-    
+
     document.getElementById('btnOpenHistory').addEventListener('click', () => {
         if (historySearchInput) historySearchInput.value = '';
         openHistoryModal();
@@ -111,12 +111,12 @@ function setupEventListeners() {
 
     function updateEndDate() {
         if (!bookingFecha || !bookingFecha.value || !bookingFechaFin) return;
-        
+
         bookingFechaFin.min = bookingFecha.value;
-        
+
         const startVal = bookingHoraInicio ? bookingHoraInicio.value : '';
         const endVal = bookingHoraFin ? bookingHoraFin.value : '';
-        
+
         if (startVal && endVal && endVal <= startVal) {
             // Crossed midnight: set end date to the next day
             const dateParts = bookingFecha.value.split('-');
@@ -232,7 +232,7 @@ function updateBookingLocalOptions(categoryValue, selectedValue = null) {
         const opt = document.createElement('option');
         opt.value = art.value;
         opt.textContent = art.text;
-        if (selectedValue && (art.value === selectedValue || 
+        if (selectedValue && (art.value === selectedValue ||
             (selectedValue.startsWith('Juego Inflable|') && art.value === selectedValue.replace('Juego Inflable|', 'Magia del rebote|')))) {
             opt.selected = true;
             found = true;
@@ -258,11 +258,11 @@ function openBookingModal(booking = null, defaultDate = null) {
     document.getElementById('formBooking').reset();
     document.getElementById('bookingId').value = '';
     document.getElementById('bookingError').textContent = '';
-    
+
     // Operators
     const selectAsesor = document.getElementById('bookingNotes');
     selectAsesor.innerHTML = `<option value="${activeOperator}" selected>${activeOperator}</option>`;
-    
+
     if (defaultDate) {
         document.getElementById('bookingFecha').value = defaultDate;
         const finInput = document.getElementById('bookingFechaFin');
@@ -273,13 +273,13 @@ function openBookingModal(booking = null, defaultDate = null) {
         const finInput = document.getElementById('bookingFechaFin');
         if (finInput) finInput.value = todayStr;
     }
-    
+
     if (booking) {
         document.getElementById('modalTitle').textContent = 'Editar Reserva';
         document.getElementById('bookingId').value = booking.id;
         document.getElementById('bookingName').value = booking.nombre_cliente || '';
         document.getElementById('bookingDni').value = booking.telefono_cliente || '';
-        
+
         // Cargar Categoría y Artículo dinámicamente
         const categorySelect = document.getElementById('bookingCategoria');
         if (categorySelect) {
@@ -293,7 +293,7 @@ function openBookingModal(booking = null, defaultDate = null) {
         document.getElementById('bookingFecha').value = booking.fecha_reserva;
         document.getElementById('bookingHoraInicio').value = booking.hora_inicio.substring(0, 5);
         document.getElementById('bookingHoraFin').value = booking.hora_fin.substring(0, 5);
-        
+
         // Calculate and set Fecha Fin
         const finInput = document.getElementById('bookingFechaFin');
         if (finInput) {
@@ -317,7 +317,7 @@ function openBookingModal(booking = null, defaultDate = null) {
     } else {
         document.getElementById('modalTitle').textContent = 'Nueva Reserva de Artículo';
         document.getElementById('btnDeleteBooking').classList.add('hidden');
-        
+
         // Reset Categoría y Artículo
         const categorySelect = document.getElementById('bookingCategoria');
         if (categorySelect) {
@@ -325,7 +325,7 @@ function openBookingModal(booking = null, defaultDate = null) {
         }
         updateBookingLocalOptions('');
     }
-    
+
     runDynamicCalculations();
     openModal('modalBooking');
 }
@@ -333,7 +333,7 @@ function openBookingModal(booking = null, defaultDate = null) {
 async function handleSaveBooking(e) {
     e.preventDefault();
     const isBlock = document.getElementById('bookingIsBlock').checked;
-    
+
     const [categoria, item] = document.getElementById('bookingLocal').value.split('|');
     const payload = {
         categoria: categoria,
@@ -353,7 +353,7 @@ async function handleSaveBooking(e) {
     };
 
     const bookingId = document.getElementById('bookingId').value;
-    
+
     if (dbMode === 'supabase' && supabaseClient) {
         let error;
         if (bookingId) {
@@ -363,7 +363,7 @@ async function handleSaveBooking(e) {
             const res = await supabaseClient.from('reservas_carritos').insert([payload]);
             error = res.error;
         }
-        
+
         if (error) {
             document.getElementById('bookingError').textContent = 'Error al guardar: ' + error.message;
             return;
@@ -385,7 +385,7 @@ async function handleSaveBooking(e) {
     const actionVerb = isEdit ? 'editar' : 'crear';
     const detailMessage = `${isEdit ? 'Editó' : 'Creó'} reserva para ${payload.nombre_cliente} (${payload.categoria} - ${payload.item}) el ${payload.fecha_reserva} de ${payload.hora_inicio} a ${payload.hora_fin}`;
     await addHistoryEntry(actionVerb, detailMessage);
-    
+
     closeModal('modalBooking');
     if (dbMode === 'local') await fetchBookings();
 }
@@ -393,10 +393,10 @@ async function handleSaveBooking(e) {
 async function handleDeleteBooking() {
     if (!confirm('¿Estás seguro de eliminar esta reserva?')) return;
     const bookingId = document.getElementById('bookingId').value;
-    
+
     const targetBooking = bookings.find(b => b.id === bookingId);
     const clientName = targetBooking ? targetBooking.nombre_cliente : 'Desconocido';
-    const detailStr = targetBooking 
+    const detailStr = targetBooking
         ? `Eliminó reserva para ${clientName} (${targetBooking.categoria} - ${targetBooking.item}) del ${targetBooking.fecha_reserva}`
         : `Eliminó reserva ID: ${bookingId}`;
 
@@ -418,19 +418,19 @@ function formatClientName(fullName) {
     const parts = fullName.trim().split(/\s+/);
     if (parts.length <= 1) return fullName;
     if (parts.length === 2) return `${parts[0]} ${parts[1]}`;
-    
+
     const commonMiddleNames = [
-        'maria', 'maría', 'carlos', 'jose', 'josé', 'luis', 'ana', 'juan', 
-        'antonio', 'manuel', 'francisco', 'jesus', 'jesús', 'miguel', 'angel', 
-        'ángel', 'pedro', 'javier', 'david', 'daniel', 'fernando', 'andres', 
-        'andrés', 'ramon', 'ramón', 'jorge', 'alberto', 'eduardo', 'alejandro', 
-        'enrique', 'diego', 'sergio', 'victor', 'víctor', 'carmen', 'pilar', 
-        'isabel', 'dolores', 'teresa', 'rosa', 'sofia', 'sofía', 'elena', 
-        'margarita', 'lucia', 'lucía', 'patricia', 'laura', 'marta', 'cristina', 
+        'maria', 'maría', 'carlos', 'jose', 'josé', 'luis', 'ana', 'juan',
+        'antonio', 'manuel', 'francisco', 'jesus', 'jesús', 'miguel', 'angel',
+        'ángel', 'pedro', 'javier', 'david', 'daniel', 'fernando', 'andres',
+        'andrés', 'ramon', 'ramón', 'jorge', 'alberto', 'eduardo', 'alejandro',
+        'enrique', 'diego', 'sergio', 'victor', 'víctor', 'carmen', 'pilar',
+        'isabel', 'dolores', 'teresa', 'rosa', 'sofia', 'sofía', 'elena',
+        'margarita', 'lucia', 'lucía', 'patricia', 'laura', 'marta', 'cristina',
         'mercedes', 'raquel', 'irene', 'beatriz', 'sandra', 'monica', 'mónica',
         'de', 'del', 'la', 'las', 'los'
     ];
-    
+
     const secondPartLower = parts[1].toLowerCase();
     if (commonMiddleNames.includes(secondPartLower)) {
         if (parts.length >= 3) {
@@ -447,7 +447,7 @@ function formatClientName(fullName) {
 function initCalendar() {
     const calendarEl = document.getElementById('calendar');
     const isMobile = window.innerWidth < 768;
-    
+
     calendar = new FullCalendar.Calendar(calendarEl, {
         locale: 'es',
         firstDay: 1, // 1 = Lunes
@@ -471,13 +471,13 @@ function initCalendar() {
             day: 'Día',
             multiMonthYear: 'Año'
         },
-        dateClick: function(info) {
+        dateClick: function (info) {
             openBookingModal(null, info.dateStr);
         },
-        eventClick: function(info) {
+        eventClick: function (info) {
             openBookingModal(info.event.extendedProps.rawBooking);
         },
-        eventDidMount: function(info) {
+        eventDidMount: function (info) {
             const b = info.event.extendedProps.rawBooking;
             if (!b) return;
 
@@ -489,7 +489,7 @@ function initCalendar() {
                 document.body.appendChild(tooltip);
             }
 
-            info.el.addEventListener('mouseenter', function(e) {
+            info.el.addEventListener('mouseenter', function (e) {
                 const clientName = formatClientName(b.nombre_cliente);
                 const startTime = b.hora_inicio ? b.hora_inicio.substring(0, 5) : '';
                 const endTime = b.hora_fin ? b.hora_fin.substring(0, 5) : '';
@@ -551,11 +551,11 @@ function initCalendar() {
                 tooltip.style.left = `${left}px`;
             });
 
-            info.el.addEventListener('mouseleave', function() {
+            info.el.addEventListener('mouseleave', function () {
                 tooltip.classList.remove('show');
             });
 
-            info.el.addEventListener('click', function() {
+            info.el.addEventListener('click', function () {
                 tooltip.classList.remove('show');
             });
         },
@@ -593,28 +593,28 @@ function renderCalendarEvents() {
     const events = [];
     bookings.forEach(b => {
         let filterId = '';
-        let color = '#ec4899'; 
+        let color = '#ec4899';
         let titlePrefix = `[${b.item || ''}]`;
         let customClass = '';
-        
+
         let cat = b.categoria;
         if (cat === 'Juego Inflable') cat = 'Magia del rebote';
 
         if (cat === 'Carrito Snacks') {
-            color = '#db2777'; 
+            color = '#db2777';
             customClass = 'event-popcorn';
         } else if (cat === 'Magia del rebote') {
             color = '#0284c7';
             customClass = 'event-castillo';
         }
-        
+
         let title = `${titlePrefix} ${b.nombre_cliente}${b.tipo_evento ? ' - ' + b.tipo_evento : ''}`;
         if (b.estado_reserva === 'Bloqueado') {
             title = `🔒 BLOQUEADO ${titlePrefix}`;
             color = '#ef4444';
             customClass = 'event-bloqueado';
         }
-        
+
         let endIso = `${b.fecha_reserva}T${b.hora_fin}`;
         if (b.hora_fin && b.hora_inicio && b.hora_fin <= b.hora_inicio) {
             const dateParts = b.fecha_reserva.split('-');
@@ -636,10 +636,10 @@ function renderCalendarEvents() {
             extendedProps: { rawBooking: b }
         });
     });
-    
+
     calendar.removeAllEvents();
     calendar.addEventSource(events);
-    
+
     // Update daily summary
     const today = new Date().toISOString().split('T')[0];
     const todayEvents = bookings.filter(b => b.fecha_reserva === today);
@@ -652,12 +652,12 @@ function renderCalendarEvents() {
 async function initDatabase() {
     const savedUrl = localStorage.getItem('canchapro_supabase_url');
     const savedKey = localStorage.getItem('canchapro_supabase_key');
-    
+
     if (savedUrl && savedKey) {
         try {
             supabaseClient = window.supabase.createClient(savedUrl, savedKey);
             dbMode = 'supabase';
-            
+
             // Subscribe to real-time changes
             realtimeChannel = supabaseClient.channel('custom-all-channel-carritos')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'reservas_carritos' }, payload => {
@@ -670,7 +670,7 @@ async function initDatabase() {
                     }
                 })
                 .subscribe();
-                
+
             document.getElementById('statusDot').className = 'status-dot connected';
             document.getElementById('statusText').textContent = 'Conectado a la Nube (Supabase)';
             document.getElementById('statusDesc').textContent = 'Sincronización en tiempo real activa.';
@@ -897,7 +897,7 @@ function formatLogTimestamp(isoStr) {
 
 function escapeHTML(str) {
     if (!str) return '';
-    return str.replace(/[&<>'"]/g, 
+    return str.replace(/[&<>'"]/g,
         tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
     );
 }
@@ -1147,7 +1147,7 @@ async function exportAllDataToExcel() {
     }
 
     const workbook = new ExcelJS.Workbook();
-    
+
     // ─── RESUMEN SHEET ─────────────────────────────────────────────
     const summaryWs = workbook.addWorksheet('📊 RESUMEN', { properties: { tabColor: { argb: 'FF0F766E' } } });
     summaryWs.views = [{ showGridLines: false }];
@@ -1157,11 +1157,11 @@ async function exportAllDataToExcel() {
         cell.font = { name: 'Outfit', bold: true, size: fontSize, color: { argb: fgArgb } };
         cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bgArgb } };
         cell.alignment = { vertical: 'middle', horizontal: 'center' };
-        cell.border = { 
-            top:{style:'thin',color:{argb:'FFE2E8F0'}}, 
-            left:{style:'thin',color:{argb:'FFE2E8F0'}}, 
-            bottom:{style:'thin',color:{argb:'FFE2E8F0'}}, 
-            right:{style:'thin',color:{argb:'FFE2E8F0'}} 
+        cell.border = {
+            top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+            left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+            bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+            right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
         };
     }
     function styleValue(cell, value, isMoney = false) {
@@ -1170,11 +1170,11 @@ async function exportAllDataToExcel() {
         cell.font = { name: 'Outfit', bold: true, size: 10, color: { argb: 'FF0F766E' } };
         cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFFFF' } };
         cell.alignment = { vertical: 'middle', horizontal: isMoney ? 'right' : 'left' };
-        cell.border = { 
-            top:{style:'thin',color:{argb:'FFE2E8F0'}}, 
-            left:{style:'thin',color:{argb:'FFE2E8F0'}}, 
-            bottom:{style:'thin',color:{argb:'FFE2E8F0'}}, 
-            right:{style:'thin',color:{argb:'FFE2E8F0'}} 
+        cell.border = {
+            top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+            left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+            bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+            right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
         };
     }
 
@@ -1231,7 +1231,7 @@ async function exportAllDataToExcel() {
     for (const [monthLabel, items] of Object.entries(groups)) {
         const bg = monthColorsS[rowIdx % 2];
         const activeItems = items.filter(b => b.estado_reserva !== 'Bloqueado');
-        
+
         let count = activeItems.length;
         let cMonto = 0;
         let aMonto = 0;
@@ -1254,7 +1254,7 @@ async function exportAllDataToExcel() {
         c1.value = monthLabel; c1.font = { name: 'Outfit', bold: true, size: 10, color: { argb: 'FF1E293B' } };
         c1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
         c1.alignment = { vertical: 'middle', horizontal: 'left' };
-        c1.border = { top:{style:'thin',color:{argb:'FFE2E8F0'}}, left:{style:'thin',color:{argb:'FFE2E8F0'}}, bottom:{style:'thin',color:{argb:'FFE2E8F0'}}, right:{style:'thin',color:{argb:'FFE2E8F0'}} };
+        c1.border = { top: { style: 'thin', color: { argb: 'FFE2E8F0' } }, left: { style: 'thin', color: { argb: 'FFE2E8F0' } }, bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } }, right: { style: 'thin', color: { argb: 'FFE2E8F0' } } };
 
         styleValue(summaryWs.getCell(sr, 2), count, false);
         styleValue(summaryWs.getCell(sr, 3), cMonto, true);
@@ -1276,7 +1276,7 @@ async function exportAllDataToExcel() {
     totalCell.font = { name: 'Outfit', bold: true, size: 10, color: { argb: 'FFFFFFFF' } };
     totalCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F766E' } };
     totalCell.alignment = { vertical: 'middle', horizontal: 'left' };
-    totalCell.border = { top:{style:'thin',color:{argb:'FF0F766E'}}, left:{style:'thin',color:{argb:'FF0F766E'}}, bottom:{style:'thin',color:{argb:'FF0F766E'}}, right:{style:'thin',color:{argb:'FF0F766E'}} };
+    totalCell.border = { top: { style: 'thin', color: { argb: 'FF0F766E' } }, left: { style: 'thin', color: { argb: 'FF0F766E' } }, bottom: { style: 'thin', color: { argb: 'FF0F766E' } }, right: { style: 'thin', color: { argb: 'FF0F766E' } } };
 
     styleValue(summaryWs.getCell(sr, 2), grandTotalBookings, false);
     styleValue(summaryWs.getCell(sr, 3), grandTotalCobrado, true);
@@ -1312,20 +1312,20 @@ async function exportAllDataToExcel() {
         itemsBreakdownMap[key].revenue += parseFloat(b.monto_total) || 0;
     });
 
-    Object.entries(itemsBreakdownMap).sort((a,b) => a[0].localeCompare(b[0])).forEach(([keyName, data], lIdx) => {
+    Object.entries(itemsBreakdownMap).sort((a, b) => a[0].localeCompare(b[0])).forEach(([keyName, data], lIdx) => {
         const bg = monthColorsS[lIdx % 2];
         const c1 = summaryWs.getCell(sr, 1);
         c1.value = keyName; c1.font = { name: 'Outfit', bold: true, size: 10, color: { argb: 'FF1E293B' } };
         c1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
         c1.alignment = { vertical: 'middle', horizontal: 'left' };
-        c1.border = { top:{style:'thin',color:{argb:'FFE2E8F0'}}, left:{style:'thin',color:{argb:'FFE2E8F0'}}, bottom:{style:'thin',color:{argb:'FFE2E8F0'}}, right:{style:'thin',color:{argb:'FFE2E8F0'}} };
-        
+        c1.border = { top: { style: 'thin', color: { argb: 'FFE2E8F0' } }, left: { style: 'thin', color: { argb: 'FFE2E8F0' } }, bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } }, right: { style: 'thin', color: { argb: 'FFE2E8F0' } } };
+
         styleValue(summaryWs.getCell(sr, 2), data.count, false);
         styleValue(summaryWs.getCell(sr, 3), data.revenue, true);
-        
+
         summaryWs.getCell(sr, 2).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
         summaryWs.getCell(sr, 3).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
-        
+
         summaryWs.getRow(sr).height = 20;
         sr++;
     });
@@ -1351,7 +1351,7 @@ async function exportAllDataToExcel() {
 
     for (const [monthLabel, bookingsInMonth] of Object.entries(groups)) {
         const worksheet = workbook.addWorksheet(monthLabel);
-        
+
         worksheet.views = [{ showGridLines: true }];
         worksheet.columns = columnsDef;
 
@@ -1450,6 +1450,25 @@ async function exportAllDataToExcel() {
     });
 }
 
+function refreshCalendarLayout() {
+    try {
+        if (typeof calendar !== 'undefined' && calendar && typeof calendar.updateSize === 'function') {
+            calendar.updateSize();
+        }
+        window.dispatchEvent(new Event('resize'));
+    } catch (e) {
+        console.warn('Calendar resize notification handled:', e);
+    }
+    setTimeout(() => {
+        try {
+            if (typeof calendar !== 'undefined' && calendar && typeof calendar.updateSize === 'function') {
+                calendar.updateSize();
+            }
+            window.dispatchEvent(new Event('resize'));
+        } catch (e) { }
+    }, 310);
+}
+
 function toggleSidebarHandler() {
     const sidebar = document.getElementById('sidebar');
     const sidebarBackdrop = document.getElementById('sidebarBackdrop');
@@ -1465,6 +1484,7 @@ function toggleSidebarHandler() {
             localStorage.setItem('canchapro_sidebar_collapsed', isCollapsed ? 'true' : 'false');
         }
     }
+    refreshCalendarLayout();
 }
 
 function closeSidebarDrawer() {
@@ -1483,6 +1503,7 @@ function closeSidebarDrawer() {
             localStorage.setItem('canchapro_sidebar_collapsed', 'true');
         }
     }
+    refreshCalendarLayout();
 }
 
 function initSidebarState() {
@@ -1498,4 +1519,5 @@ function initSidebarState() {
             appContainer.classList.remove('sidebar-collapsed');
         }
     }
+    refreshCalendarLayout();
 }

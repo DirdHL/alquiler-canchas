@@ -1633,7 +1633,7 @@ function parseSplitPayment(tipoPagoStr) {
     }
     const efectivoMatch = tipoPagoStr.match(/Efectivo\s*S\/\.\s*([\d.]+)/i);
     const yapeMatch = tipoPagoStr.match(/Yape\s*S\/\.\s*([\d.]+)/i);
-    
+
     if (efectivoMatch || yapeMatch) {
         return {
             efectivo: efectivoMatch ? parseFloat(efectivoMatch[1]) : 0,
@@ -1645,7 +1645,7 @@ function parseSplitPayment(tipoPagoStr) {
 
 function updateModalCalculatedTotal() {
     const isBlock = bookingIsBlockInput ? bookingIsBlockInput.checked : false;
-    
+
     if (isBlock) {
         if (bookingTotalContainer) bookingTotalContainer.style.display = 'none';
         return 0;
@@ -1730,7 +1730,7 @@ async function handleSaveBooking(e) {
         console.warn("crypto.randomUUID failed:", e);
     }
     if (!newId) {
-        newId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        newId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
             const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
             return v.toString(16);
         });
@@ -1786,7 +1786,7 @@ async function handleSaveBooking(e) {
             const yapeVal = parseFloat(splitYapeInput.value) || 0;
             const calculatedTotal = updateModalCalculatedTotal();
             const sum = cashVal + yapeVal;
-            
+
             if (Math.abs(sum - calculatedTotal) > 0.05) {
                 showBookingError(`El monto ingresado (Efectivo S/. ${cashVal.toFixed(2)} + Yape S/. ${yapeVal.toFixed(2)} = S/. ${sum.toFixed(2)}) no coincide con el total calculado (S/. ${calculatedTotal.toFixed(2)}).`);
                 if (btnSave) {
@@ -1848,24 +1848,24 @@ async function handleSaveBooking(e) {
     };
 
     try {
-            let currentPayload = bookingData;
-            if (dbMode === 'supabase' && supabaseClient) {
-                // Guardar en Supabase
-                let query;
-                if (bookingIdInput.value) {
-                    // Actualizar
-                    query = supabaseClient.from('reservas').update(bookingData).eq('id', id);
-                } else {
-                    // Insertar nuevo
-                    const insertData = { ...bookingData };
-                    delete insertData.id;
-                    currentPayload = insertData;
-                    query = supabaseClient.from('reservas').insert([insertData]);
-                }
+        let currentPayload = bookingData;
+        if (dbMode === 'supabase' && supabaseClient) {
+            // Guardar en Supabase
+            let query;
+            if (bookingIdInput.value) {
+                // Actualizar
+                query = supabaseClient.from('reservas').update(bookingData).eq('id', id);
+            } else {
+                // Insertar nuevo
+                const insertData = { ...bookingData };
+                delete insertData.id;
+                currentPayload = insertData;
+                query = supabaseClient.from('reservas').insert([insertData]);
+            }
 
-                const res = await query;
-                const error = res.error;
-                if (error) throw error;
+            const res = await query;
+            const error = res.error;
+            if (error) throw error;
         } else {
             // Guardar en LocalStorage
             let localList = getLocalBookings();
@@ -2924,7 +2924,7 @@ async function fetchAndRenderHistory() {
         html += `<div class="activity-day-group" style="font-weight: 700; margin-top: 16px; margin-bottom: 8px; color: var(--primary); font-size: 12px; text-transform: uppercase;">${dayLabel}</div>`;
         html += groupEntries.map(entry => {
             const timeAgo = formatTimeAgo(new Date(entry.created_at));
-            
+
             let badgeColor = '#10b981'; // green for crear
             let badgeBg = 'rgba(16, 185, 129, 0.1)';
             let actionTextLabel = 'Crear';
@@ -3199,261 +3199,16 @@ async function exportAllDataToExcel() {
         }
 
         const workbook = new ExcelJS.Workbook();
-    
-    // ─── RESUMEN SHEET ─────────────────────────────────────────────
-    const summaryWs = workbook.addWorksheet('📊 RESUMEN', { properties: { tabColor: { argb: 'FF0F766E' } } });
-    summaryWs.views = [{ showGridLines: false }];
 
-    function styleTitle(cell, text, bgArgb = 'FF0F766E', fgArgb = 'FFFFFFFF', fontSize = 12) {
-        cell.value = text;
-        cell.font = { name: 'Outfit', bold: true, size: fontSize, color: { argb: fgArgb } };
-        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bgArgb } };
-        cell.alignment = { vertical: 'middle', horizontal: 'center' };
-        cell.border = { 
-            top:{style:'thin',color:{argb:'FFE2E8F0'}}, 
-            left:{style:'thin',color:{argb:'FFE2E8F0'}}, 
-            bottom:{style:'thin',color:{argb:'FFE2E8F0'}}, 
-            right:{style:'thin',color:{argb:'FFE2E8F0'}} 
-        };
-    }
-    function styleValue(cell, value, isMoney = false) {
-        cell.value = isMoney ? parseFloat(parseFloat(value).toFixed(2)) : value;
-        if (isMoney) cell.numFmt = '"S/. "#,##0.00';
-        cell.font = { name: 'Outfit', bold: true, size: 10, color: { argb: 'FF0F766E' } };
-        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFFFF' } };
-        cell.alignment = { vertical: 'middle', horizontal: isMoney ? 'right' : 'left' };
-        cell.border = { 
-            top:{style:'thin',color:{argb:'FFE2E8F0'}}, 
-            left:{style:'thin',color:{argb:'FFE2E8F0'}}, 
-            bottom:{style:'thin',color:{argb:'FFE2E8F0'}}, 
-            right:{style:'thin',color:{argb:'FFE2E8F0'}} 
-        };
-    }
+        // ─── RESUMEN SHEET ─────────────────────────────────────────────
+        const summaryWs = workbook.addWorksheet('📊 RESUMEN', { properties: { tabColor: { argb: 'FF0F766E' } } });
+        summaryWs.views = [{ showGridLines: false }];
 
-    function getMondayDateString(dateStr) {
-        const parts = dateStr.split('-');
-        if (parts.length < 3) return '9999-12-31';
-        const year = parseInt(parts[0]);
-        const month = parseInt(parts[1]) - 1;
-        const day = parseInt(parts[2]);
-        const d = new Date(year, month, day);
-        const dayOfWeek = d.getDay();
-        const mondayDiff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-        const mondayDate = new Date(d);
-        mondayDate.setDate(d.getDate() + mondayDiff);
-        
-        const y = mondayDate.getFullYear();
-        const m = String(mondayDate.getMonth() + 1).padStart(2, '0');
-        const dd = String(mondayDate.getDate()).padStart(2, '0');
-        return `${y}-${m}-${dd}`;
-    }
-
-    function getWeekRangeString(dateStr) {
-        const parts = dateStr.split('-');
-        if (parts.length < 3) return 'Otros';
-        const year = parseInt(parts[0]);
-        const month = parseInt(parts[1]) - 1;
-        const day = parseInt(parts[2]);
-        
-        const mondayDate = new Date(year, month, day);
-        const sundayDate = new Date(mondayDate);
-        sundayDate.setDate(mondayDate.getDate() + 6);
-        
-        const formatOption = { day: 'numeric', month: 'long' };
-        const formatter = new Intl.DateTimeFormat('es-ES', formatOption);
-        
-        const monStr = formatter.format(mondayDate);
-        const sunStr = formatter.format(sundayDate);
-        
-        const capitalizeWords = str => str.replace(/(^\w|\s\w)/g, m => m.toUpperCase());
-        
-        const monYear = mondayDate.getFullYear();
-        const sunYear = sundayDate.getFullYear();
-        const yearStr = monYear === sunYear ? ` ${monYear}` : ` ${monYear}/${sunYear}`;
-        
-        return `Lunes ${capitalizeWords(monStr)} - Domingo ${capitalizeWords(sunStr)}${yearStr}`;
-    }
-
-    function getDailyLabel(dateStr) {
-        const parts = dateStr.split('-');
-        if (parts.length < 3) return dateStr;
-        const year = parseInt(parts[0]);
-        const month = parseInt(parts[1]) - 1;
-        const day = parseInt(parts[2]);
-        const d = new Date(year, month, day);
-        
-        const formatOption = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
-        const formatter = new Intl.DateTimeFormat('es-ES', formatOption);
-        const formatted = formatter.format(d);
-        
-        return formatted.replace(/(^\w|\s\w)/g, m => m.toUpperCase());
-    }
-
-    summaryWs.getColumn(1).width = 30;
-    summaryWs.getColumn(2).width = 20;
-    summaryWs.getColumn(3).width = 20;
-    summaryWs.getColumn(4).width = 20;
-    summaryWs.getColumn(5).width = 20;
-    summaryWs.getColumn(6).width = 20;
-    summaryWs.getColumn(7).width = 20;
-
-    let sr = 1;
-    const monthColorsS = ['FFFFFFFF', 'FFF8FAFC'];
-
-    // Title Block
-    summaryWs.mergeCells(sr, 1, sr, 7);
-    const mainTitleCell = summaryWs.getCell(sr, 1);
-    styleTitle(mainTitleCell, "REPORTE GENERAL DE RESERVAS Y ESTADÍSTICAS - POLIDEPORTIVO", 'FF0F766E', 'FFFFFFFF', 14);
-    summaryWs.getRow(sr).height = 40;
-    sr += 2; // Blank row
-
-    // Group events by Month
-    const groups = {};
-    allEvents.forEach(e => {
-        if (!e.date) return;
-        const dateParts = e.date.split('-');
-        if (dateParts.length < 2) return;
-        const year = dateParts[0];
-        const monthIndex = parseInt(dateParts[1]) - 1;
-        const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
-        const monthName = months[monthIndex] || 'Otros';
-        const label = `${monthName} ${year}`;
-        if (!groups[label]) {
-            groups[label] = [];
-        }
-        groups[label].push(e);
-    });
-
-    // 1. Month Summary Block
-    summaryWs.mergeCells(sr, 1, sr, 7);
-    styleTitle(summaryWs.getCell(sr, 1), "INGRESOS Y USOS MENSUALES", 'FF334155', 'FFFFFFFF', 11);
-    summaryWs.getRow(sr).height = 24; sr++;
-
-    const headersM = ["Mes / Período", "Reservas", "Monto Cancha", "Monto Accesorios", "Total Facturado", "Efectivo", "Yape"];
-    headersM.forEach((h, idx) => {
-        styleTitle(summaryWs.getCell(sr, idx + 1), h, 'FF1E293B', 'FFFFFFFF', 10);
-    });
-    summaryWs.getRow(sr).height = 22; sr++;
-
-    let grandTotalBookings = 0;
-    let grandTotalCancha = 0;
-    let grandTotalAcc = 0;
-    let grandTotalSum = 0;
-    let grandTotalEfectivo = 0;
-    let grandTotalYape = 0;
-
-    let rowIdx = 0;
-    for (const [monthLabel, events] of Object.entries(groups)) {
-        const bg = monthColorsS[rowIdx % 2];
-        const activeEvents = events.filter(e => e.sport !== 'Bloqueo');
-        
-        let count = activeEvents.length;
-        let cMonto = 0;
-        let accMonto = 0;
-        let tMonto = 0;
-        let efectivoMonto = 0;
-        let yapeMonto = 0;
-
-        activeEvents.forEach(e => {
-            const inc = getEventIncome(e);
-            cMonto += inc.courtIncome;
-            accMonto += inc.pelotaIncome + inc.chalecoIncome;
-            tMonto += inc.total;
-
-            const payType = e.tipo_pago || 'Efectivo';
-            if (payType.startsWith('Dividido')) {
-                const split = parseSplitPayment(payType);
-                if (split) {
-                    efectivoMonto += split.efectivo;
-                    yapeMonto += split.yape;
-                } else {
-                    const half = inc.total / 2;
-                    efectivoMonto += half;
-                    yapeMonto += half;
-                }
-            } else if (payType === 'Yape') {
-                yapeMonto += inc.total;
-            } else {
-                efectivoMonto += inc.total;
-            }
-        });
-
-        grandTotalBookings += count;
-        grandTotalCancha += cMonto;
-        grandTotalAcc += accMonto;
-        grandTotalSum += tMonto;
-        grandTotalEfectivo += efectivoMonto;
-        grandTotalYape += yapeMonto;
-
-        const c1 = summaryWs.getCell(sr, 1);
-        c1.value = monthLabel; c1.font = { name: 'Outfit', bold: true, size: 10, color: { argb: 'FF1E293B' } };
-        c1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
-        c1.alignment = { vertical: 'middle', horizontal: 'left' };
-        c1.border = { top:{style:'thin',color:{argb:'FFE2E8F0'}}, left:{style:'thin',color:{argb:'FFE2E8F0'}}, bottom:{style:'thin',color:{argb:'FFE2E8F0'}}, right:{style:'thin',color:{argb:'FFE2E8F0'}} };
-
-        styleValue(summaryWs.getCell(sr, 2), count, false);
-        styleValue(summaryWs.getCell(sr, 3), cMonto, true);
-        styleValue(summaryWs.getCell(sr, 4), accMonto, true);
-        styleValue(summaryWs.getCell(sr, 5), tMonto, true);
-        styleValue(summaryWs.getCell(sr, 6), efectivoMonto, true);
-        styleValue(summaryWs.getCell(sr, 7), yapeMonto, true);
-
-        // Apply row BG to values
-        for (let col = 2; col <= 7; col++) {
-            summaryWs.getCell(sr, col).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
-        }
-
-        summaryWs.getRow(sr).height = 20;
-        sr++;
-        rowIdx++;
-    }
-
-    // Totals Row for Months
-    const totalCell = summaryWs.getCell(sr, 1);
-    totalCell.value = "TOTAL GENERAL";
-    totalCell.font = { name: 'Outfit', bold: true, size: 10, color: { argb: 'FFFFFFFF' } };
-    totalCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F766E' } };
-    totalCell.alignment = { vertical: 'middle', horizontal: 'left' };
-    totalCell.border = { top:{style:'thin',color:{argb:'FF0F766E'}}, left:{style:'thin',color:{argb:'FF0F766E'}}, bottom:{style:'thin',color:{argb:'FF0F766E'}}, right:{style:'thin',color:{argb:'FF0F766E'}} };
-
-    styleValue(summaryWs.getCell(sr, 2), grandTotalBookings, false);
-    styleValue(summaryWs.getCell(sr, 3), grandTotalCancha, true);
-    styleValue(summaryWs.getCell(sr, 4), grandTotalAcc, true);
-    styleValue(summaryWs.getCell(sr, 5), grandTotalSum, true);
-    styleValue(summaryWs.getCell(sr, 6), grandTotalEfectivo, true);
-    styleValue(summaryWs.getCell(sr, 7), grandTotalYape, true);
-
-    for (let col = 2; col <= 7; col++) {
-        summaryWs.getCell(sr, col).font.color = { argb: 'FFFFFFFF' };
-        summaryWs.getCell(sr, col).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F766E' } };
-    }
-    summaryWs.getRow(sr).height = 22;
-    sr += 3; // Blank rows
-
-    const activeAll = allEvents.filter(e => e.sport !== 'Bloqueo');
-
-    // 2. Cancha breakdown Block (grouped by Month)
-    summaryWs.mergeCells(sr, 1, sr, 3);
-    styleTitle(summaryWs.getCell(sr, 1), "INGRESOS POR TIPO DE CANCHA Y MES", 'FF334155', 'FFFFFFFF', 11);
-    summaryWs.getRow(sr).height = 24; sr++;
-
-    const headersC = ["Cancha", "Reservas", "Monto Canchas"];
-    headersC.forEach((h, idx) => {
-        styleTitle(summaryWs.getCell(sr, idx + 1), h, 'FF1E293B', 'FFFFFFFF', 10);
-    });
-    summaryWs.getRow(sr).height = 22; sr++;
-
-    let cIdx = 0;
-    for (const [monthLabel, events] of Object.entries(groups)) {
-        // Subtle month separator row
-        const cellMonth = summaryWs.getCell(sr, 1);
-        cellMonth.value = `📅 ${monthLabel.toUpperCase()}`;
-        cellMonth.font = { name: 'Outfit', bold: true, size: 10, color: { argb: 'FF0F766E' } };
-        cellMonth.alignment = { vertical: 'middle', horizontal: 'left' };
-        
-        for (let col = 1; col <= 3; col++) {
-            const cell = summaryWs.getCell(sr, col);
-            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
+        function styleTitle(cell, text, bgArgb = 'FF0F766E', fgArgb = 'FFFFFFFF', fontSize = 12) {
+            cell.value = text;
+            cell.font = { name: 'Outfit', bold: true, size: fontSize, color: { argb: fgArgb } };
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bgArgb } };
+            cell.alignment = { vertical: 'middle', horizontal: 'center' };
             cell.border = {
                 top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
                 left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
@@ -3461,419 +3216,525 @@ async function exportAllDataToExcel() {
                 right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
             };
         }
-        summaryWs.getRow(sr).height = 22;
-        sr++;
+        function styleValue(cell, value, isMoney = false) {
+            cell.value = isMoney ? parseFloat(parseFloat(value).toFixed(2)) : value;
+            if (isMoney) cell.numFmt = '"S/. "#,##0.00';
+            cell.font = { name: 'Outfit', bold: true, size: 10, color: { argb: 'FF0F766E' } };
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFFFF' } };
+            cell.alignment = { vertical: 'middle', horizontal: isMoney ? 'right' : 'left' };
+            cell.border = {
+                top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+            };
+        }
 
-        const activeEvents = events.filter(e => e.sport !== 'Bloqueo');
-        const courtsMap = {
-            'Cancha Grande': { count: 0, income: 0 },
-            'Cancha Pequeña': { count: 0, income: 0 },
-            'Cancha de Vóley': { count: 0, income: 0 }
-        };
-        activeEvents.forEach(e => {
-            const cType = e.court || 'Cancha Grande';
-            const inc = getEventIncome(e);
-            if (courtsMap[cType]) {
-                courtsMap[cType].count++;
-                courtsMap[cType].income += inc.courtIncome;
+        function getMondayDateString(dateStr) {
+            const parts = dateStr.split('-');
+            if (parts.length < 3) return '9999-12-31';
+            const year = parseInt(parts[0]);
+            const month = parseInt(parts[1]) - 1;
+            const day = parseInt(parts[2]);
+            const d = new Date(year, month, day);
+            const dayOfWeek = d.getDay();
+            const mondayDiff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+            const mondayDate = new Date(d);
+            mondayDate.setDate(d.getDate() + mondayDiff);
+
+            const y = mondayDate.getFullYear();
+            const m = String(mondayDate.getMonth() + 1).padStart(2, '0');
+            const dd = String(mondayDate.getDate()).padStart(2, '0');
+            return `${y}-${m}-${dd}`;
+        }
+
+        function getWeekRangeString(dateStr) {
+            const parts = dateStr.split('-');
+            if (parts.length < 3) return 'Otros';
+            const year = parseInt(parts[0]);
+            const month = parseInt(parts[1]) - 1;
+            const day = parseInt(parts[2]);
+
+            const mondayDate = new Date(year, month, day);
+            const sundayDate = new Date(mondayDate);
+            sundayDate.setDate(mondayDate.getDate() + 6);
+
+            const formatOption = { day: 'numeric', month: 'long' };
+            const formatter = new Intl.DateTimeFormat('es-ES', formatOption);
+
+            const monStr = formatter.format(mondayDate);
+            const sunStr = formatter.format(sundayDate);
+
+            const capitalizeWords = str => str.replace(/(^\w|\s\w)/g, m => m.toUpperCase());
+
+            const monYear = mondayDate.getFullYear();
+            const sunYear = sundayDate.getFullYear();
+            const yearStr = monYear === sunYear ? ` ${monYear}` : ` ${monYear}/${sunYear}`;
+
+            return `Lunes ${capitalizeWords(monStr)} - Domingo ${capitalizeWords(sunStr)}${yearStr}`;
+        }
+
+        function getDailyLabel(dateStr) {
+            const parts = dateStr.split('-');
+            if (parts.length < 3) return dateStr;
+            const year = parseInt(parts[0]);
+            const month = parseInt(parts[1]) - 1;
+            const day = parseInt(parts[2]);
+            const d = new Date(year, month, day);
+
+            const formatOption = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+            const formatter = new Intl.DateTimeFormat('es-ES', formatOption);
+            const formatted = formatter.format(d);
+
+            return formatted.replace(/(^\w|\s\w)/g, m => m.toUpperCase());
+        }
+
+        summaryWs.getColumn(1).width = 30;
+        summaryWs.getColumn(2).width = 20;
+        summaryWs.getColumn(3).width = 20;
+        summaryWs.getColumn(4).width = 20;
+        summaryWs.getColumn(5).width = 20;
+        summaryWs.getColumn(6).width = 20;
+        summaryWs.getColumn(7).width = 20;
+
+        let sr = 1;
+        const monthColorsS = ['FFFFFFFF', 'FFF8FAFC'];
+
+        // Title Block
+        summaryWs.mergeCells(sr, 1, sr, 7);
+        const mainTitleCell = summaryWs.getCell(sr, 1);
+        styleTitle(mainTitleCell, "REPORTE GENERAL DE RESERVAS Y ESTADÍSTICAS - POLIDEPORTIVO", 'FF0F766E', 'FFFFFFFF', 14);
+        summaryWs.getRow(sr).height = 40;
+        sr += 2; // Blank row
+
+        // Group events by Month
+        const groups = {};
+        allEvents.forEach(e => {
+            if (!e.date) return;
+            const dateParts = e.date.split('-');
+            if (dateParts.length < 2) return;
+            const year = dateParts[0];
+            const monthIndex = parseInt(dateParts[1]) - 1;
+            const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+            const monthName = months[monthIndex] || 'Otros';
+            const label = `${monthName} ${year}`;
+            if (!groups[label]) {
+                groups[label] = [];
             }
+            groups[label].push(e);
         });
 
-        [['Cancha Grande', courtsMap['Cancha Grande'].count, courtsMap['Cancha Grande'].income],
-         ['Cancha Pequeña', courtsMap['Cancha Pequeña'].count, courtsMap['Cancha Pequeña'].income],
-         ['Cancha de Vóley', courtsMap['Cancha de Vóley'].count, courtsMap['Cancha de Vóley'].income]].forEach(([courtLabel, cnt, inc], rIdx) => {
-            const bg = monthColorsS[rIdx % 2];
-            
-            const cellCourt = summaryWs.getCell(sr, 1);
-            cellCourt.value = courtLabel;
-            cellCourt.font = { name: 'Outfit', bold: true, size: 10, color: { argb: 'FF1E293B' } };
-            cellCourt.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
-            cellCourt.alignment = { vertical: 'middle', horizontal: 'left' };
-            cellCourt.border = { 
-                top: { style: 'thin', color: { argb: 'FFE2E8F0' } }, 
-                left: { style: 'thin', color: { argb: 'FFE2E8F0' } }, 
-                bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } }, 
-                right: { style: 'thin', color: { argb: 'FFE2E8F0' } } 
-            };
+        // 1. Month Summary Block
+        summaryWs.mergeCells(sr, 1, sr, 7);
+        styleTitle(summaryWs.getCell(sr, 1), "INGRESOS Y USOS MENSUALES", 'FF334155', 'FFFFFFFF', 11);
+        summaryWs.getRow(sr).height = 24; sr++;
 
-            styleValue(summaryWs.getCell(sr, 2), cnt, false);
-            styleValue(summaryWs.getCell(sr, 3), inc, true);
+        const headersM = ["Mes / Período", "Reservas", "Monto Cancha", "Monto Accesorios", "Total Facturado", "Efectivo", "Yape"];
+        headersM.forEach((h, idx) => {
+            styleTitle(summaryWs.getCell(sr, idx + 1), h, 'FF1E293B', 'FFFFFFFF', 10);
+        });
+        summaryWs.getRow(sr).height = 22; sr++;
 
-            for (let col = 2; col <= 3; col++) {
+        let grandTotalBookings = 0;
+        let grandTotalCancha = 0;
+        let grandTotalAcc = 0;
+        let grandTotalSum = 0;
+        let grandTotalEfectivo = 0;
+        let grandTotalYape = 0;
+
+        let rowIdx = 0;
+        for (const [monthLabel, events] of Object.entries(groups)) {
+            const bg = monthColorsS[rowIdx % 2];
+            const activeEvents = events.filter(e => e.sport !== 'Bloqueo');
+
+            let count = activeEvents.length;
+            let cMonto = 0;
+            let accMonto = 0;
+            let tMonto = 0;
+            let efectivoMonto = 0;
+            let yapeMonto = 0;
+
+            activeEvents.forEach(e => {
+                const inc = getEventIncome(e);
+                cMonto += inc.courtIncome;
+                accMonto += inc.pelotaIncome + inc.chalecoIncome;
+                tMonto += inc.total;
+
+                const payType = e.tipo_pago || 'Efectivo';
+                if (payType.startsWith('Dividido')) {
+                    const split = parseSplitPayment(payType);
+                    if (split) {
+                        efectivoMonto += split.efectivo;
+                        yapeMonto += split.yape;
+                    } else {
+                        const half = inc.total / 2;
+                        efectivoMonto += half;
+                        yapeMonto += half;
+                    }
+                } else if (payType === 'Yape') {
+                    yapeMonto += inc.total;
+                } else {
+                    efectivoMonto += inc.total;
+                }
+            });
+
+            grandTotalBookings += count;
+            grandTotalCancha += cMonto;
+            grandTotalAcc += accMonto;
+            grandTotalSum += tMonto;
+            grandTotalEfectivo += efectivoMonto;
+            grandTotalYape += yapeMonto;
+
+            const c1 = summaryWs.getCell(sr, 1);
+            c1.value = monthLabel; c1.font = { name: 'Outfit', bold: true, size: 10, color: { argb: 'FF1E293B' } };
+            c1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
+            c1.alignment = { vertical: 'middle', horizontal: 'left' };
+            c1.border = { top: { style: 'thin', color: { argb: 'FFE2E8F0' } }, left: { style: 'thin', color: { argb: 'FFE2E8F0' } }, bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } }, right: { style: 'thin', color: { argb: 'FFE2E8F0' } } };
+
+            styleValue(summaryWs.getCell(sr, 2), count, false);
+            styleValue(summaryWs.getCell(sr, 3), cMonto, true);
+            styleValue(summaryWs.getCell(sr, 4), accMonto, true);
+            styleValue(summaryWs.getCell(sr, 5), tMonto, true);
+            styleValue(summaryWs.getCell(sr, 6), efectivoMonto, true);
+            styleValue(summaryWs.getCell(sr, 7), yapeMonto, true);
+
+            // Apply row BG to values
+            for (let col = 2; col <= 7; col++) {
                 summaryWs.getCell(sr, col).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
             }
 
             summaryWs.getRow(sr).height = 20;
             sr++;
+            rowIdx++;
+        }
+
+        // Totals Row for Months
+        const totalCell = summaryWs.getCell(sr, 1);
+        totalCell.value = "TOTAL GENERAL";
+        totalCell.font = { name: 'Outfit', bold: true, size: 10, color: { argb: 'FFFFFFFF' } };
+        totalCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F766E' } };
+        totalCell.alignment = { vertical: 'middle', horizontal: 'left' };
+        totalCell.border = { top: { style: 'thin', color: { argb: 'FF0F766E' } }, left: { style: 'thin', color: { argb: 'FF0F766E' } }, bottom: { style: 'thin', color: { argb: 'FF0F766E' } }, right: { style: 'thin', color: { argb: 'FF0F766E' } } };
+
+        styleValue(summaryWs.getCell(sr, 2), grandTotalBookings, false);
+        styleValue(summaryWs.getCell(sr, 3), grandTotalCancha, true);
+        styleValue(summaryWs.getCell(sr, 4), grandTotalAcc, true);
+        styleValue(summaryWs.getCell(sr, 5), grandTotalSum, true);
+        styleValue(summaryWs.getCell(sr, 6), grandTotalEfectivo, true);
+        styleValue(summaryWs.getCell(sr, 7), grandTotalYape, true);
+
+        for (let col = 2; col <= 7; col++) {
+            summaryWs.getCell(sr, col).font.color = { argb: 'FFFFFFFF' };
+            summaryWs.getCell(sr, col).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F766E' } };
+        }
+        summaryWs.getRow(sr).height = 22;
+        sr += 3; // Blank rows
+
+        const activeAll = allEvents.filter(e => e.sport !== 'Bloqueo');
+
+        // 2. Cancha breakdown Block (grouped by Month)
+        summaryWs.mergeCells(sr, 1, sr, 3);
+        styleTitle(summaryWs.getCell(sr, 1), "INGRESOS POR TIPO DE CANCHA Y MES", 'FF334155', 'FFFFFFFF', 11);
+        summaryWs.getRow(sr).height = 24; sr++;
+
+        const headersC = ["Cancha", "Reservas", "Monto Canchas"];
+        headersC.forEach((h, idx) => {
+            styleTitle(summaryWs.getCell(sr, idx + 1), h, 'FF1E293B', 'FFFFFFFF', 10);
+        });
+        summaryWs.getRow(sr).height = 22; sr++;
+
+        let cIdx = 0;
+        for (const [monthLabel, events] of Object.entries(groups)) {
+            // Subtle month separator row
+            const cellMonth = summaryWs.getCell(sr, 1);
+            cellMonth.value = `📅 ${monthLabel.toUpperCase()}`;
+            cellMonth.font = { name: 'Outfit', bold: true, size: 10, color: { argb: 'FF0F766E' } };
+            cellMonth.alignment = { vertical: 'middle', horizontal: 'left' };
+
+            for (let col = 1; col <= 3; col++) {
+                const cell = summaryWs.getCell(sr, col);
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
+                cell.border = {
+                    top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                    left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                    bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                    right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+                };
+            }
+            summaryWs.getRow(sr).height = 22;
+            sr++;
+
+            const activeEvents = events.filter(e => e.sport !== 'Bloqueo');
+            const courtsMap = {
+                'Cancha Grande': { count: 0, income: 0 },
+                'Cancha Pequeña': { count: 0, income: 0 },
+                'Cancha de Vóley': { count: 0, income: 0 }
+            };
+            activeEvents.forEach(e => {
+                const cType = e.court || 'Cancha Grande';
+                const inc = getEventIncome(e);
+                if (courtsMap[cType]) {
+                    courtsMap[cType].count++;
+                    courtsMap[cType].income += inc.courtIncome;
+                }
+            });
+
+            [['Cancha Grande', courtsMap['Cancha Grande'].count, courtsMap['Cancha Grande'].income],
+            ['Cancha Pequeña', courtsMap['Cancha Pequeña'].count, courtsMap['Cancha Pequeña'].income],
+            ['Cancha de Vóley', courtsMap['Cancha de Vóley'].count, courtsMap['Cancha de Vóley'].income]].forEach(([courtLabel, cnt, inc], rIdx) => {
+                const bg = monthColorsS[rIdx % 2];
+
+                const cellCourt = summaryWs.getCell(sr, 1);
+                cellCourt.value = courtLabel;
+                cellCourt.font = { name: 'Outfit', bold: true, size: 10, color: { argb: 'FF1E293B' } };
+                cellCourt.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
+                cellCourt.alignment = { vertical: 'middle', horizontal: 'left' };
+                cellCourt.border = {
+                    top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                    left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                    bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                    right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+                };
+
+                styleValue(summaryWs.getCell(sr, 2), cnt, false);
+                styleValue(summaryWs.getCell(sr, 3), inc, true);
+
+                for (let col = 2; col <= 3; col++) {
+                    summaryWs.getCell(sr, col).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
+                }
+
+                summaryWs.getRow(sr).height = 20;
+                sr++;
+            });
+
+            cIdx++;
+        }
+        sr += 2;
+
+        // 3. Accessories breakdown Block (grouped by Month)
+        summaryWs.mergeCells(sr, 1, sr, 3);
+        styleTitle(summaryWs.getCell(sr, 1), "ADICIONALES Y ACCESORIOS POR MES", 'FF334155', 'FFFFFFFF', 11);
+        summaryWs.getRow(sr).height = 24; sr++;
+
+        const headersA = ["Accesorio", "Usos", "Monto Alquiler"];
+        headersA.forEach((h, idx) => {
+            styleTitle(summaryWs.getCell(sr, idx + 1), h, 'FF1E293B', 'FFFFFFFF', 10);
+        });
+        summaryWs.getRow(sr).height = 22; sr++;
+
+        let aIdx = 0;
+        for (const [monthLabel, events] of Object.entries(groups)) {
+            // Subtle month separator row
+            const cellMonth = summaryWs.getCell(sr, 1);
+            cellMonth.value = `📅 ${monthLabel.toUpperCase()}`;
+            cellMonth.font = { name: 'Outfit', bold: true, size: 10, color: { argb: 'FF0F766E' } };
+            cellMonth.alignment = { vertical: 'middle', horizontal: 'left' };
+
+            for (let col = 1; col <= 3; col++) {
+                const cell = summaryWs.getCell(sr, col);
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
+                cell.border = {
+                    top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                    left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                    bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                    right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+                };
+            }
+            summaryWs.getRow(sr).height = 22;
+            sr++;
+
+            let pelotaCount = 0;
+            let pelotaInc = 0;
+            let chalecoCount = 0;
+            let chalecoInc = 0;
+
+            const activeEvents = events.filter(e => e.sport !== 'Bloqueo');
+            activeEvents.forEach(e => {
+                const inc = getEventIncome(e);
+                if (e.pelota === true || e.pelota === 'true') {
+                    pelotaCount++;
+                    pelotaInc += inc.pelotaIncome;
+                }
+                if (e.chaleco === true || e.chaleco === 'true') {
+                    chalecoCount++;
+                    chalecoInc += inc.chalecoIncome;
+                }
+            });
+
+            [['⚽ Pelota', pelotaCount, pelotaInc], ['🎽 Chalecos', chalecoCount, chalecoInc]].forEach(([label, cnt, inc], rIdx) => {
+                const bg = monthColorsS[rIdx % 2];
+                const c1 = summaryWs.getCell(sr, 1);
+                c1.value = label; c1.font = { name: 'Outfit', bold: true, size: 10, color: { argb: 'FF1E293B' } };
+                c1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
+                c1.alignment = { vertical: 'middle', horizontal: 'left' };
+                c1.border = { top: { style: 'thin', color: { argb: 'FFE2E8F0' } }, left: { style: 'thin', color: { argb: 'FFE2E8F0' } }, bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } }, right: { style: 'thin', color: { argb: 'FFE2E8F0' } } };
+
+                styleValue(summaryWs.getCell(sr, 2), cnt, false);
+                styleValue(summaryWs.getCell(sr, 3), inc, true);
+
+                summaryWs.getCell(sr, 2).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
+                summaryWs.getCell(sr, 3).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
+
+                summaryWs.getRow(sr).height = 20;
+                sr++;
+            });
+
+            aIdx++;
+        }
+
+        // 4. Weekly Summary Block (Current Week Only)
+        sr += 3;
+        summaryWs.mergeCells(sr, 1, sr, 7);
+        styleTitle(summaryWs.getCell(sr, 1), "INGRESOS Y USOS DE LA SEMANA ACTUAL", 'FF334155', 'FFFFFFFF', 11);
+        summaryWs.getRow(sr).height = 24; sr++;
+
+        const headersW = ["Semana / Período", "Reservas", "Monto Cancha", "Monto Accesorios", "Total Facturado", "Efectivo", "Yape"];
+        headersW.forEach((h, idx) => {
+            styleTitle(summaryWs.getCell(sr, idx + 1), h, 'FF1E293B', 'FFFFFFFF', 10);
+        });
+        summaryWs.getRow(sr).height = 22; sr++;
+
+        // Get current week's Monday
+        const todayObj = new Date();
+        const currentY = todayObj.getFullYear();
+        const currentM = String(todayObj.getMonth() + 1).padStart(2, '0');
+        const currentD = String(todayObj.getDate()).padStart(2, '0');
+        const todayStr = `${currentY}-${currentM}-${currentD}`;
+        const currentMondayStr = getMondayDateString(todayStr);
+        const currentWeekLabel = getWeekRangeString(currentMondayStr);
+
+        const currentWeekEvents = activeAll.filter(e => e.date && getMondayDateString(e.date) === currentMondayStr);
+
+        let wCount = currentWeekEvents.length;
+        let wCancha = 0;
+        let wAcc = 0;
+        let wSum = 0;
+        let wEfectivo = 0;
+        let wYape = 0;
+
+        currentWeekEvents.forEach(e => {
+            const inc = getEventIncome(e);
+            wCancha += inc.courtIncome;
+            wAcc += inc.pelotaIncome + inc.chalecoIncome;
+            wSum += inc.total;
+
+            const payType = e.tipo_pago || 'Efectivo';
+            if (payType.startsWith('Dividido')) {
+                const split = parseSplitPayment(payType);
+                if (split) {
+                    wEfectivo += split.efectivo;
+                    wYape += split.yape;
+                } else {
+                    const half = inc.total / 2;
+                    wEfectivo += half;
+                    wYape += half;
+                }
+            } else if (payType === 'Yape') {
+                wYape += inc.total;
+            } else {
+                wEfectivo += inc.total;
+            }
         });
 
-        cIdx++;
-    }
-    sr += 2;
+        const cw1 = summaryWs.getCell(sr, 1);
+        cw1.value = currentWeekLabel; cw1.font = { name: 'Outfit', bold: true, size: 10, color: { argb: 'FF1E293B' } };
+        cw1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFFFF' } };
+        cw1.alignment = { vertical: 'middle', horizontal: 'left' };
+        cw1.border = { top: { style: 'thin', color: { argb: 'FFE2E8F0' } }, left: { style: 'thin', color: { argb: 'FFE2E8F0' } }, bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } }, right: { style: 'thin', color: { argb: 'FFE2E8F0' } } };
 
-    // 3. Accessories breakdown Block (grouped by Month)
-    summaryWs.mergeCells(sr, 1, sr, 3);
-    styleTitle(summaryWs.getCell(sr, 1), "ADICIONALES Y ACCESORIOS POR MES", 'FF334155', 'FFFFFFFF', 11);
-    summaryWs.getRow(sr).height = 24; sr++;
+        styleValue(summaryWs.getCell(sr, 2), wCount, false);
+        styleValue(summaryWs.getCell(sr, 3), wCancha, true);
+        styleValue(summaryWs.getCell(sr, 4), wAcc, true);
+        styleValue(summaryWs.getCell(sr, 5), wSum, true);
+        styleValue(summaryWs.getCell(sr, 6), wEfectivo, true);
+        styleValue(summaryWs.getCell(sr, 7), wYape, true);
 
-    const headersA = ["Accesorio", "Usos", "Monto Alquiler"];
-    headersA.forEach((h, idx) => {
-        styleTitle(summaryWs.getCell(sr, idx + 1), h, 'FF1E293B', 'FFFFFFFF', 10);
-    });
-    summaryWs.getRow(sr).height = 22; sr++;
-
-    let aIdx = 0;
-    for (const [monthLabel, events] of Object.entries(groups)) {
-        // Subtle month separator row
-        const cellMonth = summaryWs.getCell(sr, 1);
-        cellMonth.value = `📅 ${monthLabel.toUpperCase()}`;
-        cellMonth.font = { name: 'Outfit', bold: true, size: 10, color: { argb: 'FF0F766E' } };
-        cellMonth.alignment = { vertical: 'middle', horizontal: 'left' };
-        
-        for (let col = 1; col <= 3; col++) {
-            const cell = summaryWs.getCell(sr, col);
-            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
-            cell.border = {
-                top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
-                left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
-                bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
-                right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
-            };
-        }
         summaryWs.getRow(sr).height = 22;
         sr++;
 
-        let pelotaCount = 0;
-        let pelotaInc = 0;
-        let chalecoCount = 0;
-        let chalecoInc = 0;
+        // 5. Daily Summary Block (Today Only)
+        sr += 3;
+        summaryWs.mergeCells(sr, 1, sr, 7);
+        styleTitle(summaryWs.getCell(sr, 1), "INGRESOS Y USOS DEL DÍA DE HOY (DÍA DE LA DESCARGA)", 'FF334155', 'FFFFFFFF', 11);
+        summaryWs.getRow(sr).height = 24; sr++;
 
-        const activeEvents = events.filter(e => e.sport !== 'Bloqueo');
-        activeEvents.forEach(e => {
+        const headersD = ["Fecha / Día", "Reservas", "Monto Cancha", "Monto Accesorios", "Total Facturado", "Efectivo", "Yape"];
+        headersD.forEach((h, idx) => {
+            styleTitle(summaryWs.getCell(sr, idx + 1), h, 'FF1E293B', 'FFFFFFFF', 10);
+        });
+        summaryWs.getRow(sr).height = 22; sr++;
+
+        const todayLabel = getDailyLabel(todayStr);
+        const todayEvents = activeAll.filter(e => e.date === todayStr);
+
+        let dCount = todayEvents.length;
+        let dCancha = 0;
+        let dAcc = 0;
+        let dSum = 0;
+        let dEfectivo = 0;
+        let dYape = 0;
+
+        todayEvents.forEach(e => {
             const inc = getEventIncome(e);
-            if (e.pelota === true || e.pelota === 'true') {
-                pelotaCount++;
-                pelotaInc += inc.pelotaIncome;
-            }
-            if (e.chaleco === true || e.chaleco === 'true') {
-                chalecoCount++;
-                chalecoInc += inc.chalecoIncome;
-            }
-        });
+            dCancha += inc.courtIncome;
+            dAcc += inc.pelotaIncome + inc.chalecoIncome;
+            dSum += inc.total;
 
-        [['⚽ Pelota', pelotaCount, pelotaInc], ['🎽 Chalecos', chalecoCount, chalecoInc]].forEach(([label, cnt, inc], rIdx) => {
-            const bg = monthColorsS[rIdx % 2];
-            const c1 = summaryWs.getCell(sr, 1);
-            c1.value = label; c1.font = { name: 'Outfit', bold: true, size: 10, color: { argb: 'FF1E293B' } };
-            c1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
-            c1.alignment = { vertical: 'middle', horizontal: 'left' };
-            c1.border = { top:{style:'thin',color:{argb:'FFE2E8F0'}}, left:{style:'thin',color:{argb:'FFE2E8F0'}}, bottom:{style:'thin',color:{argb:'FFE2E8F0'}}, right:{style:'thin',color:{argb:'FFE2E8F0'}} };
-            
-            styleValue(summaryWs.getCell(sr, 2), cnt, false);
-            styleValue(summaryWs.getCell(sr, 3), inc, true);
-            
-            summaryWs.getCell(sr, 2).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
-            summaryWs.getCell(sr, 3).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
-
-            summaryWs.getRow(sr).height = 20;
-            sr++;
-        });
-
-        aIdx++;
-    }
-
-    // 4. Weekly Summary Block (Current Week Only)
-    sr += 3;
-    summaryWs.mergeCells(sr, 1, sr, 7);
-    styleTitle(summaryWs.getCell(sr, 1), "INGRESOS Y USOS DE LA SEMANA ACTUAL", 'FF334155', 'FFFFFFFF', 11);
-    summaryWs.getRow(sr).height = 24; sr++;
-
-    const headersW = ["Semana / Período", "Reservas", "Monto Cancha", "Monto Accesorios", "Total Facturado", "Efectivo", "Yape"];
-    headersW.forEach((h, idx) => {
-        styleTitle(summaryWs.getCell(sr, idx + 1), h, 'FF1E293B', 'FFFFFFFF', 10);
-    });
-    summaryWs.getRow(sr).height = 22; sr++;
-
-    // Get current week's Monday
-    const todayObj = new Date();
-    const currentY = todayObj.getFullYear();
-    const currentM = String(todayObj.getMonth() + 1).padStart(2, '0');
-    const currentD = String(todayObj.getDate()).padStart(2, '0');
-    const todayStr = `${currentY}-${currentM}-${currentD}`;
-    const currentMondayStr = getMondayDateString(todayStr);
-    const currentWeekLabel = getWeekRangeString(currentMondayStr);
-
-    const currentWeekEvents = activeAll.filter(e => e.date && getMondayDateString(e.date) === currentMondayStr);
-
-    let wCount = currentWeekEvents.length;
-    let wCancha = 0;
-    let wAcc = 0;
-    let wSum = 0;
-    let wEfectivo = 0;
-    let wYape = 0;
-
-    currentWeekEvents.forEach(e => {
-        const inc = getEventIncome(e);
-        wCancha += inc.courtIncome;
-        wAcc += inc.pelotaIncome + inc.chalecoIncome;
-        wSum += inc.total;
-
-        const payType = e.tipo_pago || 'Efectivo';
-        if (payType.startsWith('Dividido')) {
-            const split = parseSplitPayment(payType);
-            if (split) {
-                wEfectivo += split.efectivo;
-                wYape += split.yape;
+            const payType = e.tipo_pago || 'Efectivo';
+            if (payType.startsWith('Dividido')) {
+                const split = parseSplitPayment(payType);
+                if (split) {
+                    dEfectivo += split.efectivo;
+                    dYape += split.yape;
+                } else {
+                    const half = inc.total / 2;
+                    dEfectivo += half;
+                    dYape += half;
+                }
+            } else if (payType === 'Yape') {
+                dYape += inc.total;
             } else {
-                const half = inc.total / 2;
-                wEfectivo += half;
-                wYape += half;
+                dEfectivo += inc.total;
             }
-        } else if (payType === 'Yape') {
-            wYape += inc.total;
-        } else {
-            wEfectivo += inc.total;
-        }
-    });
-
-    const cw1 = summaryWs.getCell(sr, 1);
-    cw1.value = currentWeekLabel; cw1.font = { name: 'Outfit', bold: true, size: 10, color: { argb: 'FF1E293B' } };
-    cw1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFFFF' } };
-    cw1.alignment = { vertical: 'middle', horizontal: 'left' };
-    cw1.border = { top:{style:'thin',color:{argb:'FFE2E8F0'}}, left:{style:'thin',color:{argb:'FFE2E8F0'}}, bottom:{style:'thin',color:{argb:'FFE2E8F0'}}, right:{style:'thin',color:{argb:'FFE2E8F0'}} };
-
-    styleValue(summaryWs.getCell(sr, 2), wCount, false);
-    styleValue(summaryWs.getCell(sr, 3), wCancha, true);
-    styleValue(summaryWs.getCell(sr, 4), wAcc, true);
-    styleValue(summaryWs.getCell(sr, 5), wSum, true);
-    styleValue(summaryWs.getCell(sr, 6), wEfectivo, true);
-    styleValue(summaryWs.getCell(sr, 7), wYape, true);
-
-    summaryWs.getRow(sr).height = 22;
-    sr++;
-
-    // 5. Daily Summary Block (Today Only)
-    sr += 3;
-    summaryWs.mergeCells(sr, 1, sr, 7);
-    styleTitle(summaryWs.getCell(sr, 1), "INGRESOS Y USOS DEL DÍA DE HOY (DÍA DE LA DESCARGA)", 'FF334155', 'FFFFFFFF', 11);
-    summaryWs.getRow(sr).height = 24; sr++;
-
-    const headersD = ["Fecha / Día", "Reservas", "Monto Cancha", "Monto Accesorios", "Total Facturado", "Efectivo", "Yape"];
-    headersD.forEach((h, idx) => {
-        styleTitle(summaryWs.getCell(sr, idx + 1), h, 'FF1E293B', 'FFFFFFFF', 10);
-    });
-    summaryWs.getRow(sr).height = 22; sr++;
-
-    const todayLabel = getDailyLabel(todayStr);
-    const todayEvents = activeAll.filter(e => e.date === todayStr);
-
-    let dCount = todayEvents.length;
-    let dCancha = 0;
-    let dAcc = 0;
-    let dSum = 0;
-    let dEfectivo = 0;
-    let dYape = 0;
-
-    todayEvents.forEach(e => {
-        const inc = getEventIncome(e);
-        dCancha += inc.courtIncome;
-        dAcc += inc.pelotaIncome + inc.chalecoIncome;
-        dSum += inc.total;
-
-        const payType = e.tipo_pago || 'Efectivo';
-        if (payType.startsWith('Dividido')) {
-            const split = parseSplitPayment(payType);
-            if (split) {
-                dEfectivo += split.efectivo;
-                dYape += split.yape;
-            } else {
-                const half = inc.total / 2;
-                dEfectivo += half;
-                dYape += half;
-            }
-        } else if (payType === 'Yape') {
-            dYape += inc.total;
-        } else {
-            dEfectivo += inc.total;
-        }
-    });
-
-    const cd1 = summaryWs.getCell(sr, 1);
-    cd1.value = todayLabel; cd1.font = { name: 'Outfit', bold: true, size: 10, color: { argb: 'FF1E293B' } };
-    cd1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFFFF' } };
-    cd1.alignment = { vertical: 'middle', horizontal: 'left' };
-    cd1.border = { top:{style:'thin',color:{argb:'FFE2E8F0'}}, left:{style:'thin',color:{argb:'FFE2E8F0'}}, bottom:{style:'thin',color:{argb:'FFE2E8F0'}}, right:{style:'thin',color:{argb:'FFE2E8F0'}} };
-
-    styleValue(summaryWs.getCell(sr, 2), dCount, false);
-    styleValue(summaryWs.getCell(sr, 3), dCancha, true);
-    styleValue(summaryWs.getCell(sr, 4), dAcc, true);
-    styleValue(summaryWs.getCell(sr, 5), dSum, true);
-    styleValue(summaryWs.getCell(sr, 6), dEfectivo, true);
-    styleValue(summaryWs.getCell(sr, 7), dYape, true);
-
-    summaryWs.getRow(sr).height = 22;
-    sr++;
-
-    // ─── CLIENTS WORKSHEET ─────────────────────────────────────────
-    const clientsWs = workbook.addWorksheet('👥 CLIENTES', { properties: { tabColor: { argb: 'FF10B981' } } });
-    clientsWs.views = [{ showGridLines: true }];
-
-    const clientColsDef = [
-        { header: 'Nombre del Cliente', key: 'nombre', width: 35 },
-        { header: 'DNI', key: 'dni', width: 16 },
-        { header: 'Asesores que lo atendieron', key: 'asesores', width: 35 },
-        { header: 'Medios de Contacto', key: 'medios', width: 30 },
-        { header: 'Veces Alquiladas', key: 'cantidad', width: 18 }
-    ];
-    clientsWs.columns = clientColsDef;
-
-    // Style client header row
-    const clientHeaderRow = clientsWs.getRow(1);
-    clientHeaderRow.height = 26;
-    clientHeaderRow.eachCell((cell) => {
-        cell.fill = {
-            type: 'pattern',
-            pattern: 'solid',
-            fgColor: { argb: 'FF10B981' }
-        };
-        cell.font = {
-            name: 'Outfit',
-            color: { argb: 'FFFFFFFF' },
-            bold: true,
-            size: 11
-        };
-        cell.alignment = {
-            vertical: 'middle',
-            horizontal: 'center',
-            wrapText: true
-        };
-        cell.border = {
-            top: { style: 'thin', color: { argb: 'FF1E293B' } },
-            left: { style: 'thin', color: { argb: 'FF1E293B' } },
-            bottom: { style: 'medium', color: { argb: 'FF1E293B' } },
-            right: { style: 'thin', color: { argb: 'FF1E293B' } }
-        };
-    });
-
-    // Group active bookings by DNI (or Name if empty)
-    const clientsMap = {};
-    const activeAllEvents = allEvents.filter(e => e.sport !== 'Bloqueo');
-    activeAllEvents.forEach(e => {
-        const name = capitalizeName(e.name || 'Desconocido');
-        const dni = (e.dni || '').trim();
-        const key = dni !== '' ? dni : `nodni_${name.toLowerCase()}`;
-
-        if (!clientsMap[key]) {
-            clientsMap[key] = {
-                name: name,
-                dni: dni,
-                advisors: new Set(),
-                medios: new Set(),
-                count: 0
-            };
-        }
-
-        if (name !== 'Desconocido') {
-            clientsMap[key].name = name;
-        }
-
-        const advisor = capitalizeName(e.notes || '');
-        if (advisor && advisor.toLowerCase() !== 'sin asesor') {
-            clientsMap[key].advisors.add(advisor);
-        }
-
-        const medio = (e.medio || '').trim();
-        if (medio) {
-            clientsMap[key].medios.add(medio);
-        }
-
-        clientsMap[key].count++;
-    });
-
-    const clientsList = Object.values(clientsMap).sort((a, b) => b.count - a.count);
-
-    let clientRowNo = 2;
-    clientsList.forEach(c => {
-        const advisorsStr = Array.from(c.advisors).join(', ') || 'Sin asesor';
-        const mediosStr = Array.from(c.medios).join(', ') || 'Ninguno';
-
-        const dataRow = clientsWs.addRow({
-            nombre: c.name,
-            dni: c.dni || 'Sin DNI',
-            asesores: advisorsStr,
-            medios: mediosStr,
-            cantidad: c.count
         });
 
-        dataRow.height = 20;
-        const isAlternate = (clientRowNo % 2 === 0);
-        dataRow.eachCell((cell, colNumber) => {
-            cell.font = { name: 'Outfit', size: 10 };
+        const cd1 = summaryWs.getCell(sr, 1);
+        cd1.value = todayLabel; cd1.font = { name: 'Outfit', bold: true, size: 10, color: { argb: 'FF1E293B' } };
+        cd1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFFFF' } };
+        cd1.alignment = { vertical: 'middle', horizontal: 'left' };
+        cd1.border = { top: { style: 'thin', color: { argb: 'FFE2E8F0' } }, left: { style: 'thin', color: { argb: 'FFE2E8F0' } }, bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } }, right: { style: 'thin', color: { argb: 'FFE2E8F0' } } };
+
+        styleValue(summaryWs.getCell(sr, 2), dCount, false);
+        styleValue(summaryWs.getCell(sr, 3), dCancha, true);
+        styleValue(summaryWs.getCell(sr, 4), dAcc, true);
+        styleValue(summaryWs.getCell(sr, 5), dSum, true);
+        styleValue(summaryWs.getCell(sr, 6), dEfectivo, true);
+        styleValue(summaryWs.getCell(sr, 7), dYape, true);
+
+        summaryWs.getRow(sr).height = 22;
+        sr++;
+
+        // ─── CLIENTS WORKSHEET ─────────────────────────────────────────
+        const clientsWs = workbook.addWorksheet('👥 CLIENTES', { properties: { tabColor: { argb: 'FF10B981' } } });
+        clientsWs.views = [{ showGridLines: true }];
+
+        const clientColsDef = [
+            { header: 'Nombre del Cliente', key: 'nombre', width: 35 },
+            { header: 'DNI', key: 'dni', width: 16 },
+            { header: 'Asesores que lo atendieron', key: 'asesores', width: 35 },
+            { header: 'Medios de Contacto', key: 'medios', width: 30 },
+            { header: 'Veces Alquiladas', key: 'cantidad', width: 18 }
+        ];
+        clientsWs.columns = clientColsDef;
+
+        // Style client header row
+        const clientHeaderRow = clientsWs.getRow(1);
+        clientHeaderRow.height = 26;
+        clientHeaderRow.eachCell((cell) => {
             cell.fill = {
                 type: 'pattern',
                 pattern: 'solid',
-                fgColor: { argb: isAlternate ? 'FFF8FAFC' : 'FFFFFFFF' }
-            };
-            cell.border = {
-                top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
-                left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
-                bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
-                right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
-            };
-
-            const colKey = clientColsDef[colNumber - 1].key;
-            if (colKey === 'dni' || colKey === 'cantidad') {
-                cell.alignment = { horizontal: 'center', vertical: 'middle' };
-            } else {
-                cell.alignment = { horizontal: 'left', vertical: 'middle' };
-            }
-        });
-
-        clientRowNo++;
-    });
-
-    clientsWs.autoFilter = `A1:E1`;
-
-    // ─── DATA WORKSEETS ───────────────────────────────────────────
-    const columnsDef = [
-        { header: 'Fecha', key: 'fecha', width: 14 },
-        { header: 'Hora Inicio', key: 'hora_inicio', width: 12 },
-        { header: 'Hora Fin', key: 'hora_fin', width: 12 },
-        { header: 'Cliente', key: 'cliente', width: 25 },
-        { header: 'DNI', key: 'dni', width: 12 },
-        { header: 'Cancha', key: 'cancha', width: 16 },
-        { header: 'Deporte', key: 'deporte', width: 12 },
-        { header: 'Asesor', key: 'asesor', width: 16 },
-        { header: 'Pelota', key: 'pelota', width: 10 },
-        { header: 'Chaleco', key: 'chaleco', width: 10 },
-        { header: 'Medio de Contacto', key: 'medio', width: 18 },
-        { header: 'Duracion (Horas)', key: 'duracion', width: 16 },
-        { header: 'Monto Cancha (S/.)', key: 'monto_cancha', width: 18 },
-        { header: 'Monto Pelota (S/.)', key: 'monto_pelota', width: 18 },
-        { header: 'Monto Chaleco (S/.)', key: 'monto_chaleco', width: 18 },
-        { header: 'Yape (S/.)', key: 'yape', width: 16 },
-        { header: 'Efectivo (S/.)', key: 'efectivo', width: 16 },
-        { header: 'Monto Total (S/.)', key: 'monto_total', width: 18 }
-    ];
-
-    for (const [monthLabel, eventsInMonth] of Object.entries(groups)) {
-        const worksheet = workbook.addWorksheet(monthLabel);
-        
-        // Grid lines visible
-        worksheet.views = [{ showGridLines: true }];
-        worksheet.columns = columnsDef;
-
-        // Auto filter
-        worksheet.autoFilter = `A1:${getColLetter(columnsDef.length)}1`;
-
-        // Style header row
-        const headerRow = worksheet.getRow(1);
-        headerRow.height = 26;
-        headerRow.eachCell((cell) => {
-            cell.fill = {
-                type: 'pattern',
-                pattern: 'solid',
-                fgColor: { argb: 'FF0F766E' }
+                fgColor: { argb: 'FF10B981' }
             };
             cell.font = {
                 name: 'Outfit',
@@ -3894,55 +3755,58 @@ async function exportAllDataToExcel() {
             };
         });
 
-        let rowNumber = 2;
-        eventsInMonth.forEach(e => {
-            if (e.sport === 'Bloqueo') return;
+        // Group active bookings by DNI (or Name if empty)
+        const clientsMap = {};
+        const activeAllEvents = allEvents.filter(e => e.sport !== 'Bloqueo');
+        activeAllEvents.forEach(e => {
+            const name = capitalizeName(e.name || 'Desconocido');
+            const dni = (e.dni || '').trim();
+            const key = dni !== '' ? dni : `nodni_${name.toLowerCase()}`;
 
-            const inc = getEventIncome(e);
-
-            const payType = e.tipo_pago || 'Efectivo';
-            let payYape = 0;
-            let payEfectivo = 0;
-            if (payType.startsWith('Dividido')) {
-                const split = parseSplitPayment(payType);
-                if (split) {
-                    payEfectivo = split.efectivo;
-                    payYape = split.yape;
-                } else {
-                    const half = inc.total / 2;
-                    payEfectivo = half;
-                    payYape = half;
-                }
-            } else if (payType === 'Yape') {
-                payYape = inc.total;
-            } else {
-                payEfectivo = inc.total;
+            if (!clientsMap[key]) {
+                clientsMap[key] = {
+                    name: name,
+                    dni: dni,
+                    advisors: new Set(),
+                    medios: new Set(),
+                    count: 0
+                };
             }
 
-            const dataRow = worksheet.addRow({
-                fecha: e.date || '',
-                hora_inicio: e.start_time || '',
-                hora_fin: e.end_time || '',
-                cliente: capitalizeName(e.name || ''),
-                dni: e.dni || '',
-                cancha: e.court || '',
-                deporte: e.sport || '',
-                asesor: capitalizeName(e.notes || ''),
-                pelota: (e.pelota === true || e.pelota === 'true') ? 'Sí' : 'No',
-                chaleco: (e.chaleco === true || e.chaleco === 'true') ? 'Sí' : 'No',
-                medio: e.medio || '',
-                duracion: parseFloat(inc.durationHours.toFixed(2)),
-                monto_cancha: parseFloat(inc.courtIncome.toFixed(2)),
-                monto_pelota: parseFloat(inc.pelotaIncome.toFixed(2)),
-                monto_chaleco: parseFloat(inc.chalecoIncome.toFixed(2)),
-                yape: payYape > 0 ? parseFloat(payYape.toFixed(2)) : '-',
-                efectivo: payEfectivo > 0 ? parseFloat(payEfectivo.toFixed(2)) : '-',
-                monto_total: parseFloat(inc.total.toFixed(2))
+            if (name !== 'Desconocido') {
+                clientsMap[key].name = name;
+            }
+
+            const advisor = capitalizeName(e.notes || '');
+            if (advisor && advisor.toLowerCase() !== 'sin asesor') {
+                clientsMap[key].advisors.add(advisor);
+            }
+
+            const medio = (e.medio || '').trim();
+            if (medio) {
+                clientsMap[key].medios.add(medio);
+            }
+
+            clientsMap[key].count++;
+        });
+
+        const clientsList = Object.values(clientsMap).sort((a, b) => b.count - a.count);
+
+        let clientRowNo = 2;
+        clientsList.forEach(c => {
+            const advisorsStr = Array.from(c.advisors).join(', ') || 'Sin asesor';
+            const mediosStr = Array.from(c.medios).join(', ') || 'Ninguno';
+
+            const dataRow = clientsWs.addRow({
+                nombre: c.name,
+                dni: c.dni || 'Sin DNI',
+                asesores: advisorsStr,
+                medios: mediosStr,
+                cantidad: c.count
             });
 
             dataRow.height = 20;
-
-            const isAlternate = (rowNumber % 2 === 0);
+            const isAlternate = (clientRowNo % 2 === 0);
             dataRow.eachCell((cell, colNumber) => {
                 cell.font = { name: 'Outfit', size: 10 };
                 cell.fill = {
@@ -3957,22 +3821,158 @@ async function exportAllDataToExcel() {
                     right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
                 };
 
-                const colKey = columnsDef[colNumber - 1].key;
-                if (['fecha', 'hora_inicio', 'hora_fin', 'dni', 'pelota', 'chaleco', 'medio'].includes(colKey)) {
+                const colKey = clientColsDef[colNumber - 1].key;
+                if (colKey === 'dni' || colKey === 'cantidad') {
                     cell.alignment = { horizontal: 'center', vertical: 'middle' };
-                } else if (['duracion', 'monto_cancha', 'monto_pelota', 'monto_chaleco', 'yape', 'efectivo', 'monto_total'].includes(colKey)) {
-                    cell.alignment = { horizontal: 'right', vertical: 'middle' };
-                    if (colKey !== 'duracion') {
-                        cell.numFmt = '"S/. "#,##0.00';
-                    }
                 } else {
                     cell.alignment = { horizontal: 'left', vertical: 'middle' };
                 }
             });
 
-            rowNumber++;
+            clientRowNo++;
         });
-    }
+
+        clientsWs.autoFilter = `A1:E1`;
+
+        // ─── DATA WORKSEETS ───────────────────────────────────────────
+        const columnsDef = [
+            { header: 'Fecha', key: 'fecha', width: 14 },
+            { header: 'Hora Inicio', key: 'hora_inicio', width: 12 },
+            { header: 'Hora Fin', key: 'hora_fin', width: 12 },
+            { header: 'Cliente', key: 'cliente', width: 25 },
+            { header: 'DNI', key: 'dni', width: 12 },
+            { header: 'Cancha', key: 'cancha', width: 16 },
+            { header: 'Deporte', key: 'deporte', width: 12 },
+            { header: 'Asesor', key: 'asesor', width: 16 },
+            { header: 'Pelota', key: 'pelota', width: 10 },
+            { header: 'Chaleco', key: 'chaleco', width: 10 },
+            { header: 'Medio de Contacto', key: 'medio', width: 18 },
+            { header: 'Duracion (Horas)', key: 'duracion', width: 16 },
+            { header: 'Monto Cancha (S/.)', key: 'monto_cancha', width: 18 },
+            { header: 'Monto Pelota (S/.)', key: 'monto_pelota', width: 18 },
+            { header: 'Monto Chaleco (S/.)', key: 'monto_chaleco', width: 18 },
+            { header: 'Yape (S/.)', key: 'yape', width: 16 },
+            { header: 'Efectivo (S/.)', key: 'efectivo', width: 16 },
+            { header: 'Monto Total (S/.)', key: 'monto_total', width: 18 }
+        ];
+
+        for (const [monthLabel, eventsInMonth] of Object.entries(groups)) {
+            const worksheet = workbook.addWorksheet(monthLabel);
+
+            // Grid lines visible
+            worksheet.views = [{ showGridLines: true }];
+            worksheet.columns = columnsDef;
+
+            // Auto filter
+            worksheet.autoFilter = `A1:${getColLetter(columnsDef.length)}1`;
+
+            // Style header row
+            const headerRow = worksheet.getRow(1);
+            headerRow.height = 26;
+            headerRow.eachCell((cell) => {
+                cell.fill = {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    fgColor: { argb: 'FF0F766E' }
+                };
+                cell.font = {
+                    name: 'Outfit',
+                    color: { argb: 'FFFFFFFF' },
+                    bold: true,
+                    size: 11
+                };
+                cell.alignment = {
+                    vertical: 'middle',
+                    horizontal: 'center',
+                    wrapText: true
+                };
+                cell.border = {
+                    top: { style: 'thin', color: { argb: 'FF1E293B' } },
+                    left: { style: 'thin', color: { argb: 'FF1E293B' } },
+                    bottom: { style: 'medium', color: { argb: 'FF1E293B' } },
+                    right: { style: 'thin', color: { argb: 'FF1E293B' } }
+                };
+            });
+
+            let rowNumber = 2;
+            eventsInMonth.forEach(e => {
+                if (e.sport === 'Bloqueo') return;
+
+                const inc = getEventIncome(e);
+
+                const payType = e.tipo_pago || 'Efectivo';
+                let payYape = 0;
+                let payEfectivo = 0;
+                if (payType.startsWith('Dividido')) {
+                    const split = parseSplitPayment(payType);
+                    if (split) {
+                        payEfectivo = split.efectivo;
+                        payYape = split.yape;
+                    } else {
+                        const half = inc.total / 2;
+                        payEfectivo = half;
+                        payYape = half;
+                    }
+                } else if (payType === 'Yape') {
+                    payYape = inc.total;
+                } else {
+                    payEfectivo = inc.total;
+                }
+
+                const dataRow = worksheet.addRow({
+                    fecha: e.date || '',
+                    hora_inicio: e.start_time || '',
+                    hora_fin: e.end_time || '',
+                    cliente: capitalizeName(e.name || ''),
+                    dni: e.dni || '',
+                    cancha: e.court || '',
+                    deporte: e.sport || '',
+                    asesor: capitalizeName(e.notes || ''),
+                    pelota: (e.pelota === true || e.pelota === 'true') ? 'Sí' : 'No',
+                    chaleco: (e.chaleco === true || e.chaleco === 'true') ? 'Sí' : 'No',
+                    medio: e.medio || '',
+                    duracion: parseFloat(inc.durationHours.toFixed(2)),
+                    monto_cancha: parseFloat(inc.courtIncome.toFixed(2)),
+                    monto_pelota: parseFloat(inc.pelotaIncome.toFixed(2)),
+                    monto_chaleco: parseFloat(inc.chalecoIncome.toFixed(2)),
+                    yape: payYape > 0 ? parseFloat(payYape.toFixed(2)) : '-',
+                    efectivo: payEfectivo > 0 ? parseFloat(payEfectivo.toFixed(2)) : '-',
+                    monto_total: parseFloat(inc.total.toFixed(2))
+                });
+
+                dataRow.height = 20;
+
+                const isAlternate = (rowNumber % 2 === 0);
+                dataRow.eachCell((cell, colNumber) => {
+                    cell.font = { name: 'Outfit', size: 10 };
+                    cell.fill = {
+                        type: 'pattern',
+                        pattern: 'solid',
+                        fgColor: { argb: isAlternate ? 'FFF8FAFC' : 'FFFFFFFF' }
+                    };
+                    cell.border = {
+                        top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                        left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                        bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                        right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+                    };
+
+                    const colKey = columnsDef[colNumber - 1].key;
+                    if (['fecha', 'hora_inicio', 'hora_fin', 'dni', 'pelota', 'chaleco', 'medio'].includes(colKey)) {
+                        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+                    } else if (['duracion', 'monto_cancha', 'monto_pelota', 'monto_chaleco', 'yape', 'efectivo', 'monto_total'].includes(colKey)) {
+                        cell.alignment = { horizontal: 'right', vertical: 'middle' };
+                        if (colKey !== 'duracion') {
+                            cell.numFmt = '"S/. "#,##0.00';
+                        }
+                    } else {
+                        cell.alignment = { horizontal: 'left', vertical: 'middle' };
+                    }
+                });
+
+                rowNumber++;
+            });
+        }
 
         workbook.xlsx.writeBuffer().then((buffer) => {
             const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
@@ -4399,15 +4399,15 @@ function updateStatsDashboard() {
 
     // Calculate range strings
     const monthsShort = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
-    
+
     // Today
     const formattedToday = `${currentDate.getDate()} ${monthsShort[currentDate.getMonth()]}`;
-    
+
     // Week (Monday of current business week to Sunday)
     const currentSunday = new Date(currentMonday);
     currentSunday.setDate(currentMonday.getDate() + 6);
     const weekRangeStr = `${currentMonday.getDate()} ${monthsShort[currentMonday.getMonth()]} al ${currentSunday.getDate()} ${monthsShort[currentSunday.getMonth()]}`;
-    
+
     // Month (1st of the month to currentDate/today)
     const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
     const monthRangeStr = `${firstDayOfMonth.getDate()} ${monthsShort[firstDayOfMonth.getMonth()]} al ${currentDate.getDate()} ${monthsShort[currentDate.getMonth()]}`;
