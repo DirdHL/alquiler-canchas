@@ -352,55 +352,109 @@ body {
 }
 
 /* =============================================================
-   Colores y Ocupación del Calendario por Tipo de Horario
+   Colores Originales por Bungalow (B1 a B6 y Bloqueo)
    ============================================================= */
 
-/* 1. Full Day (9:00 AM - 6:00 PM) - Ámbar / Naranja Cálido (Cuadro Completo) */
-.event-horario-fullday {
-    background: linear-gradient(135deg, #f59e0b, #d97706) !important;
-    border-color: #b45309 !important;
+/* Bungalow 1 - Verde Césped / Grass Green */
+.event-bungalow-1 {
+    background: linear-gradient(135deg, #43a047, #2e7d32) !important;
+    border-color: #1b5e20 !important;
+    color: #ffffff !important;
+}
+
+/* Bungalow 2 - Naranja Arcilla / Clay Orange */
+.event-bungalow-2 {
+    background: linear-gradient(135deg, #e67e22, #d35400) !important;
+    border-color: #a04000 !important;
+    color: #ffffff !important;
+}
+
+/* Bungalow 3 - Azul Cielo / Sky Blue */
+.event-bungalow-3 {
+    background: linear-gradient(135deg, #3498db, #1f618d) !important;
+    border-color: #154360 !important;
+    color: #ffffff !important;
+}
+
+/* Bungalow 4 - Rojo Hibisco / Hibiscus Red */
+.event-bungalow-4 {
+    background: linear-gradient(135deg, #e74c3c, #c0392b) !important;
+    border-color: #922b21 !important;
+    color: #ffffff !important;
+}
+
+/* Bungalow 5 - Púrpura Lavanda / Lavender Purple */
+.event-bungalow-5 {
+    background: linear-gradient(135deg, #af7ac5, #8e44ad) !important;
+    border-color: #6c3483 !important;
+    color: #ffffff !important;
+}
+
+/* Bungalow 6 - Turquesa Eucalipto / Eucalyptus Teal */
+.event-bungalow-6 {
+    background: linear-gradient(135deg, #1abc9c, #16a085) !important;
+    border-color: #0e6251 !important;
+    color: #ffffff !important;
+}
+
+/* Bloqueado / Mantenimiento - Gris Neutro */
+.event-bungalow-blocked {
+    background: linear-gradient(135deg, #78716c, #57534e) !important;
+    border-color: #44403c !important;
     color: #ffffff !important;
     margin-left: 0 !important;
     margin-right: 0 !important;
 }
 
-/* 2. Día y Noche (3:00 PM - 12:00 PM) - Verde Esmeralda (Mitad de Ingreso y Mitad de Salida) */
-.event-horario-dianoche {
-    background: linear-gradient(135deg, #10b981, #059669) !important;
-    border-color: #047857 !important;
-    color: #ffffff !important;
-}
+/* =============================================================
+   Reglas de Ocupación Visual (Medio Día vs Cuadro Completo)
+   ============================================================= */
 
-/* Día de Ingreso: Ocupa la 2da mitad del cuadro (a partir de las 3:00 PM) */
+/* Día y Noche: Ocupa la 2da mitad del cuadro en el día de ingreso (desde 3:00 PM) */
 .fc-daygrid-event.event-horario-dianoche.fc-event-start:not(.fc-event-end) {
     margin-left: 50% !important;
     border-top-left-radius: 4px !important;
     border-bottom-left-radius: 4px !important;
 }
 
-/* Día de Salida: Ocupa la 1ra mitad del cuadro (hasta las 12:00 PM) */
+/* Día y Noche: Ocupa la 1ra mitad del cuadro en el día de salida (hasta 12:00 PM) */
 .fc-daygrid-event.event-horario-dianoche.fc-event-end:not(.fc-event-start) {
     margin-right: 50% !important;
     border-top-right-radius: 4px !important;
     border-bottom-right-radius: 4px !important;
 }
 
-/* 3. Horario Extendido (9:00 AM - 6:00 PM día sgte) - Púrpura / Violeta (Cuadro Completo) */
-.event-horario-extendido {
-    background: linear-gradient(135deg, #8b5cf6, #6d28d9) !important;
-    border-color: #5b21b6 !important;
-    color: #ffffff !important;
+/* =============================================================
+   Indicador de Turno / Horario (Línea lateral al costado del evento)
+   ============================================================= */
+
+/* 1. Full Day - Línea lateral Amarilla / Ámbar Solar */
+.fc-daygrid-event.event-horario-fullday {
+    border-left: 5px solid #fbbf24 !important;
     margin-left: 0 !important;
     margin-right: 0 !important;
+    width: auto !important;
 }
 
-/* 4. Bloqueado / Fuera de Servicio - Gris Neutro (Cuadro Completo) */
-.event-bungalow-blocked {
-    background: linear-gradient(135deg, #64748b, #475569) !important;
-    border-color: #334155 !important;
-    color: #ffffff !important;
+/* 2. Día y Noche - Línea lateral Celeste Noche */
+.fc-daygrid-event.event-horario-dianoche {
+    border-left: 5px solid #38bdf8 !important;
+}
+
+/* 3. Horario Extendido - Línea lateral Fucsia / Violeta Neón */
+.fc-daygrid-event.event-horario-extendido {
+    border-left: 5px solid #e879f9 !important;
     margin-left: 0 !important;
     margin-right: 0 !important;
+    width: auto !important;
+}
+
+/* 4. Bloqueado - Línea lateral Gris */
+.fc-daygrid-event.event-bungalow-blocked {
+    border-left: 5px solid #94a3b8 !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    width: auto !important;
 }
 
 /* =============================================================
@@ -539,6 +593,23 @@ body {
 .bungalow-tab.active svg {
     stroke: #ffffff;
 }
+
+/* Indicadores de color en las pestañas */
+.tab-color-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+    flex-shrink: 0;
+    box-shadow: 0 0 4px rgba(0, 0, 0, 0.2);
+}
+
+.tab-color-dot.color-b1 { background: #2e7d32; }
+.tab-color-dot.color-b2 { background: #d35400; }
+.tab-color-dot.color-b3 { background: #1f618d; }
+.tab-color-dot.color-b4 { background: #c0392b; }
+.tab-color-dot.color-b5 { background: #8e44ad; }
+.tab-color-dot.color-b6 { background: #16a085; }
 
 @media (max-width: 900px) {
     .bungalow-tabs-container {

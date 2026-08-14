@@ -1491,15 +1491,19 @@ function initCalendar() {
                 }
 
                 const timeStr = `${startHour} a ${endHour}`;
+                let emoji = '☀️🌙';
+                if (b.horario === 'Full Day') emoji = '☀️';
+                else if (b.horario === 'Horario Extendido') emoji = '✨';
+
                 let title = "";
                 if (isBlocked) {
                     const reason = (b.nombre_cliente && !b.nombre_cliente.startsWith('🔒')) ? b.nombre_cliente : 'Bloqueado';
                     title = `🔒 B${b.bungalow_numero}: ${reason}`;
                 } else {
                     if (isSmallScreen) {
-                        title = `B${b.bungalow_numero}: ${b.nombre_cliente} (${timeStr})`;
+                        title = `${emoji} B${b.bungalow_numero}: ${b.nombre_cliente} (${timeStr})`;
                     } else {
-                        title = `B${b.bungalow_numero}: ${b.nombre_cliente} | ${b.horario} (${timeStr})`;
+                        title = `${emoji} B${b.bungalow_numero}: ${b.nombre_cliente} | ${b.horario} (${timeStr})`;
                     }
                 }
 
@@ -1509,16 +1513,16 @@ function initCalendar() {
                 checkOutDate.setDate(checkOutDate.getDate() + 1);
                 const exclusiveCheckOutStr = checkOutDate.toISOString().split('T')[0];
 
-                let eventClass = 'event-horario-dianoche';
-                if (isBlocked) {
-                    eventClass = 'event-bungalow-blocked';
-                } else if (b.horario === 'Full Day') {
-                    eventClass = 'event-horario-fullday';
+                let scheduleClass = 'event-horario-dianoche';
+                if (b.horario === 'Full Day') {
+                    scheduleClass = 'event-horario-fullday';
                 } else if (b.horario === 'Horario Extendido') {
-                    eventClass = 'event-horario-extendido';
-                } else {
-                    eventClass = 'event-horario-dianoche';
+                    scheduleClass = 'event-horario-extendido';
                 }
+
+                let eventClass = isBlocked
+                    ? 'event-bungalow-blocked'
+                    : `event-bungalow-${b.bungalow_numero} ${scheduleClass}`;
 
                 return {
                     id: b.id,
