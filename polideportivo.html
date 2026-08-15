@@ -187,37 +187,42 @@
                         <input type="date" id="checkCourtDate" class="form-control">
                     </div>
                     <div class="checker-field">
-                        <label for="checkCourtStartTime"><i data-lucide="clock"></i> Hora Inicio:</label>
-                        <select id="checkCourtStartTime" class="form-control">
-                            <!-- Populated dynamically by JS -->
-                        </select>
+                        <label><i data-lucide="clock"></i> Hora Inicio:</label>
+                        <div class="time-select-row">
+                            <div class="time-spinner-wrapper">
+                                <i data-lucide="clock" class="time-icon"></i>
+                                <input type="text" id="checkCourtStartHour" placeholder="HH" maxlength="2"
+                                    autocomplete="off" inputmode="numeric">
+                                <span class="time-separator">:</span>
+                                <input type="text" id="checkCourtStartMin" placeholder="MM" maxlength="2"
+                                    autocomplete="off" inputmode="numeric">
+                            </div>
+                            <div class="input-wrapper ampm-wrapper">
+                                <select id="checkCourtStartAmpm" class="ampm-select">
+                                    <option value="pm">pm</option>
+                                    <option value="am">am</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
                     <div class="checker-field">
-                        <label for="checkCourtEndTime"><i data-lucide="clock-3"></i> Hora Fin:</label>
-                        <select id="checkCourtEndTime" class="form-control">
-                            <!-- Populated dynamically by JS -->
-                        </select>
-                    </div>
-                    <div class="checker-field">
-                        <label for="checkCourtSport"><i data-lucide="trophy"></i> Deporte:</label>
-                        <select id="checkCourtSport" class="form-control">
-                            <option value="Fútbol" selected>⚽ Fútbol</option>
-                            <option value="Vóley">🏐 Vóley</option>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- Quick Hours Pills -->
-                <div class="checker-quick-hours">
-                    <span class="checker-quick-label"><i data-lucide="zap"></i> Horas punta:</span>
-                    <div class="checker-quick-hour-buttons">
-                        <button type="button" class="btn-hour-pill" data-time="17:00">5:00 PM</button>
-                        <button type="button" class="btn-hour-pill" data-time="18:00">6:00 PM</button>
-                        <button type="button" class="btn-hour-pill" data-time="19:00">7:00 PM</button>
-                        <button type="button" class="btn-hour-pill" data-time="20:00">8:00 PM</button>
-                        <button type="button" class="btn-hour-pill" data-time="21:00">9:00 PM</button>
-                        <button type="button" class="btn-hour-pill" data-time="22:00">10:00 PM</button>
-                        <button type="button" class="btn-hour-pill" data-time="23:00">11:00 PM</button>
+                        <label><i data-lucide="clock-3"></i> Hora Salida / Fin:</label>
+                        <div class="time-select-row">
+                            <div class="time-spinner-wrapper">
+                                <i data-lucide="clock-3" class="time-icon"></i>
+                                <input type="text" id="checkCourtEndHour" placeholder="HH" maxlength="2"
+                                    autocomplete="off" inputmode="numeric">
+                                <span class="time-separator">:</span>
+                                <input type="text" id="checkCourtEndMin" placeholder="MM" maxlength="2"
+                                    autocomplete="off" inputmode="numeric">
+                            </div>
+                            <div class="input-wrapper ampm-wrapper">
+                                <select id="checkCourtEndAmpm" class="ampm-select">
+                                    <option value="pm">pm</option>
+                                    <option value="am">am</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
                 </div>
 

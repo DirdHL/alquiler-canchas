@@ -2496,6 +2496,9 @@ function updateDailySummary() {
     }
 
     updateAvailabilityGrid();
+    if (typeof updateCourtAvailabilityChecker === 'function') {
+        updateCourtAvailabilityChecker();
+    }
 
     const summaryListContainer = document.getElementById('dailySummaryList');
     if (!summaryListContainer) return;
@@ -2617,102 +2620,154 @@ function calculateBookingIncome(params) {
 // Smart Availability Quick Checker Logic ("¿Qué canchas están disponibles?")
 // =============================================================
 
+function getCheckerCourtStartTime() {
+    const h = document.getElementById('checkCourtStartHour')?.value?.trim();
+    const m = document.getElementById('checkCourtStartMin')?.value?.trim();
+    const ampm = document.getElementById('checkCourtStartAmpm')?.value;
+    if (!h || !m || !ampm) return "";
+    let hour = parseInt(h, 10);
+    let min = parseInt(m, 10);
+    if (isNaN(hour) || isNaN(min)) return "";
+    if (ampm === 'pm' && hour < 12) hour += 12;
+    if (ampm === 'am' && hour === 12) hour = 0;
+    return `${String(hour).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+}
+
+function setCheckerCourtStartTime(val) {
+    if (!val) {
+        if (document.getElementById('checkCourtStartHour')) document.getElementById('checkCourtStartHour').value = "";
+        if (document.getElementById('checkCourtStartMin')) document.getElementById('checkCourtStartMin').value = "";
+        if (document.getElementById('checkCourtStartAmpm')) document.getElementById('checkCourtStartAmpm').value = "pm";
+        return;
+    }
+    const parts = val.split(':');
+    let h = parseInt(parts[0], 10);
+    let m = parts[1] || '00';
+    let ampm = h >= 12 ? 'pm' : 'am';
+    let h12 = h % 12;
+    if (h12 === 0) h12 = 12;
+    if (document.getElementById('checkCourtStartHour')) document.getElementById('checkCourtStartHour').value = String(h12);
+    if (document.getElementById('checkCourtStartMin')) document.getElementById('checkCourtStartMin').value = String(m).padStart(2, '0');
+    if (document.getElementById('checkCourtStartAmpm')) document.getElementById('checkCourtStartAmpm').value = ampm;
+}
+
+function getCheckerCourtEndTime() {
+    const h = document.getElementById('checkCourtEndHour')?.value?.trim();
+    const m = document.getElementById('checkCourtEndMin')?.value?.trim();
+    const ampm = document.getElementById('checkCourtEndAmpm')?.value;
+    if (!h || !m || !ampm) return "";
+    let hour = parseInt(h, 10);
+    let min = parseInt(m, 10);
+    if (isNaN(hour) || isNaN(min)) return "";
+    if (ampm === 'pm' && hour < 12) hour += 12;
+    if (ampm === 'am' && hour === 12) hour = 0;
+    return `${String(hour).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+}
+
+function setCheckerCourtEndTime(val) {
+    if (!val) {
+        if (document.getElementById('checkCourtEndHour')) document.getElementById('checkCourtEndHour').value = "";
+        if (document.getElementById('checkCourtEndMin')) document.getElementById('checkCourtEndMin').value = "";
+        if (document.getElementById('checkCourtEndAmpm')) document.getElementById('checkCourtEndAmpm').value = "pm";
+        return;
+    }
+    const parts = val.split(':');
+    let h = parseInt(parts[0], 10);
+    let m = parts[1] || '00';
+    let ampm = h >= 12 ? 'pm' : 'am';
+    let h12 = h % 12;
+    if (h12 === 0) h12 = 12;
+    if (document.getElementById('checkCourtEndHour')) document.getElementById('checkCourtEndHour').value = String(h12);
+    if (document.getElementById('checkCourtEndMin')) document.getElementById('checkCourtEndMin').value = String(m).padStart(2, '0');
+    if (document.getElementById('checkCourtEndAmpm')) document.getElementById('checkCourtEndAmpm').value = ampm;
+}
+
 function initCourtAvailabilityChecker() {
     const checkDate = document.getElementById('checkCourtDate');
-    const checkStartTime = document.getElementById('checkCourtStartTime');
-    const checkEndTime = document.getElementById('checkCourtEndTime');
+    const startHour = document.getElementById('checkCourtStartHour');
+    const startMin = document.getElementById('checkCourtStartMin');
+    const startAmpm = document.getElementById('checkCourtStartAmpm');
+    const endHour = document.getElementById('checkCourtEndHour');
+    const endMin = document.getElementById('checkCourtEndMin');
+    const endAmpm = document.getElementById('checkCourtEndAmpm');
     const checkSport = document.getElementById('checkCourtSport');
     const btnQuickToday = document.getElementById('btnCourtQuickToday');
     const btnQuickTomorrow = document.getElementById('btnCourtQuickTomorrow');
     const btnQuickWeekend = document.getElementById('btnCourtQuickWeekend');
     const resultsEl = document.getElementById('checkerCourtResultsGrid');
 
-    if (!checkDate || !checkStartTime || !checkEndTime || !resultsEl) return;
-
-    // Helper to generate 30-min options
-    const generateOptions = (startH, endH, isEndTime = false) => {
-        let html = '';
-        for (let h = startH; h <= endH; h++) {
-            for (let m of [0, 30]) {
-                if (isEndTime && h === startH && m === 0) continue;
-                if (h === endH && m > 0) continue;
-                const hMod = h % 24;
-                const hStr = String(hMod).padStart(2, '0');
-                const mStr = String(m).padStart(2, '0');
-                const timeVal = `${hStr}:${mStr}`;
-                const ampm = (hMod >= 12 && hMod < 24) ? 'PM' : 'AM';
-                let h12 = hMod % 12;
-                if (h12 === 0) h12 = 12;
-                const nextDayLabel = h >= 24 ? ' (sgte día)' : '';
-                const label12 = `${h12}:${mStr} ${ampm}${nextDayLabel}`;
-                html += `<option value="${timeVal}">${label12} (${timeVal})</option>`;
-            }
-        }
-        return html;
-    };
-
-    // Populate Start Time (06:00 to 23:30) & End Time (06:30 to 01:00 sgte día)
-    checkStartTime.innerHTML = generateOptions(6, 23, false);
-    checkEndTime.innerHTML = generateOptions(6, 25, true);
+    if (!checkDate || !startHour || !startMin || !startAmpm || !endHour || !endMin || !endAmpm || !resultsEl) return;
 
     // Initial default values
     const today = new Date();
     const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
     checkDate.value = todayStr;
 
-    // Smart default hour: if between 6 AM and 11 PM, select next full hour; otherwise select 19:00 (prime time)
+    // Smart default hour: if between 6 AM and 10 PM, select next full hour; otherwise select 19:00 (7:00 PM)
     const currentHour = today.getHours();
     let defaultStart = '19:00';
     if (currentHour >= 6 && currentHour < 23) {
         defaultStart = String(currentHour + 1).padStart(2, '0') + ':00';
     }
-    checkStartTime.value = defaultStart;
+    setCheckerCourtStartTime(defaultStart);
 
     // Default End Time is 1 hour after default Start Time
     const startMins = parseTimeToMinutes(defaultStart);
     const endH = Math.floor((startMins + 60) / 60) % 24;
     const endM = (startMins + 60) % 60;
-    checkEndTime.value = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
+    const defaultEnd = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
+    setCheckerCourtEndTime(defaultEnd);
 
-    // Sync active hour pill
-    const updateActiveHourPill = () => {
-        const currentVal = checkStartTime.value;
-        document.querySelectorAll('.btn-hour-pill').forEach(pill => {
-            pill.classList.toggle('active', pill.getAttribute('data-time') === currentVal);
+    // Input handlers for quick typing and auto-tabbing
+    const setupNumericTimeInput = (inputEl, maxVal, nextEl) => {
+        if (!inputEl) return;
+        inputEl.addEventListener('input', () => {
+            // Keep only digits
+            inputEl.value = inputEl.value.replace(/[^0-9]/g, '');
+            const valNum = parseInt(inputEl.value, 10);
+            if (!isNaN(valNum) && valNum > maxVal) {
+                inputEl.value = String(maxVal);
+            }
+            if (inputEl.value.length === 2 && nextEl) {
+                nextEl.focus();
+                if (nextEl.select) nextEl.select();
+            }
+            updateCourtAvailabilityChecker();
+        });
+        inputEl.addEventListener('blur', () => {
+            if (inputEl.value.length === 1) {
+                inputEl.value = '0' + inputEl.value;
+            }
+            updateCourtAvailabilityChecker();
         });
     };
-    updateActiveHourPill();
 
-    // Event listeners
+    setupNumericTimeInput(startHour, 12, startMin);
+    setupNumericTimeInput(startMin, 59, startAmpm);
+    setupNumericTimeInput(endHour, 12, endMin);
+    setupNumericTimeInput(endMin, 59, endAmpm);
+
+    // Auto-sync end time (+1 hour) when start time changes
+    const syncCheckerEndTime = () => {
+        const startTime = getCheckerCourtStartTime();
+        if (!startTime) return;
+        const sM = parseTimeToMinutes(startTime);
+        const eM = (sM + 60) % 1440;
+        const eh = Math.floor(eM / 60);
+        const em = eM % 60;
+        const newEndTime = `${String(eh).padStart(2, '0')}:${String(em).padStart(2, '0')}`;
+        setCheckerCourtEndTime(newEndTime);
+        updateCourtAvailabilityChecker();
+    };
+
+    startHour.addEventListener('change', syncCheckerEndTime);
+    startMin.addEventListener('change', syncCheckerEndTime);
+    startAmpm.addEventListener('change', syncCheckerEndTime);
+
+    endHour.addEventListener('change', updateCourtAvailabilityChecker);
+    endMin.addEventListener('change', updateCourtAvailabilityChecker);
+    endAmpm.addEventListener('change', updateCourtAvailabilityChecker);
     checkDate.addEventListener('change', updateCourtAvailabilityChecker);
-
-    checkStartTime.addEventListener('change', () => {
-        // Automatically shift end time to 1 hour after start time
-        const sM = parseTimeToMinutes(checkStartTime.value);
-        let eM = parseTimeToMinutes(checkEndTime.value);
-        if (eM <= sM && checkEndTime.value !== '00:00' && checkEndTime.value !== '00:30' && checkEndTime.value !== '01:00') {
-            eM = sM + 60;
-            const eh = Math.floor((eM % 1440) / 60);
-            const em = eM % 60;
-            checkEndTime.value = `${String(eh).padStart(2, '0')}:${String(em).padStart(2, '0')}`;
-        }
-        updateActiveHourPill();
-        updateCourtAvailabilityChecker();
-    });
-
-    checkEndTime.addEventListener('change', () => {
-        const sM = parseTimeToMinutes(checkStartTime.value);
-        let eM = parseTimeToMinutes(checkEndTime.value);
-        if (eM <= sM && checkEndTime.value !== '00:00' && checkEndTime.value !== '00:30' && checkEndTime.value !== '01:00') {
-            // Adjust start time if end time was moved before start time
-            let newStart = Math.max(360, eM - 60);
-            const sh = Math.floor((newStart % 1440) / 60);
-            const sm = newStart % 60;
-            checkStartTime.value = `${String(sh).padStart(2, '0')}:${String(sm).padStart(2, '0')}`;
-            updateActiveHourPill();
-        }
-        updateCourtAvailabilityChecker();
-    });
 
     if (checkSport) {
         checkSport.addEventListener('change', updateCourtAvailabilityChecker);
@@ -2746,39 +2801,24 @@ function initCourtAvailabilityChecker() {
         });
     }
 
-    // Quick Hour Pills
-    document.querySelectorAll('.btn-hour-pill').forEach(pill => {
-        pill.addEventListener('click', () => {
-            checkStartTime.value = pill.getAttribute('data-time');
-            const sM = parseTimeToMinutes(checkStartTime.value);
-            const eM = sM + 60;
-            const eh = Math.floor((eM % 1440) / 60);
-            const em = eM % 60;
-            checkEndTime.value = `${String(eh).padStart(2, '0')}:${String(em).padStart(2, '0')}`;
-            updateActiveHourPill();
-            updateCourtAvailabilityChecker();
-        });
-    });
-
     updateCourtAvailabilityChecker();
 }
 
 function updateCourtAvailabilityChecker() {
     const checkDate = document.getElementById('checkCourtDate');
-    const checkStartTime = document.getElementById('checkCourtStartTime');
-    const checkEndTime = document.getElementById('checkCourtEndTime');
     const checkSport = document.getElementById('checkCourtSport');
     const resultsEl = document.getElementById('checkerCourtResultsGrid');
 
-    if (!checkDate || !checkStartTime || !checkEndTime || !resultsEl) return;
+    if (!checkDate || !resultsEl) return;
 
     const dateStr = checkDate.value;
-    const startTime = checkStartTime.value;
-    const endTime = checkEndTime.value;
+    const startTime = getCheckerCourtStartTime();
+    const endTime = getCheckerCourtEndTime();
     const selectedSport = checkSport ? checkSport.value : 'Fútbol';
 
     if (!dateStr || !startTime || !endTime) {
-        resultsEl.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 12px;">Seleccione una fecha y horario válidos</div>';
+        resultsEl.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 14px; background: rgba(255,255,255,0.02); border: 1px dashed rgba(255,255,255,0.1); border-radius: var(--radius-sm);"><i data-lucide="clock" style="width: 18px; height: 18px; vertical-align: middle; margin-right: 6px; color: var(--primary);"></i> Ingrese la fecha, hora de inicio y salida para ver la disponibilidad en vivo.</div>';
+        if (window.lucide) lucide.createIcons();
         return;
     }
 
