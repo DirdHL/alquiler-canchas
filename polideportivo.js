@@ -2953,7 +2953,10 @@ function updateCourtAvailabilityChecker() {
 
     let fullHtml = '<div class="checker-groups-container">';
 
-    courtGroups.forEach(group => {
+    courtGroups.forEach((group, index) => {
+        const groupId = `checkerGroup-${index}`;
+        const isExpanded = openCheckerGroups.has(groupId);
+
         // Collect all active overlapping events for this group
         const groupOverlappingEvents = [];
         for (const event of allEvents) {
@@ -3069,13 +3072,18 @@ function updateCourtAvailabilityChecker() {
 
         const countBadgeClass = freeCount > 0 ? 'checker-group-count' : 'checker-group-count none-free';
         fullHtml += `
-        <div class="checker-group-section">
-            <div class="checker-group-header">
+        <div class="checker-group-section ${isExpanded ? '' : 'collapsed'}" id="${groupId}">
+            <div class="checker-group-header" onclick="toggleCheckerGroup('${groupId}')" title="Clic para expandir / contraer">
                 <span class="checker-group-title">${group.title}</span>
-                <span class="${countBadgeClass}">${freeCount} / ${group.courts.length} libres</span>
+                <div class="checker-group-header-right">
+                    <span class="${countBadgeClass}">${freeCount} / ${group.courts.length} libres</span>
+                    <i data-lucide="chevron-down" class="checker-group-chevron"></i>
+                </div>
             </div>
-            <div class="checker-cards-subgrid">
-                ${groupCardsHtml}
+            <div class="checker-group-body">
+                <div class="checker-cards-subgrid">
+                    ${groupCardsHtml}
+                </div>
             </div>
         </div>`;
     });
@@ -3085,6 +3093,21 @@ function updateCourtAvailabilityChecker() {
     resultsEl.innerHTML = fullHtml;
     if (window.lucide) lucide.createIcons();
 }
+
+// Track expanded groups in Polideportivo availability checker
+const openCheckerGroups = new Set(['checkerGroup-0']);
+
+window.toggleCheckerGroup = function (groupId) {
+    if (openCheckerGroups.has(groupId)) {
+        openCheckerGroups.delete(groupId);
+    } else {
+        openCheckerGroups.add(groupId);
+    }
+    const section = document.getElementById(groupId);
+    if (section) {
+        section.classList.toggle('collapsed', !openCheckerGroups.has(groupId));
+    }
+};
 
 window.quickBookCourtFromChecker = function (court, dateStr, startTime, endTime, sport) {
     openBookingModal(null, {
