@@ -2698,9 +2698,19 @@ function initCourtAvailabilityChecker() {
     const defaultEnd = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
     setCheckerCourtEndTime(defaultEnd);
 
-    // Input handlers for quick typing and auto-tabbing
-    const setupNumericTimeInput = (inputEl, maxVal, nextEl) => {
+    // Input handlers for quick typing, auto-select and auto-tabbing
+    const setupNumericTimeInput = (inputEl, maxVal, nextEl, prevEl) => {
         if (!inputEl) return;
+
+        // Auto-select entire text on focus or click for instant replacement
+        inputEl.addEventListener('focus', () => {
+            inputEl.select();
+        });
+        inputEl.addEventListener('click', (e) => {
+            e.stopPropagation();
+            inputEl.select();
+        });
+
         inputEl.addEventListener('input', () => {
             // Keep only digits
             inputEl.value = inputEl.value.replace(/[^0-9]/g, '');
@@ -2714,6 +2724,15 @@ function initCourtAvailabilityChecker() {
             }
             updateCourtAvailabilityChecker();
         });
+
+        inputEl.addEventListener('keydown', (e) => {
+            // Backspace on empty jumps to previous input
+            if (e.key === 'Backspace' && inputEl.value === '' && prevEl) {
+                prevEl.focus();
+                if (prevEl.select) prevEl.select();
+            }
+        });
+
         inputEl.addEventListener('blur', () => {
             if (inputEl.value.length === 1) {
                 inputEl.value = '0' + inputEl.value;
@@ -2722,10 +2741,30 @@ function initCourtAvailabilityChecker() {
         });
     };
 
-    setupNumericTimeInput(startHour, 12, startMin);
-    setupNumericTimeInput(startMin, 59, startAmpm);
-    setupNumericTimeInput(endHour, 12, endMin);
-    setupNumericTimeInput(endMin, 59, endAmpm);
+    setupNumericTimeInput(startHour, 12, startMin, null);
+    setupNumericTimeInput(startMin, 59, startAmpm, startHour);
+    setupNumericTimeInput(endHour, 12, endMin, null);
+    setupNumericTimeInput(endMin, 59, endAmpm, endHour);
+
+    // Clicking anywhere on the box focuses the hours
+    const groupStart = document.getElementById('groupCourtStartTime');
+    if (groupStart) {
+        groupStart.addEventListener('click', (e) => {
+            if (e.target !== startMin && e.target !== startAmpm) {
+                startHour.focus();
+                startHour.select();
+            }
+        });
+    }
+    const groupEnd = document.getElementById('groupCourtEndTime');
+    if (groupEnd) {
+        groupEnd.addEventListener('click', (e) => {
+            if (e.target !== endMin && e.target !== endAmpm) {
+                endHour.focus();
+                endHour.select();
+            }
+        });
+    }
 
     // Auto-sync end time (+1 hour) when start time changes
     const syncCheckerEndTime = () => {

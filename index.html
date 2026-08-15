@@ -186,41 +186,37 @@
                         <input type="date" id="checkCourtDate" class="form-control">
                     </div>
                     <div class="checker-field">
-                        <label><i data-lucide="clock"></i> Hora Inicio:</label>
-                        <div class="time-select-row">
-                            <div class="time-spinner-wrapper">
-                                <i data-lucide="clock" class="time-icon"></i>
-                                <input type="text" id="checkCourtStartHour" placeholder="HH" maxlength="2"
+                        <label for="checkCourtStartHour"><i data-lucide="clock"></i> Hora Inicio:</label>
+                        <div class="time-input-group" id="groupCourtStartTime">
+                            <i data-lucide="clock" class="time-icon"></i>
+                            <div class="time-inputs-box">
+                                <input type="text" id="checkCourtStartHour" class="time-unit-input" placeholder="HH" maxlength="2"
                                     autocomplete="off" inputmode="numeric">
-                                <span class="time-separator">:</span>
-                                <input type="text" id="checkCourtStartMin" placeholder="MM" maxlength="2"
+                                <span class="time-colon">:</span>
+                                <input type="text" id="checkCourtStartMin" class="time-unit-input" placeholder="MM" maxlength="2"
                                     autocomplete="off" inputmode="numeric">
                             </div>
-                            <div class="input-wrapper ampm-wrapper">
-                                <select id="checkCourtStartAmpm" class="ampm-select">
-                                    <option value="pm">pm</option>
-                                    <option value="am">am</option>
-                                </select>
-                            </div>
+                            <select id="checkCourtStartAmpm" class="time-ampm-select">
+                                <option value="pm">PM</option>
+                                <option value="am">AM</option>
+                            </select>
                         </div>
                     </div>
                     <div class="checker-field">
-                        <label><i data-lucide="clock-3"></i> Hora Salida / Fin:</label>
-                        <div class="time-select-row">
-                            <div class="time-spinner-wrapper">
-                                <i data-lucide="clock-3" class="time-icon"></i>
-                                <input type="text" id="checkCourtEndHour" placeholder="HH" maxlength="2"
+                        <label for="checkCourtEndHour"><i data-lucide="clock-3"></i> Hora Salida / Fin:</label>
+                        <div class="time-input-group" id="groupCourtEndTime">
+                            <i data-lucide="clock-3" class="time-icon"></i>
+                            <div class="time-inputs-box">
+                                <input type="text" id="checkCourtEndHour" class="time-unit-input" placeholder="HH" maxlength="2"
                                     autocomplete="off" inputmode="numeric">
-                                <span class="time-separator">:</span>
-                                <input type="text" id="checkCourtEndMin" placeholder="MM" maxlength="2"
+                                <span class="time-colon">:</span>
+                                <input type="text" id="checkCourtEndMin" class="time-unit-input" placeholder="MM" maxlength="2"
                                     autocomplete="off" inputmode="numeric">
                             </div>
-                            <div class="input-wrapper ampm-wrapper">
-                                <select id="checkCourtEndAmpm" class="ampm-select">
-                                    <option value="pm">pm</option>
-                                    <option value="am">am</option>
-                                </select>
-                            </div>
+                            <select id="checkCourtEndAmpm" class="time-ampm-select">
+                                <option value="pm">PM</option>
+                                <option value="am">AM</option>
+                            </select>
                         </div>
                     </div>
                     <div class="checker-field">
