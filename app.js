@@ -272,7 +272,38 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 8. Initialize Court Availability Quick Checker
     initCourtAvailabilityChecker();
+
+    // 9. Initialize Calendar Hours View Toggle (Tarde/Noche vs Todo el día)
+    initCalendarHoursToggle();
 });
+
+let isFullDayCalendar = false;
+
+function initCalendarHoursToggle() {
+    const btn = document.getElementById('btnToggleCalendarHours');
+    const textEl = document.getElementById('textToggleHours');
+    const iconEl = document.getElementById('iconToggleHours');
+    if (!btn) return;
+
+    btn.addEventListener('click', () => {
+        isFullDayCalendar = !isFullDayCalendar;
+        const newMinTime = isFullDayCalendar ? '06:00:00' : '14:00:00';
+        if (calendar) {
+            calendar.setOption('slotMinTime', newMinTime);
+        }
+
+        if (isFullDayCalendar) {
+            btn.classList.add('active');
+            if (textEl) textEl.textContent = 'Ver solo tarde y noche (desde las 2:00 PM)';
+            if (iconEl) iconEl.setAttribute('data-lucide', 'moon');
+        } else {
+            btn.classList.remove('active');
+            if (textEl) textEl.textContent = 'Ver todo el día (desde las 6:00 AM)';
+            if (iconEl) iconEl.setAttribute('data-lucide', 'sun-dim');
+        }
+        if (window.lucide) lucide.createIcons();
+    });
+}
 
 // Initialize FullCalendar
 function initCalendar() {
@@ -294,7 +325,7 @@ function initCalendar() {
             day: 'Día',
             list: 'Lista'
         },
-        slotMinTime: '06:00:00',
+        slotMinTime: '14:00:00',
         slotMaxTime: '25:00:00',
         allDaySlot: false,
         slotDuration: '00:30:00',
