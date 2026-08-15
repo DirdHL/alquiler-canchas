@@ -336,123 +336,6 @@
                     <div id="calendar"></div>
                 </div>
             </div>
-
-            <!-- Resumen Diario de Bungalows -->
-            <div class="calendar-card" style="margin-top: 24px;">
-                <div class="summary-header-container"
-                    style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
-                    <h3 style="display: flex; align-items: center; gap: 8px; margin: 0; font-size: 16px;">
-                        <i data-lucide="list-todo" style="color: var(--primary);"></i>
-
-                        Resumen y Disponibilidad - <span id="summaryDateLabel">Cargando...</span>
-                    </h3>
-                    <div class="summary-tabs"
-                        style="display: flex; gap: 8px; background: rgba(255, 255, 255, 0.03); padding: 4px; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
-                        <button type="button" class="tab-btn" id="btnTabReservations">
-                            <i data-lucide="calendar"></i> Lista de Huéspedes
-                        </button>
-                        <button type="button" class="tab-btn active" id="btnTabAvailability">
-                            <i data-lucide="layout-grid"></i> Mapa de Disponibilidad
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Tab: Lista de Reservas -->
-                <div class="summary-tab-content" id="tabReservationsContent" style="display: none;">
-                    <div class="summary-list" id="dailySummaryList">
-                        <!-- Se llenará dinámicamente -->
-                    </div>
-                </div>
-
-                <!-- Tab: Mapa de Disponibilidad -->
-                <div class="summary-tab-content" id="tabAvailabilityContent">
-                    <!-- Control de Fecha para el Mapa -->
-                    <div class="availability-toolbar">
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                            <label for="gridDatePicker">Ver desde:</label>
-                            <div class="input-wrapper"
-                                style="margin-bottom: 0; width: auto; display: inline-block; position: relative;">
-                                <i data-lucide="calendar"
-                                    style="width: 16px; height: 16px; position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none;"></i>
-                                <input type="date" id="gridDatePicker">
-                            </div>
-                            <button type="button" class="btn btn-secondary" id="btnGridToday">
-                                Hoy
-                            </button>
-                        </div>
-                        <div style="display: flex; gap: 8px;">
-                            <button type="button" class="btn btn-secondary" id="btnGridPrevWeek"
-                                title="Semana anterior">
-                                <i data-lucide="chevron-left" style="width: 16px; height: 16px;"></i> Anterior
-                            </button>
-                            <button type="button" class="btn btn-secondary" id="btnGridNextWeek"
-                                title="Semana siguiente">
-                                Siguiente <i data-lucide="chevron-right" style="width: 16px; height: 16px;"></i>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Legend -->
-                    <div class="availability-legend-container">
-                        <div class="legend-item">
-                            <span>🌇</span>
-                            <span><strong>Ingreso:</strong> 3:00 PM</span>
-                        </div>
-                        <div class="legend-item">
-                            <span>🌅</span>
-                            <span><strong>Salida:</strong> 12:00 PM</span>
-                        </div>
-                        <div class="legend-item">
-                            <span>👤</span>
-                            <span><strong>Hospedado:</strong> Ocupado</span>
-                        </div>
-                        <div class="legend-item">
-                            <span>☀️</span>
-                            <span><strong>Full Day:</strong> 9 AM - 6 PM</span>
-                        </div>
-                        <div class="legend-item">
-                            <span>🔒</span>
-                            <span><strong>Bloqueo:</strong> Mantenimiento</span>
-                        </div>
-                    </div>
-
-                    <div class="availability-grid-wrapper"
-                        style="overflow-x: auto; max-height: 480px; overflow-y: auto; border-radius: var(--radius-md); border: 1px solid var(--border-color); background: rgba(255, 255, 255, 0.01);">
-                        <table class="availability-table"
-                            style="min-width: 600px; border-collapse: collapse; text-align: left; font-size: 13px;">
-                            <thead>
-                                <tr
-                                    style="position: sticky; top: 0; background: #f2ebe0; border-bottom: 1px solid var(--border-color); z-index: 5;">
-                                    <th
-                                        style="padding: 10px 16px; color: var(--text-secondary); font-weight: 700; width: 140px;">
-                                        Fecha</th>
-                                    <th
-                                        style="padding: 10px 16px; color: var(--text-secondary); font-weight: 700; text-align: center;">
-                                        B1</th>
-                                    <th
-                                        style="padding: 10px 16px; color: var(--text-secondary); font-weight: 700; text-align: center;">
-                                        B2</th>
-                                    <th
-                                        style="padding: 10px 16px; color: var(--text-secondary); font-weight: 700; text-align: center;">
-                                        B3</th>
-                                    <th
-                                        style="padding: 10px 16px; color: var(--text-secondary); font-weight: 700; text-align: center;">
-                                        B4</th>
-                                    <th
-                                        style="padding: 10px 16px; color: var(--text-secondary); font-weight: 700; text-align: center;">
-                                        B5</th>
-                                    <th
-                                        style="padding: 10px 16px; color: var(--text-secondary); font-weight: 700; text-align: center;">
-                                        B6</th>
-                                </tr>
-                            </thead>
-                            <tbody id="availabilityTableBody">
-                                <!-- Se llenará dinámicamente -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
         </main>
     </div>
 
@@ -1130,6 +1013,7 @@
             </div>
         </div>
     </div>
+
     <!-- Script triggers and main logic -->
     <script src="bungalows.js"></script>
 </body>
