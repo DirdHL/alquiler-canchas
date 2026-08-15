@@ -2475,3 +2475,452 @@ select option {
     cursor: pointer;
     user-select: none;
 }
+
+/* =============================================================
+   Smart Availability Quick Checker Card ("¿Qué canchas están disponibles?")
+   ============================================================= */
+.availability-checker-card {
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.85) 0%, rgba(15, 23, 42, 0.92) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-md);
+    padding: 18px 22px;
+    margin-bottom: 22px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+}
+
+.checker-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding-bottom: 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    margin-bottom: 16px;
+}
+
+.checker-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.checker-icon-badge {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.22), rgba(16, 185, 129, 0.06));
+    border: 1px solid rgba(16, 185, 129, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary);
+    box-shadow: 0 0 16px rgba(16, 185, 129, 0.2);
+    flex-shrink: 0;
+}
+
+.checker-icon-badge svg {
+    width: 22px;
+    height: 22px;
+}
+
+.checker-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+    font-family: var(--font-sans);
+}
+
+.checker-badge-pill {
+    font-size: 10px;
+    background: rgba(16, 185, 129, 0.18);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.35);
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.checker-subtitle {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin: 2px 0 0 0;
+}
+
+.checker-quick-buttons {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.checker-quick-buttons .btn-sm {
+    padding: 6px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: var(--radius-sm);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: var(--transition-smooth);
+}
+
+.checker-quick-buttons .btn-sm:hover,
+.checker-quick-buttons .btn-sm.active {
+    background: rgba(16, 185, 129, 0.18);
+    border-color: rgba(16, 185, 129, 0.45);
+    color: #34d399;
+}
+
+.checker-form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 14px;
+    margin-bottom: 14px;
+}
+
+.checker-field label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+}
+
+.checker-field label svg {
+    width: 14px;
+    height: 14px;
+    color: var(--primary);
+}
+
+.checker-field input,
+.checker-field select {
+    width: 100%;
+    padding: 9px 12px;
+    font-size: 13px;
+    font-weight: 500;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: var(--radius-sm);
+    background: rgba(15, 23, 42, 0.85);
+    color: var(--text-primary);
+    outline: none;
+    transition: var(--transition-smooth);
+}
+
+.checker-field input:focus,
+.checker-field select:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+}
+
+.checker-quick-hours {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: var(--radius-sm);
+}
+
+.checker-quick-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.checker-quick-label svg {
+    width: 13px;
+    height: 13px;
+    color: #f59e0b;
+}
+
+.checker-quick-hour-buttons {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.btn-hour-pill {
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: var(--transition-smooth);
+}
+
+.btn-hour-pill:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+    border-color: rgba(255, 255, 255, 0.25);
+}
+
+.btn-hour-pill.active {
+    background: rgba(16, 185, 129, 0.2);
+    border-color: rgba(16, 185, 129, 0.5);
+    color: #34d399;
+}
+
+.checker-results-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+}
+
+.checker-court-card {
+    background: rgba(30, 41, 59, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--radius-sm);
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: var(--transition-smooth);
+    position: relative;
+    cursor: pointer;
+    min-height: 115px;
+}
+
+.checker-court-card.available {
+    border-color: rgba(16, 185, 129, 0.35);
+    background: linear-gradient(to bottom, rgba(30, 41, 59, 0.8), rgba(16, 185, 129, 0.06));
+}
+
+.checker-court-card.available:hover {
+    border-color: var(--primary);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(16, 185, 129, 0.2);
+}
+
+.checker-court-card.occupied {
+    border-color: rgba(239, 68, 68, 0.3);
+    background: linear-gradient(to bottom, rgba(30, 41, 59, 0.8), rgba(239, 68, 68, 0.06));
+    opacity: 0.95;
+}
+
+.checker-court-card.occupied:hover {
+    border-color: rgba(239, 68, 68, 0.6);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(239, 68, 68, 0.2);
+}
+
+.checker-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.checker-card-name {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.court-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+    flex-shrink: 0;
+}
+.court-dot.dot-grande { background: var(--accent-grande); box-shadow: 0 0 8px var(--accent-grande); }
+.court-dot.dot-pequena { background: var(--accent-pequena); box-shadow: 0 0 8px var(--accent-pequena); }
+.court-dot.dot-voley { background: #06b6d4; box-shadow: 0 0 8px #06b6d4; }
+.court-dot.dot-ambas { background: var(--primary); box-shadow: 0 0 8px var(--primary); }
+
+.checker-status-badge {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 6px;
+    text-transform: uppercase;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.checker-status-badge.free {
+    background: rgba(16, 185, 129, 0.15);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
+.checker-status-badge.busy {
+    background: rgba(239, 68, 68, 0.15);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.35);
+}
+
+.checker-card-body {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.4;
+    margin-bottom: 10px;
+}
+
+.checker-price-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 4px;
+}
+
+.checker-price-label {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.checker-price-value {
+    font-size: 14px;
+    font-weight: 700;
+    color: #34d399;
+}
+
+.checker-time-info {
+    font-size: 11px;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.checker-occupied-info strong {
+    color: var(--text-primary);
+    font-size: 13px;
+    display: block;
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.checker-card-action {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: auto;
+    padding-top: 6px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.checker-card-action .btn-book {
+    width: 100%;
+    padding: 6px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: var(--radius-sm);
+    background: var(--primary);
+    color: #ffffff;
+    border: none;
+    cursor: pointer;
+    text-align: center;
+    transition: var(--transition-smooth);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.checker-card-action .btn-book:hover {
+    background: var(--primary-hover);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+}
+
+.checker-view-link {
+    font-size: 11px;
+    color: var(--text-secondary);
+    font-weight: 600;
+    transition: var(--transition-smooth);
+}
+
+.checker-court-card.occupied:hover .checker-view-link {
+    color: #f87171;
+}
+
+.checker-groups-container {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    grid-column: 1 / -1;
+}
+
+.checker-group-section {
+    background: rgba(15, 23, 42, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+}
+
+.checker-group-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.checker-group-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.checker-group-count {
+    font-size: 11px;
+    font-weight: 600;
+    color: #34d399;
+    background: rgba(16, 185, 129, 0.12);
+    padding: 2px 8px;
+    border-radius: 12px;
+    border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+.checker-group-count.none-free {
+    color: #f87171;
+    background: rgba(239, 68, 68, 0.12);
+    border-color: rgba(239, 68, 68, 0.25);
+}
+
+.checker-cards-subgrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+}
+
+@media (max-width: 768px) {
+    .checker-form-grid {
+        grid-template-columns: 1fr;
+    }
+    .checker-results-grid {
+        grid-template-columns: 1fr;
+    }
+    .checker-cards-subgrid {
+        grid-template-columns: 1fr;
+    }
+}

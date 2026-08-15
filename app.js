@@ -269,6 +269,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 7. Load activity history
     fetchAndRenderHistory();
+
+    // 8. Initialize Court Availability Quick Checker
+    initCourtAvailabilityChecker();
 });
 
 // Initialize FullCalendar
@@ -352,6 +355,7 @@ function initCalendar() {
                 allEvents = bookings;
                 updateStats();
                 updateDailySummary();
+                updateCourtAvailabilityChecker();
 
                 // Apply UI filters
                 const filtered = filterEvents(bookings);
@@ -2586,6 +2590,298 @@ window.openEditFromSummary = function (id) {
     const booking = allEvents.find(e => e.id === id);
     if (booking) {
         openBookingModal(booking);
+    }
+};
+
+// =============================================================
+// Smart Availability Quick Checker Logic ("¿Qué canchas están disponibles?")
+// =============================================================
+
+function initCourtAvailabilityChecker() {
+    const checkDate = document.getElementById('checkCourtDate');
+    const checkStartTime = document.getElementById('checkCourtStartTime');
+    const checkEndTime = document.getElementById('checkCourtEndTime');
+    const checkSport = document.getElementById('checkCourtSport');
+    const btnQuickToday = document.getElementById('btnCourtQuickToday');
+    const btnQuickTomorrow = document.getElementById('btnCourtQuickTomorrow');
+    const btnQuickWeekend = document.getElementById('btnCourtQuickWeekend');
+    const resultsEl = document.getElementById('checkerCourtResultsGrid');
+
+    if (!checkDate || !checkStartTime || !checkEndTime || !resultsEl) return;
+
+    // Helper to generate 30-min options
+    const generateOptions = (startH, endH, isEndTime = false) => {
+        let html = '';
+        for (let h = startH; h <= endH; h++) {
+            for (let m of [0, 30]) {
+                if (isEndTime && h === startH && m === 0) continue;
+                if (h === endH && m > 0) continue;
+                const hMod = h % 24;
+                const hStr = String(hMod).padStart(2, '0');
+                const mStr = String(m).padStart(2, '0');
+                const timeVal = `${hStr}:${mStr}`;
+                const ampm = (hMod >= 12 && hMod < 24) ? 'PM' : 'AM';
+                let h12 = hMod % 12;
+                if (h12 === 0) h12 = 12;
+                const nextDayLabel = h >= 24 ? ' (sgte día)' : '';
+                const label12 = `${h12}:${mStr} ${ampm}${nextDayLabel}`;
+                html += `<option value="${timeVal}">${label12} (${timeVal})</option>`;
+            }
+        }
+        return html;
+    };
+
+    // Populate Start Time (06:00 to 23:30) & End Time (06:30 to 01:00 sgte día)
+    checkStartTime.innerHTML = generateOptions(6, 23, false);
+    checkEndTime.innerHTML = generateOptions(6, 25, true);
+
+    // Initial default values
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    checkDate.value = todayStr;
+
+    // Smart default hour: if between 6 AM and 11 PM, select next full hour; otherwise select 19:00 (prime time)
+    const currentHour = today.getHours();
+    let defaultStart = '19:00';
+    if (currentHour >= 6 && currentHour < 23) {
+        defaultStart = String(currentHour + 1).padStart(2, '0') + ':00';
+    }
+    checkStartTime.value = defaultStart;
+
+    // Default End Time is 1 hour after default Start Time
+    const startMins = parseTimeToMinutes(defaultStart);
+    const endH = Math.floor((startMins + 60) / 60) % 24;
+    const endM = (startMins + 60) % 60;
+    checkEndTime.value = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
+
+    // Sync active hour pill
+    const updateActiveHourPill = () => {
+        const currentVal = checkStartTime.value;
+        document.querySelectorAll('.btn-hour-pill').forEach(pill => {
+            pill.classList.toggle('active', pill.getAttribute('data-time') === currentVal);
+        });
+    };
+    updateActiveHourPill();
+
+    // Event listeners
+    checkDate.addEventListener('change', updateCourtAvailabilityChecker);
+
+    checkStartTime.addEventListener('change', () => {
+        const sM = parseTimeToMinutes(checkStartTime.value);
+        let eM = parseTimeToMinutes(checkEndTime.value);
+        if (eM <= sM && checkEndTime.value !== '00:00' && checkEndTime.value !== '00:30' && checkEndTime.value !== '01:00') {
+            eM = sM + 60;
+            const eh = Math.floor((eM % 1440) / 60);
+            const em = eM % 60;
+            checkEndTime.value = `${String(eh).padStart(2, '0')}:${String(em).padStart(2, '0')}`;
+        }
+        updateActiveHourPill();
+        updateCourtAvailabilityChecker();
+    });
+
+    checkEndTime.addEventListener('change', () => {
+        const sM = parseTimeToMinutes(checkStartTime.value);
+        let eM = parseTimeToMinutes(checkEndTime.value);
+        if (eM <= sM && checkEndTime.value !== '00:00' && checkEndTime.value !== '00:30' && checkEndTime.value !== '01:00') {
+            let newStart = Math.max(360, eM - 60);
+            const sh = Math.floor((newStart % 1440) / 60);
+            const sm = newStart % 60;
+            checkStartTime.value = `${String(sh).padStart(2, '0')}:${String(sm).padStart(2, '0')}`;
+            updateActiveHourPill();
+        }
+        updateCourtAvailabilityChecker();
+    });
+
+    if (checkSport) {
+        checkSport.addEventListener('change', updateCourtAvailabilityChecker);
+    }
+
+    // Quick Date Buttons
+    if (btnQuickToday) {
+        btnQuickToday.addEventListener('click', () => {
+            checkDate.value = todayStr;
+            updateCourtAvailabilityChecker();
+        });
+    }
+
+    if (btnQuickTomorrow) {
+        btnQuickTomorrow.addEventListener('click', () => {
+            const tmrw = new Date(today);
+            tmrw.setDate(tmrw.getDate() + 1);
+            checkDate.value = `${tmrw.getFullYear()}-${String(tmrw.getMonth() + 1).padStart(2, '0')}-${String(tmrw.getDate()).padStart(2, '0')}`;
+            updateCourtAvailabilityChecker();
+        });
+    }
+
+    if (btnQuickWeekend) {
+        btnQuickWeekend.addEventListener('click', () => {
+            const sat = new Date(today);
+            const dayOfWeek = sat.getDay();
+            const daysUntilSat = (6 - dayOfWeek + 7) % 7 || 7;
+            sat.setDate(sat.getDate() + daysUntilSat);
+            checkDate.value = `${sat.getFullYear()}-${String(sat.getMonth() + 1).padStart(2, '0')}-${String(sat.getDate()).padStart(2, '0')}`;
+            updateCourtAvailabilityChecker();
+        });
+    }
+
+    // Quick Hour Pills
+    document.querySelectorAll('.btn-hour-pill').forEach(pill => {
+        pill.addEventListener('click', () => {
+            checkStartTime.value = pill.getAttribute('data-time');
+            const sM = parseTimeToMinutes(checkStartTime.value);
+            const eM = sM + 60;
+            const eh = Math.floor((eM % 1440) / 60);
+            const em = eM % 60;
+            checkEndTime.value = `${String(eh).padStart(2, '0')}:${String(em).padStart(2, '0')}`;
+            updateActiveHourPill();
+            updateCourtAvailabilityChecker();
+        });
+    });
+
+    updateCourtAvailabilityChecker();
+}
+
+function updateCourtAvailabilityChecker() {
+    const checkDate = document.getElementById('checkCourtDate');
+    const checkStartTime = document.getElementById('checkCourtStartTime');
+    const checkEndTime = document.getElementById('checkCourtEndTime');
+    const checkSport = document.getElementById('checkCourtSport');
+    const resultsEl = document.getElementById('checkerCourtResultsGrid');
+
+    if (!checkDate || !checkStartTime || !checkEndTime || !resultsEl) return;
+
+    const dateStr = checkDate.value;
+    const startTime = checkStartTime.value;
+    const endTime = checkEndTime.value;
+    const sport = checkSport ? checkSport.value : 'Fútbol';
+
+    if (!dateStr || !startTime || !endTime) {
+        resultsEl.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 12px;">Seleccione una fecha y horario válidos</div>';
+        return;
+    }
+
+    let startMins = parseTimeToMinutes(startTime);
+    let endMins = parseTimeToMinutes(endTime);
+    if (endMins <= startMins && startTime && endTime) {
+        endMins += 1440;
+    }
+    const durationMins = endMins - startMins;
+    const durationHours = durationMins / 60;
+    const durationText = durationHours === 1 ? '1h' : (durationHours % 1 === 0 ? durationHours + 'h' : durationHours.toFixed(1) + 'h');
+
+    const { start: queryStart, end: queryEnd } = getStartAndEndDates(dateStr, startTime, endTime);
+
+    // Format helper for 12h display
+    const formatTime12H = (tStr) => {
+        if (!tStr) return '';
+        const parts = tStr.split(':');
+        let h = parseInt(parts[0], 10);
+        const m = parts[1] || '00';
+        const ampm = (h >= 12 && h < 24) ? 'PM' : 'AM';
+        let h12 = h % 12;
+        if (h12 === 0) h12 = 12;
+        return `${h12}:${m} ${ampm}`;
+    };
+
+    const courts = [
+        { id: 'Grande', name: 'Cancha Grande', dotClass: 'dot-grande' },
+        { id: 'Pequeña', name: 'Cancha Pequeña', dotClass: 'dot-pequena' }
+    ];
+
+    let html = '';
+
+    courts.forEach(c => {
+        // Find collisions
+        let collision = null;
+        for (const event of allEvents) {
+            let isTargetCourt = (event.court === c.id || event.court === 'Ambas');
+
+            if (isTargetCourt) {
+                const { start: existStart, end: existEnd } = getStartAndEndDates(event.date, event.start_time, event.end_time);
+                // Overlap: StartA < EndB && EndA > StartB
+                if (queryStart < existEnd && queryEnd > existStart) {
+                    collision = event;
+                    break;
+                }
+            }
+        }
+
+        if (!collision) {
+            // Court is FREE
+            const inc = calculateBookingIncome({ date: dateStr, startTime, endTime, court: c.id, sport, pelota: false, chaleco: false });
+            const estIncome = inc ? inc.total : 0;
+
+            html += `
+            <div class="checker-court-card available" onclick="quickBookCourtFromChecker('${c.id}', '${dateStr}', '${startTime}', '${endTime}', '${sport}')" title="Clic para reservar ${c.name}">
+                <div class="checker-card-header">
+                    <div class="checker-card-name">
+                        <span class="court-dot ${c.dotClass}"></span>
+                        <span>${c.name}</span>
+                    </div>
+                    <span class="checker-status-badge free"><i data-lucide="check-circle-2"></i> Libre</span>
+                </div>
+                <div class="checker-card-body">
+                    <div class="checker-price-row">
+                        <span class="checker-price-label">Tarifa estimada:</span>
+                        <span class="checker-price-value">S/. ${estIncome.toFixed(2)}</span>
+                    </div>
+                    <div class="checker-time-info">
+                        <i data-lucide="clock" style="width: 12px; height: 12px; color: var(--primary);"></i>
+                        ${formatTime12H(startTime)} - ${formatTime12H(endTime)} (${durationText})
+                    </div>
+                </div>
+                <div class="checker-card-action">
+                    <button type="button" class="btn-book"><i data-lucide="plus"></i> Reservar</button>
+                </div>
+            </div>`;
+        } else {
+            // Court is OCCUPIED or BLOCKED
+            const isBlocked = collision.sport === 'Bloqueo';
+            let clientName = collision.name || 'Ocupado';
+            if (clientName.startsWith('🔒 Bloqueo: ')) clientName = clientName.replace('🔒 Bloqueo: ', '');
+            else if (clientName.startsWith('🔒 Bloqueo:')) clientName = clientName.replace('🔒 Bloqueo:', '');
+
+            html += `
+            <div class="checker-court-card occupied" onclick="openEditFromSummary('${collision.id}')" title="Ocupado por ${escapeHTML(clientName)} - Clic para ver detalles">
+                <div class="checker-card-header">
+                    <div class="checker-card-name">
+                        <span class="court-dot ${c.dotClass}"></span>
+                        <span>${c.name}</span>
+                    </div>
+                    <span class="checker-status-badge busy">${isBlocked ? '<i data-lucide="lock"></i> Bloqueo' : '<i data-lucide="x-circle"></i> Ocupado'}</span>
+                </div>
+                <div class="checker-card-body">
+                    <div class="checker-occupied-info">
+                        <strong>${escapeHTML(clientName)}</strong>
+                    </div>
+                    <div class="checker-time-info" style="color: #f87171;">
+                        <i data-lucide="calendar" style="width: 12px; height: 12px;"></i>
+                        ${formatTime12H(collision.start_time)} - ${formatTime12H(collision.end_time)}
+                        <span style="font-size: 10px; background: rgba(239, 68, 68, 0.2); padding: 1px 5px; border-radius: 4px; margin-left: 4px;">${collision.sport || 'Fútbol'}</span>
+                    </div>
+                </div>
+                <div class="checker-card-action">
+                    <span class="checker-view-link">Ver reserva &rarr;</span>
+                </div>
+            </div>`;
+        }
+    });
+
+    resultsEl.innerHTML = html;
+    if (window.lucide) lucide.createIcons();
+}
+
+window.quickBookCourtFromChecker = function (court, dateStr, startTime, endTime, sport) {
+    openBookingModal(null, {
+        court: court,
+        date: dateStr,
+        start_time: startTime,
+        end_time: endTime,
+        sport: sport
+    });
+    const nameInput = document.getElementById('bookingName');
+    if (nameInput) {
+        setTimeout(() => nameInput.focus(), 150);
     }
 };
 

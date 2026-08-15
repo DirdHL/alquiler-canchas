@@ -158,6 +158,75 @@
                 </button>
             </header>
 
+            <!-- Smart Availability Quick Checker Card ("¿Qué canchas están disponibles?") -->
+            <div class="availability-checker-card">
+                <div class="checker-header">
+                    <div class="checker-header-left">
+                        <div class="checker-icon-badge">
+                            <i data-lucide="sparkles"></i>
+                        </div>
+                        <div>
+                            <h3 class="checker-title"
+                                style="display: flex; align-items: center; flex-wrap: wrap; gap: 6px;">
+                                ¿Qué canchas están disponibles?
+                                <span class="checker-badge-pill">En Vivo</span>
+                            </h3>
+                            <p class="checker-subtitle">Consulta disponibilidad en tiempo real por fecha, horario y deporte en Polideportivo.</p>
+                        </div>
+                    </div>
+                    <div class="checker-quick-buttons">
+                        <button type="button" class="btn btn-secondary btn-sm" id="btnCourtQuickToday">Hoy</button>
+                        <button type="button" class="btn btn-secondary btn-sm" id="btnCourtQuickTomorrow">Mañana</button>
+                        <button type="button" class="btn btn-secondary btn-sm" id="btnCourtQuickWeekend">Fin de Semana</button>
+                    </div>
+                </div>
+
+                <div class="checker-form-grid">
+                    <div class="checker-field">
+                        <label for="checkCourtDate"><i data-lucide="calendar"></i> Fecha:</label>
+                        <input type="date" id="checkCourtDate" class="form-control">
+                    </div>
+                    <div class="checker-field">
+                        <label for="checkCourtStartTime"><i data-lucide="clock"></i> Hora Inicio:</label>
+                        <select id="checkCourtStartTime" class="form-control">
+                            <!-- Populated dynamically by JS -->
+                        </select>
+                    </div>
+                    <div class="checker-field">
+                        <label for="checkCourtEndTime"><i data-lucide="clock-3"></i> Hora Fin:</label>
+                        <select id="checkCourtEndTime" class="form-control">
+                            <!-- Populated dynamically by JS -->
+                        </select>
+                    </div>
+                    <div class="checker-field">
+                        <label for="checkCourtSport"><i data-lucide="trophy"></i> Deporte:</label>
+                        <select id="checkCourtSport" class="form-control">
+                            <option value="Fútbol" selected>⚽ Fútbol</option>
+                            <option value="Vóley">🏐 Vóley</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Quick Hours Pills -->
+                <div class="checker-quick-hours">
+                    <span class="checker-quick-label"><i data-lucide="zap"></i> Horas punta:</span>
+                    <div class="checker-quick-hour-buttons">
+                        <button type="button" class="btn-hour-pill" data-time="17:00">5:00 PM</button>
+                        <button type="button" class="btn-hour-pill" data-time="18:00">6:00 PM</button>
+                        <button type="button" class="btn-hour-pill" data-time="19:00">7:00 PM</button>
+                        <button type="button" class="btn-hour-pill" data-time="20:00">8:00 PM</button>
+                        <button type="button" class="btn-hour-pill" data-time="21:00">9:00 PM</button>
+                        <button type="button" class="btn-hour-pill" data-time="22:00">10:00 PM</button>
+                        <button type="button" class="btn-hour-pill" data-time="23:00">11:00 PM</button>
+                    </div>
+                </div>
+
+                <!-- Instant Court Status Results Grid -->
+                <div class="checker-results-grid" id="checkerCourtResultsGrid">
+                    <!-- Populated dynamically by JS -->
+                </div>
+            </div>
+
             <!-- Top Quick Filters Bar -->
             <div class="top-filters-card">
                 <div class="top-filters-group">
@@ -333,9 +402,23 @@
                             <div class="input-wrapper">
                                 <i data-lucide="layout-grid"></i>
                                 <select id="bookingCourt" required>
-                                    <option value="Cancha Grande">Cancha Grande</option>
-                                    <option value="Cancha Pequeña">Cancha Pequeña</option>
-                                    <option value="Cancha de Vóley">Cancha de Vóley</option>
+                                    <optgroup label="⚽ Fútbol - Canchas Grandes (3)">
+                                        <option value="Cancha Grande 1">1 Cancha Grande</option>
+                                        <option value="Cancha Grande 2">2 Cancha Grande</option>
+                                        <option value="Cancha Grande 3">3 Cancha Grande</option>
+                                    </optgroup>
+                                    <optgroup label="⚽ Fútbol - Canchas Pequeñas (4)">
+                                        <option value="Cancha Pequeña 1">1 Cancha Pequeña</option>
+                                        <option value="Cancha Pequeña 2">2 Cancha Pequeña</option>
+                                        <option value="Cancha Pequeña 3">3 Cancha Pequeña</option>
+                                        <option value="Cancha Pequeña 4">4 Cancha Pequeña</option>
+                                    </optgroup>
+                                    <optgroup label="🏐 Vóley - Canchas de Vóley (4)">
+                                        <option value="Cancha de Vóley 1">1 Cancha Vóley</option>
+                                        <option value="Cancha de Vóley 2">2 Cancha Vóley</option>
+                                        <option value="Cancha de Vóley 3">3 Cancha Vóley</option>
+                                        <option value="Cancha de Vóley 4">4 Cancha Vóley</option>
+                                    </optgroup>
                                 </select>
                             </div>
                         </div>
