@@ -48,6 +48,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 5.2 Initialize Advisors Announcement Alert
     initAdvisorsAlert();
 
+    // 5.3 Initialize Mobile Horizontal Recommendation Alert
+    initMobileOrientationAlert();
+
     // 6. Load Initial Data
     await fetchBookings();
 
@@ -2116,6 +2119,60 @@ function initAdvisorsAlert() {
                 alertEl.style.display = 'none';
             }, 300);
             localStorage.setItem(STORAGE_KEY_CLOSED, 'true');
+        });
+    }
+}
+
+function initMobileOrientationAlert() {
+    const alertEl = document.getElementById('mobileOrientationAlert');
+    const closeBtn = document.getElementById('btnCloseMobileAlert');
+    if (!alertEl) return;
+
+    const STORAGE_KEY_DISMISSED = 'canchapro_mobile_orient_dismissed_session';
+
+    function checkOrientation() {
+        // If user already closed it in this session, keep it hidden
+        if (sessionStorage.getItem(STORAGE_KEY_DISMISSED) === 'true') {
+            alertEl.style.display = 'none';
+            return;
+        }
+
+        // Detection: Mobile/Tablet screen in portrait mode (width <= 850px and height > width or media portrait)
+        const isMobileScreen = window.innerWidth <= 850;
+        const isPortrait = window.innerHeight >= window.innerWidth || (window.matchMedia && window.matchMedia("(orientation: portrait)").matches);
+
+        if (isMobileScreen && isPortrait) {
+            alertEl.style.display = 'flex';
+            if (window.lucide && typeof lucide.createIcons === 'function') {
+                lucide.createIcons();
+            }
+        } else {
+            // Automatically hide when rotated horizontally or on desktop
+            alertEl.style.display = 'none';
+        }
+    }
+
+    // Run initial evaluation
+    checkOrientation();
+
+    // Listen for orientation and window size changes
+    window.addEventListener('resize', checkOrientation);
+    window.addEventListener('orientationchange', checkOrientation);
+    if (window.screen && screen.orientation) {
+        screen.orientation.addEventListener('change', checkOrientation);
+    }
+
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+            alertEl.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
+            alertEl.style.opacity = '0';
+            alertEl.style.transform = 'translateY(-6px)';
+            setTimeout(() => {
+                alertEl.style.display = 'none';
+                alertEl.style.opacity = '1';
+                alertEl.style.transform = 'translateY(0)';
+            }, 250);
+            sessionStorage.setItem(STORAGE_KEY_DISMISSED, 'true');
         });
     }
 }

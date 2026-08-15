@@ -694,6 +694,146 @@ body {
 }
 
 /* =============================================================
+   Aviso de Sugerencia Móvil (Girar Pantalla a Horizontal)
+   ============================================================= */
+.mobile-orientation-alert {
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 50%, #fef08a 100%);
+    border: 1.5px solid #f59e0b;
+    border-radius: var(--radius-md);
+    padding: 10px 14px;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 4px 15px rgba(245, 158, 11, 0.18);
+    position: relative;
+    animation: alertSlideDown 0.35s ease-out;
+}
+
+@media (min-width: 851px) {
+    .mobile-orientation-alert {
+        display: none !important;
+    }
+}
+
+@media (orientation: landscape) {
+    .mobile-orientation-alert {
+        display: none !important;
+    }
+}
+
+@keyframes alertSlideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.mobile-alert-icon-box {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #d97706;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(217, 119, 6, 0.35);
+}
+
+.mobile-alert-icon-box svg,
+.mobile-alert-icon-box i {
+    width: 18px;
+    height: 18px;
+    animation: rotatePhoneAnim 3.5s infinite ease-in-out;
+}
+
+@keyframes rotatePhoneAnim {
+    0%, 20% {
+        transform: rotate(0deg);
+    }
+    40%, 70% {
+        transform: rotate(90deg);
+    }
+    90%, 100% {
+        transform: rotate(0deg);
+    }
+}
+
+.mobile-alert-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.mobile-alert-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #92400e;
+    margin-bottom: 2px;
+    flex-wrap: wrap;
+}
+
+.mobile-alert-badge {
+    font-size: 9.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: rgba(217, 119, 6, 0.18);
+    border: 1px solid rgba(217, 119, 6, 0.35);
+    color: #b45309;
+    padding: 1px 6px;
+    border-radius: 10px;
+}
+
+.mobile-alert-message {
+    font-size: 12px;
+    line-height: 1.35;
+    color: #78350f;
+    margin: 0;
+}
+
+.mobile-alert-message strong {
+    color: #451a03;
+}
+
+.mobile-alert-close-btn {
+    background: rgba(217, 119, 6, 0.12);
+    border: 1px solid rgba(217, 119, 6, 0.25);
+    border-radius: 6px;
+    color: #92400e;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    flex-shrink: 0;
+    padding: 0;
+}
+
+.mobile-alert-close-btn:hover,
+.mobile-alert-close-btn:active {
+    background: #d97706;
+    color: #ffffff;
+    border-color: #d97706;
+}
+
+.mobile-alert-close-btn svg,
+.mobile-alert-close-btn i {
+    width: 14px;
+    height: 14px;
+}
+
+/* =============================================================
    Pestañas de Navegación de Bungalows (B1 a B6 y Ver Todos)
    ============================================================= */
 .bungalow-tabs-container {

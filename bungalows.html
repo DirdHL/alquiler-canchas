@@ -140,6 +140,26 @@
 
         <!-- Main Content -->
         <main class="main-content">
+            <!-- Mobile Horizontal Recommendation Banner -->
+            <div id="mobileOrientationAlert" class="mobile-orientation-alert" style="display: none;">
+                <div class="mobile-alert-icon-box">
+                    <i data-lucide="smartphone"></i>
+                </div>
+                <div class="mobile-alert-content">
+                    <div class="mobile-alert-title">
+                        <span>📱 ¿Estás usando un celular?</span>
+                        <span class="mobile-alert-badge">Sugerencia</span>
+                    </div>
+                    <p class="mobile-alert-message">
+                        Para una mejor experiencia y ver los calendarios sin cortes, te recomendamos <strong>girar la
+                            pantalla a posición horizontal 🔄 (Weon no sabe programar en celulares xD)</strong>.
+                    </p>
+                </div>
+                <button type="button" class="mobile-alert-close-btn" id="btnCloseMobileAlert" title="Cerrar sugerencia">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+
             <header class="app-header">
                 <div class="header-left">
                     <button class="btn btn-secondary btn-menu" id="btnToggleSidebar"
