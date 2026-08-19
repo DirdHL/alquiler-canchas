@@ -2582,13 +2582,18 @@ function updateDailySummary() {
             `;
         } else {
             let badgeClass = 'court-badge-grande';
-            if (e.court === 'Pequeña') badgeClass = 'court-badge-pequena';
+            let cardClass = 'card-grande';
+            const courtStr = String(e.court || '');
+            if (courtStr.includes('Pequeña')) {
+                badgeClass = 'court-badge-pequena';
+                cardClass = 'card-pequena';
+            }
 
             const pelotaVal = e.pelota === true || e.pelota === 'true';
             const chalecoVal = e.chaleco === true || e.chaleco === 'true';
 
             html += `
-                <div class="summary-item-card" onclick="openEditFromSummary('${e.id}')" style="cursor: pointer;">
+                <div class="summary-item-card ${cardClass}" onclick="openEditFromSummary('${e.id}')" style="cursor: pointer;">
                     <div class="summary-item-header">
                         <span class="summary-item-time">${formatTimeHHMM(e.start_time)} - ${formatTimeHHMM(e.end_time)}</span>
                         <span class="summary-item-court ${badgeClass}">Cancha ${e.court}</span>

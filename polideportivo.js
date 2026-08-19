@@ -2567,14 +2567,21 @@ function updateDailySummary() {
             `;
         } else {
             let badgeClass = 'court-badge-grande';
-            if (e.court === 'Cancha Pequeña') badgeClass = 'court-badge-pequena';
-            if (e.court === 'Cancha de Vóley') badgeClass = 'court-badge-voley';
+            let cardClass = 'card-grande';
+            const courtStr = String(e.court || '');
+            if (courtStr.includes('Pequeña')) {
+                badgeClass = 'court-badge-pequena';
+                cardClass = 'card-pequena';
+            } else if (courtStr.includes('Vóley')) {
+                badgeClass = 'court-badge-voley';
+                cardClass = 'card-voley';
+            }
 
             const pelotaVal = e.pelota === true || e.pelota === 'true';
             const chalecoVal = e.chaleco === true || e.chaleco === 'true';
 
             html += `
-                <div class="summary-item-card" onclick="openEditFromSummary('${e.id}')" style="cursor: pointer;">
+                <div class="summary-item-card ${cardClass}" onclick="openEditFromSummary('${e.id}')" style="cursor: pointer;">
                     <div class="summary-item-header">
                         <span class="summary-item-time">${formatTimeHHMM(e.start_time)} - ${formatTimeHHMM(e.end_time)}</span>
                         <span class="summary-item-court ${badgeClass}">${e.court}</span>
