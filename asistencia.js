@@ -22,6 +22,7 @@ function getEmployeeNameWithEmoji(name) {
         'Ximena': '👹',
         'Rogger': '🚬🗿',
         'Angelica': '🎀',
+        'Marimar': '💅​',
         'Alison': '🦋🌙'
     };
 
