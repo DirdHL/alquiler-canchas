@@ -16,6 +16,15 @@ let isTotalManuallyEdited = false;
 let selectedDate = new Date();
 let currentBungalowTab = '1'; // Pestaña de Bungalow activa por defecto (Bungalow 1)
 
+// Utility to format Date object to YYYY-MM-DD local date string
+function getLocalDateString(date = new Date()) {
+    const d = date instanceof Date ? date : new Date(date);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
 // Constants
 const PRICE_WEEKDAY = 160.00; // Tarifa diaria Lun-Jue (Día y Noche / Full Day / Por día de Horario Extendido)
 const PRICE_WEEKEND = 180.00; // Tarifa diaria Vie-Dom (Día y Noche / Full Day / Por día de Horario Extendido)
@@ -179,7 +188,7 @@ function setupEventListeners() {
             if (checkIn) {
                 const checkInDate = new Date(checkIn + 'T00:00:00');
                 checkInDate.setDate(checkInDate.getDate() + 1);
-                checkOutInput.value = checkInDate.toISOString().split('T')[0];
+                checkOutInput.value = getLocalDateString(checkInDate);
             }
         }
         runDynamicCalculations();
@@ -198,7 +207,7 @@ function setupEventListeners() {
             } else {
                 const checkInDate = new Date(checkIn + 'T00:00:00');
                 checkInDate.setDate(checkInDate.getDate() + 1);
-                checkOutInput.value = checkInDate.toISOString().split('T')[0];
+                checkOutInput.value = getLocalDateString(checkInDate);
             }
         }
         runDynamicCalculations();
@@ -589,7 +598,7 @@ function openBookingModal(dateStr = null) {
 
     // Prepopulate inputs
     const today = new Date();
-    const todayStr = today.toISOString().split('T')[0];
+    const todayStr = getLocalDateString(today);
     const checkInVal = dateStr || todayStr;
     document.getElementById('bookingCheckIn').value = checkInVal;
 
@@ -598,7 +607,7 @@ function openBookingModal(dateStr = null) {
     document.getElementById('bookingCheckOut').disabled = false;
     const checkInDate = new Date(checkInVal + 'T00:00:00');
     checkInDate.setDate(checkInDate.getDate() + 1);
-    document.getElementById('bookingCheckOut').value = checkInDate.toISOString().split('T')[0];
+    document.getElementById('bookingCheckOut').value = getLocalDateString(checkInDate);
 
     // Preseleccionar el bungalow de la pestaña activa si no es 'all'
     if (currentBungalowTab !== 'all') {
@@ -1572,7 +1581,7 @@ function initCalendar() {
                 // We add 1 day to the checkout date so it highlights the grid cell correctly.
                 const checkOutDate = new Date(b.fecha_salida + 'T00:00:00');
                 checkOutDate.setDate(checkOutDate.getDate() + 1);
-                const exclusiveCheckOutStr = checkOutDate.toISOString().split('T')[0];
+                const exclusiveCheckOutStr = getLocalDateString(checkOutDate);
 
                 let scheduleClass = 'event-horario-dianoche';
                 if (b.horario === 'Full Day') {
@@ -1625,7 +1634,7 @@ function initCalendar() {
             // FullCalendar select's endStr is exclusive. We subtract 1 day to get inclusive check-out
             const endInclusive = new Date(info.endStr);
             endInclusive.setDate(endInclusive.getDate() - 1);
-            const endStr = endInclusive.toISOString().split('T')[0];
+            const endStr = getLocalDateString(endInclusive);
 
             // Set active date
             selectedDate = new Date(startStr + 'T00:00:00');
@@ -1998,10 +2007,10 @@ function initAvailabilityChecker() {
 
     // Default dates (Hoy -> Mañana)
     const today = new Date();
-    const todayStr = today.toISOString().split('T')[0];
+    const todayStr = getLocalDateString(today);
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
-    const tomorrowStr = tomorrow.toISOString().split('T')[0];
+    const tomorrowStr = getLocalDateString(tomorrow);
 
     checkDateIn.value = todayStr;
     checkDateOut.value = tomorrowStr;
@@ -2016,7 +2025,7 @@ function initAvailabilityChecker() {
         } else {
             checkDateOut.disabled = false;
             inDate.setDate(inDate.getDate() + 1);
-            checkDateOut.value = inDate.toISOString().split('T')[0];
+            checkDateOut.value = getLocalDateString(inDate);
         }
         updateAvailabilityChecker();
     });
@@ -2028,7 +2037,7 @@ function initAvailabilityChecker() {
             checkDateOut.value = checkDateIn.value;
         } else {
             inDate.setDate(inDate.getDate() + 1);
-            checkDateOut.value = inDate.toISOString().split('T')[0];
+            checkDateOut.value = getLocalDateString(inDate);
         }
         updateAvailabilityChecker();
     });
@@ -2052,10 +2061,10 @@ function initAvailabilityChecker() {
             const nextNextDay = new Date(today);
             nextNextDay.setDate(nextNextDay.getDate() + 2);
 
-            checkDateIn.value = nextDay.toISOString().split('T')[0];
+            checkDateIn.value = getLocalDateString(nextDay);
             checkHorario.value = 'Día y Noche';
             checkDateOut.disabled = false;
-            checkDateOut.value = nextNextDay.toISOString().split('T')[0];
+            checkDateOut.value = getLocalDateString(nextNextDay);
             updateAvailabilityChecker();
         });
     }
@@ -2069,10 +2078,10 @@ function initAvailabilityChecker() {
             const mon = new Date(sat);
             mon.setDate(mon.getDate() + 2);
 
-            checkDateIn.value = sat.toISOString().split('T')[0];
+            checkDateIn.value = getLocalDateString(sat);
             checkHorario.value = 'Día y Noche';
             checkDateOut.disabled = false;
-            checkDateOut.value = mon.toISOString().split('T')[0];
+            checkDateOut.value = getLocalDateString(mon);
             updateAvailabilityChecker();
         });
     }

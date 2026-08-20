@@ -9,6 +9,15 @@ let calendar = null;
 let bookings = [];
 let activeOperator = 'Invitado';
 
+// Utility to format Date object to YYYY-MM-DD local date string
+function getLocalDateString(date = new Date()) {
+    const d = date instanceof Date ? date : new Date(date);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
     lucide.createIcons();
     initSidebarState();
@@ -171,7 +180,7 @@ function openBookingModal(booking = null, defaultDate = null) {
         const finInput = document.getElementById('bookingFechaFin');
         if (finInput) finInput.value = defaultDate;
     } else {
-        const todayStr = new Date().toISOString().split('T')[0];
+        const todayStr = getLocalDateString(new Date());
         document.getElementById('bookingFecha').value = todayStr;
         const finInput = document.getElementById('bookingFechaFin');
         if (finInput) finInput.value = todayStr;
@@ -536,7 +545,7 @@ function renderCalendarEvents() {
     calendar.addEventSource(events);
 
     // Update daily summary
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDateString(new Date());
     const todayEvents = bookings.filter(b => b.fecha_reserva === today);
     document.getElementById('statTodayOccupied').textContent = `${todayEvents.length} Locales`;
 }

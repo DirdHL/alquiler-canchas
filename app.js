@@ -477,6 +477,15 @@ function formatTime(date) {
     return `${hours}:${minutes}`;
 }
 
+// Utility to format Date object to YYYY-MM-DD local date string
+function getLocalDateString(date = new Date()) {
+    const d = date instanceof Date ? date : new Date(date);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
 // Event Listeners Setup
 function setupEventListeners() {
     // Mobile Sidebar Drawer Actions & Desktop Toggle
@@ -1330,7 +1339,7 @@ function openBookingModal(booking = null, defaults = null) {
             }
         } else {
             // Standard defaults
-            const today = new Date().toISOString().split('T')[0];
+            const today = getLocalDateString(new Date());
             bookingDateInput.value = today;
             bookingStartTimeInput.value = '14:00';
             bookingEndTimeInput.value = '15:00';
