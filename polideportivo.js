@@ -3151,13 +3151,45 @@ function updateAvailabilityGrid() {
     const day = String(currentDate.getDate()).padStart(2, '0');
     const dateStr = `${year}-${month}-${day}`;
 
-    const courts = ['Cancha Grande', 'Cancha Pequeña', 'Cancha de Vóley'];
-
-    const capacities = {
-        'Cancha Grande': 3,
-        'Cancha Pequeña': 4,
-        'Cancha de Vóley': 4
-    };
+    // Court groups with specific numbered court lists and matching logic
+    const courtCategories = [
+        {
+            name: 'Cancha Grande',
+            cssClass: 'court-grande',
+            sportEmoji: '⚽',
+            courts: ['Cancha Grande 1', 'Cancha Grande 2', 'Cancha Grande 3'],
+            capacity: 3,
+            match: (courtName, sport) => {
+                if (!courtName) return false;
+                if (courtName === 'Cancha Grande') return true;
+                return courtName.includes('Grande');
+            }
+        },
+        {
+            name: 'Cancha Pequeña',
+            cssClass: 'court-pequena',
+            sportEmoji: '⚽',
+            courts: ['Cancha Pequeña 1', 'Cancha Pequeña 2', 'Cancha Pequeña 3', 'Cancha Pequeña 4'],
+            capacity: 4,
+            match: (courtName, sport) => {
+                if (!courtName) return false;
+                if (courtName === 'Cancha Pequeña' || courtName === 'Cancha Pequena') return true;
+                return courtName.includes('Pequeña') || courtName.includes('Pequena');
+            }
+        },
+        {
+            name: 'Cancha de Vóley',
+            cssClass: 'court-voley',
+            sportEmoji: '🏐',
+            courts: ['Cancha de Vóley 1', 'Cancha de Vóley 2', 'Cancha de Vóley 3', 'Cancha de Vóley 4'],
+            capacity: 4,
+            match: (courtName, sport) => {
+                if (!courtName) return false;
+                if (courtName === 'Cancha de Vóley' || courtName === 'Cancha de Voley' || courtName === 'Vóley' || courtName === 'Voley') return true;
+                return courtName.includes('Vóley') || courtName.includes('Voley') || sport === 'Vóley';
+            }
+        }
+    ];
 
     // Generate slots
     const slotDuration = 30; // minutes
@@ -3210,17 +3242,12 @@ function updateAvailabilityGrid() {
     }
 
     let html = '';
-    let totalFreeCourtsToday = 0;
-    let totalPossibleCourtsToday = 0;
 
     slots.forEach(slot => {
         html += `<tr>`;
         html += `<td style="padding: 10px 16px; font-weight: 600; color: var(--text-primary); border-bottom: 1px solid rgba(255, 255, 255, 0.04);">${slot.displayTime}</td>`;
 
-        courts.forEach(court => {
-            const capacity = capacities[court];
-            totalPossibleCourtsToday += capacity;
-
+        courtCategories.forEach(cat => {
             // Check if there is an overlapping total block ("Todas")
             const totalBlock = allEvents.find(e => {
                 if (e.court === 'Todas') {
@@ -3233,7 +3260,7 @@ function updateAvailabilityGrid() {
             html += `<td style="padding: 6px 8px; border-bottom: 1px solid rgba(255, 255, 255, 0.04); vertical-align: top;">`;
 
             if (totalBlock) {
-                let blockReason = totalBlock.name;
+                let blockReason = totalBlock.name || 'Bloqueado';
                 if (blockReason.startsWith('🔒 Bloqueo: ')) {
                     blockReason = blockReason.replace('🔒 Bloqueo: ', '');
                 } else if (blockReason.startsWith('🔒 Bloqueo:')) {
@@ -3243,7 +3270,7 @@ function updateAvailabilityGrid() {
             } else {
                 // Find all bookings for this court category overlapping with this slot
                 const activeBookings = allEvents.filter(e => {
-                    if (e.court === court) {
+                    if (cat.match(e.court, e.sport)) {
                         const { start: existStart, end: existEnd } = getStartAndEndDates(e.date, e.start_time, e.end_time);
                         return existStart < slot.endDate && existEnd > slot.startDate;
                     }
@@ -3254,29 +3281,27 @@ function updateAvailabilityGrid() {
                 activeBookings.forEach(booking => {
                     const isBlock = booking.sport === 'Bloqueo';
                     if (isBlock) {
-                        let blockReason = booking.name;
+                        let blockReason = booking.name || 'Bloqueado';
                         if (blockReason.startsWith('🔒 Bloqueo: ')) {
                             blockReason = blockReason.replace('🔒 Bloqueo: ', '');
                         } else if (blockReason.startsWith('🔒 Bloqueo:')) {
                             blockReason = blockReason.replace('🔒 Bloqueo:', '');
                         }
-                        html += `<span class="availability-blocked-badge" onclick="openEditFromSummary('${booking.id}')" title="🔒 Bloqueo: ${escapeHTML(blockReason)}" style="margin-bottom: 4px; display: block;">🔒 ${escapeHTML(blockReason)}</span>`;
+                        const courtLabel = booking.court ? booking.court.replace('Cancha ', '') : '';
+                        html += `<span class="availability-blocked-badge" onclick="openEditFromSummary('${booking.id}')" title="🔒 Bloqueo: ${escapeHTML(blockReason)} (${booking.court || cat.name})" style="margin-bottom: 4px; display: block;">🔒 ${courtLabel ? escapeHTML(courtLabel) + ': ' : ''}${escapeHTML(blockReason)}</span>`;
                     } else {
-                        let courtClass = 'court-grande';
-                        if (court === 'Cancha Pequeña') courtClass = 'court-pequena';
-                        if (court === 'Cancha de Vóley') courtClass = 'court-voley';
                         const sportEmoji = booking.sport === 'Vóley' ? '🏐' : '⚽';
-                        html += `<span class="availability-booked-badge ${courtClass}" onclick="openEditFromSummary('${booking.id}')" title="Reservado: ${escapeHTML(booking.name)} (${booking.sport})" style="margin-bottom: 4px; display: block;">${sportEmoji} ${escapeHTML(booking.name)}</span>`;
+                        const courtLabel = booking.court ? booking.court.replace('Cancha ', '') : '';
+                        html += `<span class="availability-booked-badge ${cat.cssClass}" onclick="openEditFromSummary('${booking.id}')" title="Reservado: ${escapeHTML(booking.name)} - ${escapeHTML(booking.court || cat.name)} (${booking.sport || ''})" style="margin-bottom: 4px; display: block;">${sportEmoji} ${courtLabel ? escapeHTML(courtLabel) + ': ' : ''}${escapeHTML(booking.name)}</span>`;
                     }
                 });
 
                 // Display quick booking button if there is remaining capacity
-                const freeCount = capacity - activeBookings.length;
+                const freeCount = Math.max(0, cat.capacity - activeBookings.length);
                 if (freeCount > 0) {
-                    totalFreeCourtsToday += freeCount;
                     let buttonText = `+ Reservar (${freeCount} Libres)`;
 
-                    html += `<button type="button" class="availability-slot-btn" data-free="${freeCount}" onclick="openBookingFromGrid('${slot.bookingDateStr}', '${slot.startStr}', '${slot.endStr}', '${court}')">
+                    html += `<button type="button" class="availability-slot-btn" data-free="${freeCount}" onclick="openBookingFromGrid('${slot.bookingDateStr}', '${slot.startStr}', '${slot.endStr}', '${cat.name}')">
                         <i data-lucide="plus" style="width: 11px; height: 11px;"></i> ${buttonText}
                     </button>`;
                 } else {
@@ -3298,12 +3323,44 @@ function updateAvailabilityGrid() {
 }
 
 // Global function to trigger modal open from availability grid cells
-window.openBookingFromGrid = function (dateStr, startTime, endTime, court) {
+window.openBookingFromGrid = function (dateStr, startTime, endTime, categoryName) {
+    const courtCategories = {
+        'Cancha Grande': ['Cancha Grande 1', 'Cancha Grande 2', 'Cancha Grande 3'],
+        'Cancha Pequeña': ['Cancha Pequeña 1', 'Cancha Pequeña 2', 'Cancha Pequeña 3', 'Cancha Pequeña 4'],
+        'Cancha de Vóley': ['Cancha de Vóley 1', 'Cancha de Vóley 2', 'Cancha de Vóley 3', 'Cancha de Vóley 4']
+    };
+
+    const courts = courtCategories[categoryName] || [categoryName];
+    const { start: qStart, end: qEnd } = getStartAndEndDates(dateStr, startTime, endTime);
+
+    // Find occupied courts in this category
+    const occupiedCourts = new Set();
+    allEvents.forEach(e => {
+        const { start: existStart, end: existEnd } = getStartAndEndDates(e.date, e.start_time, e.end_time);
+        if (existStart < qEnd && existEnd > qStart) {
+            if (e.court === 'Todas') {
+                courts.forEach(c => occupiedCourts.add(c));
+            } else if (e.court) {
+                occupiedCourts.add(e.court);
+            }
+        }
+    });
+
+    // Select the first available specific court
+    const selectedCourt = courts.find(c => !occupiedCourts.has(c)) || courts[0];
+
+    // Determine sport
+    let sport = 'Fútbol';
+    if (categoryName.includes('Vóley') || categoryName.includes('Voley')) {
+        sport = 'Vóley';
+    }
+
     openBookingModal(null, {
         date: dateStr,
         start_time: startTime,
         end_time: endTime,
-        court: court
+        court: selectedCourt,
+        sport: sport
     });
 };
 
