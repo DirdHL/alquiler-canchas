@@ -680,7 +680,13 @@ function openBookingEditModal(booking) {
     document.getElementById('bookingTotal').value = booking.monto_total;
     document.getElementById('bookingAdelanto').value = booking.monto_adelanto;
     document.getElementById('bookingPaymentType').value = booking.tipo_pago;
-    document.getElementById('bookingComment').value = booking.notas || '';
+    
+    let notesValue = booking.notas || '';
+    if (document.getElementById('bookingVino')) document.getElementById('bookingVino').checked = notesValue.includes('🍷');
+    if (document.getElementById('bookingTorta')) document.getElementById('bookingTorta').checked = notesValue.includes('🎂');
+    if (document.getElementById('bookingCuatrimoto')) document.getElementById('bookingCuatrimoto').checked = notesValue.includes('🏍️');
+    
+    document.getElementById('bookingComment').value = notesValue.replace(/[🍷🎂🏍️]/g, '').replace(/ - /g, '').trim();
 
     // Handle divided payment
     if (booking.tipo_pago === 'Dividido') {
@@ -1242,7 +1248,17 @@ async function handleSaveBooking(e) {
             fecha_salida: checkOut,
             horario: horario,
             estado_reserva: isBlock ? 'Bloqueado' : 'Confirmado',
-            notas: document.getElementById('bookingComment').value.trim(),
+            notas: (function(){
+                let finalNotes = document.getElementById('bookingComment').value.trim();
+                let icons = [];
+                if (document.getElementById('bookingVino') && document.getElementById('bookingVino').checked) icons.push('🍷');
+                if (document.getElementById('bookingTorta') && document.getElementById('bookingTorta').checked) icons.push('🎂');
+                if (document.getElementById('bookingCuatrimoto') && document.getElementById('bookingCuatrimoto').checked) icons.push('🏍️');
+                if (icons.length > 0) {
+                    finalNotes = icons.join(" ") + (finalNotes ? " - " + finalNotes : "");
+                }
+                return finalNotes;
+            })(),
             asesor_registro: notes,
             tipo_pago: document.getElementById('bookingPaymentType').value,
             medio_contacto: source
@@ -1521,6 +1537,15 @@ function initCalendar() {
             let emoji = '☀️🌙';
             if (b.horario === 'Full Day') emoji = '☀️';
             else if (b.horario === 'Horario Extendido') emoji = '✨';
+
+            let extrasIconsHtml = '';
+            if (b.notas) {
+                const matchedIcons = b.notas.match(/[🍷🎂🏍️]/g);
+                if (matchedIcons) {
+                    extrasIconsHtml = `<span style="font-size: 1.1em; letter-spacing: 2px; margin-left: 5px;">${matchedIcons.join('')}</span>`;
+                    emoji = emoji + ' ' + matchedIcons.join('');
+                }
+            }
 
             if (currentBungalowTab !== 'all') {
                 // Vista de Bungalow Individual: Mostrar toda la información aprovechando el espacio vertical

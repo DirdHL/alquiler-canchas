@@ -512,7 +512,7 @@ function setupEventListeners() {
     }
     formBooking.addEventListener('submit', handleSaveBooking);
 
-    // Settings Modal
+    // Settings Modal 
     btnOpenSettings.addEventListener('click', () => {
         closeSidebarDrawer();
         openModal(modalSettings);
