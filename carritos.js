@@ -80,7 +80,7 @@ function setupEventListeners() {
     const bookingCategoria = document.getElementById('bookingCategoria');
     if (bookingCategoria) {
         bookingCategoria.addEventListener('change', function () {
-            updateBookingLocalOptions(this.value);
+            renderBookingItems(this.value);
         });
     }
 
@@ -164,30 +164,14 @@ function runDynamicCalculations() {
     document.getElementById('bookingPendiente').value = Math.max(0, total - adelanto).toFixed(2);
 }
 
-function updateBookingLocalOptions(categoryValue, selectedValue = null) {
-    const bookingLocal = document.getElementById('bookingLocal');
-    if (!bookingLocal) return;
-
-    bookingLocal.innerHTML = '';
+function renderBookingItems(categoryValue = '', selectedValues = []) {
+    const container = document.getElementById('bookingItemsContainer');
+    if (!container) return;
 
     if (!categoryValue) {
-        bookingLocal.disabled = true;
-        const opt = document.createElement('option');
-        opt.value = '';
-        opt.disabled = true;
-        opt.selected = true;
-        opt.textContent = 'Seleccione categoría primero...';
-        bookingLocal.appendChild(opt);
+        container.innerHTML = '<span style="color: var(--text-muted); font-size: 13px;">Seleccione una categoría primero...</span>';
         return;
     }
-
-    bookingLocal.disabled = false;
-    const placeholderOpt = document.createElement('option');
-    placeholderOpt.value = '';
-    placeholderOpt.disabled = true;
-    placeholderOpt.selected = !selectedValue;
-    placeholderOpt.textContent = 'Seleccione artículo...';
-    bookingLocal.appendChild(placeholderOpt);
 
     const articles = {
         'Carrito Snacks': [
@@ -235,29 +219,21 @@ function updateBookingLocalOptions(categoryValue, selectedValue = null) {
         ]
     };
 
-    let found = false;
-    const categoryArticles = articles[categoryValue] || [];
-    categoryArticles.forEach(art => {
-        const opt = document.createElement('option');
-        opt.value = art.value;
-        opt.textContent = art.text;
-        if (selectedValue && (art.value === selectedValue ||
-            (selectedValue.startsWith('Juego Inflable|') && art.value === selectedValue.replace('Juego Inflable|', 'Magia del rebote|')))) {
-            opt.selected = true;
-            found = true;
-        }
-        bookingLocal.appendChild(opt);
+    const items = articles[categoryValue] || [];
+    let html = `<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px;">`;
+    
+    items.forEach(art => {
+        const isChecked = selectedValues.includes(art.value) ? 'checked' : '';
+        html += `
+            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 13px; user-select: none;">
+                <input type="checkbox" name="bookingItem" value="${art.value}" class="item-checkbox" style="width: 16px; height: 16px; cursor: pointer;" ${isChecked}>
+                <span style="color: var(--text-secondary);">${art.text}</span>
+            </label>
+        `;
     });
-
-    if (selectedValue && !found) {
-        // Legacy option compatibility
-        const opt = document.createElement('option');
-        opt.value = selectedValue;
-        const parts = selectedValue.split('|');
-        opt.textContent = parts[1] || parts[0];
-        opt.selected = true;
-        bookingLocal.appendChild(opt);
-    }
+    
+    html += `</div>`;
+    container.innerHTML = html;
 }
 
 function openModal(id) { document.getElementById(id).classList.add('active'); }
@@ -291,14 +267,16 @@ function openBookingModal(booking = null, defaultDate = null) {
 
         // Cargar Categoría y Artículo dinámicamente
         const categorySelect = document.getElementById('bookingCategoria');
+        let cat = booking.categoria || '';
+        if (cat === 'Juego Inflable') cat = 'Magia del rebote';
+        
         if (categorySelect) {
-            let cat = booking.categoria || '';
-            if (cat === 'Juego Inflable') cat = 'Magia del rebote';
             categorySelect.value = cat;
-            updateBookingLocalOptions(cat, `${booking.categoria}|${booking.item}`);
-        } else {
-            document.getElementById('bookingLocal').value = `${booking.categoria}|${booking.item}`;
         }
+        
+        const itemVal = `${booking.categoria}|${booking.item}`;
+        renderBookingItems(cat, [itemVal]);
+        
         document.getElementById('bookingFecha').value = booking.fecha_reserva;
         document.getElementById('bookingHoraInicio').value = booking.hora_inicio.substring(0, 5);
         document.getElementById('bookingHoraFin').value = booking.hora_fin.substring(0, 5);
@@ -332,7 +310,7 @@ function openBookingModal(booking = null, defaultDate = null) {
         if (categorySelect) {
             categorySelect.value = '';
         }
-        updateBookingLocalOptions('');
+        renderBookingItems();
     }
 
     runDynamicCalculations();
@@ -343,56 +321,64 @@ async function handleSaveBooking(e) {
     e.preventDefault();
     const isBlock = document.getElementById('bookingIsBlock').checked;
 
-    const [categoria, item] = document.getElementById('bookingLocal').value.split('|');
-    const payload = {
-        categoria: categoria,
-        item: item,
-        nombre_cliente: document.getElementById('bookingName').value,
-        telefono_cliente: document.getElementById('bookingDni').value,
-        fecha_reserva: document.getElementById('bookingFecha').value,
-        hora_inicio: document.getElementById('bookingHoraInicio').value,
-        hora_fin: document.getElementById('bookingHoraFin').value,
-        tipo_evento: '',
-        monto_total: parseFloat(document.getElementById('bookingTotal').value) || 0,
-        monto_adelanto: parseFloat(document.getElementById('bookingAdelanto').value) || 0,
-        medio_contacto: document.getElementById('bookingSource').value,
-        estado_reserva: isBlock ? 'Bloqueado' : 'Confirmado',
-        notas: document.getElementById('bookingComment').value,
-        asesor_registro: document.getElementById('bookingNotes').value
-    };
-
-    const bookingId = document.getElementById('bookingId').value;
-
-    if (dbMode === 'supabase' && supabaseClient) {
-        let error;
-        if (bookingId) {
-            const res = await supabaseClient.from('reservas_carritos').update(payload).eq('id', bookingId);
-            error = res.error;
-        } else {
-            const res = await supabaseClient.from('reservas_carritos').insert([payload]);
-            error = res.error;
-        }
-
-        if (error) {
-            document.getElementById('bookingError').textContent = 'Error al guardar: ' + error.message;
-            return;
-        }
-    } else {
-        // Local mode fallback
-        if (bookingId) {
-            const idx = bookings.findIndex(b => b.id === bookingId);
-            if (idx >= 0) bookings[idx] = { ...bookings[idx], ...payload };
-        } else {
-            payload.id = Date.now().toString();
-            bookings.push(payload);
-        }
-        localStorage.setItem('canchapro_reservas_carritos', JSON.stringify(bookings));
+    // Check selected items from checkboxes
+    const checkedItems = document.querySelectorAll('input[name="bookingItem"]:checked');
+    if (checkedItems.length === 0) {
+        document.getElementById('bookingError').textContent = 'Seleccione al menos un artículo.';
+        return;
     }
+    
+    // Process multiple items
+    const promises = Array.from(checkedItems).map(async (checkbox) => {
+        const [categoria, item] = checkbox.value.split('|');
+        const payload = {
+            categoria: categoria,
+            item: item,
+            nombre_cliente: document.getElementById('bookingName').value,
+            telefono_cliente: document.getElementById('bookingDni').value,
+            fecha_reserva: document.getElementById('bookingFecha').value,
+            hora_inicio: document.getElementById('bookingHoraInicio').value,
+            hora_fin: document.getElementById('bookingHoraFin').value,
+            tipo_evento: '',
+            monto_total: parseFloat(document.getElementById('bookingTotal').value) || 0,
+            monto_adelanto: parseFloat(document.getElementById('bookingAdelanto').value) || 0,
+            medio_contacto: document.getElementById('bookingSource').value,
+            estado_reserva: isBlock ? 'Bloqueado' : 'Confirmado',
+            notas: document.getElementById('bookingComment').value,
+            asesor_registro: document.getElementById('bookingNotes').value
+        };
+
+        const bookingId = document.getElementById('bookingId').value;
+
+        if (dbMode === 'supabase' && supabaseClient) {
+            if (bookingId) {
+                await supabaseClient.from('reservas_carritos').update(payload).eq('id', bookingId);
+            } else {
+                await supabaseClient.from('reservas_carritos').insert([payload]);
+            }
+        } else {
+            if (bookingId) {
+                const idx = bookings.findIndex(b => b.id === bookingId);
+                if (idx >= 0) bookings[idx] = { ...bookings[idx], ...payload };
+            } else {
+                payload.id = Date.now().toString() + Math.random();
+                bookings.push(payload);
+            }
+            localStorage.setItem('canchapro_reservas_carritos', JSON.stringify(bookings));
+        }
+        return payload;
+    });
+
+    await Promise.all(promises);
 
     // Log history
-    const isEdit = !!bookingId;
+    const isEdit = !!document.getElementById('bookingId').value;
     const actionVerb = isEdit ? 'editar' : 'crear';
-    const detailMessage = `${isEdit ? 'Editó' : 'Creó'} reserva para ${payload.nombre_cliente} (${payload.categoria} - ${payload.item}) el ${payload.fecha_reserva} de ${payload.hora_inicio} a ${payload.hora_fin}`;
+    const numItems = checkedItems.length;
+    const basePayload = promises[0]; // just for some info
+    const nombreCliente = document.getElementById('bookingName').value;
+    const fechaReserva = document.getElementById('bookingFecha').value;
+    const detailMessage = `${isEdit ? 'Editó' : 'Creó'} reserva(s) para ${nombreCliente} (${numItems} artículo/s) el ${fechaReserva}`;
     await addHistoryEntry(actionVerb, detailMessage);
 
     closeModal('modalBooking');
