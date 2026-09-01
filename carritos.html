@@ -263,25 +263,37 @@
                     </div>
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="bookingHoraInicio">Hora de Inicio *</label>
-                            <div class="input-wrapper">
-                                <i data-lucide="clock"></i>
-                                <input type="time" id="bookingHoraInicio" required>
+                            <label>Hora de Inicio *</label>
+                            <!-- Hidden original input for backend compatibility -->
+                            <input type="time" id="bookingHoraInicio" required style="display: none;">
+                            
+                            <div class="custom-time-wrapper" style="background: rgba(255, 255, 255, 0.65); border: 1px solid rgba(236, 72, 153, 0.2); border-radius: var(--radius-sm); display: flex; align-items: center; position: relative; height: 44px; transition: var(--transition-smooth);">
+                                <i data-lucide="clock" style="position: absolute; left: 14px; color: var(--text-muted); width: 18px; height: 18px;"></i>
+                                <input type="text" id="startHourSelect" placeholder="HH" maxlength="2" required autocomplete="off" style="width: 36px; text-align: right; border: none; background: transparent; padding: 0; outline: none; margin-left: 40px; font-weight: 600; color: var(--text-primary); font-size: 15px;">
+                                <span style="font-weight: 600; color: var(--text-secondary); margin: 0 4px;">:</span>
+                                <input type="text" id="startMinSelect" placeholder="MM" maxlength="2" required autocomplete="off" style="width: 36px; text-align: left; border: none; background: transparent; padding: 0; outline: none; font-weight: 600; color: var(--text-primary); font-size: 15px;">
+                                <select id="startAmpmSelect" required style="border: none; background: transparent; outline: none; cursor: pointer; margin-left: auto; margin-right: 10px; font-weight: 600; color: var(--text-primary); font-size: 14px;">
+                                    <option value="am">AM</option>
+                                    <option value="pm">PM</option>
+                                </select>
                             </div>
                         </div>
                         <div class="form-group">
-                            <label for="bookingHoraFin">Hora de Fin *</label>
-                            <div class="input-wrapper">
-                                <i data-lucide="clock"></i>
-                                <input type="time" id="bookingHoraFin" required>
+                            <label>Hora de Fin *</label>
+                            <!-- Hidden original input for backend compatibility -->
+                            <input type="time" id="bookingHoraFin" required style="display: none;">
+                            
+                            <div class="custom-time-wrapper" style="background: rgba(255, 255, 255, 0.65); border: 1px solid rgba(236, 72, 153, 0.2); border-radius: var(--radius-sm); display: flex; align-items: center; position: relative; height: 44px; transition: var(--transition-smooth);">
+                                <i data-lucide="clock" style="position: absolute; left: 14px; color: var(--text-muted); width: 18px; height: 18px;"></i>
+                                <input type="text" id="endHourSelect" placeholder="HH" maxlength="2" required autocomplete="off" style="width: 36px; text-align: right; border: none; background: transparent; padding: 0; outline: none; margin-left: 40px; font-weight: 600; color: var(--text-primary); font-size: 15px;">
+                                <span style="font-weight: 600; color: var(--text-secondary); margin: 0 4px;">:</span>
+                                <input type="text" id="endMinSelect" placeholder="MM" maxlength="2" required autocomplete="off" style="width: 36px; text-align: left; border: none; background: transparent; padding: 0; outline: none; font-weight: 600; color: var(--text-primary); font-size: 15px;">
+                                <select id="endAmpmSelect" required style="border: none; background: transparent; outline: none; cursor: pointer; margin-left: auto; margin-right: 10px; font-weight: 600; color: var(--text-primary); font-size: 14px;">
+                                    <option value="am">AM</option>
+                                    <option value="pm">PM</option>
+                                </select>
                             </div>
                         </div>
-                    </div>
-                    <div
-                        style="font-size: 11px; color: var(--text-secondary); margin-top: -8px; margin-bottom: 12px; display: flex; align-items: center; gap: 4px;">
-                        <i data-lucide="info" style="width: 12px; height: 12px;"></i>
-                        <span>Nota: Usa el formato de 24 horas. Las reservas que cruzan la medianoche se calculan
-                            automáticamente.</span>
                     </div>
 
                     <div class="form-group hidden" id="customSourceGroup">
