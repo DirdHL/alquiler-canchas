@@ -227,6 +227,24 @@
                         <div class="form-error" id="itemsError" style="display: none; color: #ef4444; font-size: 13px; margin-top: 4px;">Seleccione al menos un artículo.</div>
                     </div>
 
+                    <!-- Tipo de evento y Lugar -->
+                    <div class="form-row" style="grid-template-columns: 1fr 1fr; gap: 16px;">
+                        <div class="form-group">
+                            <label for="bookingTipoEvento">Tipo de evento *</label>
+                            <div class="input-wrapper">
+                                <i data-lucide="party-popper"></i>
+                                <input type="text" id="bookingTipoEvento" placeholder="Ej. Fiesta infantil" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="bookingLugar">Lugar de evento *</label>
+                            <div class="input-wrapper">
+                                <i data-lucide="map-pin"></i>
+                                <input type="text" id="bookingLugar" placeholder="Ej. el Farolito" required>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Medio de Contacto -->
                     <div class="form-group">
                         <label for="bookingSource">Medio de Contacto *</label>

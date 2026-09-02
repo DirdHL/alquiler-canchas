@@ -42,10 +42,11 @@ function setupEventListeners() {
     const sidebarBackdrop = document.getElementById('sidebarBackdrop');
 
     if (btnToggleSidebar) btnToggleSidebar.addEventListener('click', toggleSidebarHandler);
-    if (btnCloseSidebar) btnCloseSidebar.addEventListener('click', closeSidebarDrawer);
+    document.getElementById('btnCloseSidebar').addEventListener('click', closeSidebarDrawer);
     if (sidebarBackdrop) sidebarBackdrop.addEventListener('click', closeSidebarDrawer);
     document.getElementById('btnNewReservation').addEventListener('click', () => openBookingModal());
     document.getElementById('btnCloseBooking').addEventListener('click', () => closeModal('modalBooking'));
+    document.getElementById('btnCopyReservation').addEventListener('click', handleCopyReservation);
     document.getElementById('btnOpenSettings').addEventListener('click', () => openModal('modalSettings'));
     document.getElementById('btnCloseSettings').addEventListener('click', () => closeModal('modalSettings'));
     document.getElementById('formSettings').addEventListener('submit', handleSaveSettings);
@@ -64,7 +65,7 @@ function setupEventListeners() {
     }
     if (btnClearHistoryLocal) {
         btnClearHistoryLocal.addEventListener('click', () => {
-            if (confirm("¿Estás seguro de que deseas limpiar el historial local? Esto no afectará la base de datos Supabase.")) {
+            if (confirm("Â¿EstÃ¡s seguro de que deseas limpiar el historial local? Esto no afectarÃ¡ la base de datos Supabase.")) {
                 localStorage.removeItem('canchapro_historial_carritos');
                 openHistoryModal();
             }
@@ -251,14 +252,14 @@ function renderBookingItems(categoryValue = '', selectedValues = []) {
     if (!container) return;
 
     if (!categoryValue) {
-        container.innerHTML = '<span style="color: var(--text-muted); font-size: 13px;">Seleccione una categoría primero...</span>';
+        container.innerHTML = '<span style="color: var(--text-muted); font-size: 13px;">Seleccione una categorÃ­a primero...</span>';
         return;
     }
 
     const articles = {
         'Carrito Snacks': [
             { value: 'Carrito Snacks|Pop corn', text: 'Pop corn' },
-            { value: 'Carrito Snacks|Algodón dulce', text: 'Algodón dulce' },
+            { value: 'Carrito Snacks|AlgodÃ³n dulce', text: 'AlgodÃ³n dulce' },
             { value: 'Carrito Snacks|Manzana acaramelada', text: 'Manzana acaramelada' },
             { value: 'Carrito Snacks|Manzana achocolatada', text: 'Manzana achocolatada' },
             { value: 'Carrito Snacks|Churros', text: 'Churros' },
@@ -296,26 +297,85 @@ function renderBookingItems(categoryValue = '', selectedValues = []) {
             { value: 'Magia del rebote|Tortuga saltarina', text: 'Tortuga saltarina' },
             { value: 'Magia del rebote|Bolikche Bunker', text: 'Bolikche Bunker' },
             { value: 'Magia del rebote|Rueda Rueda', text: 'Rueda Rueda' },
-            { value: 'Magia del rebote|Campo de Fútbol', text: 'Campo de Fútbol' },
+            { value: 'Magia del rebote|Campo de FÃºtbol', text: 'Campo de FÃºtbol' },
             { value: 'Magia del rebote|Bumper Balls', text: 'Bumper Balls' }
         ]
     };
 
     const items = articles[categoryValue] || [];
-    let html = `<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px;">`;
+    let html = `<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px;">`;
     
     items.forEach(art => {
-        const isChecked = selectedValues.includes(art.value) ? 'checked' : '';
+        let isChecked = false;
+        let qty = 50;
+        
+        if (selectedValues.length > 0) {
+            selectedValues.forEach(val => {
+                if (val.startsWith(art.value)) {
+                   isChecked = true;
+                   const match = val.match(/\((\d+)\)$/);
+                   if (match) qty = match[1];
+                }
+            });
+        }
+        
+        const checkedAttr = isChecked ? 'checked' : '';
+        const qtyDisplay = (categoryValue === 'Carrito Snacks' && isChecked) ? 'block' : 'none';
+        
         html += `
-            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 13px; user-select: none;">
-                <input type="checkbox" name="bookingItem" value="${art.value}" class="item-checkbox" style="width: 16px; height: 16px; cursor: pointer;" ${isChecked}>
-                <span style="color: var(--text-secondary);">${art.text}</span>
-            </label>
+            <div style="display: flex; align-items: center; gap: 6px; user-select: none;">
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 13px; flex: 1;">
+                    <input type="checkbox" name="bookingItem" value="${art.value}" class="item-checkbox" style="width: 16px; height: 16px; cursor: pointer;" ${checkedAttr} onchange="toggleQtyInput(this)">
+                    <span style="color: var(--text-secondary);">${art.text}</span>
+                </label>
+                ${categoryValue === 'Carrito Snacks' ? `
+                <div class="qty-container" style="display: ${qtyDisplay};">
+                    <input type="number" id="qty_${art.value.replace(/\s+/g, '_')}" class="item-qty-input" value="${qty}" min="1" max="999" style="width: 60px; padding: 4px; border: 1px solid var(--border-color); border-radius: 4px; background: rgba(0,0,0,0.2); color: white; font-size: 13px; text-align: center;" oninput="updateTotalQty()">
+                </div>
+                ` : ''}
+            </div>
         `;
     });
     
     html += `</div>`;
+    
+    if (categoryValue === 'Carrito Snacks') {
+        html += `
+        <div style="margin-top: 12px; padding-top: 8px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; align-items: center; gap: 8px;">
+            <span style="color: var(--text-muted); font-size: 13px;">Total cantidad:</span>
+            <span id="totalQtyCounter" style="font-weight: 700; color: var(--primary); font-size: 15px;">0</span>
+        </div>
+        `;
+    }
+    
     container.innerHTML = html;
+    
+    if (categoryValue === 'Carrito Snacks') {
+        updateTotalQty();
+    }
+}
+
+window.toggleQtyInput = function(checkbox) {
+    const qtyContainer = checkbox.closest('div').querySelector('.qty-container');
+    if (qtyContainer) {
+        qtyContainer.style.display = checkbox.checked ? 'block' : 'none';
+    }
+    updateTotalQty();
+};
+
+window.updateTotalQty = function() {
+    const counter = document.getElementById('totalQtyCounter');
+    if (!counter) return;
+    
+    let total = 0;
+    const checkboxes = document.querySelectorAll('input[name="bookingItem"]:checked');
+    checkboxes.forEach(cb => {
+        const qtyInput = document.getElementById(`qty_${cb.value.replace(/\s+/g, '_')}`);
+        if (qtyInput) {
+            total += parseInt(qtyInput.value) || 0;
+        }
+    });
+    counter.textContent = total;
 }
 
 function openModal(id) { document.getElementById(id).classList.add('active'); }
@@ -347,7 +407,17 @@ function openBookingModal(booking = null, defaultDate = null) {
         document.getElementById('bookingName').value = booking.nombre_cliente || '';
         document.getElementById('bookingDni').value = booking.telefono_cliente || '';
 
-        // Cargar Categoría y Artículo dinámicamente
+        let tipoVal = booking.tipo_evento || '';
+        let lugarVal = '';
+        if (tipoVal.includes(' | Lugar: ')) {
+            let parts = tipoVal.split(' | Lugar: ');
+            tipoVal = parts[0];
+            lugarVal = parts[1] || '';
+        }
+        document.getElementById('bookingTipoEvento').value = tipoVal;
+        document.getElementById('bookingLugar').value = lugarVal;
+
+        // Cargar CategorÃ­a y ArtÃ­culo dinÃ¡micamente
         const categorySelect = document.getElementById('bookingCategoria');
         let cat = booking.categoria || '';
         if (cat === 'Juego Inflable') cat = 'Magia del rebote';
@@ -389,10 +459,10 @@ function openBookingModal(booking = null, defaultDate = null) {
         document.getElementById('bookingIsBlock').checked = booking.estado_reserva === 'Bloqueado';
         document.getElementById('btnDeleteBooking').classList.remove('hidden');
     } else {
-        document.getElementById('modalTitle').textContent = 'Nueva Reserva de Artículo';
+        document.getElementById('modalTitle').textContent = 'Nueva Reserva de ArtÃ­culo';
         document.getElementById('btnDeleteBooking').classList.add('hidden');
 
-        // Reset Categoría y Artículo
+        // Reset CategorÃ­a y ArtÃ­culo
         const categorySelect = document.getElementById('bookingCategoria');
         if (categorySelect) {
             categorySelect.value = '';
@@ -417,13 +487,27 @@ async function handleSaveBooking(e) {
     // Check selected items from checkboxes
     const checkedItems = document.querySelectorAll('input[name="bookingItem"]:checked');
     if (checkedItems.length === 0) {
-        document.getElementById('bookingError').textContent = 'Seleccione al menos un artículo.';
+        document.getElementById('bookingError').textContent = 'Seleccione al menos un artÃ­culo.';
         return;
     }
     
     // Process multiple items
     const promises = Array.from(checkedItems).map(async (checkbox) => {
-        const [categoria, item] = checkbox.value.split('|');
+        let [categoria, item] = checkbox.value.split('|');
+        if (categoria === 'Carrito Snacks') {
+            const qtyInput = document.getElementById(`qty_${checkbox.value.replace(/\s+/g, '_')}`);
+            if (qtyInput) {
+                item = `${item} (${qtyInput.value})`;
+            }
+        }
+        
+        let tipoEventoInput = document.getElementById('bookingTipoEvento').value;
+        let lugarInput = document.getElementById('bookingLugar').value;
+        let tipoEventoSave = tipoEventoInput;
+        if(lugarInput) {
+            tipoEventoSave += ' | Lugar: ' + lugarInput;
+        }
+
         const payload = {
             categoria: categoria,
             item: item,
@@ -432,7 +516,7 @@ async function handleSaveBooking(e) {
             fecha_reserva: document.getElementById('bookingFecha').value,
             hora_inicio: document.getElementById('bookingHoraInicio').value,
             hora_fin: document.getElementById('bookingHoraFin').value,
-            tipo_evento: '',
+            tipo_evento: tipoEventoSave,
             monto_total: parseFloat(document.getElementById('bookingTotal').value) || 0,
             monto_adelanto: parseFloat(document.getElementById('bookingAdelanto').value) || 0,
             medio_contacto: document.getElementById('bookingSource').value,
@@ -471,7 +555,7 @@ async function handleSaveBooking(e) {
     const basePayload = promises[0]; // just for some info
     const nombreCliente = document.getElementById('bookingName').value;
     const fechaReserva = document.getElementById('bookingFecha').value;
-    const detailMessage = `${isEdit ? 'Editó' : 'Creó'} reserva(s) para ${nombreCliente} (${numItems} artículo/s) el ${fechaReserva}`;
+    const detailMessage = `${isEdit ? 'EditÃ³' : 'CreÃ³'} reserva(s) para ${nombreCliente} (${numItems} artÃ­culo/s) el ${fechaReserva}`;
     await addHistoryEntry(actionVerb, detailMessage);
 
     closeModal('modalBooking');
@@ -479,14 +563,14 @@ async function handleSaveBooking(e) {
 }
 
 async function handleDeleteBooking() {
-    if (!confirm('¿Estás seguro de eliminar esta reserva?')) return;
+    if (!confirm('Â¿EstÃ¡s seguro de eliminar esta reserva?')) return;
     const bookingId = document.getElementById('bookingId').value;
 
     const targetBooking = bookings.find(b => b.id === bookingId);
     const clientName = targetBooking ? targetBooking.nombre_cliente : 'Desconocido';
     const detailStr = targetBooking
-        ? `Eliminó reserva para ${clientName} (${targetBooking.categoria} - ${targetBooking.item}) del ${targetBooking.fecha_reserva}`
-        : `Eliminó reserva ID: ${bookingId}`;
+        ? `EliminÃ³ reserva para ${clientName} (${targetBooking.categoria} - ${targetBooking.item}) del ${targetBooking.fecha_reserva}`
+        : `EliminÃ³ reserva ID: ${bookingId}`;
 
     if (dbMode === 'supabase' && supabaseClient) {
         await supabaseClient.from('reservas_carritos').delete().eq('id', bookingId);
@@ -508,14 +592,14 @@ function formatClientName(fullName) {
     if (parts.length === 2) return `${parts[0]} ${parts[1]}`;
 
     const commonMiddleNames = [
-        'maria', 'maría', 'carlos', 'jose', 'josé', 'luis', 'ana', 'juan',
-        'antonio', 'manuel', 'francisco', 'jesus', 'jesús', 'miguel', 'angel',
-        'ángel', 'pedro', 'javier', 'david', 'daniel', 'fernando', 'andres',
-        'andrés', 'ramon', 'ramón', 'jorge', 'alberto', 'eduardo', 'alejandro',
-        'enrique', 'diego', 'sergio', 'victor', 'víctor', 'carmen', 'pilar',
-        'isabel', 'dolores', 'teresa', 'rosa', 'sofia', 'sofía', 'elena',
-        'margarita', 'lucia', 'lucía', 'patricia', 'laura', 'marta', 'cristina',
-        'mercedes', 'raquel', 'irene', 'beatriz', 'sandra', 'monica', 'mónica',
+        'maria', 'marÃ­a', 'carlos', 'jose', 'josÃ©', 'luis', 'ana', 'juan',
+        'antonio', 'manuel', 'francisco', 'jesus', 'jesÃºs', 'miguel', 'angel',
+        'Ã¡ngel', 'pedro', 'javier', 'david', 'daniel', 'fernando', 'andres',
+        'andrÃ©s', 'ramon', 'ramÃ³n', 'jorge', 'alberto', 'eduardo', 'alejandro',
+        'enrique', 'diego', 'sergio', 'victor', 'vÃ­ctor', 'carmen', 'pilar',
+        'isabel', 'dolores', 'teresa', 'rosa', 'sofia', 'sofÃ­a', 'elena',
+        'margarita', 'lucia', 'lucÃ­a', 'patricia', 'laura', 'marta', 'cristina',
+        'mercedes', 'raquel', 'irene', 'beatriz', 'sandra', 'monica', 'mÃ³nica',
         'de', 'del', 'la', 'las', 'los'
     ];
 
@@ -556,8 +640,8 @@ function initCalendar() {
             today: 'Hoy',
             month: 'Mes',
             week: 'Semana',
-            day: 'Día',
-            multiMonthYear: 'Año'
+            day: 'DÃ­a',
+            multiMonthYear: 'AÃ±o'
         },
         dateClick: function (info) {
             openBookingModal(null, info.dateStr);
@@ -591,11 +675,11 @@ function initCalendar() {
                 if (isBlocked) {
                     contentHtml = `
                         <div class="tooltip-header tooltip-blocked">
-                            <span class="tooltip-icon">🔒</span>
-                            <strong>Artículo Bloqueado</strong>
+                            <span class="tooltip-icon">ðŸ”’</span>
+                            <strong>ArtÃ­culo Bloqueado</strong>
                         </div>
                         <div class="tooltip-body">
-                            <p><strong>Artículo:</strong> ${categoria} - ${item}</p>
+                            <p><strong>ArtÃ­culo:</strong> ${categoria} - ${item}</p>
                             <p><strong>Horario:</strong> ${startTime} - ${endTime}</p>
                             ${b.notas ? `<p><strong>Motivo:</strong> ${b.notas}</p>` : ''}
                             <p><strong>Asesor:</strong> ${advisor}</p>
@@ -605,7 +689,7 @@ function initCalendar() {
                     const categoryClass = categoria.toLowerCase().replace(/\s+/g, '-');
                     contentHtml = `
                         <div class="tooltip-header tooltip-categoria-${categoryClass}">
-                            <span class="tooltip-icon">🍭</span>
+                            <span class="tooltip-icon">ðŸ­</span>
                             <strong>${categoria} - ${item}</strong>
                         </div>
                         <div class="tooltip-body">
@@ -698,7 +782,7 @@ function renderCalendarEvents() {
 
         let title = `${titlePrefix} ${b.nombre_cliente}${b.tipo_evento ? ' - ' + b.tipo_evento : ''}`;
         if (b.estado_reserva === 'Bloqueado') {
-            title = `🔒 BLOQUEADO ${titlePrefix}`;
+            title = `ðŸ”’ BLOQUEADO ${titlePrefix}`;
             color = '#ef4444';
             customClass = 'event-bloqueado';
         }
@@ -761,7 +845,7 @@ async function initDatabase() {
 
             document.getElementById('statusDot').className = 'status-dot connected';
             document.getElementById('statusText').textContent = 'Conectado a la Nube (Supabase)';
-            document.getElementById('statusDesc').textContent = 'Sincronización en tiempo real activa.';
+            document.getElementById('statusDesc').textContent = 'SincronizaciÃ³n en tiempo real activa.';
         } catch (e) {
             console.error('Supabase init error:', e);
             dbMode = 'local';
@@ -1013,7 +1097,7 @@ function handleStatsAuth(e) {
         loadStatsDashboard();
     } else {
         const errorEl = document.getElementById('statsAuthError');
-        errorEl.textContent = '❌ Contraseña incorrecta. Solicítela al administrador.';
+        errorEl.textContent = 'âŒ ContraseÃ±a incorrecta. SolicÃ­tela al administrador.';
         errorEl.style.display = 'block';
     }
 }
@@ -1054,13 +1138,13 @@ function loadStatsDashboard() {
 
     const itemsMap = {
         'Carrito Snacks - Popcorn': { count: 0, revenue: 0, hours: 0, daysOccupied: 0 },
-        'Carrito Snacks - Algodón de Azúcar': { count: 0, revenue: 0, hours: 0, daysOccupied: 0 },
+        'Carrito Snacks - AlgodÃ³n de AzÃºcar': { count: 0, revenue: 0, hours: 0, daysOccupied: 0 },
         'Carrito Snacks - Hot Dogs': { count: 0, revenue: 0, hours: 0, daysOccupied: 0 },
         'Carrito Snacks - Manzanas Acarameladas': { count: 0, revenue: 0, hours: 0, daysOccupied: 0 },
         'Juego Inflable - Castillo Inflable': { count: 0, revenue: 0, hours: 0, daysOccupied: 0 },
-        'Juego Inflable - Tobogán Gigante': { count: 0, revenue: 0, hours: 0, daysOccupied: 0 },
-        'Juego Inflable - Cama Elástica': { count: 0, revenue: 0, hours: 0, daysOccupied: 0 },
-        'Juego Inflable - Toro Mecánico': { count: 0, revenue: 0, hours: 0, daysOccupied: 0 }
+        'Juego Inflable - TobogÃ¡n Gigante': { count: 0, revenue: 0, hours: 0, daysOccupied: 0 },
+        'Juego Inflable - Cama ElÃ¡stica': { count: 0, revenue: 0, hours: 0, daysOccupied: 0 },
+        'Juego Inflable - Toro MecÃ¡nico': { count: 0, revenue: 0, hours: 0, daysOccupied: 0 }
     };
 
     const clientsMap = {};
@@ -1071,7 +1155,7 @@ function loadStatsDashboard() {
         const adelanto = parseFloat(b.monto_adelanto) || 0;
         totalRevenue += tot;
 
-        if (b.tipo_pago === 'Depósito') {
+        if (b.tipo_pago === 'DepÃ³sito') {
             depositoTotal += tot;
         } else if (b.tipo_pago === 'Yape' || b.tipo_pago === 'Efectivo') {
             otrosTotal += tot;
@@ -1149,7 +1233,7 @@ function loadStatsDashboard() {
                 <div>
                     <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px;">
                         <span style="font-weight: 500;">${itemName}</span>
-                        <span style="color: var(--text-secondary);">${data.daysOccupied} / ${daysInMonth} días (${pct}%)</span>
+                        <span style="color: var(--text-secondary);">${data.daysOccupied} / ${daysInMonth} dÃ­as (${pct}%)</span>
                     </div>
                     <div style="background: rgba(255, 255, 255, 0.05); height: 8px; border-radius: 4px; overflow: hidden;">
                         <div style="background: var(--primary); width: ${pct}%; height: 100%; border-radius: 4px; transition: width 0.3s ease;"></div>
@@ -1236,8 +1320,8 @@ async function exportAllDataToExcel() {
 
     const workbook = new ExcelJS.Workbook();
 
-    // ─── RESUMEN SHEET ─────────────────────────────────────────────
-    const summaryWs = workbook.addWorksheet('📊 RESUMEN', { properties: { tabColor: { argb: 'FF0F766E' } } });
+    // â”€â”€â”€ RESUMEN SHEET â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    const summaryWs = workbook.addWorksheet('ðŸ“Š RESUMEN', { properties: { tabColor: { argb: 'FF0F766E' } } });
     summaryWs.views = [{ showGridLines: false }];
 
     function styleTitle(cell, text, bgArgb = 'FF0F766E', fgArgb = 'FFFFFFFF', fontSize = 12) {
@@ -1278,7 +1362,7 @@ async function exportAllDataToExcel() {
     // Title Block
     summaryWs.mergeCells(sr, 1, sr, 5);
     const mainTitleCell = summaryWs.getCell(sr, 1);
-    styleTitle(mainTitleCell, "REPORTE GENERAL DE RESERVAS Y ESTADÍSTICAS - CARRITOS E INFLABLES", 'FF0F766E', 'FFFFFFFF', 14);
+    styleTitle(mainTitleCell, "REPORTE GENERAL DE RESERVAS Y ESTADÃSTICAS - CARRITOS E INFLABLES", 'FF0F766E', 'FFFFFFFF', 14);
     summaryWs.getRow(sr).height = 40;
     sr += 2; // Blank row
 
@@ -1304,7 +1388,7 @@ async function exportAllDataToExcel() {
     styleTitle(summaryWs.getCell(sr, 1), "INGRESOS Y USOS MENSUALES", 'FF334155', 'FFFFFFFF', 11);
     summaryWs.getRow(sr).height = 24; sr++;
 
-    const headersM = ["Mes / Período", "Reservas", "Monto Cobrado", "Monto Adelanto", "Total Facturado"];
+    const headersM = ["Mes / PerÃ­odo", "Reservas", "Monto Cobrado", "Monto Adelanto", "Total Facturado"];
     headersM.forEach((h, idx) => {
         styleTitle(summaryWs.getCell(sr, idx + 1), h, 'FF1E293B', 'FFFFFFFF', 10);
     });
@@ -1380,10 +1464,10 @@ async function exportAllDataToExcel() {
 
     // 2. Item breakdown Block
     summaryWs.mergeCells(sr, 1, sr, 3);
-    styleTitle(summaryWs.getCell(sr, 1), "INGRESOS POR ARTÍCULO", 'FF334155', 'FFFFFFFF', 11);
+    styleTitle(summaryWs.getCell(sr, 1), "INGRESOS POR ARTÃCULO", 'FF334155', 'FFFFFFFF', 11);
     summaryWs.getRow(sr).height = 24; sr++;
 
-    const headersL = ["Categoría / Artículo", "Reservas", "Monto Alquileres"];
+    const headersL = ["CategorÃ­a / ArtÃ­culo", "Reservas", "Monto Alquileres"];
     headersL.forEach((h, idx) => {
         styleTitle(summaryWs.getCell(sr, idx + 1), h, 'FF1E293B', 'FFFFFFFF', 10);
     });
@@ -1418,12 +1502,12 @@ async function exportAllDataToExcel() {
         sr++;
     });
 
-    // ─── DATA WORKSHEETS ───────────────────────────────────────────
+    // â”€â”€â”€ DATA WORKSHEETS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const columnsDef = [
-        { header: 'Categoría', key: 'categoria', width: 18 },
-        { header: 'Artículo', key: 'item', width: 22 },
+        { header: 'CategorÃ­a', key: 'categoria', width: 18 },
+        { header: 'ArtÃ­culo', key: 'item', width: 22 },
         { header: 'Cliente', key: 'cliente', width: 25 },
-        { header: 'DNI / Teléfono', key: 'celular', width: 14 },
+        { header: 'DNI / TelÃ©fono', key: 'celular', width: 14 },
         { header: 'Fecha Reserva', key: 'fecha_reserva', width: 14 },
         { header: 'Hora Inicio', key: 'hora_inicio', width: 12 },
         { header: 'Hora Fin', key: 'hora_fin', width: 12 },
@@ -1534,7 +1618,7 @@ async function exportAllDataToExcel() {
         link.click();
     }).catch(err => {
         console.error("Error al exportar:", err);
-        alert("Ocurrió un error al generar el archivo Excel: " + err.message);
+        alert("OcurriÃ³ un error al generar el archivo Excel: " + err.message);
     });
 }
 
@@ -1608,4 +1692,92 @@ function initSidebarState() {
         }
     }
     refreshCalendarLayout();
+}
+
+function formatTime12h(time24) {
+    if (!time24) return '';
+    const [h, m] = time24.split(':');
+    let h12 = parseInt(h, 10);
+    const ampm = h12 >= 12 ? 'pm' : 'am';
+    h12 = h12 % 12 || 12;
+    return `${h12}:${m} ${ampm}`;
+}
+
+function formatDateWsp(dateStr) {
+    if (!dateStr) return '';
+    const [yyyy, mm, dd] = dateStr.split('-');
+    return `${dd}/${mm}/${yyyy.substring(2)}`;
+}
+
+function handleCopyReservation() {
+    const categoria = document.getElementById('bookingCategoria').value || 'Carrito Snacks';
+    const isSnacks = categoria === 'Carrito Snacks';
+    const title = isSnacks ? 'RESERVA DE CARRITOS SNACKS' : 'RESERVA DE INFLABLES';
+    
+    const nombre = document.getElementById('bookingName').value;
+    const dni = document.getElementById('bookingDni').value;
+    const tipoEvento = document.getElementById('bookingTipoEvento').value;
+    const lugar = document.getElementById('bookingLugar').value;
+    const fecha = document.getElementById('bookingFecha').value;
+    const horaInicio = document.getElementById('bookingHoraInicio').value;
+    const horaFin = document.getElementById('bookingHoraFin').value;
+    const medio = document.getElementById('bookingSource').value;
+    const asesora = document.getElementById('bookingNotes').value;
+    
+    // items
+    const checkedItems = document.querySelectorAll('input[name="bookingItem"]:checked');
+    const itemsList = [];
+    checkedItems.forEach(cb => {
+        let [, itemText] = cb.value.split('|');
+        if (isSnacks) {
+            const qtyInput = document.getElementById(`qty_${cb.value.replace(/\s+/g, '_')}`);
+            if (qtyInput) {
+                itemsList.push(`* ${qtyInput.value} ${itemText}`);
+            } else {
+                itemsList.push(`* ${itemText}`);
+            }
+        } else {
+            itemsList.push(`* ${itemText}`);
+        }
+    });
+    
+    let packText = '';
+    if (isSnacks) {
+        packText = checkedItems.length > 1 ? '*Pack de Carritos con:*' : '*Carrito con:*';
+    } else {
+        packText = checkedItems.length > 1 ? '*Pack de Inflables con:*' : '*Inflable con:*';
+    }
+
+    const total = parseFloat(document.getElementById('bookingTotal').value) || 0;
+    const adelanto = parseFloat(document.getElementById('bookingAdelanto').value) || 0;
+    const saldo = (total - adelanto).toFixed(2);
+    
+    let text = `${title}\n`;
+    text += `*Cliente:* ${nombre}\n`;
+    if (dni) text += `*DNI:* ${dni}\n`;
+    if (tipoEvento) text += `*Tipo de evento:* ${tipoEvento}\n`;
+    text += `*Fecha de evento:* ${formatDateWsp(fecha)}\n`;
+    text += `*Hora:* ${formatTime12h(horaInicio)} a ${formatTime12h(horaFin)}\n`;
+    if (lugar) text += `*Lugar:* ${lugar}\n`;
+    text += `*Medio:* ${medio}\n`;
+    text += `*Asesora:* ${asesora}\n`;
+    
+    text += `\n${packText}\n`;
+    text += itemsList.join('\n') + '\n\n';
+    text += `*Saldo pendiente a cancelar:* S/${saldo}, antes de instalación\n`;
+    text += `*No incluye movilidad*\n`;
+
+    navigator.clipboard.writeText(text).then(() => {
+        const btn = document.getElementById('btnCopyReservation');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = `<i data-lucide="check"></i> ¡Copiado!`;
+        lucide.createIcons();
+        setTimeout(() => {
+            btn.innerHTML = originalText;
+            lucide.createIcons();
+        }, 2000);
+    }).catch(err => {
+        console.error('Error al copiar: ', err);
+        alert('No se pudo copiar el texto. Verifica los permisos de tu navegador.');
+    });
 }
