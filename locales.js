@@ -51,6 +51,11 @@ function setupEventListeners() {
     document.getElementById('formSettings').addEventListener('submit', handleSaveSettings);
     document.getElementById('formBooking').addEventListener('submit', handleSaveBooking);
     document.getElementById('btnDeleteBooking').addEventListener('click', handleDeleteBooking);
+
+    const btnCopyReservation = document.getElementById('btnCopyReservation');
+    if (btnCopyReservation) {
+        btnCopyReservation.addEventListener('click', handleCopyReservation);
+    }
     const historySearchInput = document.getElementById('historySearchInput');
     const btnClearHistoryLocal = document.getElementById('btnClearHistoryLocal');
     document.getElementById('btnOpenHistory').addEventListener('click', () => {
@@ -155,12 +160,89 @@ function setupEventListeners() {
             }
         });
     }
+
+    initCustomTimeInputs();
 }
 
 function runDynamicCalculations() {
     const total = parseFloat(document.getElementById('bookingTotal').value) || 0;
     const adelanto = parseFloat(document.getElementById('bookingAdelanto').value) || 0;
     document.getElementById('bookingPendiente').value = Math.max(0, total - adelanto).toFixed(2);
+}
+
+function setCustomTime(type, timeStr24) {
+    if (!timeStr24) return;
+    const parts = timeStr24.split(':');
+    if (parts.length < 2) return;
+    let h24 = parseInt(parts[0], 10);
+    const m = parts[1];
+    const ampm = h24 >= 12 ? 'pm' : 'am';
+    let h12 = h24 % 12;
+    if (h12 === 0) h12 = 12;
+
+    const hrInput = document.getElementById(`${type}HourSelect`);
+    const minInput = document.getElementById(`${type}MinSelect`);
+    const ampmInput = document.getElementById(`${type}AmpmSelect`);
+    if (hrInput) hrInput.value = h12;
+    if (minInput) minInput.value = m;
+    if (ampmInput) ampmInput.value = ampm;
+}
+
+function syncCustomTime(type) {
+    const h12 = document.getElementById(`${type}HourSelect`)?.value;
+    const m = document.getElementById(`${type}MinSelect`)?.value;
+    const ampm = document.getElementById(`${type}AmpmSelect`)?.value;
+    const targetInput = type === 'start' ? document.getElementById('bookingHoraInicio') : document.getElementById('bookingHoraFin');
+
+    if (!h12 || !m || !targetInput) return;
+
+    let h24 = parseInt(h12, 10);
+    if (ampm === 'pm' && h24 < 12) h24 += 12;
+    if (ampm === 'am' && h24 === 12) h24 = 0;
+
+    const h24Str = String(h24).padStart(2, '0');
+    const mStr = String(parseInt(m, 10) || 0).padStart(2, '0');
+    targetInput.value = `${h24Str}:${mStr}`;
+    targetInput.dispatchEvent(new Event('change'));
+}
+
+function initCustomTimeInputs() {
+    ['start', 'end'].forEach(type => {
+        const hr = document.getElementById(`${type}HourSelect`);
+        const min = document.getElementById(`${type}MinSelect`);
+        const ampm = document.getElementById(`${type}AmpmSelect`);
+
+        const sync = () => syncCustomTime(type);
+        if (hr) {
+            hr.addEventListener('input', function () {
+                this.value = this.value.replace(/[^0-9]/g, '');
+                let val = parseInt(this.value, 10);
+                if (val > 12) this.value = '12';
+                if (this.value.length === 2 && min) min.focus();
+                sync();
+            });
+            hr.addEventListener('blur', function () {
+                if (this.value === '0' || this.value === '00' || !this.value) this.value = '12';
+                sync();
+            });
+        }
+        if (min) {
+            min.addEventListener('input', function () {
+                this.value = this.value.replace(/[^0-9]/g, '');
+                let val = parseInt(this.value, 10);
+                if (val > 59) this.value = '59';
+                sync();
+            });
+            min.addEventListener('blur', function () {
+                if (this.value.length === 1) this.value = '0' + this.value;
+                if (!this.value) this.value = '00';
+                sync();
+            });
+        }
+        if (ampm) {
+            ampm.addEventListener('change', sync);
+        }
+    });
 }
 
 function openModal(id) { document.getElementById(id).classList.add('active'); }
@@ -170,6 +252,12 @@ function openBookingModal(booking = null, defaultDate = null) {
     document.getElementById('formBooking').reset();
     document.getElementById('bookingId').value = '';
     document.getElementById('bookingError').textContent = '';
+
+    // Default hours for new bookings (e.g. 10:00 am to 12:00 pm)
+    setCustomTime('start', '10:00');
+    setCustomTime('end', '12:00');
+    syncCustomTime('start');
+    syncCustomTime('end');
 
     // Asesores
     const selectAsesor = document.getElementById('bookingNotes');
@@ -194,10 +282,17 @@ function openBookingModal(booking = null, defaultDate = null) {
         document.getElementById('bookingLocal').value = `${booking.sede}|${booking.espacio}`;
         document.getElementById('bookingTipoEvento').value = booking.tipo_evento || '';
         document.getElementById('bookingFecha').value = booking.fecha_reserva;
-        document.getElementById('bookingHoraInicio').value = booking.hora_inicio.substring(0, 5);
-        document.getElementById('bookingHoraFin').value = booking.hora_fin.substring(0, 5);
 
-        // Calculate and set Fecha Fin
+        const horaInicio = booking.hora_inicio.substring(0, 5);
+        const horaFin = booking.hora_fin.substring(0, 5);
+        document.getElementById('bookingHoraInicio').value = horaInicio;
+        document.getElementById('bookingHoraFin').value = horaFin;
+
+        // aqui hacemos el inicio y el final 
+        setCustomTime('start', horaInicio);
+        setCustomTime('end', horaFin);
+
+        // Calculo de Fin
         const finInput = document.getElementById('bookingFechaFin');
         if (finInput) {
             let fechaFinStr = booking.fecha_reserva;
@@ -799,6 +894,81 @@ function escapeHTML(str) {
     return str.replace(/[&<>'"]/g,
         tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
     );
+}
+
+// ==========================================
+// WhatsApp Copia y pega
+// ==========================================
+function formatDateWsp(dateStr) {
+    if (!dateStr) return '';
+    const [y, m, d] = dateStr.split('-');
+    const shortYear = y.substring(2);
+    return `${d}/${m}/${shortYear}`;
+}
+
+function formatTime12h(time24) {
+    if (!time24) return '';
+    let [hours, minutes] = time24.split(':');
+    hours = parseInt(hours, 10);
+    const ampm = hours >= 12 ? 'pm' : 'am';
+    hours = hours % 12;
+    hours = hours ? hours : 12;
+    return `${hours}:${minutes}${ampm}`;
+}
+
+function handleCopyReservation() {
+    const localValue = document.getElementById('bookingLocal').value;
+    if (!localValue) {
+        alert('Por favor seleccione un local primero.');
+        return;
+    }
+
+    let localTitle = "*ALQUILER DE LOCAL*";
+    if (localValue.includes('Los Pinos')) {
+        localTitle = "*ALQUILER DE LOCAL CAMPESTRE - LOS PINOS*";
+    } else if (localValue.includes('Polideportivo')) {
+        localTitle = "*ALQUILER DE LOCAL POLIDEPORTIVO*";
+    }
+
+    const cliente = document.getElementById('bookingName').value || '';
+    const dni = document.getElementById('bookingDni').value || '';
+    const tipoEvento = document.getElementById('bookingTipoEvento').value || '';
+
+    const fecha = document.getElementById('bookingFecha').value || '';
+    const fechaFormat = formatDateWsp(fecha);
+
+    const horaInicio = document.getElementById('bookingHoraInicio').value || '';
+    const horaFin = document.getElementById('bookingHoraFin').value || '';
+    let horaFormat = '';
+    if (horaInicio && horaFin) {
+        horaFormat = `${formatTime12h(horaInicio)} - ${formatTime12h(horaFin)}`;
+    } else if (horaInicio) {
+        horaFormat = formatTime12h(horaInicio);
+    }
+
+    const medio = document.getElementById('bookingSource').value || '';
+    const asesora = document.getElementById('bookingNotes').value || '';
+    const saldoPendiente = document.getElementById('bookingPendiente').value || '0.00';
+
+    const text = `${localTitle}\n\n*Cliente:* ${cliente}\n*DNI:* ${dni}\n*Tipo de evento:* ${tipoEvento}\n*Fecha de evento:* ${fechaFormat}\n*Hora:* ${horaFormat}\n*Medio:* ${medio}\n*Asesora:* ${asesora}\n\n*Saldo pendiente:* S/${saldoPendiente}\n\n*¡Gracias por tu elección!* 💫`;
+
+    navigator.clipboard.writeText(text).then(() => {
+        const btn = document.getElementById('btnCopyReservation');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i data-lucide="check"></i> ¡Copiado!';
+        if (window.lucide) {
+            window.lucide.createIcons();
+        }
+        setTimeout(() => {
+            btn.innerHTML = originalText;
+            if (window.lucide) {
+                window.lucide.createIcons();
+            }
+        }, 2000);
+    }).catch(err => {
+        console.error('Error al copiar: ', err);
+        alert('No se pudo copiar al portapapeles.');
+    });
 }
 
 // ----------------------------------------------------
