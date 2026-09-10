@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
-        href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&family=Outfit:wght@300;400;500;600;700&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&family=Outfit:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -27,166 +27,11 @@
     <div class="sun-decoration-bg"></div>
     <div class="rainbow-decoration-bg"></div>
 
-    <div class="app-container sidebar-collapsed">
-        <!-- Sidebar Backdrop for Mobile -->
-        <div class="sidebar-backdrop-overlay" id="sidebarBackdrop"></div>
-
-        <!-- Sidebar -->
-        <aside class="sidebar" id="sidebar">
-            <div class="logo-area-custom">
-                <div class="logo-sun-container">
-                    <!-- Cute Smiling Sun SVG -->
-                    <svg viewBox="0 0 100 100" class="logo-sun-svg">
-                        <g stroke="#ff9f1c" stroke-width="6" stroke-linecap="round" class="sun-rays">
-                            <line x1="50" y1="8" x2="50" y2="18" />
-                            <line x1="50" y1="82" x2="50" y2="92" />
-                            <line x1="8" y1="50" x2="18" y2="50" />
-                            <line x1="82" y1="50" x2="92" y2="50" />
-                            <line x1="20" y1="20" x2="28" y2="28" />
-                            <line x1="72" y1="72" x2="80" y2="80" />
-                            <line x1="20" y1="80" x2="28" y2="72" />
-                            <line x1="72" y1="20" x2="80" y2="28" />
-                        </g>
-                        <circle cx="50" cy="50" r="24" fill="#ffd166" stroke="#ff9f1c" stroke-width="4" />
-                        <circle cx="42" cy="46" r="3" fill="#830b42" />
-                        <circle cx="58" cy="46" r="3" fill="#830b42" />
-                        <circle cx="37" cy="53" r="2.5" fill="#ff70a6" />
-                        <circle cx="63" cy="53" r="2.5" fill="#ff70a6" />
-                        <path d="M 43,54 A 8,8 0 0,0 57,54" fill="none" stroke="#830b42" stroke-width="3.5"
-                            stroke-linecap="round" />
-                    </svg>
-                </div>
-                <div class="logo-text-container">
-                    <div class="logo-main-title">Asistencias</div>
-                    <div class="logo-sub-title">Nuevo Horizonte</div>
-                    <div class="logo-office-lbl">OFICINA</div>
-                    <div class="logo-badge">PERSONAL</div>
-                </div>
-                <button class="btn-close-sidebar" id="btnCloseSidebar">
-                    <i data-lucide="x"></i>
-                </button>
-            </div>
-
-            <!-- Supabase Status Indicators (Mockup style) -->
-            <div class="status-indicator-card">
-                <div class="status-header-custom">
-                    <div class="status-cloud-icon-container">
-                        <i data-lucide="cloud" class="status-cloud-icon"></i>
-                        <i data-lucide="arrow-up" class="status-arrow-icon"></i>
-                    </div>
-                    <span class="status-title-text" id="statusText">Conectado a la Nube (Supabase)</span>
-                </div>
-                <div class="status-desc-custom">
-                    <span class="status-dot connected" id="statusDot"></span>
-                    <span class="status-desc-text" id="statusDesc">Las asistencias están sincronizadas con la nube en
-                        tiempo real.</span>
-                </div>
-            </div>
-
-            <!-- Quick Info Card -->
-            <div class="stats-card">
-                <h3>Fórmula de Asistencia</h3>
-                <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.4; margin-bottom: 6px;">
-                    Meta semanal: <strong>48 horas</strong> por trabajador.
-                </p>
-                <p style="font-size: 11px; color: var(--text-muted); line-height: 1.3; margin-bottom: 12px;">
-                    * Los feriados nacionales y permisos especiales suman 8 horas justificadas de manera automática.
-                </p>
-                <button class="btn btn-secondary" id="btnOpenGuide"
-                    style="width: 100%; font-size: 12px; padding: 8px 12px; border-color: var(--primary); color: var(--primary); display: flex; align-items: center; justify-content: center; gap: 6px;">
-                    <i data-lucide="help-circle" style="width: 14px; height: 14px;"></i> Ver Guía Completa
-                </button>
-            </div>
-
-            <!-- User Profile Card -->
-            <div class="user-profile-card">
-                <div class="user-info">
-                    <div class="user-avatar">
-                        <i data-lucide="user"></i>
-                    </div>
-                    <div class="user-details">
-                        <span class="user-label">Operador Activo</span>
-                        <span class="user-name" id="displayUserName">Invitado</span>
-                    </div>
-                </div>
-                <button class="btn-edit-user" id="btnEditUser" title="Cambiar Nombre">
-                    <i data-lucide="pencil"></i>
-                </button>
-            </div>
-
-            <!-- Sidebar bottom landscape SVG illustration -->
-            <div class="sidebar-bottom-illustration">
-                <svg viewBox="0 0 280 180" xmlns="http://www.w3.org/2000/svg" class="sidebar-svg">
-                    <!-- Rainbow -->
-                    <g fill="none" stroke-width="6" opacity="0.9">
-                        <path d="M 30,180 A 100,100 0 0,1 230,180" stroke="#ff007f" />
-                        <path d="M 36,180 A 94,94 0 0,1 224,180" stroke="#ff7f00" />
-                        <path d="M 42,180 A 88,88 0 0,1 218,180" stroke="#ffee00" />
-                        <path d="M 48,180 A 82,82 0 0,1 212,180" stroke="#00ff7f" />
-                        <path d="M 54,180 A 76,76 0 0,1 206,180" stroke="#007fff" />
-                        <path d="M 60,180 A 70,70 0 0,1 200,180" stroke="#7f00ff" />
-                    </g>
-                    <!-- Sun -->
-                    <g transform="translate(195, 100)">
-                        <g stroke="#ff9f1c" stroke-width="4" stroke-linecap="round" class="sun-rays">
-                            <line x1="0" y1="-28" x2="0" y2="-38" />
-                            <line x1="20" y1="-20" x2="27" y2="-27" />
-                            <line x1="28" y1="0" x2="38" y2="0" />
-                            <line x1="20" y1="20" x2="27" y2="27" />
-                            <line x1="0" y1="28" x2="0" y2="38" />
-                            <line x1="-20" y1="20" x2="-27" y2="27" />
-                            <line x1="-28" y1="0" x2="-38" y2="0" />
-                            <line x1="-20" y1="-20" x2="-27" y2="-27" />
-                        </g>
-                        <circle cx="0" cy="0" r="22" fill="#ffd166" stroke="#ff9f1c" stroke-width="3" />
-                        <!-- Face -->
-                        <circle cx="-8" cy="-4" r="2.5" fill="#830b42" />
-                        <circle cx="8" cy="-4" r="2.5" fill="#830b42" />
-                        <circle cx="-13" cy="2" r="2" fill="#ff70a6" opacity="0.8" />
-                        <circle cx="13" cy="2" r="2" fill="#ff70a6" opacity="0.8" />
-                        <path d="M -7,4 A 7,7 0 0,0 7,4" fill="none" stroke="#830b42" stroke-width="2.5"
-                            stroke-linecap="round" />
-                    </g>
-                    <!-- Hills -->
-                    <path d="M -20,180 Q 80,120 180,160 Q 240,140 300,180 Z" fill="#9fe2bf" opacity="0.8" />
-                    <path d="M 60,180 Q 150,110 240,150 Q 270,140 300,180 Z" fill="#75cf9f" />
-                    <!-- Flowers -->
-                    <!-- Red Flower 1 -->
-                    <circle cx="40" cy="150" r="4" fill="#ff2a85" />
-                    <circle cx="44" cy="146" r="4" fill="#ff2a85" />
-                    <circle cx="48" cy="150" r="4" fill="#ff2a85" />
-                    <circle cx="44" cy="154" r="4" fill="#ff2a85" />
-                    <circle cx="44" cy="150" r="2.5" fill="#ffee00" />
-                    <!-- Yellow Flower 2 -->
-                    <circle cx="110" cy="140" r="3" fill="#ffee00" />
-                    <circle cx="113" cy="137" r="3" fill="#ffee00" />
-                    <circle cx="116" cy="140" r="3" fill="#ffee00" />
-                    <circle cx="113" cy="143" r="3" fill="#ffee00" />
-                    <circle cx="113" cy="140" r="2" fill="#ff2a85" />
-                    <!-- Pink Flower 3 -->
-                    <circle cx="230" cy="160" r="4.5" fill="#ff85a2" />
-                    <circle cx="235" cy="156" r="4.5" fill="#ff85a2" />
-                    <circle cx="240" cy="160" r="4.5" fill="#ff85a2" />
-                    <circle cx="235" cy="164" r="4.5" fill="#ff85a2" />
-                    <circle cx="235" cy="160" r="3" fill="#ffee00" />
-                </svg>
-            </div>
-
-            <footer class="sidebar-footer">
-                <p>Nuevo Horizonte &copy; 2026</p>
-                <p class="footer-note">Desarrollado por Rogger Dird Huaicama Lacerna</p>
-            </footer>
-        </aside>
-
-        <!-- Main Content -->
-        <main class="main-content">
-
+    <div style="width: 100%; min-height: 100vh; display: flex; flex-direction: column;">
+        <div style="flex: 1; width: 100%;">
+            <!-- App Header -->
             <header class="app-header">
                 <div class="header-left">
-                    <button class="btn btn-secondary btn-menu" id="btnToggleSidebar" title="Mostrar / Ocultar Menú Lateral">
-                        <i data-lucide="menu"></i>
-                        <span style="font-size: 13px; font-weight: 600; margin-left: 4px;">Menú</span>
-                    </button>
                     <div class="header-title">
                         <h1>
                             <i data-lucide="sparkles"
@@ -195,240 +40,294 @@
                             <i data-lucide="sparkles"
                                 style="color: var(--sun-gold); width: 22px; height: 22px; vertical-align: middle; margin-left: 4px;"></i>
                         </h1>
-                        <p>Registro de horas trabajadas y cumplimiento del límite semanal del personal.</p>
+                        <p>Registro de horas, control de tardanzas exactas, salidas y horas extras del personal.</p>
                     </div>
                 </div>
-                <div style="display: flex; gap: 10px;">
-                    <!-- Admin Schedules Button -->
-                    <button class="btn btn-secondary" id="btnAdminSchedules"
-                        style="border-color: var(--primary); color: var(--primary);">
-                        <i data-lucide="calendar-clock"></i> <span class="btn-text">Configurar Horarios</span>
+                <div class="header-actions" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                    <!-- Direct Button to Add Worker without password -->
+                    <button class="btn btn-primary btn-add-worker" id="btnOpenAddWorkerModal"
+                        title="Registrar nuevo colaborador con su horario">
+                        <i data-lucide="user-plus"></i>
+                        <span>➕ Agregar Trabajador</span>
                     </button>
-                    <!-- Admin Actions Button -->
+                    <!-- Register Holiday / Leave -->
                     <button class="btn btn-secondary" id="btnAdminActions"
-                        style="border-color: var(--primary); color: var(--primary);">
-                        <i data-lucide="shield-check"></i> <span class="btn-text">Registrar Feriado / Permiso</span>
+                        style="border-color: #a855f7; color: #a855f7; background: rgba(168, 85, 247, 0.08);">
+                        <i data-lucide="gift"></i>
+                        <span>Feriado / Permiso</span>
+                    </button>
+                    <!-- Download Excel -->
+                    <button class="btn btn-primary" id="btnExportExcel"
+                        style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);">
+                        <i data-lucide="file-spreadsheet"></i>
+                        <span style="font-weight: 600;">Descargar Excel</span>
                     </button>
                 </div>
             </header>
 
-            <!-- Dashboard Grid -->
+            <!-- Dashboard Layout Grid -->
             <div class="attendance-layout" id="attendanceLayout">
-                <!-- Left Column: Clock and Selection -->
-                <div class="left-column" style="display: flex; flex-direction: column; gap: 20px;">
-                    <!-- Clock Card -->
+                <!-- Left Column: Clock & Attendance Puncher -->
+                <div class="left-column">
+                    <!-- Clock & Selection Card -->
                     <div class="clock-card">
-                        <h3
-                            style="margin: 0; color: var(--primary); font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                            ☀️ HORA DE LA OFICINA ☀️</h3>
+                        <div class="card-top-tag">
+                            <span>☀️ HORA DE LA OFICINA EN TIEMPO REAL ☀️</span>
+                        </div>
                         <div class="live-time-display">
                             <div class="time" id="liveClock">00:00:00</div>
-                            <div class="date" id="liveDate">Cargando fecha...</div>
+                            <div class="date" id="liveDate">Cargando fecha actual...</div>
                         </div>
 
-                        <div class="form-group" style="text-align: left;">
+                        <!-- Worker Selection -->
+                        <div class="form-group" style="text-align: left; margin-top: 15px;">
                             <label for="employeeSelect"
-                                style="margin-bottom: 6px; display: block; font-weight: 500; font-size: 13px;">Selecciona
-                                tu nombre *</label>
-                            <div class="input-wrapper">
+                                style="margin-bottom: 6px; display: block; font-weight: 600; font-size: 13.5px; color: var(--text-primary);">
+                                Selecciona tu nombre *
+                            </label>
+                            <div class="input-wrapper select-worker-wrapper">
                                 <i data-lucide="user"></i>
                                 <select id="employeeSelect" required>
                                     <option value="" disabled selected>-- Elige tu Nombre --</option>
-                                    <!-- Populated dynamically -->
+                                    <!-- Populated dynamically with worker names & emojis -->
                                 </select>
                             </div>
                         </div>
 
-                        <!-- Dynamic Status Message -->
+                        <!-- Schedule & Attendance Context Box (Reactivates upon employee selection) -->
+                        <div class="worker-schedule-banner" id="workerScheduleBanner" style="display: none;">
+                            <div class="worker-schedule-header">
+                                <span class="badge-schedule-day" id="badgeScheduleDay">Hoy: Lunes</span>
+                                <span class="worker-schedule-hours" id="workerScheduleHours">Horario: 8:00 AM - 4:30
+                                    PM</span>
+                            </div>
+                            <div class="worker-schedule-lunch-info" id="workerScheduleLunchInfo">
+                                🍴 Almuerzo configurado: <strong>1 hora</strong>
+                            </div>
+                        </div>
+
+                        <!-- Dynamic Status Message / Ongoing Shift Box -->
                         <div class="employee-status-box" id="employeeStatusBox">
-                            <span class="status-title" style="color: var(--text-muted);">Selecciona un empleado para
-                                comenzar</span>
+                            <span class="status-title" style="color: var(--text-muted);">
+                                Selecciona un colaborador arriba para comenzar
+                            </span>
                         </div>
 
-                        <!-- Lunch Toggle Checkbox (Shown on Checkout) -->
-                        <div class="form-group" id="lunchToggleGroup"
-                            style="display: none; text-align: left; margin: 15px 0; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: var(--radius-md);">
-                            <label class="filter-item"
-                                style="color: var(--text-primary); cursor: pointer; display: flex; align-items: center; gap: 10px; font-size: 13.5px; font-weight: 500; margin: 0;">
+                        <!-- Early Check-In Logic Checkbox (Shown when arriving earlier than official start) -->
+                        <div class="early-checkin-card" id="earlyCheckinCard" style="display: none;">
+                            <label class="custom-checkbox-container">
+                                <input type="checkbox" id="earlyCheckinCheckbox" checked>
+                                <span class="checkmark"></span>
+                                <div class="early-checkin-text">
+                                    <strong id="earlyCheckinTitle">⏰ ¿Iniciar labores a las 8:00 AM?</strong>
+                                    <small id="earlyCheckinDesc">
+                                        Dejando marcada la casilla, tu ingreso oficial se registrará a las 8:00 AM. Si
+                                        la desmarcas, se registrará a tu hora real de llegada y los minutos previos se
+                                        sumarán como horas extras en verde.
+                                    </small>
+                                </div>
+                            </label>
+                        </div>
+
+                        <!-- Lunch Toggle Checkbox -->
+                        <div class="lunch-check-card" id="lunchToggleGroup" style="display: none;">
+                            <label class="custom-checkbox-container">
                                 <input type="checkbox" id="lunchCheckbox" checked>
-                                <span class="custom-checkbox"
-                                    style="border-color: var(--primary); width: 20px; height: 20px; border-radius: 6px; flex-shrink: 0;"></span>
-                                <span>🍴 ¿Almorzaras hoy?</span>
+                                <span class="checkmark"></span>
+                                <div class="lunch-check-text">
+                                    <strong>🍴 ¿Almorzarás hoy?</strong>
+                                    <small id="lunchHelpText">
+                                        Si está marcado, se descontará 1 hora de refrigerio de tu jornada. Si hoy
+                                        decides no almorzar para recuperar tiempo, desmarca esta casilla.
+                                    </small>
+                                </div>
                             </label>
-                            <small
-                                style="color: var(--text-muted); display: block; margin-top: 6px; font-size: 11px; margin-left: 30px; line-height: 1.3;">
-                                Si desmarcas esta opción, no se te descontará la hora de almuerzo de tu jornada de hoy.
-                            </small>
                         </div>
 
-                        <!-- Early Start Checkbox (Shown on Checkin at specific times) -->
-                        <div class="form-group" id="earlyStartToggleGroup"
-                            style="display: none; text-align: left; margin: 15px 0; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: var(--radius-md);">
-                            <label class="filter-item"
-                                style="color: var(--text-primary); cursor: pointer; display: flex; align-items: center; gap: 10px; font-size: 13.5px; font-weight: 500; margin: 0;">
-                                <input type="checkbox" id="earlyStartCheckbox" checked>
-                                <span class="custom-checkbox"
-                                    style="border-color: var(--primary); width: 20px; height: 20px; border-radius: 6px; flex-shrink: 0;"></span>
-                                <span id="earlyStartLabel">⏰ ¿Iniciar labores a las 8:00 AM?</span>
-                            </label>
-                            <small id="earlyStartHelp"
-                                style="color: var(--text-muted); display: block; margin-top: 6px; font-size: 11px; margin-left: 30px; line-height: 1.3;">
-                                Si marcas esta opción, tu hora de entrada se registrará a las 8:00 AM.
-                            </small>
-                        </div>
-
-                        <!-- Auto Check-out Custom Input (Shown on Checkin) -->
-                        <div class="form-group" id="autoCheckoutToggleGroup"
-                            style="display: none; text-align: left; margin: 15px 0; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: var(--radius-md);">
-                            <label class="filter-item"
-                                style="color: var(--text-primary); cursor: pointer; display: flex; align-items: center; gap: 10px; font-size: 13.5px; font-weight: 500; margin: 0;">
-                                <input type="checkbox" id="autoCheckoutEnabled" checked>
-                                <span class="custom-checkbox"
-                                    style="border-color: var(--primary); width: 20px; height: 20px; border-radius: 6px; flex-shrink: 0;"></span>
-                                <span>⏰ Programar salida automática hoy</span>
-                            </label>
-
-                            <div id="autoCheckoutDetails"
-                                style="display: flex; align-items: center; gap: 8px; margin-left: 30px; margin-top: 10px;">
-                                <span style="font-size: 13px; color: var(--text-secondary);">Salida a las:</span>
-                                <input type="text" id="autoCheckoutTimeInput" value="6:00" placeholder="e.g. 6:00"
-                                    style="width: 80px; padding: 6px 10px; border: 1px solid var(--border-color); border-radius: 6px; background: rgba(255, 255, 255, 0.05); color: var(--text-primary); text-align: center; font-size: 13.5px; font-weight: 600;">
-                                <select id="autoCheckoutAmpmSelect"
-                                    style="width: 75px; padding: 6px 10px; border: 1px solid var(--border-color); border-radius: 6px; background: rgba(255, 255, 255, 0.05); color: var(--text-primary); font-size: 13.5px; font-weight: 600; cursor: pointer;">
-                                    <option value="PM" selected>PM</option>
-                                    <option value="AM">AM</option>
-                                </select>
-                            </div>
-
-                            <small
-                                style="color: var(--text-muted); display: block; margin-top: 8px; font-size: 11px; margin-left: 30px; line-height: 1.3;">
-                                Al cumplirse la hora y período seleccionados, el sistema registrará tu salida de forma
-                                automática.
-                            </small>
-                        </div>
-
-                        <!-- Big action button -->
-                        <button class="btn btn-primary" id="btnToggleAttendance"
-                            style="width: 100%; height: 50px; font-size: 16px; background: var(--primary); box-shadow: 0 4px 14px var(--primary-glow);"
-                            disabled>
-                            <i data-lucide="fingerprint"></i> Marcar Asistencia
-                        </button>
-                    </div>
-
-                    <!-- Progress Card -->
-                    <div class="progress-card">
-                        <div class="goal-header">
-                            <h3 id="progressEmployeeTitle" style="display: flex; align-items: center; gap: 6px;">⭐
-                                Progreso de Horas</h3>
-                            <span class="goal-pct" id="progressPercentageText"
-                                style="font-weight: 700; color: var(--primary);">0%</span>
-                        </div>
-                        <div class="goal-progress-container">
-                            <div class="goal-progress-bar" id="goalProgressBar"></div>
-                        </div>
-                        <div class="goal-progress-text" style="display: none;">
-                            <span id="progressCurrentText">0.0 h acumuladas</span>
-                            <span id="weeklyGoalText">Meta: 48 h / sem</span>
-                        </div>
-                        <div class="metrics-row" style="grid-template-columns: 1fr 1fr; margin-top: 10px;">
-                            <div class="metric-box">
-                                <div style="font-size: 20px; margin-bottom: 2px;">☀️</div>
-                                <div class="val" id="metricWorkedHours">0.0</div>
-                                <div class="lbl">Presenciales</div>
-                            </div>
-                            <div class="metric-box">
-                                <div style="font-size: 20px; margin-bottom: 2px;">⭐</div>
-                                <div class="val" id="metricOwedHours" style="color: #f59e0b;">0.0</div>
-                                <div class="lbl">Se Deben</div>
-                            </div>
-                        </div>
-
-                        <button id="btnEmployeeReport" class="btn btn-secondary"
-                            style="width: 100%; margin-top: 20px; font-size: 13px; background: rgba(255, 51, 133, 0.05);">
-                            <i data-lucide="file-text"></i> Ver Reporte Mensual Completo
+                        <!-- Big Punch Clock Action Button -->
+                        <button class="btn btn-primary btn-punch-action" id="btnToggleAttendance" disabled>
+                            <i data-lucide="fingerprint"></i>
+                            <span id="btnPunchText">Marcar Asistencia</span>
                         </button>
                     </div>
                 </div>
 
-                <!-- Right Column: Filters and Table -->
-                <div class="calendar-card" style="min-height: auto;">
-                    <div class="activity-header" style="margin-bottom: 16px;">
-                        <h3 style="display: flex; align-items: center; gap: 8px; color: var(--primary);">
-                            <i data-lucide="rainbow" style="color: var(--primary);"></i>
-                            Historial de Marcaciones
-                        </h3>
-                        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-                            <button class="btn btn-secondary" id="btnExportExcel"
-                                style="font-size: 12.5px; padding: 6px 12px; display: flex; align-items: center; gap: 6px; border-color: #10b981; color: #10b981; background: rgba(16, 185, 129, 0.08); cursor: pointer; border-radius: var(--radius-sm); font-weight: 600;"
-                                title="Descargar reporte en formato Excel (.xlsx) libremente">
-                                <i data-lucide="file-spreadsheet" style="width: 15px; height: 15px;"></i>
-                                <span>Descargar Excel</span>
+                <!-- Right Column: "Cuadro que se esconde" (Collapsible Worker KPIs & Analytics) -->
+                <div class="right-stats-column" id="rightStatsColumn">
+                    <div class="progress-card">
+                        <div class="stats-panel-header">
+                            <div>
+                                <h3 id="progressEmployeeTitle"
+                                    style="display: flex; align-items: center; gap: 8px; font-size: 16px; margin: 0; color: var(--text-primary);">
+                                    <span>⭐ Resumen del Trabajador</span>
+                                </h3>
+                                <small style="color: var(--text-muted); font-size: 12px;"
+                                    id="lblSelectedWorkerMeta">Selecciona a alguien para ver sus horas</small>
+                            </div>
+                            <span class="goal-pct-pill" id="progressPercentageText">0%</span>
+                        </div>
+
+                        <!-- Weekly Target Progress -->
+                        <div class="weekly-goal-section">
+                            <div class="goal-label-row">
+                                <span style="font-size: 12.5px; font-weight: 600; color: var(--text-primary);">Meta
+                                    Semanal de Trabajo</span>
+                                <span id="weeklyGoalHoursText"
+                                    style="font-size: 12.5px; font-weight: 700; color: var(--primary);">0.0 / 48.0
+                                    h</span>
+                            </div>
+                            <div class="goal-progress-container">
+                                <div class="goal-progress-bar" id="goalProgressBar" style="width: 0%;"></div>
+                            </div>
+                        </div>
+
+                        <!-- 4 Distinct KPI Indicators with Required Colors -->
+                        <div class="metrics-grid-four">
+                            <!-- 1. Presenciales (Sol / Azul-Rosa) -->
+                            <div class="metric-card metric-presencial">
+                                <div class="metric-icon">☀️</div>
+                                <div class="metric-val" id="metricWorkedHours">0:00</div>
+                                <div class="metric-lbl">Presenciales</div>
+                            </div>
+
+                            <!-- 2. Tardanzas (Rojo) -->
+                            <div class="metric-card metric-tardanza">
+                                <div class="metric-icon">🔴</div>
+                                <div class="metric-val" id="metricLateHours">0:00</div>
+                                <div class="metric-lbl">Tardanza Acum.</div>
+                            </div>
+
+                            <!-- 3. Horas que se Deben (Salidas antes / Faltas) -->
+                            <div class="metric-card metric-deuda">
+                                <div class="metric-icon">🟠</div>
+                                <div class="metric-val" id="metricOwedHours">0:00</div>
+                                <div class="metric-lbl">Horas Debidas</div>
+                            </div>
+
+                            <!-- 4. Horas Extras (Verde) -->
+                            <div class="metric-card metric-extra">
+                                <div class="metric-icon">🟢</div>
+                                <div class="metric-val" id="metricExtraHours">0:00</div>
+                                <div class="metric-lbl">Horas Extras</div>
+                            </div>
+                        </div>
+
+                        <!-- Justified Hours Card (Morado) -->
+                        <div class="justified-banner-card">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span style="font-size: 18px;">🟣</span>
+                                <div>
+                                    <div style="font-size: 13px; font-weight: 700; color: #7e22ce;">Feriados y Permisos
+                                        Justificados</div>
+                                    <small style="color: #6b21a8; font-size: 11.5px;">Suman a tu acumulado y no
+                                        descuentan de tu meta</small>
+                                </div>
+                            </div>
+                            <div style="font-size: 16px; font-weight: 800; color: #7e22ce;" id="metricJustifiedHours">
+                                0:00 h</div>
+                        </div>
+
+                        <!-- Actions on worker: Edit schedule or delete worker -->
+                        <div style="display: flex; gap: 8px; margin-top: 15px;">
+                            <button class="btn btn-secondary btn-sm" id="btnEditWorkerSchedule"
+                                style="flex: 1; border-color: var(--primary); color: var(--primary);">
+                                <i data-lucide="calendar-cog"></i> Editar Horario
                             </button>
-                            <button class="btn btn-secondary" id="btnToggleLayout"
-                                style="font-size: 12.5px; padding: 6px 12px; display: flex; align-items: center; gap: 6px; border-color: var(--primary); color: var(--primary); background: transparent; cursor: pointer; border-radius: var(--radius-sm);">
-                                <i data-lucide="arrow-left" class="toggle-icon-left" style="width: 14px; height: 14px;"></i>
-                                <i data-lucide="arrow-right" class="toggle-icon-right"
-                                    style="width: 14px; height: 14px;"></i>
-                                <span id="toggleLayoutText">Ver completo</span>
+                            <button class="btn btn-secondary btn-sm" id="btnDeleteWorker"
+                                style="border-color: #ef4444; color: #ef4444;" title="Dar de baja trabajador">
+                                <i data-lucide="trash-2"></i>
                             </button>
                         </div>
-                    </div>
-
-                    <!-- Filters -->
-                    <div class="filter-bar">
-                        <div class="filter-input-group">
-                            <label for="filterEmployee">Colaborador</label>
-                            <select id="filterEmployee">
-                                <option value="todos">Todos los trabajadores</option>
-                            </select>
-                        </div>
-
-                        <div class="filter-input-group">
-                            <label for="filterMonth">Mes de Registro</label>
-                            <select id="filterMonth">
-
-                                <!-- Populated dynamically (current month and previous months) -->
-                            </select>
-                        </div>
-
-                        <div class="filter-input-group">
-                            <label for="filterWeek">Semana de Filtro</label>
-                            <select id="filterWeek">
-                                <option value="todas">Todas las semanas</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <!-- Table container -->
-                    <div class="attendance-table-container">
-                        <table class="attendance-table">
-                            <thead>
-                                <tr>
-                                    <th>Colaborador</th>
-                                    <th>Fecha</th>
-                                    <th>Entrada</th>
-                                    <th>Salida</th>
-                                    <th>Horas Abonadas</th>
-                                    <th>Tipo</th>
-                                    <th>Notas</th>
-                                    <th style="width: 100px; text-align: center; color: #ffee00 !important;">⭐ Acción
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody id="attendanceTableBody">
-                                <!-- Populated dynamically -->
-                                <tr>
-                                    <td colspan="8" class="empty-state">
-                                        <i data-lucide="loader-2" class="animate-spin"></i> Cargando registros...
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
                     </div>
                 </div>
             </div>
 
-            <!-- Footer motivational banner with cursive style -->
+            <!-- History Section & Table -->
+            <section class="history-card-section">
+                <div class="history-card-header">
+                    <div class="history-title-box">
+                        <i data-lucide="history" style="color: var(--primary); width: 22px; height: 22px;"></i>
+                        <div>
+                            <h3 style="margin: 0; color: var(--text-primary); font-size: 16px;">Historial de Marcaciones
+                            </h3>
+                            <small style="color: var(--text-muted); font-size: 12px;">Entradas, salidas, tardanzas y
+                                horas extras registradas</small>
+                        </div>
+                    </div>
+                    <div class="history-actions-box">
+                        <button class="btn btn-secondary btn-excel" id="btnExportExcel"
+                            title="Descargar reporte en formato Excel (.xlsx)">
+                            <i data-lucide="file-spreadsheet"></i>
+                            <span>Descargar Excel</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Filters Bar -->
+                <div class="filter-bar">
+                    <div class="filter-input-group">
+                        <label for="filterEmployee">Colaborador</label>
+                        <select id="filterEmployee">
+                            <option value="todos">Todos los trabajadores</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-input-group">
+                        <label for="filterMonth">Mes de Registro</label>
+                        <select id="filterMonth">
+                            <!-- Dynamically populated -->
+                        </select>
+                    </div>
+
+                    <div class="filter-input-group">
+                        <label for="filterWeek">Semana</label>
+                        <select id="filterWeek">
+                            <option value="todas">Todas las semanas</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-input-group">
+                        <label for="filterType">Tipo de Registro</label>
+                        <select id="filterType">
+                            <option value="todos">Todos los tipos</option>
+                            <option value="Trabajo">Jornada Regular</option>
+                            <option value="Tardanza">Con Tardanza</option>
+                            <option value="Extra">Con Horas Extras</option>
+                            <option value="Feriado">Feriados</option>
+                            <option value="Permiso">Permisos</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Attendance Table -->
+                <div class="attendance-table-container">
+                    <table class="attendance-table">
+                        <thead>
+                            <tr>
+                                <th>Colaborador</th>
+                                <th>Fecha</th>
+                                <th>Entrada</th>
+                                <th>Salida</th>
+                                <th>Horas Abonadas</th>
+                                <th>Tardanza</th>
+                                <th>Horas Extras</th>
+                                <th>Tipo</th>
+                                <th>Notas / Detalle</th>
+                                <th style="width: 80px; text-align: center;">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="attendanceTableBody">
+                            <tr>
+                                <td colspan="10" class="empty-state">
+                                    <i data-lucide="loader-2" class="animate-spin"></i> Cargando registros...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Motivational Banner -->
             <div class="footer-banner-container">
                 <div class="footer-sun-illus">
                     <svg viewBox="0 0 100 100" class="footer-sun-svg">
@@ -454,560 +353,445 @@
                 <div class="footer-banner-text">
                     Tu compromiso de hoy es el éxito de mañana. Sigamos avanzando hacia un <span
                         class="cursive-highlight">Nuevo Horizonte.</span> 🌈 ✨
-                    <span
-                        style="display: block; font-size: 11px; font-weight: normal; color: var(--text-muted); opacity: 0.8; margin-top: 4px; font-style: italic;">
-                        * Frase motivacional robada de ChatGPT
-                    </span>
-                </div>
-                <div class="footer-rainbow-illus">
-                    <svg viewBox="0 0 120 80" class="footer-rainbow-svg">
-                        <g fill="none" stroke-width="5" stroke-linecap="round">
-                            <path d="M 10,70 A 50,50 0 0,1 110,70" stroke="#ff007f" />
-                            <path d="M 15,70 A 45,45 0 0,1 105,70" stroke="#ff7f00" />
-                            <path d="M 20,70 A 40,40 0 0,1 100,70" stroke="#ffee00" />
-                            <path d="M 25,70 A 35,35 0 0,1 95,70" stroke="#00ff7f" />
-                            <path d="M 30,70 A 30,30 0 0,1 90,70" stroke="#007fff" />
-                            <path d="M 35,70 A 25,25 0 0,1 85,70" stroke="#7f00ff" />
-                        </g>
-                    </svg>
+                    <br><small style="font-size: 10px; color: var(--text-muted); opacity: 0.7;">(frase motivacional
+                        sacada de ChatGPT)</small>
                 </div>
             </div>
-        </main>
-    </div>
-
-    <!-- Modal: User Onboarding (Identificación de Operador) -->
-    <div class="modal-backdrop" id="modalUserOnboarding">
-        <div class="modal-card modal-sm" style="max-width: 380px;">
-            <div class="modal-header">
-                <h3 style="display: flex; align-items: center; gap: 8px;">
-                    <i data-lucide="sun" class="sun-header-spin" style="color: var(--sun-gold);"></i>
-                    Identificación de Operador
-                </h3>
-            </div>
-            <div class="modal-body">
-                <p class="settings-intro" style="margin-bottom: 16px;">Ingresa tu nombre o alias para registrar el
-                    historial de cambios en el sistema.</p>
-                <form id="formUserOnboarding">
-                    <div class="form-group">
-                        <label for="onboardingName">Nombre / Alias *</label>
-                        <div class="input-wrapper">
-                            <i data-lucide="user"></i>
-                            <input type="text" id="onboardingName" required placeholder="Nombre o alias de operador"
-                                maxlength="25">
-                        </div>
-                    </div>
-                    <div class="modal-actions" style="margin-top: 16px;">
-                        <button type="submit" class="btn btn-primary"
-                            style="width: 100%; background: var(--primary); box-shadow: 0 4px 14px var(--primary-glow);">Continuar</button>
-                    </div>
-                </form>
-            </div>
+            </main>
         </div>
-    </div>
 
-    <!-- Modal: Admin Authentication -->
-    <div class="modal-backdrop" id="modalAdminAuth">
-        <div class="modal-card modal-sm" style="max-width: 380px;">
-            <div class="modal-header">
-                <h3 style="display: flex; align-items: center; gap: 8px; margin: 0;">
-                    <i data-lucide="lock" style="color: var(--danger);"></i> Acceso de Administrador
-                </h3>
-                <button class="btn-close" id="btnCloseAdminAuth"><i data-lucide="x"></i></button>
-            </div>
-            <div class="modal-body">
-                <p class="settings-intro" style="margin-bottom: 16px; font-size: 13px; color: var(--text-secondary);">
-                    Ingrese la contraseña de administrador para proceder.</p>
-                <form id="formAdminAuth">
-                    <div class="form-group">
-                        <label for="adminPassword">Contraseña *</label>
-                        <div class="input-wrapper">
-                            <i data-lucide="key-round"></i>
-                            <input type="password" id="adminPassword" required placeholder="••••••••">
+        <!-- ========================================================================= -->
+        <!-- MODAL: WIZARD DE AGREGAR NUEVO TRABAJADOR (3 PASOS)                       -->
+        <!-- ========================================================================= -->
+        <div class="modal-backdrop" id="modalAddWorkerWizard">
+            <div class="modal-card modal-wizard">
+                <!-- Modal Header -->
+                <div class="modal-header">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 24px;">👤</span>
+                        <div>
+                            <h3 style="margin: 0; color: var(--primary); font-size: 17px;" id="wizardModalTitle">
+                                Registrar Nuevo Trabajador
+                            </h3>
+                            <small style="color: var(--text-muted); font-size: 12px;">Paso a paso: Datos y Horario
+                                Semanal</small>
                         </div>
                     </div>
-                    <div class="form-error" id="adminAuthError"
-                        style="display: none; color: var(--danger); margin-bottom: 12px; font-size: 13px;"></div>
-                    <div class="modal-actions" style="margin-top: 16px;">
-                        <button type="submit" class="btn btn-primary"
-                            style="width: 100%; background: var(--primary); box-shadow: 0 4px 14px var(--primary-glow);">Desbloquear</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
+                    <button class="btn-close" id="btnCloseAddWorkerWizard" type="button"><i
+                            data-lucide="x"></i></button>
+                </div>
 
-    <!-- Modal: Register Holiday / Permit -->
-    <div class="modal-backdrop" id="modalAdminRegister">
-        <div class="modal-card">
-            <div class="modal-header">
-                <h3 id="adminModalTitle" style="display: flex; align-items: center; gap: 8px;">
-                    <i data-lucide="sun" class="sun-header-spin" style="color: var(--sun-gold);"></i>
-                    Registrar Feriado / Permiso Especial
-                </h3>
-                <button class="btn-close" id="btnCloseAdminRegister"><i data-lucide="x"></i></button>
-            </div>
-            <div class="modal-body">
-                <form id="formAdminRegister">
-                    <div class="form-group">
-                        <label for="adminRegisterType">Tipo de Registro *</label>
-                        <div class="input-wrapper">
-                            <i data-lucide="award"></i>
-                            <select id="adminRegisterType" required>
-                                <option value="Feriado">Feriado Nacional (Aplica a todos los trabajadores)</option>
-                                <option value="Permiso">Permiso Especial (Aplica a un trabajador específico)</option>
-                                <option value="Falta">Falta / Inasistencia (Aplica a un trabajador específico)</option>
-                            </select>
-                        </div>
+                <!-- Wizard Step Indicator Pills -->
+                <div class="wizard-steps-indicator">
+                    <div class="wizard-step-item active" id="stepIndicator1">
+                        <div class="step-num">1</div>
+                        <span>Nombre & Emoji</span>
                     </div>
-
-                    <div class="form-group" id="adminEmployeeSelectGroup">
-                        <label for="adminEmployeeSelect">Trabajador *</label>
-                        <div class="input-wrapper">
-                            <i data-lucide="user"></i>
-                            <select id="adminEmployeeSelect">
-                                <!-- Dynamic options -->
-                            </select>
-                        </div>
+                    <div class="wizard-step-line" id="stepLine1"></div>
+                    <div class="wizard-step-item" id="stepIndicator2">
+                        <div class="step-num">2</div>
+                        <span>Horario Semanal</span>
                     </div>
-
-                    <div class="form-group">
-                        <label for="adminRegisterDate">Fecha *</label>
-                        <div class="input-wrapper">
-                            <i data-lucide="calendar"></i>
-                            <input type="date" id="adminRegisterDate" required>
-                        </div>
+                    <div class="wizard-step-line" id="stepLine2"></div>
+                    <div class="wizard-step-item" id="stepIndicator3">
+                        <div class="step-num">3</div>
+                        <span>Listo</span>
                     </div>
+                </div>
 
-                    <div class="form-group">
-                        <label id="labelAdminRegisterTime" for="adminRegisterHours">Tiempo Justificado Abonado *</label>
-                        <div style="display: flex; gap: 10px; align-items: center;">
-                            <div class="input-wrapper" style="flex: 1; margin: 0;">
-                                <i data-lucide="clock"></i>
-                                <input type="number" id="adminRegisterHours" value="8" min="0" max="24"
-                                    placeholder="Horas" required>
-                                <span style="font-size: 13px; color: var(--text-secondary); margin-left: 8px;">h</span>
-                            </div>
-                            <div class="input-wrapper" style="flex: 1; margin: 0;">
-                                <i data-lucide="clock"></i>
-                                <input type="number" id="adminRegisterMinutes" value="0" min="0" max="59"
-                                    placeholder="Minutos" required>
-                                <span
-                                    style="font-size: 13px; color: var(--text-secondary); margin-left: 8px;">min</span>
+                <!-- Wizard Body -->
+                <div class="modal-body">
+                    <!-- STEP 1: NOMBRE Y EMOJI -->
+                    <div class="wizard-page active" id="wizardPage1">
+                        <div class="form-group" style="margin-bottom: 16px;">
+                            <label for="newWorkerName"
+                                style="font-weight: 600; font-size: 13.5px; display: block; margin-bottom: 6px;">
+                                Nombre del Trabajador *
+                            </label>
+                            <div class="input-wrapper">
+                                <i data-lucide="user"></i>
+                                <input type="text" id="newWorkerName" placeholder="Ej. Rogger, Ana, Jonathan..."
+                                    maxlength="30" required>
                             </div>
                         </div>
-                        <small style="color: var(--text-muted); margin-top: 6px; display: block;">
-                            Por defecto son 8 horas y 0 minutos (un turno estándar).
-                        </small>
-                    </div>
 
-                    <div class="form-group">
-                        <label for="adminRegisterNotes">Observaciones / Motivo</label>
-                        <div class="input-wrapper">
-                            <i data-lucide="pencil"></i>
-                            <input type="text" id="adminRegisterNotes"
-                                placeholder="Ej. Feriado Semana Santa o Permiso por cita médica">
-                        </div>
-                    </div>
-
-                    <div class="form-error" id="adminRegisterError"
-                        style="display: none; color: var(--danger); margin-bottom: 12px; font-size: 13px;"></div>
-
-                    <div class="modal-actions" style="margin-top: 20px;">
-                        <button type="submit" class="btn btn-primary"
-                            style="width: 100%; background: var(--primary); box-shadow: 0 4px 14px var(--primary-glow);">Guardar
-                            Registro</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal: Complete Attendance Guide -->
-    <div class="modal-backdrop" id="modalSystemGuide">
-        <div class="modal-card modal-lg" style="max-width: 600px; width: 90%;">
-            <div class="modal-header">
-                <h3 style="display: flex; align-items: center; gap: 8px; margin: 0; color: var(--primary);">
-                    <i data-lucide="cloud-sun" class="sun-header-spin" style="color: var(--sun-gold);"></i> Guía de
-                    Asistencias para Simples Mortales
-                </h3>
-                <button class="btn-close" id="btnCloseGuide"><i data-lucide="x"></i></button>
-            </div>
-            <div class="modal-body"
-                style="display: flex; flex-direction: column; gap: 16px; max-height: 70vh; overflow-y: auto;">
-                <p style="font-size: 14px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 4px;">
-                    Aquí tienes una explicación sencilla de cómo se calculan y registran tus horas de trabajo en el
-                    sistema:
-                </p>
-
-                <!-- Card 1: Meta Semanal -->
-                <div class="guide-section-card">
-                    <div class="guide-card-header">
-                        <i data-lucide="calendar" class="guide-icon purple"></i>
-                        <h4>1. La Meta Semanal (Horario Personalizado)</h4>
-                    </div>
-                    <p class="guide-card-desc">
-                        Cada colaborador tiene una meta de horas semanales basada en su <strong>horario
-                            personalizado</strong> establecido por administración.
-                    </p>
-                    <ul class="guide-list">
-                        <li>El porcentaje de progreso en la barra se calcula en base a tu meta semanal específica.</li>
-                        <li>Las horas totales de la semana son la suma de las <strong>horas presenciales</strong> más
-                            las <strong>horas justificadas</strong>.</li>
-                        <li>El progreso se reinicia automáticamente cada lunes.</li>
-                    </ul>
-                </div>
-
-                <!-- Card 2: Feriados y Permisos -->
-                <div class="guide-section-card">
-                    <div class="guide-card-header">
-                        <i data-lucide="gift" class="guide-icon emerald"></i>
-                        <h4>2. Feriados y Permisos (Automáticos)</h4>
-                    </div>
-                    <p class="guide-card-desc">
-                        Los feriados nacionales y los permisos especiales aprobados por administración te benefician de
-                        forma automática.
-                    </p>
-                    <ul class="guide-list">
-                        <li>Suman <strong>8 horas justificadas automáticamente</strong> a tu acumulado diario y semanal.
-                        </li>
-                        <li>No necesitas registrar entrada o salida en esos días; el administrador los ingresa por el
-                            panel de control.</li>
-                    </ul>
-                </div>
-
-                <!-- Card 3: Refrigerio / Almuerzo -->
-                <div class="guide-section-card">
-                    <div class="guide-card-header">
-                        <i data-lucide="utensils" class="guide-icon amber"></i>
-                        <h4>3. Descuento de Almuerzo (🍴 1 Hora)</h4>
-                    </div>
-                    <p class="guide-card-desc">
-                        Para ser justos con la jornada laboral, el sistema calcula de forma inteligente tu hora de
-                        refrigerio diario:
-                    </p>
-                    <div class="guide-example-box">
-                        <strong>Regla:</strong> Si tu turno presencial (de entrada a salida) supera las <strong>5
-                            horas</strong>, el sistema descuenta automáticamente <strong>1 hora</strong> por concepto de
-                        almuerzo.
-                    </div>
-                    <ul class="guide-list font-sm">
-                        <li><strong>Caso A (Con Almuerzo):</strong> Si trabajas tu jornada normal de 9:00 AM a 6:00 PM
-                            (9 horas) y dejas marcado el almuerzo, se te abonarán <strong>8 h</strong>.</li>
-                        <li><strong>Caso B (Sin Almuerzo / Media Jornada):</strong> Si por ejemplo trabajas de 9:00 AM a
-                            3:00 PM (6 horas) y te retiras directo a tu casa sin almorzar, simplemente <strong>desmarca
-                                la casilla "¿Almorzarás hoy?"</strong> al registrar tu salida. Así se
-                            te abonarán las <strong>6 h</strong> completas.</li>
-                        <li><strong>Turnos Cortos (&le; 5h):</strong> Si trabajas 5 horas o menos (ej. de 9:00 AM a 2:00
-                            PM, que son 5 horas), el sistema nunca te descontará nada de forma automática.</li>
-                    </ul>
-                </div>
-
-                <!-- Card 4: Horas Requeridas y que se Deben -->
-                <div class="guide-section-card">
-                    <div class="guide-card-header">
-                        <i data-lucide="help-circle" class="guide-icon red"></i>
-                        <h4>4. Horas Requeridas y "Se Deben" (Mes)</h4>
-                    </div>
-                    <p class="guide-card-desc">
-                        El resumen mensual te dice si estás al día o si debes horas acumuladas en el mes:
-                    </p>
-                    <ul class="guide-list">
-                        <li><strong>Horas Requeridas:</strong> Se calculan de acuerdo a tu <strong>horario
-                                establecido</strong> para todo el mes completo (ej. 8 horas de lunes a sábado, 0 horas
-                            el domingo).</li>
-                        <li><strong>Horas que se Deben:</strong> Es la diferencia entre las horas requeridas de todo el
-                            mes y lo que has sumado realmente. Si ya cumpliste o superaste la meta mensual, verás
-                            <strong>0 h</strong>.
-                        </li>
-                        <li><strong>Horas Extra:</strong> Si tus horas adeudadas llegan a 0 y sigues trabajando, el
-                            tiempo adicional se acumulará como Horas Extra del mes.</li>
-                    </ul>
-                </div>
-            </div>
-            <div class="modal-actions" style="border-top: 1px solid var(--border-color); padding: 16px 24px;">
-                <button class="btn btn-primary" id="btnCloseGuideBtn"
-                    style="width: 100%; background: var(--primary); box-shadow: 0 4px 14px var(--primary-glow);">¡Entendido!</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal: Configurar Horarios -->
-    <div class="modal-backdrop" id="modalAdminSchedules">
-        <div class="modal-card">
-            <div class="modal-header">
-                <h3 style="display: flex; align-items: center; gap: 8px;">
-                    <i data-lucide="calendar-clock" class="sun-header-spin" style="color: var(--sun-gold);"></i>
-                    Configurar Horarios del Personal
-                </h3>
-                <button class="btn-close" id="btnCloseAdminSchedules"><i data-lucide="x"></i></button>
-            </div>
-            <div class="modal-body">
-                <form id="formAdminSchedules">
-                    <div class="form-group">
-                        <label for="adminScheduleEmployeeSelect">Seleccionar Trabajador *</label>
-                        <div class="input-wrapper">
-                            <i data-lucide="user"></i>
-                            <select id="adminScheduleEmployeeSelect" required>
-                                <!-- Dynamic options -->
-                            </select>
-                        </div>
-                    </div>
-
-                    <p class="settings-intro"
-                        style="margin-bottom: 12px; font-size: 13px; color: var(--text-secondary);">
-                        Define la hora de entrada, salida y horas de almuerzo. Desmarca la casilla si es su día libre.
-                    </p>
-
-                    <div class="schedule-grid-advanced" style="display: flex; flex-direction: column; gap: 8px;">
-                        <!-- Lunes -->
-                        <div class="schedule-adv-row"
-                            style="display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.02); padding: 8px; border: 1px solid var(--border-color); border-radius: 6px;">
-                            <label
-                                style="display: flex; align-items: center; gap: 6px; width: 90px; cursor: pointer; font-size: 13px; font-weight: 500;">
-                                <input type="checkbox" id="schLunesActive" checked>
-                                Lunes
+                        <div class="form-group" style="margin-bottom: 16px;">
+                            <label style="font-weight: 600; font-size: 13.5px; display: block; margin-bottom: 8px;">
+                                Selecciona su Emoji Identificativo:
                             </label>
-                            <input type="time" id="schLunesIn" value="09:00"
-                                style="padding: 4px; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.2); color: var(--text-primary); width: 85px;">
-                            <span style="font-size: 12px; color: var(--text-muted);">a</span>
-                            <input type="time" id="schLunesOut" value="18:00"
-                                style="padding: 4px; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.2); color: var(--text-primary); width: 85px;">
-                            <input type="number" id="schLunesLunch" min="0" max="5" step="0.5" value="1"
-                                style="padding: 4px; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.2); color: var(--text-primary); width: 50px; text-align: center;"
-                                title="Horas de almuerzo">
-                            <span style="font-size: 11px; color: var(--text-muted);">h alm.</span>
+                            <div class="emoji-picker-grid" id="emojiPickerGrid">
+                                <!-- Dynamically generated or preset clickable emojis -->
+                                <button type="button" class="emoji-opt-btn selected" data-emoji="🌸">🌸</button>
+                                <button type="button" class="emoji-opt-btn" data-emoji="🦉">🦉</button>
+                                <button type="button" class="emoji-opt-btn" data-emoji="👹">👹</button>
+                                <button type="button" class="emoji-opt-btn" data-emoji="🗿">🗿</button>
+                                <button type="button" class="emoji-opt-btn" data-emoji="🎀">🎀</button>
+                                <button type="button" class="emoji-opt-btn" data-emoji="💅">💅</button>
+                                <button type="button" class="emoji-opt-btn" data-emoji="🦋">🦋</button>
+                                <button type="button" class="emoji-opt-btn" data-emoji="🌙">🌙</button>
+                                <button type="button" class="emoji-opt-btn" data-emoji="⭐">⭐</button>
+                                <button type="button" class="emoji-opt-btn" data-emoji="🦊">🦊</button>
+                                <button type="button" class="emoji-opt-btn" data-emoji="🦁">🦁</button>
+                                <button type="button" class="emoji-opt-btn" data-emoji="👑">👑</button>
+                                <button type="button" class="emoji-opt-btn" data-emoji="🎯">🎯</button>
+                                <button type="button" class="emoji-opt-btn" data-emoji="🚀">🚀</button>
+                                <button type="button" class="emoji-opt-btn" data-emoji="🌻">🌻</button>
+                                <button type="button" class="emoji-opt-btn" data-emoji="⚡">⚡</button>
+                                <button type="button" class="emoji-opt-btn" data-emoji="💎">💎</button>
+                                <button type="button" class="emoji-opt-btn" data-emoji="😎">😎</button>
+                                <button type="button" class="emoji-opt-btn" data-emoji="🤓">🤓</button>
+                                <button type="button" class="emoji-opt-btn" data-emoji="🥳">🥳</button>
+                                <button type="button" class="emoji-opt-btn" data-emoji="👽">👽</button>
+                                <button type="button" class="emoji-opt-btn" data-emoji="👻">👻</button>
+                                <button type="button" class="emoji-opt-btn" data-emoji="🤖">🤖</button>
+                                <button type="button" class="emoji-opt-btn" data-emoji="🐼">🐼</button>
+                                <button type="button" class="emoji-opt-btn" data-emoji="🐸">🐸</button>
+                                <button type="button" class="emoji-opt-btn" data-emoji="🐵">🐵</button>
+                                <button type="button" class="emoji-opt-btn" data-emoji="🦄">🦄</button>
+                                <button type="button" class="emoji-opt-btn" data-emoji="⚽">⚽</button>
+                                <button type="button" class="emoji-opt-btn" data-emoji="🏀">🏀</button>
+                                <button type="button" class="emoji-opt-btn" data-emoji="🎮">🎮</button>
+                                <button type="button" class="emoji-opt-btn" data-emoji="🎨">🎨</button>
+                                <button type="button" class="emoji-opt-btn" data-emoji="🎭">🎭</button>
+                                <button type="button" class="emoji-opt-btn" data-emoji="🎸">🎸</button>
+                                <button type="button" class="emoji-opt-btn" data-emoji="🌺">🌺</button>
+                                <button type="button" class="emoji-opt-btn" data-emoji="🍀">🍀</button>
+                                <button type="button" class="emoji-opt-btn" data-emoji="🍎">🍎</button>
+                                <button type="button" class="emoji-opt-btn" data-emoji="🍕">🍕</button>
+                                <button type="button" class="emoji-opt-btn" data-emoji="🔥">🔥</button>
+                                <button type="button" class="emoji-opt-btn" data-emoji="🐾">🐾</button>
+                                <button type="button" class="emoji-opt-btn" data-emoji="🍉">🍉</button>
+                                <button type="button" class="emoji-opt-btn" data-emoji="🐶">🐶</button>
+                                <button type="button" class="emoji-opt-btn" data-emoji="🐱">🐱</button>
+                                <button type="button" class="emoji-opt-btn" data-emoji="🐭">🐭</button>
+                                <button type="button" class="emoji-opt-btn" data-emoji="🐹">🐹</button>
+                                <button type="button" class="emoji-opt-btn" data-emoji="🐰">🐰</button>
+                                <button type="button" class="emoji-opt-btn" data-emoji="🐻">🐻</button>
+                                <button type="button" class="emoji-opt-btn" data-emoji="🐨">🐨</button>
+                                <button type="button" class="emoji-opt-btn" data-emoji="🐯">🐯</button>
+                            </div>
+                            <input type="hidden" id="selectedWorkerEmoji" value="🌸">
                         </div>
 
-                        <!-- Martes -->
-                        <div class="schedule-adv-row"
-                            style="display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.02); padding: 8px; border: 1px solid var(--border-color); border-radius: 6px;">
-                            <label
-                                style="display: flex; align-items: center; gap: 6px; width: 90px; cursor: pointer; font-size: 13px; font-weight: 500;">
-                                <input type="checkbox" id="schMartesActive" checked>
-                                Martes
-                            </label>
-                            <input type="time" id="schMartesIn" value="09:00"
-                                style="padding: 4px; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.2); color: var(--text-primary); width: 85px;">
-                            <span style="font-size: 12px; color: var(--text-muted);">a</span>
-                            <input type="time" id="schMartesOut" value="18:00"
-                                style="padding: 4px; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.2); color: var(--text-primary); width: 85px;">
-                            <input type="number" id="schMartesLunch" min="0" max="5" step="0.5" value="1"
-                                style="padding: 4px; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.2); color: var(--text-primary); width: 50px; text-align: center;"
-                                title="Horas de almuerzo">
-                            <span style="font-size: 11px; color: var(--text-muted);">h alm.</span>
+                        <div class="worker-preview-badge">
+                            <span>Vista Previa: </span>
+                            <strong id="workerPreviewText">🌸 Nombre</strong>
                         </div>
 
-                        <!-- Miércoles -->
-                        <div class="schedule-adv-row"
-                            style="display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.02); padding: 8px; border: 1px solid var(--border-color); border-radius: 6px;">
-                            <label
-                                style="display: flex; align-items: center; gap: 6px; width: 90px; cursor: pointer; font-size: 13px; font-weight: 500;">
-                                <input type="checkbox" id="schMiercolesActive" checked>
-                                Miércoles
-                            </label>
-                            <input type="time" id="schMiercolesIn" value="09:00"
-                                style="padding: 4px; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.2); color: var(--text-primary); width: 85px;">
-                            <span style="font-size: 12px; color: var(--text-muted);">a</span>
-                            <input type="time" id="schMiercolesOut" value="18:00"
-                                style="padding: 4px; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.2); color: var(--text-primary); width: 85px;">
-                            <input type="number" id="schMiercolesLunch" min="0" max="5" step="0.5" value="1"
-                                style="padding: 4px; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.2); color: var(--text-primary); width: 50px; text-align: center;"
-                                title="Horas de almuerzo">
-                            <span style="font-size: 11px; color: var(--text-muted);">h alm.</span>
-                        </div>
-
-                        <!-- Jueves -->
-                        <div class="schedule-adv-row"
-                            style="display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.02); padding: 8px; border: 1px solid var(--border-color); border-radius: 6px;">
-                            <label
-                                style="display: flex; align-items: center; gap: 6px; width: 90px; cursor: pointer; font-size: 13px; font-weight: 500;">
-                                <input type="checkbox" id="schJuevesActive" checked>
-                                Jueves
-                            </label>
-                            <input type="time" id="schJuevesIn" value="09:00"
-                                style="padding: 4px; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.2); color: var(--text-primary); width: 85px;">
-                            <span style="font-size: 12px; color: var(--text-muted);">a</span>
-                            <input type="time" id="schJuevesOut" value="18:00"
-                                style="padding: 4px; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.2); color: var(--text-primary); width: 85px;">
-                            <input type="number" id="schJuevesLunch" min="0" max="5" step="0.5" value="1"
-                                style="padding: 4px; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.2); color: var(--text-primary); width: 50px; text-align: center;"
-                                title="Horas de almuerzo">
-                            <span style="font-size: 11px; color: var(--text-muted);">h alm.</span>
-                        </div>
-
-                        <!-- Viernes -->
-                        <div class="schedule-adv-row"
-                            style="display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.02); padding: 8px; border: 1px solid var(--border-color); border-radius: 6px;">
-                            <label
-                                style="display: flex; align-items: center; gap: 6px; width: 90px; cursor: pointer; font-size: 13px; font-weight: 500;">
-                                <input type="checkbox" id="schViernesActive" checked>
-                                Viernes
-                            </label>
-                            <input type="time" id="schViernesIn" value="09:00"
-                                style="padding: 4px; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.2); color: var(--text-primary); width: 85px;">
-                            <span style="font-size: 12px; color: var(--text-muted);">a</span>
-                            <input type="time" id="schViernesOut" value="18:00"
-                                style="padding: 4px; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.2); color: var(--text-primary); width: 85px;">
-                            <input type="number" id="schViernesLunch" min="0" max="5" step="0.5" value="1"
-                                style="padding: 4px; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.2); color: var(--text-primary); width: 50px; text-align: center;"
-                                title="Horas de almuerzo">
-                            <span style="font-size: 11px; color: var(--text-muted);">h alm.</span>
-                        </div>
-
-                        <!-- Sábado -->
-                        <div class="schedule-adv-row"
-                            style="display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.02); padding: 8px; border: 1px solid var(--border-color); border-radius: 6px;">
-                            <label
-                                style="display: flex; align-items: center; gap: 6px; width: 90px; cursor: pointer; font-size: 13px; font-weight: 500;">
-                                <input type="checkbox" id="schSabadoActive" checked>
-                                Sábado
-                            </label>
-                            <input type="time" id="schSabadoIn" value="09:00"
-                                style="padding: 4px; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.2); color: var(--text-primary); width: 85px;">
-                            <span style="font-size: 12px; color: var(--text-muted);">a</span>
-                            <input type="time" id="schSabadoOut" value="18:00"
-                                style="padding: 4px; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.2); color: var(--text-primary); width: 85px;">
-                            <input type="number" id="schSabadoLunch" min="0" max="5" step="0.5" value="1"
-                                style="padding: 4px; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.2); color: var(--text-primary); width: 50px; text-align: center;"
-                                title="Horas de almuerzo">
-                            <span style="font-size: 11px; color: var(--text-muted);">h alm.</span>
-                        </div>
-
-                        <!-- Domingo -->
-                        <div class="schedule-adv-row sunday"
-                            style="display: flex; align-items: center; gap: 6px; background: rgba(255, 107, 107, 0.05); padding: 8px; border: 1px solid rgba(255, 107, 107, 0.3); border-radius: 6px;">
-                            <label
-                                style="display: flex; align-items: center; gap: 6px; width: 90px; cursor: pointer; font-size: 13px; font-weight: 500; color: #ff6b6b;">
-                                <input type="checkbox" id="schDomingoActive">
-                                Domingo
-                            </label>
-                            <input type="time" id="schDomingoIn" value="09:00"
-                                style="padding: 4px; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.2); color: var(--text-primary); width: 85px;">
-                            <span style="font-size: 12px; color: var(--text-muted);">a</span>
-                            <input type="time" id="schDomingoOut" value="18:00"
-                                style="padding: 4px; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.2); color: var(--text-primary); width: 85px;">
-                            <input type="number" id="schDomingoLunch" min="0" max="5" step="0.5" value="0"
-                                style="padding: 4px; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.2); color: var(--text-primary); width: 50px; text-align: center;"
-                                title="Horas de almuerzo">
-                            <span style="font-size: 11px; color: var(--text-muted);">h alm.</span>
-                        </div>
-                    </div>
-
-                    <div class="modal-actions" style="margin-top: 20px;">
-                        <button type="submit" class="btn btn-primary" id="btnSaveSchedule"
-                            style="width: 100%; background: var(--primary); box-shadow: 0 4px 14px var(--primary-glow);">Guardar
-                            Horario</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal: Employee Detailed Report -->
-    <div class="modal-backdrop" id="modalEmployeeReport">
-        <div class="modal-card">
-            <div class="modal-header">
-                <h3 style="display: flex; align-items: center; gap: 8px; color: var(--primary);">
-                    <i data-lucide="file-spreadsheet"></i> Mi Reporte Detallado
-                </h3>
-                <button class="btn-close" id="btnCloseEmployeeReport"><i data-lucide="x"></i></button>
-            </div>
-            <div class="modal-body" style="display: flex; flex-direction: column; gap: 16px;">
-                <p style="font-size: 13.5px; color: var(--text-secondary); margin-bottom: 0;">Resumen del mes
-                    seleccionado para <strong id="reportEmployeeName">...</strong>.</p>
-
-                <div class="schedule-grid" style="margin-top: 0;">
-                    <div class="schedule-day-row">
-                        <label>Días Laborados</label>
-                        <span id="statsDaysWorked" style="font-weight: 700; font-size: 14px;">0 días</span>
-                    </div>
-                    <div class="schedule-day-row">
-                        <label>Días Justificados (Feriados/Permisos)</label>
-                        <span id="statsDaysJustified" style="font-weight: 700; font-size: 14px; color: #c084fc;">0
-                            días</span>
-                    </div>
-
-                    <div class="schedule-day-row" style="align-items: center;">
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                            <label style="margin: 0;">Horas que se Deben (Tardanzas/Faltas)</label>
-                            <button id="btnAdjustOwedHours" class="btn btn-secondary" type="button" style="padding: 2px 8px; font-size: 11px; height: 24px; display: flex; align-items: center; gap: 4px; border-color: #f87171; color: #f87171; background: rgba(248, 113, 113, 0.1); cursor: pointer;" title="Ajustar horas debidas (Requiere clave admin)">
-                                <i data-lucide="plus-minus" style="width: 12px; height: 12px;"></i> +/-
+                        <div class="modal-actions" style="margin-top: 20px;">
+                            <button type="button" class="btn btn-primary" id="btnWizardNext1" style="width: 100%;">
+                                <span>Configurar Horario (Lunes a Sábado) ➡️</span>
                             </button>
                         </div>
-                        <span id="modalStatsOwedHours" style="font-weight: 700; font-size: 14px; color: #f87171;">0 h</span>
                     </div>
 
+                    <!-- STEP 2: HORARIO SEMANAL LUNES A SÁBADO (6:00 AM A 11:00 PM) -->
+                    <div class="wizard-page" id="wizardPage2">
+                        <p
+                            style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px; line-height: 1.4;">
+                            Establece las horas de ingreso y salida. Si no trabaja un día, desmarca la casilla.
+                            La casilla <strong>¿Almorzará?</strong> resta automáticamente 1 hora de descanso.
+                        </p>
+
+                        <!-- Schedule rows for Monday to Saturday -->
+                        <div class="schedule-days-container" id="scheduleDaysContainer">
+                            <!-- Monday -->
+                            <div class="schedule-day-card" data-day="lunes">
+                                <div class="day-toggle-col">
+                                    <label class="custom-checkbox-container">
+                                        <input type="checkbox" class="day-active-cb" checked>
+                                        <span class="checkmark"></span>
+                                        <strong class="day-name">Lunes</strong>
+                                    </label>
+                                </div>
+                                <div class="day-inputs-col">
+                                    <div class="time-range-group">
+                                        <input type="time" class="time-in" value="08:00" min="06:00" max="23:00">
+                                        <span class="to-sep">a</span>
+                                        <input type="time" class="time-out" value="16:30" min="06:00" max="23:00">
+                                    </div>
+                                    <label class="lunch-cb-label">
+                                        <input type="checkbox" class="lunch-cb" checked>
+                                        <span>🍴 ¿Almorzará? (1h)</span>
+                                    </label>
+                                </div>
+                                <div class="day-calc-col">
+                                    <span class="day-calc-hours">7h 30m</span>
+                                </div>
+                            </div>
+
+                            <!-- Tuesday -->
+                            <div class="schedule-day-card" data-day="martes">
+                                <div class="day-toggle-col">
+                                    <label class="custom-checkbox-container">
+                                        <input type="checkbox" class="day-active-cb" checked>
+                                        <span class="checkmark"></span>
+                                        <strong class="day-name">Martes</strong>
+                                    </label>
+                                </div>
+                                <div class="day-inputs-col">
+                                    <div class="time-range-group">
+                                        <input type="time" class="time-in" value="08:00" min="06:00" max="23:00">
+                                        <span class="to-sep">a</span>
+                                        <input type="time" class="time-out" value="16:30" min="06:00" max="23:00">
+                                    </div>
+                                    <label class="lunch-cb-label">
+                                        <input type="checkbox" class="lunch-cb" checked>
+                                        <span>🍴 ¿Almorzará? (1h)</span>
+                                    </label>
+                                </div>
+                                <div class="day-calc-col">
+                                    <span class="day-calc-hours">7h 30m</span>
+                                </div>
+                            </div>
+
+                            <!-- Wednesday -->
+                            <div class="schedule-day-card" data-day="miercoles">
+                                <div class="day-toggle-col">
+                                    <label class="custom-checkbox-container">
+                                        <input type="checkbox" class="day-active-cb" checked>
+                                        <span class="checkmark"></span>
+                                        <strong class="day-name">Miércoles</strong>
+                                    </label>
+                                </div>
+                                <div class="day-inputs-col">
+                                    <div class="time-range-group">
+                                        <input type="time" class="time-in" value="08:00" min="06:00" max="23:00">
+                                        <span class="to-sep">a</span>
+                                        <input type="time" class="time-out" value="16:30" min="06:00" max="23:00">
+                                    </div>
+                                    <label class="lunch-cb-label">
+                                        <input type="checkbox" class="lunch-cb" checked>
+                                        <span>🍴 ¿Almorzará? (1h)</span>
+                                    </label>
+                                </div>
+                                <div class="day-calc-col">
+                                    <span class="day-calc-hours">7h 30m</span>
+                                </div>
+                            </div>
+
+                            <!-- Thursday -->
+                            <div class="schedule-day-card" data-day="jueves">
+                                <div class="day-toggle-col">
+                                    <label class="custom-checkbox-container">
+                                        <input type="checkbox" class="day-active-cb" checked>
+                                        <span class="checkmark"></span>
+                                        <strong class="day-name">Jueves</strong>
+                                    </label>
+                                </div>
+                                <div class="day-inputs-col">
+                                    <div class="time-range-group">
+                                        <input type="time" class="time-in" value="08:00" min="06:00" max="23:00">
+                                        <span class="to-sep">a</span>
+                                        <input type="time" class="time-out" value="16:30" min="06:00" max="23:00">
+                                    </div>
+                                    <label class="lunch-cb-label">
+                                        <input type="checkbox" class="lunch-cb" checked>
+                                        <span>🍴 ¿Almorzará? (1h)</span>
+                                    </label>
+                                </div>
+                                <div class="day-calc-col">
+                                    <span class="day-calc-hours">7h 30m</span>
+                                </div>
+                            </div>
+
+                            <!-- Friday -->
+                            <div class="schedule-day-card" data-day="viernes">
+                                <div class="day-toggle-col">
+                                    <label class="custom-checkbox-container">
+                                        <input type="checkbox" class="day-active-cb" checked>
+                                        <span class="checkmark"></span>
+                                        <strong class="day-name">Viernes</strong>
+                                    </label>
+                                </div>
+                                <div class="day-inputs-col">
+                                    <div class="time-range-group">
+                                        <input type="time" class="time-in" value="08:00" min="06:00" max="23:00">
+                                        <span class="to-sep">a</span>
+                                        <input type="time" class="time-out" value="16:30" min="06:00" max="23:00">
+                                    </div>
+                                    <label class="lunch-cb-label">
+                                        <input type="checkbox" class="lunch-cb" checked>
+                                        <span>🍴 ¿Almorzará? (1h)</span>
+                                    </label>
+                                </div>
+                                <div class="day-calc-col">
+                                    <span class="day-calc-hours">7h 30m</span>
+                                </div>
+                            </div>
+
+                            <!-- Saturday -->
+                            <div class="schedule-day-card" data-day="sabado">
+                                <div class="day-toggle-col">
+                                    <label class="custom-checkbox-container">
+                                        <input type="checkbox" class="day-active-cb" checked>
+                                        <span class="checkmark"></span>
+                                        <strong class="day-name">Sábado</strong>
+                                    </label>
+                                </div>
+                                <div class="day-inputs-col">
+                                    <div class="time-range-group">
+                                        <input type="time" class="time-in" value="08:00" min="06:00" max="23:00">
+                                        <span class="to-sep">a</span>
+                                        <input type="time" class="time-out" value="16:30" min="06:00" max="23:00">
+                                    </div>
+                                    <label class="lunch-cb-label">
+                                        <input type="checkbox" class="lunch-cb" checked>
+                                        <span>🍴 ¿Almorzará? (1h)</span>
+                                    </label>
+                                </div>
+                                <div class="day-calc-col">
+                                    <span class="day-calc-hours">7h 30m</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Live Total Calculated Hours Card -->
+                        <div class="schedule-live-summary-card">
+                            <div>
+                                <span class="lbl-weekly-target">Horas Calculadas Semanales:</span>
+                                <small style="display: block; color: var(--text-muted); font-size: 11.5px;">Meta que el
+                                    trabajador cumplirá cada semana</small>
+                            </div>
+                            <div class="total-weekly-val" id="wizardTotalWeeklyHours">45h 00m</div>
+                        </div>
+
+                        <div class="modal-actions" style="margin-top: 18px; display: flex; gap: 10px;">
+                            <button type="button" class="btn btn-secondary" id="btnWizardBack2" style="flex: 1;">
+                                <span>⬅️ Volver</span>
+                            </button>
+                            <button type="button" class="btn btn-primary" id="btnWizardSave" style="flex: 2;">
+                                <span>Guardar Trabajador ✅</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- STEP 3: REGISTRO CON ÉXITO -->
+                    <div class="wizard-page" id="wizardPage3" style="text-align: center; padding: 20px 10px;">
+                        <div style="font-size: 50px; margin-bottom: 12px; animation: bounce 1s infinite;">🎉</div>
+                        <h3 style="color: var(--primary); margin-bottom: 8px; font-size: 20px;">¡Trabajador Registrado
+                            con Éxito!</h3>
+                        <p style="font-size: 13.5px; color: var(--text-secondary); line-height: 1.4; margin-bottom: 20px;"
+                            id="wizardSuccessMsg">
+                            El colaborador y su horario de 45.0 horas semanales han sido guardados correctamente.
+                        </p>
+                        <button type="button" class="btn btn-primary" id="btnWizardFinish"
+                            style="width: 100%; max-width: 250px; margin: 0 auto;">
+                            <span>Empezar a Usar</span>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- Modal: Adjust Hours Owed (Ajuste Manual de Deuda) -->
-    <div class="modal-backdrop" id="modalAdjustHours">
-        <div class="modal-card modal-sm" style="max-width: 400px;">
-            <div class="modal-header">
-                <h3 style="display: flex; align-items: center; gap: 8px; color: var(--primary);">
-                    <i data-lucide="sliders" style="color: #f59e0b;"></i> Ajustar Deuda de Horas
-                </h3>
-                <button class="btn-close" id="btnCloseAdjustHours" type="button"><i data-lucide="x"></i></button>
-            </div>
-            <div class="modal-body">
-                <p class="settings-intro" style="margin-bottom: 16px; font-size: 13px; color: var(--text-secondary);">
-                    Modifica manualmente el saldo de horas debidas para <strong id="adjustEmployeeName">...</strong>.
-                </p>
-                <form id="formAdjustHours">
-                    <div class="form-group" style="margin-bottom: 14px;">
-                        <label>Tipo de Ajuste *</label>
-                        <div style="display: flex; gap: 12px; margin-top: 6px;">
-                            <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; color: #f87171;">
-                                <input type="radio" name="adjustAction" value="add" checked> 🔴 Sumar a la deuda (+ Deuda)
-                            </label>
-                            <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; color: #34d399;">
-                                <input type="radio" name="adjustAction" value="subtract"> 🟢 Descontar deuda (- Deuda)
-                            </label>
-                        </div>
-                    </div>
-
-                    <div class="form-group" style="margin-bottom: 14px;">
-                        <label>Tiempo a Ajustar (Horas y Minutos) *</label>
-                        <div style="display: flex; gap: 8px; align-items: center;">
-                            <div class="input-wrapper" style="flex: 1; margin: 0;">
-                                <i data-lucide="clock"></i>
-                                <input type="number" id="adjustHours" min="0" value="0" placeholder="Horas" required style="width: 100%;">
-                                <span style="font-size: 13px; color: var(--text-secondary); margin-left: 6px;">h</span>
-                            </div>
-                            <span style="font-size: 18px; font-weight: 700; color: var(--text-secondary);">:</span>
-                            <div class="input-wrapper" style="flex: 1; margin: 0;">
-                                <i data-lucide="clock"></i>
-                                <input type="number" id="adjustMinutes" min="0" max="59" value="0" placeholder="Minutos" required style="width: 100%;">
-                                <span style="font-size: 13px; color: var(--text-secondary); margin-left: 6px;">min</span>
+        <!-- ========================================================================= -->
+        <!-- MODAL: REGISTRAR FERIADO / PERMISO ESPECIAL (MORADO)                      -->
+        <!-- ========================================================================= -->
+        <div class="modal-backdrop" id="modalAdminRegister">
+            <div class="modal-card modal-sm" style="max-width: 440px;">
+                <div class="modal-header">
+                    <h3 style="display: flex; align-items: center; gap: 8px; margin: 0; color: #7e22ce;">
+                        <i data-lucide="gift" style="color: #a855f7;"></i>
+                        Registrar Feriado / Permiso
+                    </h3>
+                    <button class="btn-close" id="btnCloseAdminRegister" type="button"><i data-lucide="x"></i></button>
+                </div>
+                <div class="modal-body">
+                    <form id="formAdminRegister">
+                        <div class="form-group">
+                            <label for="adminRegisterType">Tipo de Registro *</label>
+                            <div class="input-wrapper">
+                                <i data-lucide="award"></i>
+                                <select id="adminRegisterType" required>
+                                    <option value="Feriado">Feriado Nacional (Aplica a todos los trabajadores)</option>
+                                    <option value="Permiso">Permiso Especial (Aplica a un trabajador específico)
+                                    </option>
+                                    <option value="Falta">Inasistencia / Falta injustificada</option>
+                                </select>
                             </div>
                         </div>
-                        <small style="color: var(--text-muted); margin-top: 6px; display: block;">
-                            Ejemplo: Para 2 horas con 30 minutos (2:30), ingresa 2 en horas y 30 en minutos.
-                        </small>
-                    </div>
 
-                    <div class="form-group" style="margin-bottom: 14px;">
-                        <label for="adjustNotes">Motivo / Observación *</label>
-                        <div class="input-wrapper">
-                            <i data-lucide="file-text"></i>
-                            <input type="text" id="adjustNotes" required placeholder="Ej. Ajuste autorizado por administración" style="width: 100%;">
+                        <div class="form-group" id="adminEmployeeSelectGroup" style="display: none;">
+                            <label for="adminEmployeeSelect">Trabajador *</label>
+                            <div class="input-wrapper">
+                                <i data-lucide="user"></i>
+                                <select id="adminEmployeeSelect">
+                                    <!-- Populated dynamically -->
+                                </select>
+                            </div>
                         </div>
-                    </div>
 
-                    <div class="modal-actions" style="margin-top: 18px;">
-                        <button type="submit" class="btn btn-primary" style="width: 100%; background: var(--primary); box-shadow: 0 4px 14px var(--primary-glow);">
-                            Guardar Ajuste
-                        </button>
-                    </div>
-                </form>
+                        <div class="form-group">
+                            <label for="adminRegisterDate">Fecha *</label>
+                            <div class="input-wrapper">
+                                <i data-lucide="calendar"></i>
+                                <input type="date" id="adminRegisterDate" required>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="adminRegisterHours">Horas Justificadas a Abonar *</label>
+                            <div style="display: flex; gap: 10px; align-items: center;">
+                                <div class="input-wrapper" style="flex: 1; margin: 0;">
+                                    <i data-lucide="clock"></i>
+                                    <input type="number" id="adminRegisterHours" value="8" min="0" max="24" required>
+                                    <span
+                                        style="font-size: 13px; color: var(--text-secondary); margin-left: 8px;">h</span>
+                                </div>
+                                <div class="input-wrapper" style="flex: 1; margin: 0;">
+                                    <i data-lucide="clock"></i>
+                                    <input type="number" id="adminRegisterMinutes" value="0" min="0" max="59" required>
+                                    <span
+                                        style="font-size: 13px; color: var(--text-secondary); margin-left: 8px;">min</span>
+                                </div>
+                            </div>
+                            <small
+                                style="color: var(--text-muted); margin-top: 4px; display: block; font-size: 11.5px;">
+                                Por defecto 8h (suma a la meta del mes sin perjudicar al trabajador).
+                            </small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="adminRegisterNotes">Motivo / Observación</label>
+                            <div class="input-wrapper">
+                                <i data-lucide="pencil"></i>
+                                <input type="text" id="adminRegisterNotes"
+                                    placeholder="Ej. Feriado Semana Santa o Cita Médica">
+                            </div>
+                        </div>
+
+                        <div class="modal-actions" style="margin-top: 18px;">
+                            <button type="submit" class="btn btn-primary"
+                                style="width: 100%; background: #9333ea; border-color: #9333ea;">
+                                Guardar Registro Justificado
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
-    </div>
 
-    <!-- Custom scripts -->
-    <script src="asistencia.js"></script>
+        <!-- ========================================================================= -->
+        <!-- MODAL: ELIMINAR / EDITAR CONFIRMACIÓN SIMPLE                             -->
+        <!-- ========================================================================= -->
+        <div class="modal-backdrop" id="modalConfirmAction">
+            <div class="modal-card modal-sm" style="max-width: 380px; text-align: center;">
+                <div style="font-size: 40px; margin-bottom: 8px;" id="confirmModalIcon">⚠️</div>
+                <h3 style="margin-bottom: 8px; color: var(--text-primary); font-size: 17px;" id="confirmModalTitle">
+                    ¿Estás seguro?</h3>
+                <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 18px; line-height: 1.4;"
+                    id="confirmModalText">Esta acción no se puede deshacer.</p>
+                <div style="display: flex; gap: 10px;">
+                    <button type="button" class="btn btn-secondary" id="btnCancelConfirm"
+                        style="flex: 1;">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="btnExecuteConfirm"
+                        style="flex: 1; background: #ef4444; border-color: #ef4444;">Eliminar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Javascript Logic -->
+        <script src="asistencia.js"></script>
 </body>
 
 </html>
