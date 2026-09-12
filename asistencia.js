@@ -1289,9 +1289,14 @@ function renderAttendanceTable() {
     }
 
     attendanceTableBody.innerHTML = '';
+    const todayStr = getTodayDateString();
 
     filtered.forEach(record => {
         const tr = document.createElement('tr');
+        const isToday = record.date === todayStr;
+        if (isToday) {
+            tr.classList.add('row-today');
+        }
 
         // Worker name + emoji
         const workerObj = activeWorkers.find(w => w.name === record.employee_name);
@@ -1299,7 +1304,10 @@ function renderAttendanceTable() {
 
         // Format dates
         const dateParts = record.date ? record.date.split('-') : ['2026', '01', '01'];
-        const formattedDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
+        let formattedDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
+        if (isToday) {
+            formattedDate = `<span style="font-weight: 700; color: #be185d;">${formattedDate}</span> <span class="badge-today-tag">HOY</span>`;
+        }
 
         // Chips for Late, Extra, Type
         const lateChip = record.late_minutes > 0

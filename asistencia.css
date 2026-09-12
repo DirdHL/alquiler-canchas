@@ -1126,6 +1126,34 @@ body {
     background: #fff8fa;
 }
 
+/* Sombreado rosado más oscurito para el día de hoy */
+.attendance-table tbody tr.row-today {
+    background: #ffe4ef !important;
+    box-shadow: inset 4px 0 0 #db2777;
+}
+
+.attendance-table tbody tr.row-today:hover {
+    background: #fecdd3 !important;
+}
+
+.attendance-table tbody tr.row-today td {
+    border-bottom: 1.5px solid #f472b6 !important;
+}
+
+.badge-today-tag {
+    background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
+    color: #ffffff;
+    font-size: 9.5px;
+    font-weight: 800;
+    padding: 2px 7px;
+    border-radius: 6px;
+    margin-left: 6px;
+    letter-spacing: 0.5px;
+    display: inline-block;
+    vertical-align: middle;
+    box-shadow: 0 2px 5px rgba(219, 39, 119, 0.25);
+}
+
 .attendance-table td {
     padding: 12px 14px;
     vertical-align: middle;
