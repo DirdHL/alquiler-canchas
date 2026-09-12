@@ -173,6 +173,8 @@ const bookingSourceCustomInput = document.getElementById('bookingSourceCustom');
 const splitPaymentRow = document.getElementById('splitPaymentRow');
 const splitEfectivoInput = document.getElementById('splitEfectivo');
 const splitYapeInput = document.getElementById('splitYape');
+const promoContainer = document.getElementById('promoContainer');
+const bookingPromoInput = document.getElementById('bookingPromo');
 const bookingTotalContainer = document.getElementById('bookingTotalContainer');
 const bookingTotalValue = document.getElementById('bookingTotalValue');
 const bookingPriceInput = document.getElementById('bookingPriceInput');
@@ -181,6 +183,17 @@ const bookingTotalNote = document.getElementById('bookingTotalNote');
 
 let isPriceUserModified = false;
 let currentAutoCalculatedTotal = 0;
+
+function isPromoReservation(b) {
+    if (!b) return false;
+    const tp = b.tipo_pago || '';
+    return tp.includes('[PROMO 1H]') || b.promo === true || b.promocion === true;
+}
+
+function getCleanPaymentType(tipoPago) {
+    if (!tipoPago) return 'Efectivo';
+    return tipoPago.replace(/\s*\[PROMO 1H\]/i, '').trim();
+}
 
 const modalSettings = document.getElementById('modalSettings');
 const btnOpenSettings = document.getElementById('btnOpenSettings');
@@ -401,7 +414,7 @@ function initCalendar() {
                     const isBlock = b.sport === 'Bloqueo';
                     return {
                         id: b.id,
-                        title: isBlock ? b.name : `${b.name} (${b.court})${b.pelota === true || b.pelota === 'true' ? (b.sport === 'Vóley' ? ' 🏐' : ' ⚽') : ''}${b.chaleco === true || b.chaleco === 'true' ? ' 🎽' : ''}`,
+                        title: isBlock ? b.name : `${b.name} (${b.court})${b.pelota === true || b.pelota === 'true' ? (b.sport === 'Vóley' ? ' 🏐' : ' ⚽') : ''}${b.chaleco === true || b.chaleco === 'true' ? ' 🎽' : ''}${isPromoReservation(b) ? ' 🏷️' : ''}`,
                         start: formatISOString(start),
                         end: formatISOString(end),
                         className: isBlock ? 'event-sport-bloqueo' : `${courtClass} ${b.sport === 'Fútbol' ? 'event-sport-futbol' : 'event-sport-voley'}`,
@@ -983,9 +996,12 @@ function toggleBlockFields(isBlock) {
         }
         bookingCourtInput.value = 'Todas';
 
+        if (promoContainer) promoContainer.style.display = 'none';
+        if (bookingPromoInput) bookingPromoInput.checked = false;
         if (groupAllDay) groupAllDay.style.display = 'flex';
 
     } else {
+        if (promoContainer) promoContainer.style.display = 'flex';
         if (groupDni) groupDni.style.display = '';
         if (groupSport) groupSport.style.display = '';
         if (rowEquipamiento) rowEquipamiento.style.display = '';
@@ -1281,10 +1297,17 @@ function openBookingModal(booking = null, defaults = null) {
             }
         }
 
+        // Set promo state
+        const isPromo = !isBlock && isPromoReservation(booking);
+        if (bookingPromoInput) {
+            bookingPromoInput.checked = isPromo;
+        }
+
         // Populate correct Payment Type
         if (bookingPaymentTypeInput) {
             const rawPaymentType = isBlock ? 'Efectivo' : (booking.tipo_pago || 'Efectivo');
-            if (rawPaymentType.startsWith('Dividido')) {
+            const cleanPaymentType = getCleanPaymentType(rawPaymentType);
+            if (cleanPaymentType.startsWith('Dividido')) {
                 bookingPaymentTypeInput.value = 'Dividido';
                 if (splitPaymentRow) splitPaymentRow.classList.remove('hidden');
                 const split = parseSplitPayment(rawPaymentType);
@@ -1297,7 +1320,7 @@ function openBookingModal(booking = null, defaults = null) {
                     if (splitYapeInput) splitYapeInput.value = (total / 2).toFixed(2);
                 }
             } else {
-                bookingPaymentTypeInput.value = rawPaymentType;
+                bookingPaymentTypeInput.value = cleanPaymentType;
                 if (splitPaymentRow) splitPaymentRow.classList.add('hidden');
             }
         }
@@ -1310,6 +1333,9 @@ function openBookingModal(booking = null, defaults = null) {
         }
         if (bookingIsAllDayInput) {
             bookingIsAllDayInput.checked = false;
+        }
+        if (bookingPromoInput) {
+            bookingPromoInput.checked = false;
         }
         toggleBlockFields(false);
         toggleAllDayFields(false);
@@ -1339,14 +1365,15 @@ function openBookingModal(booking = null, defaults = null) {
             bookingDateInput.value = defaults.date;
             bookingStartTimeInput.value = defaults.start_time ? defaults.start_time.substring(0, 5) : "";
 
-            // Ensure end time is at least 1 hour after start time
-            const duration = getDurationInMinutes(defaults.start_time, defaults.end_time);
-            if (duration < 60) {
-                const startMins = parseTimeToMinutes(defaults.start_time);
-                let endHour = Math.floor((startMins + 60) / 60) % 24;
-                let endMin = (startMins + 60) % 60;
+            if (defaults.start_time && !defaults.end_time) {
+                const parts = defaults.start_time.split(':');
+                let startHour = parseInt(parts[0], 10);
+                let startMin = parseInt(parts[1], 10);
+                let startTotalMins = startHour * 60 + startMin;
+                let endTotalMins = (startTotalMins + 60) % 1440;
+                let endHour = Math.floor(endTotalMins / 60);
+                let endMin = endTotalMins % 60;
 
-                const endTotalMins = endHour * 60 + endMin;
                 if (endTotalMins > 60 && endTotalMins < 360) {
                     endHour = 1;
                     endMin = 0;
@@ -1382,6 +1409,13 @@ function openBookingModal(booking = null, defaults = null) {
     updateModalCalculatedTotal();
     openModal(modalBooking);
     lucide.createIcons(); // Refresh modal icons
+}
+
+if (bookingPromoInput) {
+    bookingPromoInput.addEventListener('change', () => {
+        isPriceUserModified = false;
+        updateModalCalculatedTotal();
+    });
 }
 
 if (bookingPriceInput) {
@@ -1699,9 +1733,11 @@ function updateModalCalculatedTotal() {
 
     if (isBlock) {
         if (bookingTotalContainer) bookingTotalContainer.style.display = 'none';
+        if (promoContainer) promoContainer.style.display = 'none';
         return 0;
     }
     if (bookingTotalContainer) bookingTotalContainer.style.display = 'flex';
+    if (promoContainer) promoContainer.style.display = 'flex';
 
     const court = String(bookingCourtInput ? bookingCourtInput.value : '');
     let courtRate = 0;
@@ -1726,10 +1762,13 @@ function updateModalCalculatedTotal() {
     }
     const durationHours = (startTime && endTime) ? (end - start) / 60 : 0;
 
+    const isPromo = bookingPromoInput ? bookingPromoInput.checked : false;
+    const chargeableHours = isPromo ? Math.max(0, durationHours - 1) : durationHours;
+
     const pelotaVal = bookingPelotaInput.value === 'true';
     const chalecoVal = bookingChalecoInput.value === 'true';
 
-    const courtIncome = durationHours * courtRate;
+    const courtIncome = chargeableHours * courtRate;
     const pelotaIncome = pelotaVal ? pelotaRate : 0;
     const chalecoIncome = chalecoVal ? chalecoRate : 0;
     const calculatedTotal = courtIncome + pelotaIncome + chalecoIncome;
@@ -1740,10 +1779,22 @@ function updateModalCalculatedTotal() {
     if (bookingPriceInput) {
         if (!isPriceUserModified || bookingPriceInput.value === '') {
             bookingPriceInput.value = currentAutoCalculatedTotal.toFixed(2);
-            if (bookingTotalNote) bookingTotalNote.textContent = "Calculado automáticamente";
+            if (bookingTotalNote) {
+                if (isPromo) {
+                    const discount = Math.min(durationHours, 1) * courtRate;
+                    bookingTotalNote.textContent = `Promo aplicada (1h gratis): -S/. ${discount.toFixed(2)}`;
+                    bookingTotalNote.style.color = '#fbbf24';
+                } else {
+                    bookingTotalNote.textContent = "Calculado automáticamente";
+                    bookingTotalNote.style.color = 'var(--text-muted)';
+                }
+            }
         } else {
             finalTotal = parseFloat(bookingPriceInput.value) || 0;
-            if (bookingTotalNote) bookingTotalNote.textContent = "Modificado manualmente";
+            if (bookingTotalNote) {
+                bookingTotalNote.textContent = "Modificado manualmente";
+                bookingTotalNote.style.color = 'var(--text-muted)';
+            }
         }
     }
 
@@ -1850,6 +1901,11 @@ async function handleSaveBooking(e) {
         }
     }
 
+    const isPromo = (!isBlock && bookingPromoInput) ? bookingPromoInput.checked : false;
+    if (isPromo) {
+        tipo_pago = `${tipo_pago} [PROMO 1H]`;
+    }
+
     // 1. Validation for empty inputs
     if (isBlock) {
         if (!name || !date || !startTime || !endTime) {
@@ -1940,7 +1996,7 @@ async function handleSaveBooking(e) {
         if (isBlock) {
             logDetails = `${isUpdate ? 'modificó el' : 'creó un'} bloqueo (${name}) para la cancha ${court} el ${formattedDate} de ${formattedStart} a ${formattedEnd}`;
         } else {
-            logDetails = `${isUpdate ? 'modificó la' : 'creó una'} reserva para ${name} (${court} - ${sport}${pelota ? ' + Pelota' : ''}${chaleco ? ' + Chaleco' : ''}) el ${formattedDate} de ${formattedStart} a ${formattedEnd}`;
+            logDetails = `${isUpdate ? 'modificó la' : 'creó una'} reserva para ${name} (${court} - ${sport}${pelota ? ' + Pelota' : ''}${chaleco ? ' + Chaleco' : ''}${isPromo ? ' + Promo 1h Gratis' : ''}) el ${formattedDate} de ${formattedStart} a ${formattedEnd}`;
         }
         await addHistoryEntry(logAction, logDetails);
 
@@ -2588,6 +2644,8 @@ function updateDailySummary() {
 
             const pelotaVal = e.pelota === true || e.pelota === 'true';
             const chalecoVal = e.chaleco === true || e.chaleco === 'true';
+            const isPromo = isPromoReservation(e);
+            const displayPaymentType = getCleanPaymentType(e.tipo_pago);
 
             html += `
                 <div class="summary-item-card ${cardClass}" onclick="openEditFromSummary('${e.id}')" style="cursor: pointer;">
@@ -2596,10 +2654,11 @@ function updateDailySummary() {
                         <span class="summary-item-court ${badgeClass}">${e.court}</span>
                     </div>
                     <div class="summary-item-client">${escapeHTML(e.name)}</div>
-                    ${(pelotaVal || chalecoVal) ? `
+                    ${(pelotaVal || chalecoVal || isPromo) ? `
                     <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: -4px; margin-bottom: 2px;">
                         ${pelotaVal ? `<span class="summary-detail-tag" style="color:#34d399;">⚽ Pelota</span>` : ''}
                         ${chalecoVal ? `<span class="summary-detail-tag" style="color:#34d399;">🎽 Chaleco</span>` : ''}
+                        ${isPromo ? `<span class="summary-detail-tag" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); font-weight: 600;"><i data-lucide="tag"></i> Promo 1h Gratis</span>` : ''}
                     </div>
                     ` : ''}
                     <div class="summary-item-details" style="flex-direction: column; align-items: flex-start; gap: 8px;">
@@ -2609,7 +2668,7 @@ function updateDailySummary() {
                         </div>
                         <div style="display: flex; flex-wrap: wrap; gap: 12px;">
                             <span class="summary-detail-tag"><i data-lucide="share-2"></i> ${escapeHTML(e.medio || 'Otro')}</span>
-                            <span class="summary-detail-tag"><i data-lucide="wallet"></i> ${escapeHTML(e.tipo_pago || 'Efectivo')}</span>
+                            <span class="summary-detail-tag"><i data-lucide="wallet"></i> ${escapeHTML(displayPaymentType || 'Efectivo')}</span>
                         </div>
                     </div>
                 </div>
@@ -2631,9 +2690,9 @@ window.openEditFromSummary = function (id) {
 
 // Rate calculator helper for Polideportivo
 function calculateBookingIncome(params) {
-    const { court, startTime, endTime, sport, pelota, chaleco } = params;
+    const { court, startTime, endTime, sport, pelota, chaleco, isPromo } = params;
     if (sport === 'Bloqueo') {
-        return { total: 0, courtIncome: 0, pelotaIncome: 0, chalecoIncome: 0, durationHours: 0 };
+        return { total: 0, courtIncome: 0, pelotaIncome: 0, chalecoIncome: 0, durationHours: 0, chargeableHours: 0 };
     }
     let courtRate = 30;
     const courtStr = String(court || '');
@@ -2654,13 +2713,15 @@ function calculateBookingIncome(params) {
         end += 1440;
     }
     const durationHours = (startTime && endTime) ? (end - start) / 60 : 0;
+    const promoActive = isPromo === true;
+    const chargeableHours = promoActive ? Math.max(0, durationHours - 1) : durationHours;
 
-    const courtIncome = durationHours * courtRate;
+    const courtIncome = chargeableHours * courtRate;
     const pelotaIncome = pelota ? pelotaRate : 0;
     const chalecoIncome = chaleco ? chalecoRate : 0;
     const total = courtIncome + pelotaIncome + chalecoIncome;
 
-    return { total, courtIncome, pelotaIncome, chalecoIncome, durationHours };
+    return { total, courtIncome, pelotaIncome, chalecoIncome, durationHours, chargeableHours };
 }
 
 // =============================================================
@@ -3988,7 +4049,7 @@ async function exportAllDataToExcel() {
                 accMonto += inc.pelotaIncome + inc.chalecoIncome;
                 tMonto += inc.total;
 
-                const payType = e.tipo_pago || 'Efectivo';
+                const payType = getCleanPaymentType(e.tipo_pago);
                 if (payType.startsWith('Dividido')) {
                     const split = parseSplitPayment(payType);
                     if (split) {
@@ -4246,7 +4307,7 @@ async function exportAllDataToExcel() {
             wAcc += inc.pelotaIncome + inc.chalecoIncome;
             wSum += inc.total;
 
-            const payType = e.tipo_pago || 'Efectivo';
+            const payType = getCleanPaymentType(e.tipo_pago);
             if (payType.startsWith('Dividido')) {
                 const split = parseSplitPayment(payType);
                 if (split) {
@@ -4308,7 +4369,7 @@ async function exportAllDataToExcel() {
             dAcc += inc.pelotaIncome + inc.chalecoIncome;
             dSum += inc.total;
 
-            const payType = e.tipo_pago || 'Efectivo';
+            const payType = getCleanPaymentType(e.tipo_pago);
             if (payType.startsWith('Dividido')) {
                 const split = parseSplitPayment(payType);
                 if (split) {
@@ -4528,7 +4589,7 @@ async function exportAllDataToExcel() {
 
                 const inc = getEventIncome(e);
 
-                const payType = e.tipo_pago || 'Efectivo';
+                const payType = getCleanPaymentType(e.tipo_pago);
                 let payYape = 0;
                 let payEfectivo = 0;
                 if (payType.startsWith('Dividido')) {
@@ -4739,6 +4800,8 @@ function getEventIncome(e) {
     if (e.sport === 'Bloqueo') {
         return {
             durationHours: 0,
+            chargeableHours: 0,
+            isPromo: false,
             courtIncome: 0,
             pelotaIncome: 0,
             chalecoIncome: 0,
@@ -4766,12 +4829,17 @@ function getEventIncome(e) {
     }
     const durationHours = (end - start) / 60;
 
-    const courtIncome = durationHours * courtRate;
+    const isPromo = isPromoReservation(e);
+    const chargeableHours = isPromo ? Math.max(0, durationHours - 1) : durationHours;
+
+    const courtIncome = chargeableHours * courtRate;
     const pelotaIncome = (e.pelota === true || e.pelota === 'true') ? pelotaRate : 0;
     const chalecoIncome = (e.chaleco === true || e.chaleco === 'true') ? chalecoRate : 0;
 
     return {
         durationHours,
+        chargeableHours,
+        isPromo,
         courtIncome,
         pelotaIncome,
         chalecoIncome,
@@ -4874,7 +4942,7 @@ function updateStatsDashboard() {
         metrics.Total.today.income += inc.total;
         metrics.Extras.today.income += inc.pelotaIncome + inc.chalecoIncome;
 
-        const payType = e.tipo_pago || 'Efectivo';
+        const payType = getCleanPaymentType(e.tipo_pago);
         if (payType.startsWith('Dividido')) {
             const split = parseSplitPayment(payType);
             if (split) {
@@ -4923,7 +4991,7 @@ function updateStatsDashboard() {
         metrics.Total.week.income += inc.total;
         metrics.Extras.week.income += inc.pelotaIncome + inc.chalecoIncome;
 
-        const payType = e.tipo_pago || 'Efectivo';
+        const payType = getCleanPaymentType(e.tipo_pago);
         if (payType.startsWith('Dividido')) {
             const split = parseSplitPayment(payType);
             if (split) {
@@ -4972,7 +5040,7 @@ function updateStatsDashboard() {
         metrics.Total.month.income += inc.total;
         metrics.Extras.month.income += inc.pelotaIncome + inc.chalecoIncome;
 
-        const payType = e.tipo_pago || 'Efectivo';
+        const payType = getCleanPaymentType(e.tipo_pago);
         if (payType.startsWith('Dividido')) {
             const split = parseSplitPayment(payType);
             if (split) {
@@ -5580,7 +5648,7 @@ function updateStatsDashboard() {
                 end_time: e.end_time,
                 court: e.court,
                 income: inc.total,
-                tipo_pago: e.tipo_pago || 'Efectivo'
+                tipo_pago: getCleanPaymentType(e.tipo_pago)
             });
         });
 

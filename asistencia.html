@@ -112,7 +112,6 @@
                                 Selecciona un colaborador arriba para comenzar
                             </span>
                         </div>
-
                         <!-- Early Check-In Logic Checkbox (Shown when arriving earlier than official start) -->
                         <div class="early-checkin-card" id="earlyCheckinCard" style="display: none;">
                             <label class="custom-checkbox-container">
@@ -181,8 +180,8 @@
                             </div>
                         </div>
 
-                        <!-- 4 Distinct KPI Indicators with Required Colors -->
-                        <div class="metrics-grid-four">
+                        <!-- 5 Distinct KPI Indicators with Required Colors -->
+                        <div class="metrics-grid-five">
                             <!-- 1. Presenciales (Sol / Azul-Rosa) -->
                             <div class="metric-card metric-presencial">
                                 <div class="metric-icon">☀️</div>
@@ -197,18 +196,42 @@
                                 <div class="metric-lbl">Tardanza Acum.</div>
                             </div>
 
-                            <!-- 3. Horas que se Deben (Salidas antes / Faltas) -->
-                            <div class="metric-card metric-deuda">
+                            <!-- 3. Faltas / Ausencias (Rojo Alerta) -->
+                            <div class="metric-card metric-falta">
+                                <div class="metric-icon">🚨</div>
+                                <div class="metric-val" id="metricAbsenceHours">0:00</div>
+                                <div class="metric-lbl">Faltas / Ausencias</div>
+                            </div>
+
+                            <!-- 4. Horas que se Deben (Tardanzas + Faltas + Salidas anticipadas) -->
+                            <div class="metric-card metric-deuda" title="Total de tiempo a recuperar: Tardanzas acumuladas + Faltas/Ausencias + Salidas antes de hora">
                                 <div class="metric-icon">🟠</div>
                                 <div class="metric-val" id="metricOwedHours">0:00</div>
                                 <div class="metric-lbl">Horas Debidas</div>
                             </div>
 
-                            <!-- 4. Horas Extras (Verde) -->
+                            <!-- 5. Horas Extras (Verde) -->
                             <div class="metric-card metric-extra">
                                 <div class="metric-icon">🟢</div>
                                 <div class="metric-val" id="metricExtraHours">0:00</div>
                                 <div class="metric-lbl">Horas Extras</div>
+                            </div>
+                        </div>
+
+                        <!-- Dedicated Faltas / Ausencias Section ("Cuadro de Faltas") -->
+                        <div class="worker-absences-card" id="workerAbsencesCard" style="display: none;">
+                            <div class="absences-card-header">
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <span class="absences-badge-icon">🚨</span>
+                                    <div>
+                                        <strong style="color: #b91c1c; font-size: 13.5px;" id="absencesCardTitle">Ausencias / Faltas Detectadas</strong>
+                                        <small style="color: #991b1b; display: block; font-size: 11px;">Días programados en los que no se marcó asistencia</small>
+                                    </div>
+                                </div>
+                                <span class="badge-absences-count" id="badgeAbsencesCount">0</span>
+                            </div>
+                            <div class="absences-list" id="absencesListContainer">
+                                <!-- Populated dynamically -->
                             </div>
                         </div>
 
@@ -293,6 +316,7 @@
                             <option value="Trabajo">Jornada Regular</option>
                             <option value="Tardanza">Con Tardanza</option>
                             <option value="Extra">Con Horas Extras</option>
+                            <option value="Falta">Faltas / Ausencias</option>
                             <option value="Feriado">Feriados</option>
                             <option value="Permiso">Permisos</option>
                         </select>
@@ -473,21 +497,6 @@
                             </div>
                             <input type="hidden" id="selectedWorkerEmoji" value="🌸">
                         </div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
                         <div class="worker-preview-badge">
                             <span>Vista Previa: </span>
                             <strong id="workerPreviewText">🌸 Nombre</strong>
@@ -779,6 +788,80 @@
                             <button type="submit" class="btn btn-primary"
                                 style="width: 100%; background: #9333ea; border-color: #9333ea;">
                                 Guardar Registro Justificado
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================================================= -->
+        <!-- MODAL: REGULARIZAR MARCACIÓN OLVIDADA                                     -->
+        <!-- ========================================================================= -->
+        <div class="modal-backdrop" id="modalManualPunch">
+            <div class="modal-card modal-sm" style="max-width: 440px;">
+                <div class="modal-header">
+                    <h3 style="display: flex; align-items: center; gap: 8px; margin: 0; color: var(--primary); font-size: 17px;">
+                        <i data-lucide="clock"></i>
+                        Regularizar Marcación de Asistencia
+                    </h3>
+                    <button class="btn-close" id="btnCloseManualPunch" type="button"><i data-lucide="x"></i></button>
+                </div>
+                <div class="modal-body">
+                    <form id="formManualPunch">
+                        <div class="form-group">
+                            <label for="manualPunchWorker">Colaborador *</label>
+                            <div class="input-wrapper">
+                                <i data-lucide="user"></i>
+                                <input type="text" id="manualPunchWorker" readonly style="background: #f8fafc; font-weight: 700; color: var(--text-primary);">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="manualPunchDate">Fecha de la Jornada *</label>
+                            <div class="input-wrapper">
+                                <i data-lucide="calendar"></i>
+                                <input type="date" id="manualPunchDate" required>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Horario Real Laborado *</label>
+                            <div style="display: flex; gap: 10px; align-items: center;">
+                                <div class="input-wrapper" style="flex: 1; margin: 0;">
+                                    <i data-lucide="log-in"></i>
+                                    <input type="time" id="manualPunchIn" value="08:00" required>
+                                </div>
+                                <span style="font-weight: 700; color: var(--text-muted);">a</span>
+                                <div class="input-wrapper" style="flex: 1; margin: 0;">
+                                    <i data-lucide="log-out"></i>
+                                    <input type="time" id="manualPunchOut" value="16:30" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="custom-checkbox-container" style="margin-top: 6px;">
+                                <input type="checkbox" id="manualPunchLunch" checked>
+                                <span class="checkmark"></span>
+                                <div class="lunch-check-text">
+                                    <strong>🍴 Tomó 1 hora de refrigerio (-1h)</strong>
+                                    <small>Si no almorzó para recuperar tiempo, desmarca la casilla.</small>
+                                </div>
+                            </label>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="manualPunchNotes">Observación / Motivo</label>
+                            <div class="input-wrapper">
+                                <i data-lucide="pencil"></i>
+                                <input type="text" id="manualPunchNotes" placeholder="Ej. Olvido de marcación en sistema">
+                            </div>
+                        </div>
+
+                        <div class="modal-actions" style="margin-top: 18px;">
+                            <button type="submit" class="btn btn-primary" style="width: 100%;">
+                                Guardar Marcación Regularizada ✅
                             </button>
                         </div>
                     </form>

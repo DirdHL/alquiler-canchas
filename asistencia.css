@@ -624,17 +624,29 @@ body {
     transition: width 0.5s ease-out;
 }
 
-/* 4 Distinct KPI Indicators */
+/* 4 and 5 Distinct KPI Indicators */
 .metrics-grid-four {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 12px;
 }
 
+.metrics-grid-five {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+}
+
+@media (min-width: 1200px) {
+    .metrics-grid-five {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
 .metric-card {
     background: #ffffff;
     border-radius: var(--radius-md);
-    padding: 14px 12px;
+    padding: 14px 10px;
     text-align: center;
     border: 1.5px solid transparent;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -651,14 +663,14 @@ body {
 }
 
 .metric-card .metric-val {
-    font-size: 22px;
+    font-size: 20px;
     font-weight: 800;
     line-height: 1.1;
     font-variant-numeric: tabular-nums;
 }
 
 .metric-card .metric-lbl {
-    font-size: 11px;
+    font-size: 10.5px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -681,7 +693,15 @@ body {
 .metric-tardanza .metric-val { color: var(--color-tardanza); }
 .metric-tardanza .metric-lbl { color: #b91c1c; }
 
-/* 3. Horas Debidas (Naranja) */
+/* 3. Faltas / Ausencias (Rojo Intenso) */
+.metric-falta {
+    border-color: #fca5a5;
+    background: #fff5f5;
+}
+.metric-falta .metric-val { color: #dc2626; }
+.metric-falta .metric-lbl { color: #991b1b; }
+
+/* 4. Horas Debidas (Naranja) */
 .metric-deuda {
     border-color: var(--border-deuda);
     background: var(--bg-deuda);
@@ -689,13 +709,136 @@ body {
 .metric-deuda .metric-val { color: var(--color-deuda); }
 .metric-deuda .metric-lbl { color: #c2410c; }
 
-/* 4. Horas Extras (Verde) */
+/* 5. Horas Extras (Verde) */
 .metric-extra {
     border-color: var(--border-extra);
     background: var(--bg-extra);
 }
 .metric-extra .metric-val { color: var(--color-extra); }
 .metric-extra .metric-lbl { color: #047857; }
+
+/* Dedicated Absences / Faltas Card */
+.worker-absences-card {
+    background: #fff5f5;
+    border: 1.5px solid #fecaca;
+    border-radius: var(--radius-md);
+    padding: 14px 16px;
+    box-shadow: 0 2px 10px rgba(220, 38, 38, 0.05);
+}
+
+.absences-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.absences-badge-icon {
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #fee2e2;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+}
+
+.badge-absences-count {
+    background: #dc2626;
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 12px;
+}
+
+.absences-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.absence-item-card {
+    background: #ffffff;
+    border: 1px solid #fed7d7;
+    border-left: 4px solid #ef4444;
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.absence-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.absence-item-date {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.badge-absence-hours {
+    background: #fee2e2;
+    color: #dc2626;
+    font-weight: 800;
+    font-size: 11.5px;
+    padding: 2px 8px;
+    border-radius: 6px;
+    border: 1px solid #fca5a5;
+}
+
+.absence-item-details {
+    font-size: 11.5px;
+    color: #7f1d1d;
+    line-height: 1.4;
+}
+
+.absence-item-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.absence-item-actions .btn {
+    font-size: 11px;
+    padding: 4px 8px;
+    border-radius: 6px;
+}
+
+.absence-item-empty {
+    text-align: center;
+    padding: 12px 6px;
+    color: #047857;
+    background: #f0fdf4;
+    border-radius: var(--radius-sm);
+    border: 1px dashed #a7f3d0;
+}
+
+.absence-item-empty span {
+    font-size: 20px;
+    display: block;
+    margin-bottom: 2px;
+}
+
+.absence-item-empty strong {
+    font-size: 12.5px;
+    display: block;
+}
+
+.absence-item-empty small {
+    font-size: 11px;
+    color: #065f46;
+}
 
 /* Justified Banner (Morado) */
 .justified-banner-card {
@@ -865,6 +1008,31 @@ body {
     font-size: 11px;
 }
 
+.chip-falta {
+    background: #fee2e2;
+    color: #b91c1c;
+    border-color: #f87171;
+    font-weight: 800;
+}
+
+.chip-absence {
+    color: #dc2626;
+    font-weight: 600;
+    font-style: italic;
+    font-size: 12px;
+}
+
+.badge-owed-mini {
+    display: inline-block;
+    background: #ffedd5;
+    color: #c2410c;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    margin-top: 4px;
+}
+
 .btn-row-action {
     background: none;
     border: none;
@@ -872,11 +1040,48 @@ body {
     cursor: pointer;
     padding: 4px 6px;
     border-radius: 6px;
-    transition: background 0.2s;
+    transition: background 0.2s, transform 0.1s;
 }
 
 .btn-row-action:hover {
     background: #fee2e2;
+    transform: scale(1.05);
+}
+
+.btn-row-action.btn-action-justify {
+    color: #9333ea;
+}
+
+.btn-row-action.btn-action-justify:hover {
+    background: #f3e8ff;
+}
+
+.btn-row-action.btn-action-regularize {
+    color: #0284c7;
+}
+
+.btn-row-action.btn-action-regularize:hover {
+    background: #e0f2fe;
+}
+
+.btn-action-justify {
+    border-color: #c084fc !important;
+    color: #7e22ce !important;
+    background: #faf5ff !important;
+}
+
+.btn-action-justify:hover {
+    background: #f3e8ff !important;
+}
+
+.btn-action-regularize {
+    border-color: #7dd3fc !important;
+    color: #0369a1 !important;
+    background: #f0f9ff !important;
+}
+
+.btn-action-regularize:hover {
+    background: #e0f2fe !important;
 }
 
 /* ========================================================================= */
