@@ -158,6 +158,11 @@ function updateLiveClock() {
         const dateStr = now.toLocaleDateString('es-PE', options);
         liveDateEl.textContent = dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
     }
+
+    // Refresh live worker status board periodically (every 30s)
+    if (now.getSeconds() === 0 || now.getSeconds() === 30) {
+        renderTeamLiveStatus();
+    }
 }
 
 function timeStringToMinutes(timeStr) {
@@ -318,6 +323,7 @@ async function loadWorkersAndSchedules() {
 
     // Populate dropdowns & refresh UI
     renderWorkerDropdowns();
+    renderTeamLiveStatus();
     if (selectedWorker) {
         const found = activeWorkers.find(w => w.name === selectedWorker.name);
         if (found) {
@@ -385,6 +391,7 @@ async function loadAttendanceRecords() {
     renderAttendanceTable();
     updateWorkerStats();
     updatePunchButtonState();
+    renderTeamLiveStatus();
 }
 
 function getLocalAttendance() {
@@ -456,9 +463,111 @@ function renderWorkerDropdowns() {
     });
 }
 
+// Render real-time team attendance status (green dot = active, red dot = missing, etc.)
+function renderTeamLiveStatus() {
+    const grid = document.getElementById('teamRealtimeGrid');
+    const badge = document.getElementById('teamActiveCountBadge');
+    if (!grid) return;
+
+    if (!activeWorkers || activeWorkers.length === 0) {
+        grid.innerHTML = '<div style="font-size: 11.5px; color: var(--text-muted); padding: 4px;">No hay colaboradores registrados.</div>';
+        if (badge) badge.textContent = '0 en turno';
+        return;
+    }
+
+    const todayStr = getTodayDateString();
+    const now = new Date();
+    const todayDayKey = DAYS_ES[now.getDay()];
+
+    let activeCount = 0;
+    grid.innerHTML = '';
+
+    activeWorkers.forEach(worker => {
+        const workerRecordsToday = attendanceRecords.filter(r => r.employee_name === worker.name && r.date === todayStr);
+        const activeShift = workerRecordsToday.find(r => r.check_in && !r.check_out);
+        const completedShift = workerRecordsToday.find(r => r.check_in && r.check_out);
+        const justifiedRecord = workerRecordsToday.find(r => r.type === 'Permiso' || r.type === 'Feriado');
+
+        const schedule = workerSchedules[worker.name] || {};
+        const todaySchedule = schedule[todayDayKey];
+
+        let statusClass = 'status-missing';
+        let stateText = 'Sin marcar';
+        let titleAttr = `${worker.name}: Falta marcar ingreso hoy`;
+
+        if (activeShift) {
+            activeCount++;
+            statusClass = 'status-active';
+            stateText = `En turno (${formatTimeTo12H(activeShift.check_in.substring(0, 5))})`;
+            titleAttr = `${worker.name}: En jornada activa (Entró a las ${formatTimeTo12H(activeShift.check_in.substring(0, 5))})`;
+        } else if (completedShift) {
+            statusClass = 'status-checkout';
+            stateText = `Salió ${formatTimeTo12H(completedShift.check_out.substring(0, 5))}`;
+            titleAttr = `${worker.name}: Jornada cumplida hoy (Salida: ${formatTimeTo12H(completedShift.check_out.substring(0, 5))})`;
+        } else if (justifiedRecord) {
+            statusClass = 'status-justified';
+            stateText = justifiedRecord.type;
+            titleAttr = `${worker.name}: ${justifiedRecord.type} registrado`;
+        } else if (!todaySchedule || !todaySchedule.active) {
+            statusClass = 'status-free';
+            stateText = 'Día libre';
+            titleAttr = `${worker.name}: Día libre según su horario`;
+        } else {
+            statusClass = 'status-missing';
+            stateText = 'No ha entrado';
+            titleAttr = `${worker.name}: Falta marcar (Horario oficial: ${formatTimeTo12H(todaySchedule.in)} a ${formatTimeTo12H(todaySchedule.out)})`;
+        }
+
+        const isCurrentlySelected = selectedWorker && selectedWorker.name === worker.name;
+
+        const chip = document.createElement('div');
+        chip.className = `worker-status-chip ${statusClass}`;
+        chip.setAttribute('data-worker', worker.name);
+        chip.title = `${titleAttr} (Haz clic para seleccionarlo)`;
+        if (isCurrentlySelected) {
+            chip.style.outline = '2px solid var(--primary)';
+            chip.style.outlineOffset = '1px';
+        }
+
+        chip.innerHTML = `
+            <span class="status-dot-indicator"></span>
+            <div class="worker-chip-info">
+                <span class="worker-chip-name">${worker.emoji || '👤'} ${worker.name}</span>
+                <span class="worker-chip-state">${stateText}</span>
+            </div>
+        `;
+
+        chip.addEventListener('click', () => {
+            if (employeeSelect) {
+                employeeSelect.value = worker.name;
+                handleWorkerChange();
+                document.querySelectorAll('.worker-status-chip').forEach(c => c.style.outline = 'none');
+                chip.style.outline = '2px solid var(--primary)';
+                chip.style.outlineOffset = '1px';
+            }
+        });
+
+        grid.appendChild(chip);
+    });
+
+    if (badge) {
+        badge.textContent = `${activeCount} de ${activeWorkers.length} en turno`;
+    }
+}
+
 function handleWorkerChange() {
     const workerName = employeeSelect.value;
     selectedWorker = activeWorkers.find(w => w.name === workerName) || null;
+
+    // Highlight selected worker in real-time board
+    document.querySelectorAll('.worker-status-chip').forEach(c => {
+        if (selectedWorker && c.getAttribute('data-worker') === selectedWorker.name) {
+            c.style.outline = '2px solid var(--primary)';
+            c.style.outlineOffset = '1px';
+        } else {
+            c.style.outline = 'none';
+        }
+    });
 
     if (!selectedWorker) {
         workerScheduleBanner.style.display = 'none';
@@ -1447,6 +1556,7 @@ function setupAddWorkerWizard() {
 
             // Refresh UI
             renderWorkerDropdowns();
+            renderTeamLiveStatus();
             employeeSelect.value = name;
 
             // Move to Step 3 (Success)
@@ -1621,6 +1731,7 @@ function setupDeleteWorker() {
 
                 selectedWorker = null;
                 renderWorkerDropdowns();
+                renderTeamLiveStatus();
                 handleWorkerChange();
                 alert('Colaborador dado de baja.');
             } catch (err) {
@@ -1883,13 +1994,15 @@ window.quickRegularizePunch = function (workerName, dateStr, schedIn, schedOut, 
 // ==========================================================================
 
 function setupExcelExport() {
-    if (!btnExportExcel) return;
+    const excelButtons = document.querySelectorAll('#btnExportExcel, .btn-excel');
+    if (!excelButtons || excelButtons.length === 0) return;
 
-    btnExportExcel.addEventListener('click', async () => {
-        if (typeof ExcelJS === 'undefined') {
-            alert("Librería ExcelJS no disponible. Verifica tu conexión a internet.");
-            return;
-        }
+    excelButtons.forEach(btn => {
+        btn.addEventListener('click', async () => {
+            if (typeof ExcelJS === 'undefined') {
+                alert("Librería ExcelJS no disponible. Verifica tu conexión a internet.");
+                return;
+            }
 
         try {
             const workbook = new ExcelJS.Workbook();
@@ -1963,6 +2076,7 @@ function setupExcelExport() {
             console.error("Error exporting Excel:", err);
             alert("Error al generar el archivo Excel: " + err.message);
         }
+        });
     });
 }
 

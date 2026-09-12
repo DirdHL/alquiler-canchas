@@ -56,12 +56,6 @@
                         <i data-lucide="gift"></i>
                         <span>Feriado / Permiso</span>
                     </button>
-                    <!-- Download Excel -->
-                    <button class="btn btn-primary" id="btnExportExcel"
-                        style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);">
-                        <i data-lucide="file-spreadsheet"></i>
-                        <span style="font-weight: 600;">Descargar Excel</span>
-                    </button>
                 </div>
             </header>
 
@@ -77,6 +71,20 @@
                         <div class="live-time-display">
                             <div class="time" id="liveClock">00:00:00</div>
                             <div class="date" id="liveDate">Cargando fecha actual...</div>
+                        </div>
+
+                        <!-- Live Worker Status Quick Board ("Estado en Tiempo Real del Personal") -->
+                        <div class="team-realtime-card" id="teamRealtimeCard">
+                            <div class="team-realtime-header">
+                                <div class="team-realtime-title">
+                                    <span class="live-dot-pulse"></span>
+                                    <span>Estado del Personal Hoy</span>
+                                </div>
+                                <span class="team-realtime-count" id="teamActiveCountBadge">0 en turno</span>
+                            </div>
+                            <div class="team-realtime-grid" id="teamRealtimeGrid">
+                                <div style="font-size: 11.5px; color: var(--text-muted); padding: 4px;">Cargando estado del personal...</div>
+                            </div>
                         </div>
 
                         <!-- Worker Selection -->
@@ -204,7 +212,8 @@
                             </div>
 
                             <!-- 4. Horas que se Deben (Tardanzas + Faltas + Salidas anticipadas) -->
-                            <div class="metric-card metric-deuda" title="Total de tiempo a recuperar: Tardanzas acumuladas + Faltas/Ausencias + Salidas antes de hora">
+                            <div class="metric-card metric-deuda"
+                                title="Total de tiempo a recuperar: Tardanzas acumuladas + Faltas/Ausencias + Salidas antes de hora">
                                 <div class="metric-icon">🟠</div>
                                 <div class="metric-val" id="metricOwedHours">0:00</div>
                                 <div class="metric-lbl">Horas Debidas</div>
@@ -224,8 +233,10 @@
                                 <div style="display: flex; align-items: center; gap: 8px;">
                                     <span class="absences-badge-icon">🚨</span>
                                     <div>
-                                        <strong style="color: #b91c1c; font-size: 13.5px;" id="absencesCardTitle">Ausencias / Faltas Detectadas</strong>
-                                        <small style="color: #991b1b; display: block; font-size: 11px;">Días programados en los que no se marcó asistencia</small>
+                                        <strong style="color: #b91c1c; font-size: 13.5px;"
+                                            id="absencesCardTitle">Ausencias / Faltas Detectadas</strong>
+                                        <small style="color: #991b1b; display: block; font-size: 11px;">Días programados
+                                            en los que no se marcó asistencia</small>
                                     </div>
                                 </div>
                                 <span class="badge-absences-count" id="badgeAbsencesCount">0</span>
@@ -801,7 +812,8 @@
         <div class="modal-backdrop" id="modalManualPunch">
             <div class="modal-card modal-sm" style="max-width: 440px;">
                 <div class="modal-header">
-                    <h3 style="display: flex; align-items: center; gap: 8px; margin: 0; color: var(--primary); font-size: 17px;">
+                    <h3
+                        style="display: flex; align-items: center; gap: 8px; margin: 0; color: var(--primary); font-size: 17px;">
                         <i data-lucide="clock"></i>
                         Regularizar Marcación de Asistencia
                     </h3>
@@ -813,7 +825,8 @@
                             <label for="manualPunchWorker">Colaborador *</label>
                             <div class="input-wrapper">
                                 <i data-lucide="user"></i>
-                                <input type="text" id="manualPunchWorker" readonly style="background: #f8fafc; font-weight: 700; color: var(--text-primary);">
+                                <input type="text" id="manualPunchWorker" readonly
+                                    style="background: #f8fafc; font-weight: 700; color: var(--text-primary);">
                             </div>
                         </div>
 
@@ -855,7 +868,8 @@
                             <label for="manualPunchNotes">Observación / Motivo</label>
                             <div class="input-wrapper">
                                 <i data-lucide="pencil"></i>
-                                <input type="text" id="manualPunchNotes" placeholder="Ej. Olvido de marcación en sistema">
+                                <input type="text" id="manualPunchNotes"
+                                    placeholder="Ej. Olvido de marcación en sistema">
                             </div>
                         </div>
 
