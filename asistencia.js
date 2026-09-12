@@ -367,7 +367,10 @@ async function loadAttendanceRecords() {
                 .order('check_in', { ascending: false });
 
             if (!error && data) {
-                attendanceRecords = data;
+                attendanceRecords = data.map(r => ({
+                    ...r,
+                    lunch: r.lunch !== undefined ? r.lunch : !r.notes?.includes('Sin refrigerio')
+                }));
             } else {
                 attendanceRecords = getLocalAttendance();
             }
@@ -388,7 +391,11 @@ function getLocalAttendance() {
     const saved = localStorage.getItem('canchapro_asistencias_v2');
     if (!saved) return [];
     try {
-        return JSON.parse(saved);
+        const list = JSON.parse(saved);
+        return list.map(r => ({
+            ...r,
+            lunch: r.lunch !== undefined ? r.lunch : !r.notes?.includes('Sin refrigerio')
+        }));
     } catch (e) {
         return [];
     }
@@ -499,11 +506,18 @@ function updatePunchButtonState() {
     const activeShift = workerRecordsToday.find(r => r.check_in && !r.check_out);
 
     if (activeShift) {
-        // Active shift in progress
+        // Active shift in progress - Marcar Salida directo sin opciones adicionales
+        const shiftTookLunch = (activeShift.lunch !== undefined)
+            ? Boolean(activeShift.lunch)
+            : (activeShift.notes && activeShift.notes.includes('Sin refrigerio') ? false : true);
+
         employeeStatusBox.innerHTML = `
             <div class="status-active-shift">
                 <div class="active-shift-title"><i data-lucide="play-circle"></i> En jornada activa (Entrada: ${formatTimeTo12H(activeShift.check_in)})</div>
                 <div class="active-shift-timer" id="shiftTimerDisplay">Calculando tiempo...</div>
+                <div style="font-size: 12px; margin-top: 5px; color: var(--text-secondary); display: flex; align-items: center; justify-content: center; gap: 5px;">
+                    ${shiftTookLunch ? '🍴 Refrigerio programado: 1 hora' : '⚡ Jornada corrida (sin refrigerio)'}
+                </div>
             </div>
         `;
         if (window.lucide) lucide.createIcons();
@@ -512,7 +526,8 @@ function updatePunchButtonState() {
         btnToggleAttendance.className = 'btn btn-primary btn-punch-action in-shift';
         btnPunchText.textContent = 'Marcar Salida';
 
-        lunchToggleGroup.style.display = 'block';
+        // Una vez que entras, ya no se muestran opciones adicionales (solo Marcar Salida directo)
+        lunchToggleGroup.style.display = 'none';
         earlyCheckinCard.style.display = 'none';
 
         // Update timer
@@ -522,7 +537,9 @@ function updatePunchButtonState() {
         btnToggleAttendance.disabled = false;
         btnToggleAttendance.className = 'btn btn-primary btn-punch-action';
         btnPunchText.textContent = 'Marcar Entrada';
-        lunchToggleGroup.style.display = 'none';
+
+        // Las condiciones (refrigerio y horario) se definen antes de marcar entrada
+        lunchToggleGroup.style.display = 'block';
 
         // Check if arriving early or late compared to today's schedule
         evaluateCheckInTiming();
@@ -625,8 +642,10 @@ async function handleAttendancePunch() {
             const checkOutMinutes = currentMinutes;
             const grossShiftMinutes = Math.max(0, checkOutMinutes - checkInMinutes);
 
-            // Lunch deduction logic: if lunch checkbox is checked
-            const tookLunch = lunchCheckbox.checked;
+            // Lunch deduction logic: uses choice established at check-in
+            const tookLunch = (activeShift.lunch !== undefined)
+                ? Boolean(activeShift.lunch)
+                : (activeShift.notes && activeShift.notes.includes('Sin refrigerio') ? false : true);
             const lunchDeductionMinutes = tookLunch ? 60 : 0;
             const netShiftMinutes = Math.max(0, grossShiftMinutes - lunchDeductionMinutes);
 
@@ -634,11 +653,11 @@ async function handleAttendancePunch() {
             let extraMinutes = activeShift.extra_minutes || 0;
             let owedMinutes = 0;
 
-            let notes = `Salida a las ${formatTimeTo12H(currentTimeStr.substring(0, 5))}.`;
+            let notes = `${activeShift.notes ? activeShift.notes + ' | ' : ''}Salida a las ${formatTimeTo12H(currentTimeStr.substring(0, 5))}.`;
             if (tookLunch) {
-                notes += ' Con refrigerio (-1h).';
+                notes += ' Refrigerio descontado (-1h).';
             } else {
-                notes += ' Sin refrigerio (jornada corrida).';
+                notes += ' Jornada corrida (sin descuento de refrigerio).';
             }
 
             // Check if leaving before or after official scheduled exit
@@ -665,6 +684,7 @@ async function handleAttendancePunch() {
                 late_minutes: lateMinutes,
                 extra_minutes: extraMinutes,
                 owed_minutes: owedMinutes,
+                lunch: tookLunch,
                 notes: notes
             };
 
@@ -692,10 +712,16 @@ async function handleAttendancePunch() {
             // ==============================================================
             // CHECK-IN OPERATION
             // ==============================================================
+            const tookLunch = lunchCheckbox ? lunchCheckbox.checked : true;
             let officialInTime = currentTimeStr;
             let lateMinutes = 0;
             let extraMinutes = 0;
             let notes = `Entrada registrada a las ${formatTimeTo12H(currentTimeStr.substring(0, 5))}.`;
+            if (tookLunch) {
+                notes += ' [Con refrigerio: -1h].';
+            } else {
+                notes += ' [Sin refrigerio: jornada corrida].';
+            }
 
             if (todaySchedule && todaySchedule.active) {
                 const scheduledInMinutes = timeStringToMinutes(todaySchedule.in);
@@ -730,13 +756,26 @@ async function handleAttendancePunch() {
                 late_minutes: lateMinutes,
                 extra_minutes: extraMinutes,
                 owed_minutes: 0,
+                lunch: tookLunch,
                 notes: notes
             };
 
             if (dbMode === 'supabase' && supabaseClient) {
                 const { error } = await supabaseClient
                     .from('asistencias_v2')
-                    .insert([newShift]);
+                    .insert([{
+                        id: newShift.id,
+                        employee_name: newShift.employee_name,
+                        date: newShift.date,
+                        check_in: newShift.check_in,
+                        check_out: newShift.check_out,
+                        type: newShift.type,
+                        hours_credited: newShift.hours_credited,
+                        late_minutes: newShift.late_minutes,
+                        extra_minutes: newShift.extra_minutes,
+                        owed_minutes: newShift.owed_minutes,
+                        notes: newShift.notes
+                    }]);
 
                 if (error) throw error;
             } else {
