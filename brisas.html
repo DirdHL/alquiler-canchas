@@ -1,0 +1,1250 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sport Victoria (Las Brisas) - Sistema de Alquiler de Canchas</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- FullCalendar CSS & JS -->
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/locales/es.global.min.js"></script>
+    <!-- Supabase JS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- ExcelJS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="brisas.css">
+    <script>
+        window.addEventListener('error', function (e) {
+            alert('⛔ ERROR JS EN LA PÁGINA ⛔\nArchivo: ' + e.filename + '\nLínea: ' + e.lineno + '\nMensaje: ' + e.message);
+        });
+        window.addEventListener('unhandledrejection', function (e) {
+            alert('⛔ PROMESA RECHAZADA ⛔\n' + e.reason);
+        });
+    </script>
+</head>
+
+<body>
+    <div class="app-container sidebar-collapsed">
+        <!-- Sidebar Backdrop for Mobile -->
+        <div class="sidebar-backdrop-overlay" id="sidebarBackdrop"></div>
+
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="logo-area">
+                <div class="logo-title">
+                    <i data-lucide="calendar-range" class="logo-icon"></i>
+                    <h2>Sport<span>Victoria</span><span class="logo-subtitle">Las Brisas</span></h2>
+                </div>
+                <button class="btn-close-sidebar" id="btnCloseSidebar">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+
+            <div class="status-indicator-card">
+                <div class="status-header">
+                    <span class="status-dot disconnected" id="statusDot"></span>
+                    <span class="status-text" id="statusText">Modo Sin Conexión (Local)</span>
+                </div>
+                <p class="status-desc" id="statusDesc">Accede con el link y la contraseña para poder compartir la
+                    informacion con los demas asesores</p>
+                <button class="btn btn-secondary btn-sm" id="btnOpenSettings">
+                    <i data-lucide="database"></i> Ingresa para acceder a la base de datos
+                </button>
+            </div>
+
+            <nav class="nav-filters">
+                <h3>Opciones</h3>
+                <button class="btn btn-secondary btn-sm btn-sidebar-action" id="btnOpenTarifario"
+                    style="margin-bottom: 8px; background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.3); color: #34d399;">
+                    <i data-lucide="badge-dollar-sign"></i> Ver Tarifario Actual
+                </button>
+                <button class="btn btn-secondary btn-sm btn-sidebar-action" id="btnOpenHistory"
+                    style="margin-bottom: 8px;">
+                    <i data-lucide="history"></i> Historial de Cambios
+                </button>
+
+                <h3>Otras Sedes</h3>
+                <a href="polideportivo.html" class="btn btn-secondary btn-sm btn-sidebar-action btn-polideportivo"
+                    style="text-decoration: none; display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                    <i data-lucide="building" style="width: 16px; height: 16px;"></i> Polideportivo Huaral-Huando
+                </a>
+                <a href="index.html" class="btn btn-secondary btn-sm btn-sidebar-action btn-canchas"
+                    style="text-decoration: none; display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                    <i data-lucide="calendar" style="width: 16px; height: 16px;"></i> Sport Victoria (Los Pinos)
+                </a>
+                <a href="bungalows.html" class="btn btn-secondary btn-sm btn-sidebar-action btn-bungalows"
+                    style="text-decoration: none; display: flex; align-items: center; gap: 8px;">
+                    <i data-lucide="home" style="width: 16px; height: 16px;"></i> Alquiler de Bungalows
+                </a>
+                <a href="locales.html" class="btn btn-secondary btn-sm btn-sidebar-action btn-locales"
+                    style="text-decoration: none; display: flex; align-items: center; gap: 8px; margin-top: 8px;">
+                    <i data-lucide="map-pin" style="width: 16px; height: 16px;"></i> Alquiler Locales
+                </a>
+                <a href="carritos.html" class="btn btn-secondary btn-sm btn-sidebar-action btn-carritos"
+                    style="text-decoration: none; display: flex; align-items: center; gap: 8px; margin-top: 8px;">
+                    <i data-lucide="lollipop" style="width: 16px; height: 16px;"></i> Carritos e inflables
+                </a>
+            </nav>
+
+            <div class="stats-card">
+                <h3>Resumen de Hoy</h3>
+                <div class="stat-item">
+                    <span class="stat-label">Reservas Totales</span>
+                    <span class="stat-value" id="statTodayReservations">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Canchas Fútbol</span>
+                    <span class="stat-value" id="statCanchaFutbol">0 h</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Canchas Vóley</span>
+                    <span class="stat-value" id="statCanchaVoley">0 h</span>
+                </div>
+            </div>
+
+            <div class="stats-card">
+                <h3 style="display: flex; align-items: center; gap: 6px; margin-bottom: 8px;">
+                    <i data-lucide="line-chart" style="width: 16px; height: 16px; color: var(--primary);"></i>
+                    Reportes
+                </h3>
+                <button class="btn btn-secondary btn-sm btn-sidebar-action" id="btnOpenStats"
+                    style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; border-color: rgba(16, 185, 129, 0.3); color: #10b981; margin: 0;">
+                    <i data-lucide="lock" style="width: 14px; height: 14px;"></i> Ver Estadísticas
+                </button>
+            </div>
+
+            <!-- User Profile Card -->
+            <div class="user-profile-card">
+                <div class="user-info">
+                    <div class="user-avatar">
+                        <i data-lucide="user"></i>
+                    </div>
+                    <div class="user-details">
+                        <span class="user-label">Operador Activo</span>
+                        <span class="user-name" id="displayUserName">Invitado</span>
+                    </div>
+                </div>
+                <button class="btn-edit-user" id="btnEditUser" title="Cambiar Nombre">
+                    <i data-lucide="pencil"></i>
+                </button>
+            </div>
+
+            <footer class="sidebar-footer">
+                <p>Sport Victoria &copy; 2026</p>
+                <p class="footer-note">Desarrollado por Rogger Dird Huaicama Lacerna</p>
+            </footer>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="app-header">
+                <div class="header-left">
+                    <button class="btn btn-secondary btn-menu" id="btnToggleSidebar"
+                        title="Mostrar / Ocultar Menú Lateral">
+                        <i data-lucide="menu"></i>
+                        <span style="font-size: 13px; font-weight: 600; margin-left: 4px;">Menú</span>
+                    </button>
+                    <div class="header-title">
+                        <h1>Calendario de Reservas</h1>
+                        <p>Gestiona, programa y actualiza los alquileres de tus canchas en tiempo real.</p>
+                    </div>
+                </div>
+                <button class="btn btn-primary" id="btnNewReservation">
+                    <i data-lucide="plus"></i> <span class="btn-text">Nueva Reserva</span>
+                </button>
+            </header>
+
+            <!-- Smart Availability Quick Checker Card ("¿Qué canchas están disponibles?") -->
+            <div class="availability-checker-card">
+                <div class="checker-header">
+                    <div class="checker-header-left">
+                        <div class="checker-icon-badge">
+                            <i data-lucide="sparkles"></i>
+                        </div>
+                        <div>
+                            <h3 class="checker-title"
+                                style="display: flex; align-items: center; flex-wrap: wrap; gap: 6px;">
+                                ¿Qué canchas están disponibles?
+                                <span class="checker-badge-pill">En Vivo</span>
+                            </h3>
+                            <p class="checker-subtitle">Consulta disponibilidad en tiempo real por fecha, horario y
+                                deporte.</p>
+                        </div>
+                    </div>
+                    <div class="checker-quick-buttons">
+                        <button type="button" class="btn btn-secondary btn-sm" id="btnCourtQuickToday">Hoy</button>
+                        <button type="button" class="btn btn-secondary btn-sm"
+                            id="btnCourtQuickTomorrow">Mañana</button>
+                        <button type="button" class="btn btn-secondary btn-sm" id="btnCourtQuickWeekend">Fin de
+                            Semana</button>
+                    </div>
+                </div>
+
+                <div class="checker-form-grid">
+                    <div class="checker-field">
+                        <label for="checkCourtDate"><i data-lucide="calendar"></i> Fecha:</label>
+                        <input type="date" id="checkCourtDate" class="form-control">
+                    </div>
+                    <div class="checker-field">
+                        <label for="checkCourtStartHour"><i data-lucide="clock"></i> Hora Inicio:</label>
+                        <div class="time-input-group" id="groupCourtStartTime">
+                            <i data-lucide="clock" class="time-icon"></i>
+                            <div class="time-inputs-box">
+                                <input type="text" id="checkCourtStartHour" class="time-unit-input" placeholder="HH"
+                                    maxlength="2" autocomplete="off" inputmode="numeric">
+                                <span class="time-colon">:</span>
+                                <input type="text" id="checkCourtStartMin" class="time-unit-input" placeholder="MM"
+                                    maxlength="2" autocomplete="off" inputmode="numeric">
+                            </div>
+                            <select id="checkCourtStartAmpm" class="time-ampm-select">
+                                <option value="pm">PM</option>
+                                <option value="am">AM</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="checker-field">
+                        <label for="checkCourtEndHour"><i data-lucide="clock-3"></i> Hora Salida / Fin:</label>
+                        <div class="time-input-group" id="groupCourtEndTime">
+                            <i data-lucide="clock-3" class="time-icon"></i>
+                            <div class="time-inputs-box">
+                                <input type="text" id="checkCourtEndHour" class="time-unit-input" placeholder="HH"
+                                    maxlength="2" autocomplete="off" inputmode="numeric">
+                                <span class="time-colon">:</span>
+                                <input type="text" id="checkCourtEndMin" class="time-unit-input" placeholder="MM"
+                                    maxlength="2" autocomplete="off" inputmode="numeric">
+                            </div>
+                            <select id="checkCourtEndAmpm" class="time-ampm-select">
+                                <option value="pm">PM</option>
+                                <option value="am">AM</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="checker-field">
+                        <label for="checkCourtSport"><i data-lucide="trophy"></i> Deporte:</label>
+                        <select id="checkCourtSport" class="form-control">
+                            <option value="Fútbol" selected>⚽ Fútbol</option>
+                            <option value="Vóley">🏐 Vóley</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Instant Court Status Results Grid -->
+                <div class="checker-results-grid" id="checkerCourtResultsGrid">
+                    <!-- Populated dynamically by JS -->
+                </div>
+            </div>
+
+            <!-- Top Quick Filters Bar -->
+            <div class="top-filters-card">
+                <div class="top-filters-group">
+                    <div class="top-filter-section">
+                        <span class="top-filter-label">
+                            <i data-lucide="layout-grid" style="width: 15px; height: 15px; color: var(--primary);"></i>
+                            Canchas:
+                        </span>
+                        <div class="top-filter-items">
+                            <label class="filter-item">
+                                <input type="checkbox" id="filterCanchaFutbol" checked>
+                                <span class="custom-checkbox color-futbol"></span>
+                                Canchas Fútbol
+                            </label>
+                            <label class="filter-item">
+                                <input type="checkbox" id="filterCanchaVoley" checked>
+                                <span class="custom-checkbox color-voley"></span>
+                                Canchas Vóley
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="top-filter-section"
+                        style="border-left: 1px solid var(--border-color); padding-left: 14px;">
+                        <span class="top-filter-label">
+                            <i data-lucide="trophy" style="width: 15px; height: 15px; color: var(--primary);"></i>
+                            Deporte:
+                        </span>
+                        <div class="top-filter-items">
+                            <label class="filter-item">
+                                <input type="checkbox" id="filterFutbol" checked>
+                                <span class="custom-checkbox color-futbol"></span>
+                                Fútbol
+                            </label>
+                            <label class="filter-item">
+                                <input type="checkbox" id="filterVoley" checked>
+                                <span class="custom-checkbox color-voley"></span>
+                                Vóley
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Calendar Container -->
+            <div class="calendar-card">
+                <div id="calendar"></div>
+                <div class="calendar-hours-toggle-footer">
+                    <button type="button" class="btn-calendar-hours-toggle" id="btnToggleCalendarHours">
+                        <i data-lucide="sun-dim" id="iconToggleHours"></i>
+                        <span id="textToggleHours">Ver todo el día (desde las 6:00 AM)</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Resumen Diario -->
+            <div class="calendar-card" style="margin-top: 24px;">
+                <div class="summary-header-container"
+                    style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+                    <h3 style="display: flex; align-items: center; gap: 8px; margin: 0; font-size: 16px;">
+                        <i data-lucide="list-todo" style="color: var(--primary);"></i>
+                        Resumen y Disponibilidad - <span id="summaryDateLabel">Cargando...</span>
+                    </h3>
+                    <div class="summary-tabs"
+                        style="display: flex; gap: 8px; background: rgba(255, 255, 255, 0.03); padding: 4px; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+                        <button type="button" class="tab-btn active" id="btnTabReservations">
+                            <i data-lucide="calendar"></i> Lista de Reservas
+                        </button>
+                        <button type="button" class="tab-btn" id="btnTabAvailability">
+                            <i data-lucide="layout-grid"></i> Mapa de Disponibilidad
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tab: Lista de Reservas -->
+                <div class="summary-tab-content" id="tabReservationsContent">
+                    <div class="summary-list" id="dailySummaryList">
+                        <!-- Se llenará dinámicamente -->
+                    </div>
+                </div>
+
+                <!-- Tab: Mapa de Disponibilidad -->
+                <div class="summary-tab-content" id="tabAvailabilityContent" style="display: none;">
+                    <div
+                        style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
+                        <div
+                            style="display: flex; gap: 6px; background: rgba(255, 255, 255, 0.03); padding: 3px; border-radius: 6px; border: 1px solid var(--border-color);">
+                            <button type="button" class="btn-toggle-hours active" id="btnHoursPico">
+                                Tarde/Noche
+                            </button>
+                            <button type="button" class="btn-toggle-hours" id="btnHoursAll">
+                                Todo el día
+                            </button>
+                        </div>
+                    </div>
+                    <div class="availability-grid-wrapper"
+                        style="overflow-x: auto; max-height: 480px; overflow-y: auto; border-radius: var(--radius-md); border: 1px solid var(--border-color); background: rgba(255, 255, 255, 0.01);">
+                        <table class="availability-table"
+                            style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
+                            <thead>
+                                <tr
+                                    style="position: sticky; top: 0; background: #1e293b; border-bottom: 1px solid var(--border-color); z-index: 5;">
+                                    <th
+                                        style="padding: 10px 16px; color: var(--text-secondary); font-weight: 700; width: 140px;">
+                                        Hora</th>
+                                    <th id="courtHeader1"
+                                        style="padding: 10px 16px; color: var(--text-secondary); font-weight: 700; text-align: center; white-space: nowrap;">
+                                        ⚽ Cancha 1</th>
+                                    <th id="courtHeader2"
+                                        style="padding: 10px 16px; color: var(--text-secondary); font-weight: 700; text-align: center; white-space: nowrap;">
+                                        ⚽ Cancha 2</th>
+                                    <th id="courtHeader3"
+                                        style="padding: 10px 16px; color: var(--text-secondary); font-weight: 700; text-align: center; white-space: nowrap;">
+                                        ⚽ Cancha 3</th>
+                                    <th id="courtHeader4"
+                                        style="padding: 10px 16px; color: var(--text-secondary); font-weight: 700; text-align: center; white-space: nowrap;">
+                                        🏐 Vóley 1</th>
+                                    <th id="courtHeader5"
+                                        style="padding: 10px 16px; color: var(--text-secondary); font-weight: 700; text-align: center; white-space: nowrap;">
+                                        🏐 Vóley 2</th>
+                                    <th id="courtHeader6"
+                                        style="padding: 10px 16px; color: var(--text-secondary); font-weight: 700; text-align: center; white-space: nowrap;">
+                                        🏐 Vóley 3</th>
+                                </tr>
+                            </thead>
+                            <tbody id="availabilityTableBody">
+                                <!-- Se llenará dinámicamente -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Booking Modal -->
+    <div class="modal-backdrop" id="modalBooking">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 id="modalTitle">Nueva Reserva</h3>
+                <button class="btn-close" id="btnCloseBooking"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="formBooking" novalidate>
+                    <input type="hidden" id="bookingId">
+
+                    <div class="form-group" style="margin-bottom: 16px;">
+                        <label class="checkbox-container"
+                            style="display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;">
+                            <input type="checkbox" id="bookingIsBlock"
+                                style="width: 18px; height: 18px; cursor: pointer;">
+                            <span style="font-weight: 600; color: #f87171;">🔒 ¿Bloquear horario / cancha?</span>
+                        </label>
+                    </div>
+
+                    <div class="form-group" id="groupAllDay" style="margin-bottom: 16px; display: none;">
+                        <label class="checkbox-container"
+                            style="display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;">
+                            <input type="checkbox" id="bookingIsAllDay"
+                                style="width: 18px; height: 18px; cursor: pointer;">
+                            <span style="font-weight: 600; color: #fbbf24;">⏰ ¿Todo el día?</span>
+                        </label>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="bookingName">Nombre del Cliente *</label>
+                        <div class="input-wrapper">
+                            <i data-lucide="user"></i>
+                            <input type="text" id="bookingName" required placeholder="Nombre del cliente">
+                        </div>
+                    </div>
+
+                    <div class="form-group" id="groupDni">
+                        <label for="bookingDni">DNI </label>
+                        <div class="input-wrapper">
+                            <i data-lucide="credit-card"></i>
+                            <input type="text" id="bookingDni" placeholder="Ej. 12345678" maxlength="12"
+                                inputmode="numeric" pattern="[0-9]*">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="bookingCourt">Cancha *</label>
+                            <div class="input-wrapper">
+                                <i data-lucide="layout-grid"></i>
+                                <select id="bookingCourt" required>
+                                    <optgroup label="⚽ Fútbol">
+                                        <option value="Cancha 1 (10 jug)">Cancha 1 (10 jug)</option>
+                                        <option value="Cancha 2 (12 jug)">Cancha 2 (12 jug)</option>
+                                        <option value="Cancha 3 (16 jug)">Cancha 3 (16 jug)</option>
+                                    </optgroup>
+                                    <optgroup label="🏐 Vóley">
+                                        <option value="Cancha Vóley 1">Cancha Vóley 1</option>
+                                        <option value="Cancha Vóley 2">Cancha Vóley 2</option>
+                                        <option value="Cancha Vóley 3">Cancha Vóley 3</option>
+                                    </optgroup>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group" id="groupSport">
+                            <label for="bookingSport">Deporte *</label>
+                            <div class="input-wrapper">
+                                <i data-lucide="award"></i>
+                                <select id="bookingSport" required>
+                                    <option value="Fútbol">Fútbol</option>
+                                    <option value="Vóley">Vóley</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-row" id="rowEquipamiento">
+                        <div class="form-group">
+                            <label>¿Pelota? *</label>
+                            <div class="toggle-group" id="pelotaToggle">
+                                <button type="button" class="btn-toggle active-no" data-value="false">No</button>
+                                <button type="button" class="btn-toggle" data-value="true">Sí</button>
+                            </div>
+                            <input type="hidden" id="bookingPelota" value="false">
+                        </div>
+                        <div class="form-group">
+                            <label>¿Chaleco? *</label>
+                            <div class="toggle-group" id="chalecoToggle">
+                                <button type="button" class="btn-toggle active-no" data-value="false">No</button>
+                                <button type="button" class="btn-toggle" data-value="true">Sí</button>
+                            </div>
+                            <input type="hidden" id="bookingChaleco" value="false">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="bookingDate">Fecha *</label>
+                        <div class="input-wrapper">
+                            <i data-lucide="calendar"></i>
+                            <input type="date" id="bookingDate" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Hora Inicio *</label>
+                            <div class="time-select-row">
+                                <div class="time-spinner-wrapper">
+                                    <i data-lucide="clock" class="time-icon"></i>
+                                    <input type="text" id="startHourSelect" placeholder="HH" maxlength="2" required
+                                        autocomplete="off">
+                                    <span class="time-separator">:</span>
+                                    <input type="text" id="startMinSelect" placeholder="MM" maxlength="2" required
+                                        autocomplete="off">
+                                </div>
+                                <div class="input-wrapper ampm-wrapper">
+                                    <select id="startAmpmSelect" class="ampm-select" required>
+                                        <option value="pm">pm</option>
+                                        <option value="am">am</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Hora Fin *</label>
+                            <div class="time-select-row">
+                                <div class="time-spinner-wrapper">
+                                    <i data-lucide="clock" class="time-icon"></i>
+                                    <input type="text" id="endHourSelect" placeholder="HH" maxlength="2" required
+                                        autocomplete="off">
+                                    <span class="time-separator">:</span>
+                                    <input type="text" id="endMinSelect" placeholder="MM" maxlength="2" required
+                                        autocomplete="off">
+                                </div>
+                                <div class="input-wrapper ampm-wrapper">
+                                    <select id="endAmpmSelect" class="ampm-select" required>
+                                        <option value="pm">pm</option>
+                                        <option value="am">am</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-row" id="rowMedioPago">
+                        <div class="form-group">
+                            <label for="bookingSource">Medio *</label>
+                            <div class="input-wrapper">
+                                <i data-lucide="share-2"></i>
+                                <select id="bookingSource" required>
+                                    <option value="Facebook">Facebook</option>
+                                    <option value="TikTok">TikTok</option>
+                                    <option value="Instagram">Instagram</option>
+                                    <option value="Msg masivo">Msg masivo</option>
+                                    <option value="Cliente frecuente" selected>Cliente frecuente</option>
+                                    <option value="Recomendación">Recomendación</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="bookingPaymentType">Tipo de Pago *</label>
+                            <div class="input-wrapper">
+                                <i data-lucide="wallet"></i>
+                                <select id="bookingPaymentType" required>
+                                    <option value="Yape">Yape</option>
+                                    <option value="Efectivo">Efectivo</option>
+                                    <option value="Dividido">Dividido (Yape + Efectivo)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Split Payment Row -->
+                    <div class="form-row hidden" id="splitPaymentRow"
+                        style="margin-top: 12px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: var(--radius-sm);">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="splitEfectivo">Monto Efectivo (S/.) *</label>
+                            <div class="input-wrapper">
+                                <i data-lucide="banknote"></i>
+                                <input type="number" id="splitEfectivo" placeholder="0.00" min="0" step="any">
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="splitYape">Monto Yape (S/.) *</label>
+                            <div class="input-wrapper">
+                                <i data-lucide="smartphone"></i>
+                                <input type="number" id="splitYape" placeholder="0.00" min="0" step="any">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group hidden" id="customSourceGroup">
+                        <label for="bookingSourceCustom">Escribe el Nombre del Medio *</label>
+                        <div class="input-wrapper">
+                            <i data-lucide="pencil"></i>
+                            <input type="text" id="bookingSourceCustom" placeholder="Nombre del nuevo medio...">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="bookingNotes">Asesor *</label>
+                        <div class="input-wrapper">
+                            <i data-lucide="user-check"></i>
+                            <select id="bookingNotes" required>
+                                <!-- Se llenará dinámicamente -->
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group hidden" id="customAsesorGroup">
+                        <label for="bookingNotesCustom">Escribe el Nombre del Asesor *</label>
+                        <div class="input-wrapper">
+                            <i data-lucide="pencil"></i>
+                            <input type="text" id="bookingNotesCustom" placeholder="Nombre del nuevo asesor...">
+                        </div>
+                    </div>
+
+                    <!-- Price Edit Notice -->
+                    <div
+                        style="margin-top: 12px; margin-bottom: 6px; padding: 8px 12px; background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.25); border-radius: var(--radius-sm); font-size: 12px; color: #60a5fa; display: flex; align-items: center; gap: 8px;">
+                        <i data-lucide="info" style="width: 16px; height: 16px; flex-shrink: 0; color: #3b82f6;"></i>
+                        <span><strong>Nota:</strong> Los precios son editables en este periodo. Puedes ajustar el monto
+                            si es necesario.</span>
+                    </div>
+
+                    <!-- Dynamic Booking Total Container -->
+                    <div class="form-group" id="bookingTotalContainer"
+                        style="margin-top: 6px; margin-bottom: 12px; background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.2); padding: 10px 12px; border-radius: var(--radius-sm); display: flex; flex-direction: row; justify-content: space-between; align-items: center; gap: 10px;">
+                        <div style="display: flex; flex-direction: column;">
+                            <span style="font-weight: 600; color: var(--text-secondary); font-size: 13px;">Precio Total
+                                (S/.):</span>
+                            <span id="bookingTotalNote" style="font-size: 11px; color: var(--text-muted);">Calculado
+                                automáticamente</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <span style="font-weight: 700; color: var(--primary); font-size: 15px;">S/.</span>
+                            <input type="number" id="bookingPriceInput" step="0.50" min="0" placeholder="0.00"
+                                style="width: 100px; padding: 6px 8px; font-weight: 700; color: var(--primary); font-size: 15px; background: var(--bg-card, #1e293b); border: 1px solid rgba(16, 185, 129, 0.4); border-radius: 6px; text-align: right;">
+                            <button type="button" id="btnResetPrice" title="Restablecer precio calculado"
+                                style="background: transparent; border: none; color: var(--text-muted); cursor: pointer; padding: 4px; display: flex; align-items: center; justify-content: center;">
+                                <i data-lucide="rotate-ccw" style="width: 15px; height: 15px;"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="form-error" id="bookingError"></div>
+
+                    <div class="modal-actions">
+                        <div class="left-actions">
+                            <button type="button" class="btn btn-danger btn-delete hidden" id="btnDeleteBooking">
+                                <i data-lucide="trash-2"></i> Eliminar
+                            </button>
+                            <button type="button" class="btn btn-copy-reservation" id="btnCopyReservation">
+                                <i data-lucide="copy"></i> Copiar Reserva
+                            </button>
+                        </div>
+                        <div class="right-actions">
+                            <button type="submit" class="btn btn-primary" id="btnSaveBooking">Guardar Reserva</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal-backdrop" id="modalSettings">
+        <div class="modal-card modal-lg">
+            <div class="modal-header">
+                <h3>Configuración de Supabase (Base de Datos en la Nube)</h3>
+                <button class="btn-close" id="btnCloseSettings"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <p class="settings-intro">Ingresa la el link de la base de datos y la contraseña, para acceder al
+                    calendario de reservas.</p>
+
+                <form id="formSettings">
+                    <div class="form-group">
+                        <label for="supabaseUrl">URL DE LA BASE DE DATOS</label>
+                        <div class="input-wrapper">
+                            <i data-lucide="link-2"></i>
+                            <input type="url" id="supabaseUrl" placeholder="https://xxxxxx.supabase.co" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="supabaseKey">Clave Anon de Supabase <span
+                                style="font-size:0.78em;color:#f87171;font-weight:500">(Pidele al
+                                administrador)</span></label>
+                        <div class="input-wrapper">
+                            <i data-lucide="key-round"></i>
+                            <input type="password" id="supabaseKey"
+                                placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." required>
+                        </div>
+                        <small style="color:#94a3b8;margin-top:4px;display:block">Haz clic en <strong>Probar
+                                Conexión</strong> y luego en <strong>Guardar Credenciales</strong>.</small>
+                    </div>
+
+                    <div class="settings-actions">
+                        <button type="button" class="btn btn-secondary" id="btnTestSupabase">Probar Conexión</button>
+                        <button type="submit" class="btn btn-primary">Guardar Credenciales</button>
+                    </div>
+                    <div class="settings-feedback" id="settingsFeedback"></div>
+                </form>
+
+                <div class="sql-instructions">
+                    <h4><i data-lucide="terminal"></i> Pasos para Crear la Tabla en Supabase (ignora esto xD)</h4>
+                    <ol>
+                        <li>Entra a tu panel de <a href="https://supabase.com" target="_blank">base</a> y crea un tabla.
+                        </li>
+                        <li>Ve a <strong>Configuración → Claves API</strong> y copia la clave <strong>anon |
+                                public</strong> de la pestaña <strong>Legacy</strong>. <span style="color:#f87171">⚠️ NO
+                                copies la clave secreta (service_role).</span></li>
+                        <li>Ve al <strong>Editor SQL</strong> en el menú lateral izquierdo.</li>
+                        <li>Haz clic en <strong>Nueva consulta</strong>, pega el siguiente SQL y presiona
+                            <strong>Ejecutar - By Rogger Dird</strong>:
+                        </li>
+                    </ol>
+                    <div class="code-box">
+                        <pre id="sqlCode">
+-- 1. Tabla de reservas
+CREATE TABLE IF NOT EXISTS reservas (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  name TEXT NOT NULL,
+  dni TEXT,
+  medio TEXT,
+  court TEXT NOT NULL,
+  sport TEXT NOT NULL,
+  date DATE NOT NULL,
+  start_time TIME NOT NULL,
+  end_time TIME NOT NULL,
+  notes TEXT,
+  pelota BOOLEAN DEFAULT false,
+  chaleco BOOLEAN DEFAULT false,
+  tipo_pago TEXT DEFAULT 'Efectivo',
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Si ya tienes la tabla creada, ejecuta esto para agregar DNI, Medio, Pelota, Chaleco y Tipo de Pago:
+-- ALTER TABLE reservas ADD COLUMN IF NOT EXISTS dni TEXT;
+-- ALTER TABLE reservas ADD COLUMN IF NOT EXISTS medio TEXT;
+-- ALTER TABLE reservas ADD COLUMN IF NOT EXISTS pelota BOOLEAN DEFAULT false;
+-- ALTER TABLE reservas ADD COLUMN IF NOT EXISTS chaleco BOOLEAN DEFAULT false;
+-- ALTER TABLE reservas ADD COLUMN IF NOT EXISTS tipo_pago TEXT DEFAULT 'Efectivo';
+
+ALTER TABLE reservas ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Acceso publico" ON reservas FOR ALL USING (true) WITH CHECK (true);
+
+-- 2. Tabla de historial (Log de auditoria)
+CREATE TABLE IF NOT EXISTS historial (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  action TEXT NOT NULL,         -- 'crear', 'editar', 'eliminar'
+  sistema TEXT,                 -- 'canchas', 'polideportivo', 'bungalows', 'locales', 'asistencia'
+  user_name TEXT NOT NULL,      -- Nombre de quien modifico
+  details TEXT NOT NULL,        -- Descripcion de la accion
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Si ya tienes la tabla creada, opcionalmente ejecuta esto para agregar la columna sistema:
+-- ALTER TABLE historial ADD COLUMN IF NOT EXISTS sistema TEXT;
+
+ALTER TABLE historial ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Acceso publico" ON historial FOR ALL USING (true) WITH CHECK (true);
+
+-- Habilitar acceso en tiempo real para ambas tablas
+ALTER PUBLICATION supabase_realtime ADD TABLE reservas, historial;
+                        </pre>
+                        <button class="btn btn-secondary btn-sm btn-copy" id="btnCopySql">
+                            <i data-lucide="copy"></i> Copiar SQL
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- History Modal -->
+    <div class="modal-backdrop" id="modalHistory">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 style="display: flex; align-items: center; gap: 8px;">
+                    <i data-lucide="history" style="color: var(--primary);"></i> Historial de Actividad
+                </h3>
+                <button class="btn-close" id="btnCloseHistory"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body" style="padding-top: 16px;">
+                <div style="display: flex; gap: 8px; margin-bottom: 16px; align-items: center;">
+                    <div style="position: relative; flex: 1;">
+                        <i data-lucide="search"
+                            style="width: 16px; height: 16px; position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none;"></i>
+                        <input type="text" id="historySearchInput" placeholder="Buscar operador o actividad..."
+                            style="width: 100%; padding: 8px 12px 8px 32px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); border-radius: var(--radius-md); color: var(--text-primary); font-size: 13px;">
+                    </div>
+                    <button class="btn btn-secondary btn-sm" id="btnClearHistoryLocal"
+                        style="display: none; margin: 0; white-space: nowrap;">
+                        <i data-lucide="trash-2"></i> Limpiar Local
+                    </button>
+                </div>
+                <div class="activity-list" id="activityList">
+                    <p class="no-activity">No hay actividad registrada.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Tarifario de Canchas Sintéticas -->
+    <div class="modal-backdrop" id="modalTarifario">
+        <div class="modal-card modal-sm" style="max-width: 440px;">
+            <div class="modal-header">
+                <h3 style="display: flex; align-items: center; gap: 8px; margin: 0;">
+                    <i data-lucide="badge-dollar-sign" style="color: var(--primary);"></i> Tarifario Canchas Sintéticas
+                </h3>
+                <button class="btn-close" id="btnCloseTarifario"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body" style="padding: 20px;">
+                <div
+                    style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px; margin-bottom: 16px;">
+                    <h4
+                        style="margin: 0 0 10px 0; color: var(--primary); font-size: 15px; display: flex; align-items: center; gap: 6px;">
+                        <i data-lucide="calendar" style="width: 16px; height: 16px;"></i> 🗓️ Lunes a Jueves
+                    </h4>
+                    <ul
+                        style="margin: 0; padding-left: 20px; font-size: 13px; color: var(--text-secondary); line-height: 1.6;">
+                        <li><strong>S/ 25 por hora</strong></li>
+                        <li><strong>Pelota:</strong> S/ 5</li>
+                        <li><strong>Chalecos:</strong> S/ 5</li>
+                    </ul>
+                </div>
+
+                <div
+                    style="background: rgba(245, 158, 11, 0.05); border: 1px solid rgba(245, 158, 11, 0.2); border-radius: var(--radius-md); padding: 16px;">
+                    <h4
+                        style="margin: 0 0 10px 0; color: #f59e0b; font-size: 15px; display: flex; align-items: center; gap: 6px;">
+                        <i data-lucide="sun-medium" style="width: 16px; height: 16px;"></i> 🗓️ Viernes a Domingo
+                    </h4>
+
+                    <div style="margin-bottom: 12px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 6px;">
+                        <strong style="color: #fbbf24; font-size: 13px;">🕒 De 3:00 p. m. a 6:00 p. m.</strong>
+                        <ul
+                            style="margin: 6px 0 0 0; padding-left: 20px; font-size: 13px; color: var(--text-secondary); line-height: 1.5;">
+                            <li><strong>Cancha grande:</strong> S/ 50 por hora <span
+                                    style="color: #34d399; font-size: 11px;">*(incluye pelota y chalecos)*</span></li>
+                            <li><strong>Cancha pequeña:</strong> S/ 40 por hora <span
+                                    style="color: #34d399; font-size: 11px;">*(incluye pelota y chalecos)*</span></li>
+                        </ul>
+                    </div>
+
+                    <div style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 6px;">
+                        <strong style="color: #f472b6; font-size: 13px;">🌙 De 6:00 p. m. a 12:00 a. m.</strong>
+                        <ul
+                            style="margin: 6px 0 0 0; padding-left: 20px; font-size: 13px; color: var(--text-secondary); line-height: 1.5;">
+                            <li><strong>Cancha grande:</strong> S/ 60 por hora <span
+                                    style="color: #34d399; font-size: 11px;">*(incluye pelota y chalecos)*</span></li>
+                            <li><strong>Cancha pequeña:</strong> S/ 50 por hora <span
+                                    style="color: #34d399; font-size: 11px;">*(incluye pelota y chalecos)*</span></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Onboarding Modal -->
+    <div class="modal-backdrop" id="modalUserOnboarding">
+        <div class="modal-card modal-sm" style="max-width: 380px;">
+            <div class="modal-header">
+                <h3>Identificación de Operador</h3>
+            </div>
+            <div class="modal-body">
+                <p class="settings-intro" style="margin-bottom: 16px;">Ingresa tu nombre o alias para registrar el
+                    historial de cambios en el sistema.</p>
+                <form id="formUserOnboarding">
+                    <div class="form-group">
+                        <label for="onboardingName">Nombre / Alias *</label>
+                        <div class="input-wrapper">
+                            <i data-lucide="user"></i>
+                            <input type="text" id="onboardingName" required placeholder="Nombre o alias de operador"
+                                maxlength="25">
+                        </div>
+                    </div>
+                    <div class="modal-actions" style="margin-top: 16px;">
+                        <button type="submit" class="btn btn-primary" style="width: 100%">Continuar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Password Modal (Restricted Access) -->
+    <div class="modal-backdrop" id="modalStatsAuth">
+        <div class="modal-card modal-sm" style="max-width: 380px;">
+            <div class="modal-header">
+                <h3 style="display: flex; align-items: center; gap: 8px; margin: 0;">
+                    <i data-lucide="lock" style="color: var(--danger);"></i> Acceso Restringido
+                </h3>
+                <button class="btn-close" id="btnCloseStatsAuth"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <p class="settings-intro" style="margin-bottom: 16px; font-size: 13px; color: var(--text-secondary);">
+                    Ingrese la contraseña de administrador</p>
+                <form id="formStatsAuth">
+                    <div class="form-group">
+                        <label for="statsPassword">Contraseña *</label>
+                        <div class="input-wrapper">
+                            <i data-lucide="key-round"></i>
+                            <input type="password" id="statsPassword" required placeholder="••••••••">
+                        </div>
+                    </div>
+                    <div class="form-error" id="statsAuthError"
+                        style="display: none; color: var(--danger); margin-bottom: 12px; font-size: 13px;"></div>
+                    <div class="modal-actions" style="margin-top: 16px;">
+                        <button type="submit" class="btn btn-primary" style="width: 100%">Desbloquear</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Dashboard Modal -->
+    <div class="modal-backdrop" id="modalStats">
+        <div class="modal-card modal-lg" style="max-width: 800px;">
+            <div class="modal-header"
+                style="display: flex; justify-content: space-between; align-items: center; padding: 20px 24px;">
+                <h3 style="display: flex; align-items: center; gap: 8px; margin: 0;">
+                    <i data-lucide="line-chart" style="color: var(--primary);"></i> Estadísticas y Finanzas
+                </h3>
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <button class="btn btn-secondary btn-sm" id="btnExportStatsExcel" title="Exportar a Excel"
+                        style="gap: 4px; padding: 4px 8px; font-size: 11px; display: flex; align-items: center; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); color: #10b981; cursor: pointer; border-radius: var(--radius-sm);">
+                        <i data-lucide="file-spreadsheet" style="width: 12px; height: 12px;"></i> Exportar Excel
+                    </button>
+                    <button class="btn btn-secondary btn-sm" id="btnLockStats" title="Bloquear Acceso"
+                        style="gap: 4px; padding: 4px 8px; font-size: 11px;">
+                        <i data-lucide="log-out" style="width: 12px; height: 12px;"></i> Bloquear
+                    </button>
+                    <button class="btn-close" id="btnCloseStatsModal" style="margin: 0;"><i
+                            data-lucide="x"></i></button>
+                </div>
+            </div>
+            <div class="modal-body" style="padding: 24px;">
+                <!-- Tabs navigation -->
+                <div class="stats-tabs"
+                    style="display: flex; gap: 12px; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+                    <button class="tab-btn active" data-tab="tab-report"
+                        style="background: none; border: none; color: var(--primary); font-weight: 600; cursor: pointer; padding: 6px 12px; display: flex; align-items: center; gap: 6px; border-bottom: 2px solid var(--primary); font-size: 14px;">
+                        <i data-lucide="presentation" style="width: 16px; height: 16px;"></i> Reporte de Ventas
+                    </button>
+                    <button class="tab-btn" data-tab="tab-rates"
+                        style="background: none; border: none; color: var(--text-secondary); font-weight: 500; cursor: pointer; padding: 6px 12px; display: flex; align-items: center; gap: 6px; font-size: 14px;">
+                        <i data-lucide="badge-dollar-sign" style="width: 16px; height: 16px;"></i> Tarifas de Canchas
+                    </button>
+                    <button class="tab-btn" data-tab="tab-asesores"
+                        style="background: none; border: none; color: var(--text-secondary); font-weight: 500; cursor: pointer; padding: 6px 12px; display: flex; align-items: center; gap: 6px; font-size: 14px;">
+                        <i data-lucide="users" style="width: 16px; height: 16px;"></i> Estadísticas de Asesores
+                    </button>
+                    <button class="tab-btn" data-tab="tab-uso-canales"
+                        style="background: none; border: none; color: var(--text-secondary); font-weight: 500; cursor: pointer; padding: 6px 12px; display: flex; align-items: center; gap: 6px; font-size: 14px;">
+                        <i data-lucide="bar-chart-3" style="width: 16px; height: 16px;"></i> Uso y Canales
+                    </button>
+                    <button class="tab-btn" data-tab="tab-clientes"
+                        style="background: none; border: none; color: var(--text-secondary); font-weight: 500; cursor: pointer; padding: 6px 12px; display: flex; align-items: center; gap: 6px; font-size: 14px;">
+                        <i data-lucide="contact" style="width: 16px; height: 16px;"></i> Directorio de Clientes
+                    </button>
+                </div>
+
+                <!-- Tab: Report -->
+                <div class="tab-content active" id="tab-report">
+                    <!-- Earnings Overview Grid -->
+                    <div
+                        style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 24px;">
+                        <div
+                            style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px; display: flex; flex-direction: column; justify-content: space-between;">
+                            <div>
+                                <span
+                                    style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Ganancia
+                                    Hoy</span>
+                                <div id="statsIncomeToday"
+                                    style="font-size: 24px; font-weight: 700; color: #34d399; margin-top: 6px;">S/. 0.00
+                                </div>
+                                <span id="statsCountToday" style="font-size: 12px; color: var(--text-secondary);">0
+                                    reservas</span>
+                            </div>
+                            <div id="statsCompareToday" style="font-size: 11px; margin-top: 6px;"></div>
+                        </div>
+                        <div
+                            style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px; display: flex; flex-direction: column; justify-content: space-between;">
+                            <div>
+                                <span
+                                    style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Ganancia
+                                    de la Semana</span>
+                                <div id="statsIncomeWeek"
+                                    style="font-size: 24px; font-weight: 700; color: #34d399; margin-top: 6px;">S/. 0.00
+                                </div>
+                                <span id="statsCountWeek" style="font-size: 12px; color: var(--text-secondary);">0
+                                    reservas</span>
+                            </div>
+                            <div id="statsCompareWeek" style="font-size: 11px; margin-top: 6px;"></div>
+                        </div>
+                        <div
+                            style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px; display: flex; flex-direction: column; justify-content: space-between;">
+                            <div>
+                                <span
+                                    style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Ganancia
+                                    del Mes</span>
+                                <div id="statsIncomeMonth"
+                                    style="font-size: 24px; font-weight: 700; color: #34d399; margin-top: 6px;">S/. 0.00
+                                </div>
+                                <span id="statsCountMonth" style="font-size: 12px; color: var(--text-secondary);">0
+                                    reservas</span>
+                            </div>
+                            <div id="statsCompareMonth" style="font-size: 11px; margin-top: 6px;"></div>
+                        </div>
+                        <div
+                            style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px; display: flex; flex-direction: column; justify-content: space-between;">
+                            <div>
+                                <span
+                                    style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Eficiencia
+                                    del Mes</span>
+                                <div id="statsOcupacionMonth"
+                                    style="font-size: 24px; font-weight: 700; color: #60a5fa; margin-top: 6px;">0.0%
+                                </div>
+                                <span id="statsDurationMonth"
+                                    style="font-size: 12px; color: var(--text-secondary);">Duración prom: 0 h</span>
+                            </div>
+                            <div style="font-size: 11px; margin-top: 6px; color: var(--text-muted);">Uso y promedios
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <!-- Breakdown Table -->
+                    <div
+                        style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: var(--radius-md); overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 14px;">
+                            <thead>
+                                <tr
+                                    style="border-bottom: 1px solid var(--border-color); background: rgba(255, 255, 255, 0.03);">
+                                    <th style="padding: 12px 16px; color: var(--text-secondary); font-weight: 600;">
+                                        Detalle / Cancha</th>
+                                    <th
+                                        style="padding: 12px 16px; color: var(--text-secondary); font-weight: 600; text-align: right;">
+                                        Hoy</th>
+                                    <th
+                                        style="padding: 12px 16px; color: var(--text-secondary); font-weight: 600; text-align: right;">
+                                        Semana</th>
+                                    <th
+                                        style="padding: 12px 16px; color: var(--text-secondary); font-weight: 600; text-align: right;">
+                                        Mes</th>
+                                </tr>
+                            </thead>
+                            <tbody id="statsBreakdownTableBody">
+                                <!-- Dynamic rows -->
+                            </tbody>
+                        </table>
+                    </div>
+
+
+                </div>
+
+                <!-- Tab: Rates Settings -->
+                <div class="tab-content" id="tab-rates" style="display: none;">
+                    <form id="formStatsRates">
+                        <div class="form-row" id="ratesFormRow"
+                            style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+                            <!-- Filled dynamically depending on complex -->
+                        </div>
+                        <div
+                            style="display: flex; gap: 12px; margin-top: 18px; background: rgba(255, 255, 255, 0.02); padding: 12px; border: 1px dashed var(--border-color); border-radius: var(--radius-sm); align-items: flex-start;">
+                            <i data-lucide="info"
+                                style="color: var(--primary); flex-shrink: 0; margin-top: 2px; width: 16px; height: 16px;"></i>
+                            <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.4; margin: 0;">Las
+                                tarifas se guardan de forma local en este navegador y se aplican para calcular las
+                                ganancias. Los datos de reservas en sí (horas y equipamiento) siguen leyéndose de la
+                                base de datos principal.</p>
+                        </div>
+                        <div class="settings-actions"
+                            style="margin-top: 20px; display: flex; justify-content: flex-end;">
+                            <button type="submit" class="btn btn-primary">Guardar Tarifas</button>
+                        </div>
+                        <div id="statsRatesFeedback"
+                            style="margin-top: 12px; font-size: 14px; text-align: center; border-radius: var(--radius-sm); padding: 8px; display: none;">
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Tab: Asesores -->
+                <div class="tab-content" id="tab-asesores" style="display: none;">
+                    <div
+                        style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: var(--radius-md); overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 14px;">
+                            <thead>
+                                <tr
+                                    style="border-bottom: 1px solid var(--border-color); background: rgba(255, 255, 255, 0.03);">
+                                    <th style="padding: 12px 16px; color: var(--text-secondary); font-weight: 600;">
+                                        Asesor</th>
+                                    <th
+                                        style="padding: 12px 16px; color: var(--text-secondary); font-weight: 600; text-align: right;">
+                                        Hoy</th>
+                                    <th
+                                        style="padding: 12px 16px; color: var(--text-secondary); font-weight: 600; text-align: right;">
+                                        Semana</th>
+                                    <th
+                                        style="padding: 12px 16px; color: var(--text-secondary); font-weight: 600; text-align: right;">
+                                        Mes</th>
+                                </tr>
+                            </thead>
+                            <tbody id="statsAsesoresTableBody">
+                                <!-- Dynamic rows for advisors -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Tab: Uso y Canales -->
+                <div class="tab-content" id="tab-uso-canales" style="display: none;">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+                        <!-- Column 1: Medios de Adquisición -->
+                        <div
+                            style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px;">
+                            <h4
+                                style="margin-top: 0; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; color: var(--primary); font-size: 15px;">
+                                <i data-lucide="share-2" style="width: 18px; height: 18px;"></i> Reservas por Medio de
+                                Contacto
+                            </h4>
+                            <div style="overflow-x: auto;">
+                                <table
+                                    style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
+                                    <thead>
+                                        <tr
+                                            style="border-bottom: 1px solid var(--border-color); color: var(--text-secondary);">
+                                            <th style="padding: 8px 4px; font-weight: 600;">Medio</th>
+                                            <th style="padding: 8px 4px; font-weight: 600; text-align: right;">Hoy</th>
+                                            <th style="padding: 8px 4px; font-weight: 600; text-align: right;">Semana
+                                            </th>
+                                            <th style="padding: 8px 4px; font-weight: 600; text-align: right;">Mes</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="statsMediosTableBody">
+                                        <!-- Dynamic rows -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Column 2: Equipamiento Rentado (Pelotas + Chalecos) -->
+                        <div
+                            style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px; display: flex; flex-direction: column; justify-content: space-between;">
+                            <div>
+                                <h4
+                                    style="margin-top: 0; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; color: var(--primary); font-size: 15px;">
+                                    <i data-lucide="package" style="width: 18px; height: 18px;"></i> Equipamiento
+                                    Rentado (Cantidad)
+                                </h4>
+                                <div style="overflow-x: auto;">
+                                    <table
+                                        style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
+                                        <thead>
+                                            <tr
+                                                style="border-bottom: 1px solid var(--border-color); color: var(--text-secondary);">
+                                                <th style="padding: 8px 4px; font-weight: 600;">Artículo</th>
+                                                <th style="padding: 8px 4px; font-weight: 600; text-align: right;">Hoy
+                                                </th>
+                                                <th style="padding: 8px 4px; font-weight: 600; text-align: right;">
+                                                    Semana</th>
+                                                <th style="padding: 8px 4px; font-weight: 600; text-align: right;">Mes
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="statsEquipamientoTableBody">
+                                            <!-- Dynamic rows -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div
+                        style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-top: 20px;">
+                        <!-- Column 3: Horas Pico -->
+                        <div
+                            style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px;">
+                            <h4
+                                style="margin-top: 0; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; color: var(--primary); font-size: 15px;">
+                                <i data-lucide="clock" style="width: 18px; height: 18px;"></i> Horas Pico del Mes
+                            </h4>
+                            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">Horas de inicio
+                                con mayor cantidad de reservas este mes:</p>
+                            <ol id="statsHorasPicoList"
+                                style="margin: 0; padding-left: 20px; font-size: 13px; line-height: 1.8; color: var(--text-primary);">
+                                <!-- Dynamic list -->
+                            </ol>
+                        </div>
+
+                        <!-- Column 4: Clientes VIP -->
+                        <div
+                            style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px;">
+                            <h4
+                                style="margin-top: 0; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; color: var(--primary); font-size: 15px;">
+                                <i data-lucide="award" style="width: 18px; height: 18px;"></i> Clientes Frecuentes (Mes)
+                            </h4>
+                            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">Clientes con
+                                mayor número de reservas este mes:</p>
+                            <ol id="statsClientesVipList"
+                                style="margin: 0; padding-left: 20px; font-size: 13px; line-height: 1.8; color: var(--text-primary);">
+                                <!-- Dynamic list -->
+                            </ol>
+                        </div>
+
+                        <!-- Column 5: Días de la semana con mayor demanda -->
+                        <div
+                            style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px;">
+                            <h4
+                                style="margin-top: 0; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; color: var(--primary); font-size: 15px;">
+                                <i data-lucide="calendar-days" style="width: 18px; height: 18px;"></i> Días con Mayor
+                                Demanda (Mes)
+                            </h4>
+                            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">Días de la semana
+                                con más reservas este mes:</p>
+                            <div id="statsDiasDemandaContainer"
+                                style="display: flex; flex-direction: column; gap: 8px;">
+                                <!-- Dynamic list with progress bars -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab: Clientes -->
+                <div class="tab-content" id="tab-clientes" style="display: none;">
+                    <div style="margin-bottom: 16px;">
+                        <div class="input-wrapper" style="margin: 0; width: 100%;">
+                            <i data-lucide="search"></i>
+                            <input type="text" id="statsClientesSearch" placeholder="Buscar cliente por nombre o DNI..."
+                                style="width: 100%;">
+                        </div>
+                    </div>
+                    <div
+                        style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: var(--radius-md); overflow-x: auto; max-height: 400px; overflow-y: auto;">
+                        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 14px;">
+                            <thead>
+                                <tr
+                                    style="border-bottom: 1px solid var(--border-color); background: rgba(255, 255, 255, 0.03);">
+                                    <th style="padding: 12px 16px; color: var(--text-secondary); font-weight: 600;">
+                                        Cliente</th>
+                                    <th style="padding: 12px 16px; color: var(--text-secondary); font-weight: 600;">DNI
+                                    </th>
+                                    <th
+                                        style="padding: 12px 16px; color: var(--text-secondary); font-weight: 600; text-align: right;">
+                                        Alquileres</th>
+                                    <th
+                                        style="padding: 12px 16px; color: var(--text-secondary); font-weight: 600; text-align: right;">
+                                        Inversión Total</th>
+                                    <th
+                                        style="padding: 12px 16px; color: var(--text-secondary); font-weight: 600; text-align: center;">
+                                        Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="statsClientesTableBody">
+                                <!-- Dynamic rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+    <!-- Custom JS -->
+    <script src="brisas.js?v=3"></script>
+</body>
+
+</html>

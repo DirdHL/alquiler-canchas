@@ -1,0 +1,291 @@
+/* ==========================================
+   Canchas Las Brisas Stylesheet Overrides
+   Theme: Vibrant Sky Blue / Celeste
+   ========================================== */
+
+body {
+    background: radial-gradient(circle at 50% 0%, #0c4a6e 0%, #082f49 40%, #0b131a 100%) !important;
+}
+
+.sidebar {
+    background: rgba(12, 74, 110, 0.45) !important;
+    border-right: 1px solid rgba(14, 165, 233, 0.2) !important;
+}
+
+.main-content {
+    background: radial-gradient(circle at 50% 0%, #082f49 0%, #090d16 80%) !important;
+}
+
+.stats-card,
+.status-indicator-card {
+    border-color: rgba(14, 165, 233, 0.25) !important;
+    background: rgba(12, 74, 110, 0.2) !important;
+}
+
+.btn-primary {
+    background: #0ea5e9 !important;
+    box-shadow: 0 4px 14px rgba(14, 165, 233, 0.3) !important;
+}
+
+.btn-primary:hover {
+    background: #0284c7 !important;
+}
+
+.badge-complex {
+    color: #38bdf8 !important;
+    background: rgba(14, 165, 233, 0.15) !important;
+    border-color: rgba(14, 165, 233, 0.35) !important;
+    box-shadow: 0 2px 8px rgba(14, 165, 233, 0.15) !important;
+}
+
+.calendar-card {
+    background: rgba(12, 74, 110, 0.08) !important;
+    border: 1px solid rgba(14, 165, 233, 0.2) !important;
+}
+
+/* ==========================================
+   FullCalendar High-Contrast Overrides
+   ========================================== */
+.fc {
+    --fc-today-bg-color: rgba(14, 165, 233, 0.15) !important;
+    --fc-border-color: rgba(255, 255, 255, 0.22) !important;
+    /* High-contrast white grid borders */
+}
+
+/* Make grid lines highly visible */
+.fc-theme-standard td,
+.fc-theme-standard th {
+    border: 1px solid rgba(255, 255, 255, 0.22) !important;
+}
+
+/* Calendar headers (Lunes, Martes, etc.) */
+.fc th {
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    font-size: 14px !important;
+    background: rgba(15, 23, 42, 0.9) !important;
+    padding: 12px 0 !important;
+}
+
+/* Calendar day numbers (1, 2, 3, etc.) */
+.fc .fc-daygrid-day-number {
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    font-size: 14px !important;
+    padding: 8px !important;
+}
+
+/* Time slot labels (14:00, 15:00, etc. on the left) */
+.fc .fc-timegrid-slot-label {
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    font-size: 13px !important;
+}
+
+/* Timegrid hour lines */
+.fc .fc-timegrid-slot-minor {
+    border-top-style: solid !important;
+    border-top-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+/* Today column header highlights */
+.fc .fc-col-header-cell.fc-day-today {
+    background: rgba(14, 165, 233, 0.25) !important;
+    border-bottom: 3px solid #0ea5e9 !important;
+}
+
+.fc .fc-col-header-cell.fc-day-today a {
+    color: #38bdf8 !important;
+    /* Bright celeste color for today header text */
+}
+
+/* FullCalendar Navigation Toolbar */
+.fc .fc-toolbar-title {
+    color: #ffffff !important;
+    font-weight: 700 !important;
+}
+
+.fc .fc-button-primary {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
+}
+
+.fc .fc-button-primary:hover {
+    background: rgba(255, 255, 255, 0.15) !important;
+    border-color: rgba(255, 255, 255, 0.35) !important;
+}
+
+.fc .fc-button-primary:not(:disabled).fc-button-active {
+    background: #0ea5e9 !important;
+    border-color: #0ea5e9 !important;
+    color: #ffffff !important;
+}
+
+.fc-event {
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Event text readability inside calendar */
+.fc-event-main {
+    color: #ffffff !important;
+    font-weight: 600 !important;
+    font-size: 12px !important;
+}
+
+/* Dynamic Filter Titles & Subgroups */
+.filter-section-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    font-weight: 700;
+    margin-top: 14px;
+    margin-bottom: 6px;
+    padding-left: 2px;
+}
+
+.filter-sub-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+/* ==========================================
+   Daily Summary List & Cards
+   ========================================== */
+.summary-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+    margin-top: 10px;
+}
+
+.summary-item-card {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transition: var(--transition-smooth);
+}
+
+.summary-item-card:hover {
+    background: rgba(14, 165, 233, 0.04);
+    border-color: rgba(14, 165, 233, 0.3);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.1);
+}
+
+.summary-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.summary-item-time {
+    font-size: 13px;
+    font-weight: 700;
+    color: #0ea5e9;
+}
+
+.summary-item-court {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 100px;
+}
+
+.court-badge-futbol {
+    background: rgba(99, 102, 241, 0.15) !important;
+    color: #818cf8 !important;
+    border: 1px solid rgba(99, 102, 241, 0.3) !important;
+}
+
+.court-badge-voley {
+    background: rgba(236, 72, 153, 0.15) !important;
+    color: #f472b6 !important;
+    border: 1px solid rgba(236, 72, 153, 0.3) !important;
+}
+
+.summary-item-client {
+    font-size: 15px;
+    font-weight: 600;
+    color: #f8fafc;
+}
+
+.summary-item-details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.summary-detail-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* ==========================================
+   Sidebar Contrast & Legibility Overrides
+   ========================================== */
+
+/* Make labels in the "Resumen de Hoy" card highly readable */
+.stats-card .stat-label {
+    color: #cbd5e1 !important;
+    /* Light slate gray */
+}
+
+.stats-card .stat-value {
+    color: #ffffff !important;
+}
+
+/* Make "Reportes" button text and border highly visible */
+#btnOpenStats {
+    color: #38bdf8 !important;
+    /* Bright celeste */
+    border-color: rgba(56, 189, 248, 0.4) !important;
+    background: rgba(14, 165, 233, 0.08) !important;
+}
+
+#btnOpenStats:hover {
+    color: #ffffff !important;
+    border-color: #38bdf8 !important;
+    background: rgba(14, 165, 233, 0.18) !important;
+}
+
+/* Make "Operador Activo" label highly visible */
+.user-label {
+    color: #cbd5e1 !important;
+}
+
+.user-name {
+    color: #ffffff !important;
+}
+
+/* Make edit user profile pencil icon visible */
+.btn-edit-user {
+    color: #cbd5e1 !important;
+}
+
+.btn-edit-user:hover {
+    color: #ffffff !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Make status indicator card description readable */
+.status-desc {
+    color: #cbd5e1 !important;
+}
+
+/* Today and Selected: Keep celeste color for today header text in Las Brisas */
+.fc .fc-col-header-cell.fc-day-today.fc-day-selected a {
+    color: #38bdf8 !important;
+}
