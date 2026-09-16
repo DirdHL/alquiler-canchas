@@ -999,7 +999,7 @@ function toggleBlockFields(isBlock) {
 
     } else {
         if (groupDni) groupDni.style.display = '';
-        if (groupSport) groupSport.style.display = '';
+        // if (groupSport) groupSport.style.display = '';
         if (rowEquipamiento) rowEquipamiento.style.display = '';
         if (rowMedioPago) rowMedioPago.style.display = '';
         if (labelName) labelName.innerHTML = 'Nombre del Cliente *';
