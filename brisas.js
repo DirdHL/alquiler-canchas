@@ -537,7 +537,8 @@ function setupEventListeners() {
     // Refilter events if main status checkboxes change
     [filterCanchaFutbol, filterCanchaVoley].forEach(checkbox => {
         checkbox.addEventListener('change', () => {
-            renderDashboardCards();
+            if (calendar) calendar.refetchEvents();
+            updateDailySummary();
         });
     });
 
