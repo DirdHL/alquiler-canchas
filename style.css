@@ -528,6 +528,19 @@ body.no-scroll {
     color: #d97706 !important;
 }
 
+.btn-sidebar-action.btn-brisas {
+    background: rgba(14, 165, 233, 0.1) !important;
+    border-color: rgba(14, 165, 233, 0.3) !important;
+    color: #0ea5e9 !important;
+}
+
+.btn-sidebar-action.btn-brisas:hover {
+    background: rgba(14, 165, 233, 0.2) !important;
+    border-color: rgba(14, 165, 233, 0.5) !important;
+    color: #0284c7 !important;
+}
+
+
 .btn-danger {
     background: var(--danger);
     color: white;
