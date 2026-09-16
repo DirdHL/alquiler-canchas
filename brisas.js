@@ -909,10 +909,35 @@ function setupEventListeners() {
                 bookingSportInput.value = targetSport;
                 updateModalCalculatedTotal();
             }
+            
+            if (!bookingIdInput.value) {
+                if (isVoley) {
+                    setToggleValue('pelota', true);
+                    setToggleValue('chaleco', false);
+                } else {
+                    const dateVal = bookingDateInput.value;
+                    let isWeekend = false;
+                    if (dateVal) {
+                        const dateObj = new Date(dateVal + 'T12:00:00');
+                        const day = dateObj.getDay();
+                        isWeekend = (day === 0 || day === 5 || day === 6);
+                    }
+                    if (isWeekend) {
+                        setToggleValue('pelota', true);
+                        setToggleValue('chaleco', true);
+                    } else {
+                        setToggleValue('pelota', false);
+                        setToggleValue('chaleco', false);
+                    }
+                }
+            }
         });
     }
     if (bookingDateInput) {
-        bookingDateInput.addEventListener('change', updateModalCalculatedTotal);
+        bookingDateInput.addEventListener('change', function() {
+            updateModalCalculatedTotal();
+            if (bookingCourtInput) bookingCourtInput.dispatchEvent(new Event('change'));
+        });
     }
     if (bookingStartTimeInput) {
         bookingStartTimeInput.addEventListener('change', updateModalCalculatedTotal);
@@ -1366,6 +1391,7 @@ function openBookingModal(booking = null, defaults = null) {
     }
 
     isPriceUserModified = false;
+    if (bookingCourtInput) bookingCourtInput.dispatchEvent(new Event('change'));
     updateModalCalculatedTotal();
     openModal(modalBooking);
     lucide.createIcons(); // Refresh modal icons
@@ -2072,7 +2098,7 @@ function handleCopyReservation() {
     if (isBlock) {
         const clientName = bookingNameInput.value.trim();
         const courtRaw = bookingCourtInput.value;
-        const courtText = (courtRaw === 'Brisas Pequeña' || courtRaw === 'Chica') ? 'Chica' : 'Brisas Grande';
+        const courtText = courtRaw.replace('Vóley ', '');
         let dateText = bookingDateInput.value;
         const startTime = bookingStartTimeInput.value;
         const endTime = bookingEndTimeInput.value;
@@ -2103,7 +2129,7 @@ function handleCopyReservation() {
 
         const message = `*BLOQUEO DE CANCHA LAS BRISAS*
 
-Cancha (Chica o Grande): ${courtText}
+Cancha: ${courtText}
 Fecha: ${dateText}
 Hora: ${formatTimeHHMM(startTime)} - ${formatTimeHHMM(endTime)}
 Motivo: ${clientName}
@@ -2131,7 +2157,7 @@ Registrado por: ${advisorText}`;
     const clientName = bookingNameInput.value.trim();
     const dniText = bookingDniInput ? bookingDniInput.value.trim() : '';
     const courtRaw = bookingCourtInput.value;
-    const courtText = (courtRaw === 'Brisas Pequeña' || courtRaw === 'Chica') ? 'Chica' : 'Brisas Grande';
+    const courtText = courtRaw.replace('Vóley ', '');
     let dateText = bookingDateInput.value;
     const startTime = bookingStartTimeInput.value;
     const endTime = bookingEndTimeInput.value;
@@ -2201,7 +2227,7 @@ Registrado por: ${advisorText}`;
 
 Nombre del cliente: ${clientName}
 DNI: ${dniText || '-'}
-Cancha (Chica o Grande): ${courtText}
+Cancha: ${courtText}
 Deporte: ${sportVal}
 Fecha: ${dateText}
 Hora: ${timeText} ${timeEmoji}
