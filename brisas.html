@@ -229,9 +229,8 @@
                     </div>
                     <div class="checker-field">
                         <label for="checkCourtSport"><i data-lucide="trophy"></i> Deporte:</label>
-                        <select id="checkCourtSport" class="form-control">
-                            <option value="Fútbol" selected>⚽ Fútbol</option>
-                            <option value="Vóley">🏐 Vóley</option>
+                        <select id="checkCourtSport" class="form-control" disabled style="background: rgba(255,255,255,0.05);">
+                            <option value="Todos" selected>Automático</option>
                         </select>
                     </div>
                 </div>
@@ -260,26 +259,6 @@
                                 <input type="checkbox" id="filterCanchaVoley" checked>
                                 <span class="custom-checkbox color-voley"></span>
                                 Canchas Vóley
-                            </label>
-                        </div>
-                    </div>
-
-                    <div class="top-filter-section"
-                        style="border-left: 1px solid var(--border-color); padding-left: 14px;">
-                        <span class="top-filter-label">
-                            <i data-lucide="trophy" style="width: 15px; height: 15px; color: var(--primary);"></i>
-                            Deporte:
-                        </span>
-                        <div class="top-filter-items">
-                            <label class="filter-item">
-                                <input type="checkbox" id="filterFutbol" checked>
-                                <span class="custom-checkbox color-futbol"></span>
-                                Fútbol
-                            </label>
-                            <label class="filter-item">
-                                <input type="checkbox" id="filterVoley" checked>
-                                <span class="custom-checkbox color-voley"></span>
-                                Vóley
                             </label>
                         </div>
                     </div>
@@ -442,13 +421,14 @@
                                 </select>
                             </div>
                         </div>
-                        <div class="form-group" id="groupSport">
+                        <div class="form-group" id="groupSport" style="display: none;">
                             <label for="bookingSport">Deporte *</label>
                             <div class="input-wrapper">
                                 <i data-lucide="award"></i>
                                 <select id="bookingSport" required>
-                                    <option value="Fútbol">Fútbol</option>
-                                    <option value="Vóley">Vóley</option>
+                                    <option value="Fútbol">⚽ Fútbol</option>
+                                    <option value="Vóley">🏐 Vóley</option>
+                                    <option value="Bloqueo">🔒 Bloqueo</option>
                                 </select>
                             </div>
                         </div>

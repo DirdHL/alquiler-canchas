@@ -214,8 +214,9 @@ const btnCloseTarifario = document.getElementById('btnCloseTarifario');
 // Filters
 const filterCanchaFutbol = document.getElementById('filterCanchaFutbol');
 const filterCanchaVoley = document.getElementById('filterCanchaVoley');
-const filterFutbol = document.getElementById('filterFutbol');
-const filterVoley = document.getElementById('filterVoley');
+// Sport filters removed
+const filterFutbol = null;
+const filterVoley = null;
 
 // Stats
 const statsIncomeToday = document.getElementById('statsIncomeToday');
@@ -534,7 +535,7 @@ function setupEventListeners() {
     });
 
     // Refilter events if main status checkboxes change
-    [filterCanchaFutbol, filterCanchaVoley, filterFutbol, filterVoley].forEach(checkbox => {
+    [filterCanchaFutbol, filterCanchaVoley].forEach(checkbox => {
         checkbox.addEventListener('change', () => {
             renderDashboardCards();
         });
@@ -896,6 +897,18 @@ function setupEventListeners() {
     }
     if (bookingSportInput) {
         bookingSportInput.addEventListener('change', updateModalCalculatedTotal);
+    }
+    
+    // Auto-sync sport based on court selection since UI dropdown is hidden
+    if (bookingCourtInput && bookingSportInput) {
+        bookingCourtInput.addEventListener('change', function() {
+            const isVoley = String(this.value || '').includes('Vóley');
+            const targetSport = isVoley ? 'Vóley' : 'Fútbol';
+            if (bookingSportInput.value !== targetSport && bookingSportInput.value !== 'Bloqueo') {
+                bookingSportInput.value = targetSport;
+                updateModalCalculatedTotal();
+            }
+        });
     }
     if (bookingDateInput) {
         bookingDateInput.addEventListener('change', updateModalCalculatedTotal);
@@ -1540,10 +1553,7 @@ function filterEvents(bookings) {
             return courtMatch;
         }
         
-        const sportMatch = (b.sport === 'Fútbol' && filterFutbol.checked) || 
-                           (b.sport === 'Vóley' && filterVoley.checked);
-                           
-        return courtMatch && sportMatch;
+        return courtMatch;
     });
 }
 
@@ -1677,67 +1687,58 @@ function calculateBookingIncome(params) {
     }
 
     const courtStr = String(court || '');
-    const isGrande = courtStr.includes('Brisas Grande');
-    const isPequena = courtStr.includes('Brisas Pequeña');
+    const isVoley = courtStr.includes('Vóley') || sport === 'Vóley';
+    const isCancha3 = courtStr.includes('Cancha 3');
 
     let courtIncome = 0;
     let equipmentIncluded = false;
 
-    if (sport === 'Vóley') {
-        const voleyRate = parseFloat(localStorage.getItem('canchapro_rate_voley') || '25');
-        courtIncome = durationHours * voleyRate;
+    if (isVoley) {
+        // Vóley: 25 soles flat rate
+        courtIncome = durationHours * 25;
+        equipmentIncluded = true; // Pelota incluida por defecto
     } else if (isWeekendTier) {
-        const baseGrande = parseFloat(localStorage.getItem('canchapro_rate_grande') || '25');
-        const basePequena = parseFloat(localStorage.getItem('canchapro_rate_pequena') || '25');
-
-        const rateVieDom36Grande = parseFloat(localStorage.getItem('canchapro_rate_viedom_36_grande') || '50');
-        const rateVieDom36Pequena = parseFloat(localStorage.getItem('canchapro_rate_viedom_36_pequena') || '40');
-
-        const rateVieDom612Grande = parseFloat(localStorage.getItem('canchapro_rate_viedom_612_grande') || '60');
-        const rateVieDom612Pequena = parseFloat(localStorage.getItem('canchapro_rate_viedom_612_pequena') || '50');
-
+        // Fin de semana (Viernes a Domingo) - Fútbol
         let sumRateMins = 0;
-        let includedMinsCount = 0;
-
+        
         for (let m = start; m < end; m++) {
             const mMod = m % 1440;
-            let minuteRate = isGrande ? baseGrande : basePequena;
-
-            if (mMod >= 900 && mMod < 1080) { // 3:00 pm to 6:00 pm
-                minuteRate = isGrande ? rateVieDom36Grande : rateVieDom36Pequena;
-                includedMinsCount++;
-            } else if (mMod >= 1080 && mMod < 1440) { // 6:00 pm to 12:00 am
-                minuteRate = isGrande ? rateVieDom612Grande : rateVieDom612Pequena;
-                includedMinsCount++;
-            } else if (mMod >= 0 && mMod < 360 && start >= 900) { // Late night continuation
-                minuteRate = isGrande ? rateVieDom612Grande : rateVieDom612Pequena;
-                includedMinsCount++;
+            let minuteRate = 0;
+            
+            if (isCancha3) {
+                // Cancha 3: 50 (6am-6pm) y 60 (6pm-1am)
+                if (mMod >= 360 && mMod < 1080) {
+                    minuteRate = 50;
+                } else {
+                    minuteRate = 60;
+                }
+            } else {
+                // Cancha 1 y 2: 40 (6am-6pm) y 50 (6pm-1am)
+                if (mMod >= 360 && mMod < 1080) {
+                    minuteRate = 40;
+                } else {
+                    minuteRate = 50;
+                }
             }
-
             sumRateMins += minuteRate;
         }
 
         courtIncome = sumRateMins / 60;
-        if (includedMinsCount > 0) {
-            equipmentIncluded = true;
-        }
+        equipmentIncluded = true; // Promo incluye pelota y chaleco
     } else {
-        // Lunes a Jueves (o tasa base general)
-        const baseGrande = parseFloat(localStorage.getItem('canchapro_rate_grande') || '25');
-        const basePequena = parseFloat(localStorage.getItem('canchapro_rate_pequena') || '25');
-        const rate = isGrande ? baseGrande : (isPequena ? basePequena : baseGrande);
-        courtIncome = durationHours * rate;
+        // Lunes a Jueves - Fútbol
+        courtIncome = durationHours * 25;
     }
 
-    const pelotaRate = parseFloat(localStorage.getItem('canchapro_rate_pelota') || '5');
-    const chalecoRate = parseFloat(localStorage.getItem('canchapro_rate_chaleco') || '5');
+    const pelotaRate = 5;
+    const chalecoRate = 5;
 
     const pelotaVal = pelota === true || pelota === 'true';
     const chalecoVal = chaleco === true || chaleco === 'true';
 
-    const pelotaIncome = (sport === 'Vóley' || equipmentIncluded) ? 0 : (pelotaVal ? pelotaRate : 0);
-    const chalecoIncome = equipmentIncluded ? 0 : (chalecoVal ? chalecoRate : 0);
-    1
+    const pelotaIncome = equipmentIncluded || isVoley ? 0 : (pelotaVal ? pelotaRate : 0);
+    const chalecoIncome = equipmentIncluded || isVoley ? 0 : (chalecoVal ? chalecoRate : 0);
+
     const total = courtIncome + pelotaIncome + chalecoIncome;
 
     return {
