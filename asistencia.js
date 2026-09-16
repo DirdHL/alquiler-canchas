@@ -14,6 +14,25 @@ let attendanceRecords = []; // All attendance records loaded
 let selectedWorker = null; // Currently selected worker object
 let isPunchInProgress = false;
 
+const ADMIN_PASSWORD = "Reservasupabase";
+
+function requireAdmin(callback) {
+    if (localStorage.getItem('canchapro_admin_auth') === 'true') {
+        callback();
+        return;
+    }
+
+    const input = prompt("Se requiere contraseña de administrador para realizar esta acción:");
+    if (input === null) return;
+    if (input === ADMIN_PASSWORD) {
+        localStorage.setItem('canchapro_admin_auth', 'true');
+        alert("Autenticación exitosa.");
+        callback();
+    } else {
+        alert("Contraseña incorrecta.");
+    }
+}
+
 // DOM Element References
 const liveClockEl = document.getElementById('liveClock');
 const liveDateEl = document.getElementById('liveDate');
@@ -64,6 +83,7 @@ const badgeAbsencesCount = document.getElementById('badgeAbsencesCount');
 const absencesListContainer = document.getElementById('absencesListContainer');
 
 const btnEditWorkerSchedule = document.getElementById('btnEditWorkerSchedule');
+const btnReduceDebt = document.getElementById('btnReduceDebt');
 const btnDeleteWorker = document.getElementById('btnDeleteWorker');
 
 // History Table & Filters
@@ -1325,14 +1345,16 @@ function renderAttendanceTable() {
             typeChip = `<span class="chip chip-permiso">🟣 Permiso</span>`;
         } else if (record.type === 'Falta') {
             typeChip = `<span class="chip chip-falta">🔴 Inasistencia (Falta)</span>`;
+        } else if (record.type === 'Ajuste') {
+            typeChip = `<span class="chip" style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a; padding: 2px 8px; border-radius: 12px; font-weight: 600;">🟠 Ajuste / Perdón</span>`;
         }
 
-        const inDisplay = record.type === 'Falta'
-            ? `<span class="chip-absence">Sin marcar</span>`
+        const inDisplay = (record.type === 'Falta' || record.type === 'Ajuste')
+            ? `<span class="chip-absence">-</span>`
             : (record.check_in ? formatTimeTo12H(record.check_in.substring(0, 5)) : '-');
 
-        const outDisplay = record.type === 'Falta'
-            ? `<span class="chip-absence">Sin marcar</span>`
+        const outDisplay = (record.type === 'Falta' || record.type === 'Ajuste')
+            ? `<span class="chip-absence">-</span>`
             : (record.check_out ? formatTimeTo12H(record.check_out.substring(0, 5)) : '<span style="color: #059669; font-weight: 700;">En turno</span>');
 
         const hoursDisplay = record.type === 'Falta'
@@ -1385,25 +1407,27 @@ function renderAttendanceTable() {
 
 // Global function to trigger confirm delete modal
 window.confirmDeleteAttendanceRecord = function (recordId) {
-    confirmModalTitle.textContent = '¿Eliminar Marcación?';
-    confirmModalText.textContent = 'Esta marcación será eliminada del historial y se recalcularán las horas del colaborador.';
-    modalConfirmAction.classList.add('active');
+    requireAdmin(() => {
+        confirmModalTitle.textContent = '¿Eliminar Marcación?';
+        confirmModalText.textContent = 'Esta marcación será eliminada del historial y se recalcularán las horas del colaborador.';
+        modalConfirmAction.classList.add('active');
 
-    confirmActionCallback = async () => {
-        try {
-            if (dbMode === 'supabase' && supabaseClient) {
-                const { error } = await supabaseClient.from('asistencias_v2').delete().eq('id', recordId);
-                if (error) throw error;
-            } else {
-                let localList = getLocalAttendance();
-                localList = localList.filter(r => r.id !== recordId);
-                saveLocalAttendance(localList);
+        confirmActionCallback = async () => {
+            try {
+                if (dbMode === 'supabase' && supabaseClient) {
+                    const { error } = await supabaseClient.from('asistencias_v2').delete().eq('id', recordId);
+                    if (error) throw error;
+                } else {
+                    let localList = getLocalAttendance();
+                    localList = localList.filter(r => r.id !== recordId);
+                    saveLocalAttendance(localList);
+                }
+                await loadAttendanceRecords();
+            } catch (err) {
+                alert('Error al eliminar registro: ' + err.message);
             }
-            await loadAttendanceRecords();
-        } catch (err) {
-            alert('Error al eliminar registro: ' + err.message);
-        }
-    };
+        };
+    });
 };
 
 // ==========================================================================
@@ -1414,8 +1438,10 @@ function setupAddWorkerWizard() {
     // Open Wizard
     if (btnOpenAddWorkerModal) {
         btnOpenAddWorkerModal.addEventListener('click', () => {
-            resetWizardForm();
-            modalAddWorkerWizard.classList.add('active');
+            requireAdmin(() => {
+                resetWizardForm();
+                modalAddWorkerWizard.classList.add('active');
+            });
         });
     }
 
@@ -1675,43 +1701,137 @@ function setupEditWorkerSchedule() {
     btnEditWorkerSchedule.addEventListener('click', () => {
         if (!selectedWorker) return;
 
-        resetWizardForm();
-        newWorkerNameInput.value = selectedWorker.name;
-        selectedWorkerEmojiInput.value = selectedWorker.emoji;
-        workerPreviewText.textContent = `${selectedWorker.emoji} ${selectedWorker.name}`;
+        requireAdmin(() => {
+            resetWizardForm();
+            newWorkerNameInput.value = selectedWorker.name;
+            selectedWorkerEmojiInput.value = selectedWorker.emoji;
+            workerPreviewText.textContent = `${selectedWorker.emoji} ${selectedWorker.name}`;
 
-        // Select emoji
-        const emojiBtns = emojiPickerGrid.querySelectorAll('.emoji-opt-btn');
-        emojiBtns.forEach(b => {
-            b.classList.toggle('selected', b.getAttribute('data-emoji') === selectedWorker.emoji);
-        });
-
-        // Populate existing schedule
-        const currentSched = workerSchedules[selectedWorker.name];
-        if (currentSched) {
-            const scheduleRows = scheduleDaysContainer.querySelectorAll('.schedule-day-card');
-            scheduleRows.forEach(row => {
-                const dayKey = row.getAttribute('data-day');
-                const dayData = currentSched[dayKey];
-                if (dayData) {
-                    row.querySelector('.day-active-cb').checked = !!dayData.active;
-                    row.querySelector('.time-in').value = dayData.in || '08:00';
-                    row.querySelector('.time-out').value = dayData.out || '16:30';
-                    row.querySelector('.lunch-cb').checked = !!dayData.lunch;
-                    recalculateDayCardHours(row);
-                }
+            // Select emoji
+            const emojiBtns = emojiPickerGrid.querySelectorAll('.emoji-opt-btn');
+            emojiBtns.forEach(b => {
+                b.classList.toggle('selected', b.getAttribute('data-emoji') === selectedWorker.emoji);
             });
-            recalculateWizardWeeklyHours();
-        }
 
-        // Jump straight to Step 2
-        wizardPage1.classList.remove('active');
-        wizardPage2.classList.add('active');
-        stepIndicator1.classList.remove('active');
-        stepIndicator2.classList.add('active');
+            // Populate existing schedule
+            const currentSched = workerSchedules[selectedWorker.name];
+            if (currentSched) {
+                const scheduleRows = scheduleDaysContainer.querySelectorAll('.schedule-day-card');
+                scheduleRows.forEach(row => {
+                    const dayKey = row.getAttribute('data-day');
+                    const dayData = currentSched[dayKey];
+                    if (dayData) {
+                        row.querySelector('.day-active-cb').checked = !!dayData.active;
+                        row.querySelector('.time-in').value = dayData.in || '08:00';
+                        row.querySelector('.time-out').value = dayData.out || '16:30';
+                        row.querySelector('.lunch-cb').checked = !!dayData.lunch;
+                        recalculateDayCardHours(row);
+                    }
+                });
+                recalculateWizardWeeklyHours();
+            }
 
-        modalAddWorkerWizard.classList.add('active');
+            // Jump straight to Step 2
+            wizardPage1.classList.remove('active');
+            wizardPage2.classList.add('active');
+            stepIndicator1.classList.remove('active');
+            stepIndicator2.classList.add('active');
+
+            modalAddWorkerWizard.classList.add('active');
+        });
     });
+}
+
+// Reduce Debt
+function setupReduceDebt() {
+    if (!btnReduceDebt) return;
+
+    const modalReduceDebt = document.getElementById('modalReduceDebt');
+    const btnCloseReduceDebt = document.getElementById('btnCloseReduceDebt');
+    const formReduceDebt = document.getElementById('formReduceDebt');
+    const reduceDebtWorkerName = document.getElementById('reduceDebtWorkerName');
+    const reduceDebtCurrentValue = document.getElementById('reduceDebtCurrentValue');
+    const reduceDebtHours = document.getElementById('reduceDebtHours');
+    const reduceDebtMinutes = document.getElementById('reduceDebtMinutes');
+    const reduceDebtNotes = document.getElementById('reduceDebtNotes');
+
+    if (btnCloseReduceDebt) {
+        btnCloseReduceDebt.addEventListener('click', () => {
+            modalReduceDebt.classList.remove('active');
+        });
+    }
+
+    btnReduceDebt.addEventListener('click', () => {
+        if (!selectedWorker) return;
+
+        requireAdmin(() => {
+            const currentOwedStr = metricOwedHours.textContent;
+            
+            reduceDebtWorkerName.textContent = selectedWorker.name;
+            reduceDebtCurrentValue.textContent = currentOwedStr;
+            reduceDebtHours.value = 0;
+            reduceDebtMinutes.value = 0;
+            reduceDebtNotes.value = '';
+
+            modalReduceDebt.classList.add('active');
+        });
+    });
+
+    if (formReduceDebt) {
+        formReduceDebt.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!selectedWorker) return;
+
+            const h = parseInt(reduceDebtHours.value, 10) || 0;
+            const m = parseInt(reduceDebtMinutes.value, 10) || 0;
+            const mins = (h * 60) + m;
+
+            if (mins <= 0) {
+                alert("Por favor ingresa un tiempo mayor a 0.");
+                return;
+            }
+
+            const confirmMsg = `¿Confirmas que deseas perdonar ${h}h ${m}m a ${selectedWorker.name}?`;
+            if (!confirm(confirmMsg)) return;
+
+            const dateVal = getTodayDateString();
+            const notesVal = reduceDebtNotes.value.trim() || `Ajuste manual: reducción de deuda (${h}h ${m}m).`;
+            
+            const newRecord = {
+                id: generateUUID(),
+                employee_name: selectedWorker.name,
+                date: dateVal,
+                check_in: null,
+                check_out: null,
+                type: 'Ajuste',
+                hours_credited: 0,
+                late_minutes: 0,
+                extra_minutes: 0,
+                owed_minutes: -mins,
+                notes: notesVal
+            };
+
+            try {
+                if (dbMode === 'supabase' && supabaseClient) {
+                    const { error } = await supabaseClient
+                        .from('asistencias_v2')
+                        .insert([newRecord]);
+                    if (error) throw error;
+                } else {
+                    const localList = getLocalAttendance();
+                    localList.unshift(newRecord);
+                    saveLocalAttendance(localList);
+                }
+
+                modalReduceDebt.classList.remove('active');
+                await loadAttendanceRecords();
+                handleWorkerChange(); // Refresh UI for the worker
+                alert('Deuda reducida con éxito.');
+            } catch (err) {
+                alert('Error al reducir deuda: ' + err.message);
+            }
+        });
+    }
 }
 
 // Delete Worker
@@ -1721,31 +1841,33 @@ function setupDeleteWorker() {
     btnDeleteWorker.addEventListener('click', () => {
         if (!selectedWorker) return;
 
-        confirmModalTitle.textContent = `¿Dar de baja a ${selectedWorker.name}?`;
-        confirmModalText.textContent = `El colaborador no aparecerá más en la lista de marcaciones activas. Sus registros históricos se mantendrán.`;
-        modalConfirmAction.classList.add('active');
+        requireAdmin(() => {
+            confirmModalTitle.textContent = `¿Dar de baja a ${selectedWorker.name}?`;
+            confirmModalText.textContent = `El colaborador no aparecerá más en la lista de marcaciones activas. Sus registros históricos se mantendrán.`;
+            modalConfirmAction.classList.add('active');
 
-        confirmActionCallback = async () => {
-            try {
-                if (dbMode === 'supabase' && supabaseClient) {
-                    await supabaseClient
-                        .from('personal_asistencia_v2')
-                        .update({ is_active: false })
-                        .eq('name', selectedWorker.name);
+            confirmActionCallback = async () => {
+                try {
+                    if (dbMode === 'supabase' && supabaseClient) {
+                        await supabaseClient
+                            .from('personal_asistencia_v2')
+                            .update({ is_active: false })
+                            .eq('name', selectedWorker.name);
+                    }
+
+                    activeWorkers = activeWorkers.filter(w => w.name !== selectedWorker.name);
+                    saveLocalWorkersAndSchedules();
+
+                    selectedWorker = null;
+                    renderWorkerDropdowns();
+                    renderTeamLiveStatus();
+                    handleWorkerChange();
+                    alert('Colaborador dado de baja.');
+                } catch (err) {
+                    alert('Error al dar de baja: ' + err.message);
                 }
-
-                activeWorkers = activeWorkers.filter(w => w.name !== selectedWorker.name);
-                saveLocalWorkersAndSchedules();
-
-                selectedWorker = null;
-                renderWorkerDropdowns();
-                renderTeamLiveStatus();
-                handleWorkerChange();
-                alert('Colaborador dado de baja.');
-            } catch (err) {
-                alert('Error al dar de baja: ' + err.message);
-            }
-        };
+            };
+        });
     });
 }
 
@@ -1756,13 +1878,15 @@ function setupDeleteWorker() {
 function setupAdminRegisterModal() {
     if (btnAdminActions) {
         btnAdminActions.addEventListener('click', () => {
-            adminRegisterDate.value = getTodayDateString();
-            adminRegisterHours.value = '8';
-            adminRegisterMinutes.value = '0';
-            adminRegisterNotes.value = '';
-            adminRegisterType.value = 'Feriado';
-            adminEmployeeSelectGroup.style.display = 'none';
-            modalAdminRegister.classList.add('active');
+            requireAdmin(() => {
+                adminRegisterDate.value = getTodayDateString();
+                adminRegisterHours.value = '8';
+                adminRegisterMinutes.value = '0';
+                adminRegisterNotes.value = '';
+                adminRegisterType.value = 'Feriado';
+                adminEmployeeSelectGroup.style.display = 'none';
+                modalAdminRegister.classList.add('active');
+            });
         });
     }
 
@@ -1973,17 +2097,19 @@ function setupManualPunchModal() {
 // Global Quick Action Triggers
 window.quickJustifyAbsence = function (workerName, dateStr, owedMinutes) {
     if (!modalAdminRegister) return;
-    adminRegisterType.value = 'Permiso';
-    adminEmployeeSelectGroup.style.display = 'block';
-    adminEmployeeSelect.value = workerName;
-    adminRegisterDate.value = dateStr;
+    requireAdmin(() => {
+        adminRegisterType.value = 'Permiso';
+        adminEmployeeSelectGroup.style.display = 'block';
+        adminEmployeeSelect.value = workerName;
+        adminRegisterDate.value = dateStr;
 
-    const hours = Math.floor((owedMinutes || 450) / 60);
-    const mins = Math.round((owedMinutes || 450) % 60);
-    adminRegisterHours.value = String(hours);
-    adminRegisterMinutes.value = String(mins);
-    adminRegisterNotes.value = 'Permiso justificado por inasistencia';
-    modalAdminRegister.classList.add('active');
+        const hours = Math.floor((owedMinutes || 450) / 60);
+        const mins = Math.round((owedMinutes || 450) % 60);
+        adminRegisterHours.value = String(hours);
+        adminRegisterMinutes.value = String(mins);
+        adminRegisterNotes.value = 'Permiso justificado por inasistencia';
+        modalAdminRegister.classList.add('active');
+    });
 };
 
 window.quickRegularizePunch = function (workerName, dateStr, schedIn, schedOut, schedLunch) {
@@ -2154,6 +2280,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 4. Setup Modals & Handlers
     setupAddWorkerWizard();
     setupEditWorkerSchedule();
+    setupReduceDebt();
     setupDeleteWorker();
     setupAdminRegisterModal();
     setupManualPunchModal();

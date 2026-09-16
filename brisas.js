@@ -1,19 +1,15 @@
-// ==========================================
-// CanchaPro JavaScript App Logic
-// ==========================================
 
-// State Management
-let dbMode = 'local'; // 'local' or 'supabase'
+let dbMode = 'local';
 let supabaseClient = null;
 let calendar = null;
-let allEvents = []; // Cache for local/downloaded events
+let allEvents = [];
 let cachedClientsData = [];
 let currentClientsFilter = '';
 let statsCountdownInterval = null;
 let bookingModalIsAdmin = false;
 let availabilityTimeFilter = 'pico';
 
-// DOM Elements
+// DOM Elementos
 const sidebar = document.getElementById('sidebar');
 const sidebarBackdrop = document.getElementById('sidebarBackdrop');
 const btnToggleSidebar = document.getElementById('btnToggleSidebar');
@@ -192,39 +188,39 @@ const settingsFeedback = document.getElementById('settingsFeedback');
 const btnTestSupabase = document.getElementById('btnTestSupabase');
 const btnCopySql = document.getElementById('btnCopySql');
 
-// Onboarding and User Profile DOM Elements
+// Elementos DOM del registro inicial y perfil de usuario
 const modalUserOnboarding = document.getElementById('modalUserOnboarding');
 const formUserOnboarding = document.getElementById('formUserOnboarding');
 const onboardingNameInput = document.getElementById('onboardingName');
 const displayUserName = document.getElementById('displayUserName');
 const btnEditUser = document.getElementById('btnEditUser');
 
-// Activity Log DOM Elements
+// Elementos DOM del registro de actividad
 const modalHistory = document.getElementById('modalHistory');
 const btnOpenHistory = document.getElementById('btnOpenHistory');
 const btnCloseHistory = document.getElementById('btnCloseHistory');
 const activityList = document.getElementById('activityList');
 const btnClearHistoryLocal = document.getElementById('btnClearHistoryLocal');
 
-// Tarifario Modal DOM Elements
+// Elementos DOM del modal de tarifario
 const modalTarifario = document.getElementById('modalTarifario');
 const btnOpenTarifario = document.getElementById('btnOpenTarifario');
 const btnCloseTarifario = document.getElementById('btnCloseTarifario');
 
-// Filters
+// Filtros
 const filterCanchaFutbol = document.getElementById('filterCanchaFutbol');
 const filterCanchaVoley = document.getElementById('filterCanchaVoley');
-// Sport filters removed
+// Filtros de deportes eliminados
 const filterFutbol = null;
 const filterVoley = null;
 
-// Stats
+// Estadísticas
 const statsIncomeToday = document.getElementById('statsIncomeToday');
 const statTodayReservations = document.getElementById('statTodayReservations');
 const statCanchaFutbol = document.getElementById('statCanchaFutbol');
 const statCanchaVoley = document.getElementById('statCanchaVoley');
 
-// Stats Modal DOM Elements
+// Elementos DOM del modal de estadísticas
 const btnOpenStats = document.getElementById('btnOpenStats');
 const modalStatsAuth = document.getElementById('modalStatsAuth');
 const btnCloseStatsAuth = document.getElementById('btnCloseStatsAuth');
@@ -243,39 +239,39 @@ const formStatsRates = document.getElementById('formStatsRates');
 const statsRatesFeedback = document.getElementById('statsRatesFeedback');
 
 
-// Initialize Application
+// Inicializar la Aplicación
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Initialize Lucide Icons
+    // 1. Inicializar Lucide Icons  
     lucide.createIcons();
 
-    // 2. Initialize Operator Identity
+    // 2. Verificar la identidad del operador
     checkOperatorIdentity();
 
-    // 3. Load Supabase config from LocalStorage if exists
+    // 3. Cargar la configuración de Supabase desde LocalStorage si existe
     loadDatabaseSettings();
 
-    // 3.5 Populate time select dropdowns
+    // 3.5 Cargar los selectores de hora
     populateTimeSelects();
 
-    // 4. Initialize Calendar
+    // 4. Inicializar el Calendario
     initCalendar();
 
-    // 5. Initialize Sidebar Collapsed State
+    // 5. Inicializar el estado colapsado de la barra lateral
     initSidebarState();
 
-    // 6. Set up Event Listeners
+    // 6. Configurar los eventos
     setupEventListeners();
 
-    // 6. Update stats initially
+    // 6. Actualizar las estadísticas inicialmente
     updateStats();
 
-    // 7. Load activity history
+    // 7. Cargar el registro de actividad
     fetchAndRenderHistory();
 
-    // 8. Initialize Court Availability Quick Checker
+    // 8. Inicializar el verificador de disponibilidad de canchas
     initCourtAvailabilityChecker();
 
-    // 9. Initialize Calendar Hours View Toggle (Tarde/Noche vs Todo el día)
+    // 9. Inicializar el cambio de vista del calendario (tarde/noche vs todo el día)
     initCalendarHoursToggle();
 });
 
@@ -307,7 +303,7 @@ function initCalendarHoursToggle() {
     });
 }
 
-// Initialize FullCalendar
+// Inicializar FullCalendar
 function initCalendar() {
     const calendarEl = document.getElementById('calendar');
 
@@ -899,17 +895,17 @@ function setupEventListeners() {
     if (bookingSportInput) {
         bookingSportInput.addEventListener('change', updateModalCalculatedTotal);
     }
-    
+
     // Auto-sync sport based on court selection since UI dropdown is hidden
     if (bookingCourtInput && bookingSportInput) {
-        bookingCourtInput.addEventListener('change', function() {
+        bookingCourtInput.addEventListener('change', function () {
             const isVoley = String(this.value || '').includes('Vóley');
             const targetSport = isVoley ? 'Vóley' : 'Fútbol';
             if (bookingSportInput.value !== targetSport && bookingSportInput.value !== 'Bloqueo') {
                 bookingSportInput.value = targetSport;
                 updateModalCalculatedTotal();
             }
-            
+
             if (!bookingIdInput.value) {
                 if (isVoley) {
                     setToggleValue('pelota', true);
@@ -934,7 +930,7 @@ function setupEventListeners() {
         });
     }
     if (bookingDateInput) {
-        bookingDateInput.addEventListener('change', function() {
+        bookingDateInput.addEventListener('change', function () {
             updateModalCalculatedTotal();
             if (bookingCourtInput) bookingCourtInput.dispatchEvent(new Event('change'));
         });
@@ -1572,14 +1568,14 @@ function filterEvents(bookings) {
     return bookings.filter(b => {
         const isFutbol = String(b.court).includes('Cancha 1') || String(b.court).includes('Cancha 2') || String(b.court).includes('Cancha 3');
         const isVoleyCourt = String(b.court).includes('Cancha Vóley');
-        
-        const courtMatch = (isFutbol && filterCanchaFutbol.checked) || 
-                           (isVoleyCourt && filterCanchaVoley.checked);
-                           
+
+        const courtMatch = (isFutbol && filterCanchaFutbol.checked) ||
+            (isVoleyCourt && filterCanchaVoley.checked);
+
         if (b.sport === 'Bloqueo') {
             return courtMatch;
         }
-        
+
         return courtMatch;
     });
 }
@@ -1727,11 +1723,11 @@ function calculateBookingIncome(params) {
     } else if (isWeekendTier) {
         // Fin de semana (Viernes a Domingo) - Fútbol
         let sumRateMins = 0;
-        
+
         for (let m = start; m < end; m++) {
             const mMod = m % 1440;
             let minuteRate = 0;
-            
+
             if (isCancha3) {
                 // Cancha 3: 50 (6am-6pm) y 60 (6pm-1am)
                 if (mMod >= 360 && mMod < 1080) {
@@ -2007,7 +2003,7 @@ async function handleSaveBooking(e) {
             saveLocalBookings(localList);
         }
 
-        // Add history entry!
+
         const isUpdate = !!bookingIdInput.value;
         const logAction = isUpdate ? 'editar' : 'crear';
         const formattedDate = formatDateDDMMYYYY(date);
@@ -2021,7 +2017,7 @@ async function handleSaveBooking(e) {
         }
         await addHistoryEntry(logAction, logDetails);
 
-        // Refresh Calendar UI & Close modal
+
         closeBookingModal();
         if (calendar) calendar.refetchEvents();
         updateStats();
@@ -2479,7 +2475,7 @@ async function handleSaveSettings(e) {
     }
 }
 
-// Test Connection Button Action
+
 async function testSupabaseConnection() {
     settingsFeedback.className = 'settings-feedback';
     settingsFeedback.textContent = 'Probando conexión...';
@@ -2688,7 +2684,7 @@ window.openEditFromSummary = function (id) {
 };
 
 // =============================================================
-// Smart Availability Quick Checker Logic ("¿Qué canchas están disponibles?")
+// ("¿Qué canchas están disponibles?")
 // =============================================================
 
 function getCheckerCourtStartTime() {
@@ -3061,7 +3057,7 @@ window.quickBookCourtFromChecker = function (court, dateStr, startTime, endTime,
     }
 };
 
-// Render interactive court availability grid
+
 function updateAvailabilityGrid() {
     if (!calendar) return;
     const tabAvailabilityContent = document.getElementById('tabAvailabilityContent');
@@ -3075,9 +3071,8 @@ function updateAvailabilityGrid() {
 
     const courts = ['Cancha 1 (10 jug)', 'Cancha 2 (12 jug)', 'Cancha 3 (16 jug)', 'Cancha Vóley 1', 'Cancha Vóley 2', 'Cancha Vóley 3'];
 
-    // Generate slots
-    const slotDuration = 30; // minutes
-    const numSlots = (19 * 60) / slotDuration; // 19 hours from 06:00 to 01:00 AM
+    const slotDuration = 30;
+    const numSlots = (19 * 60) / slotDuration;
 
     const slots = [];
     const yr = parseInt(year, 10);
@@ -3975,7 +3970,7 @@ async function exportAllDataToExcel() {
 
         let aIdx = 0;
         for (const [monthLabel, events] of Object.entries(groups)) {
-            // Subtle month separator row
+
             const cellMonth = summaryWs.getCell(sr, 1);
             cellMonth.value = `📅 ${monthLabel.toUpperCase()}`;
             cellMonth.font = { name: 'Outfit', bold: true, size: 10, color: { argb: 'FF0F766E' } };
@@ -4877,7 +4872,7 @@ function updateStatsDashboard() {
     document.getElementById('statsCountMonth').textContent = `${metrics.Total.month.count} reservas (${monthRangeStr})`;
     document.getElementById('statsCompareMonth').innerHTML = renderCompareBadge(metrics.Total.month.income, prevMonthIncome);
 
-    // Calculate Month efficiency (Capacity & Duration)
+
     const numberCourts = 2; // Cancha Grande, Cancha Pequeña
     const hoursPerDay = 17; // e.g. 7 AM to 12 AM
     const dailyCapacity = numberCourts * hoursPerDay;
@@ -5012,7 +5007,7 @@ function updateStatsDashboard() {
 
 
 
-    // Calculate advisor statistics
+
     const activeAdvisors = new Set();
     const getAdvisorName = (notes) => {
         if (!notes || !notes.trim()) return 'Sin Asesor';
