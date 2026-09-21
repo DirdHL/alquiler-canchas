@@ -55,6 +55,14 @@ function setupEventListeners() {
     const historySearchInput = document.getElementById('historySearchInput');
     const btnClearHistoryLocal = document.getElementById('btnClearHistoryLocal');
 
+    const filterCarritos = document.getElementById('filterCarritos');
+    const filterInflables = document.getElementById('filterInflables');
+    const filterAsesorCalendar = document.getElementById('filterAsesorCalendar');
+
+    if (filterCarritos) filterCarritos.addEventListener('change', renderCalendarEvents);
+    if (filterInflables) filterInflables.addEventListener('change', renderCalendarEvents);
+    if (filterAsesorCalendar) filterAsesorCalendar.addEventListener('change', renderCalendarEvents);
+
     document.getElementById('btnOpenHistory').addEventListener('click', () => {
         if (historySearchInput) historySearchInput.value = '';
         openHistoryModal();
@@ -819,13 +827,21 @@ function initCalendar() {
 
 function renderCalendarEvents() {
     const events = [];
+    const showCarritos = document.getElementById('filterCarritos') ? document.getElementById('filterCarritos').checked : true;
+    const showInflables = document.getElementById('filterInflables') ? document.getElementById('filterInflables').checked : true;
+    const filterAsesor = document.getElementById('filterAsesorCalendar') ? document.getElementById('filterAsesorCalendar').value : 'TODOS';
+
     bookings.forEach(b => {
+        let cat = b.categoria;
+        if (cat === 'Juego Inflable') cat = 'Magia del rebote';
+
+        if (cat === 'Carrito Snacks' && !showCarritos) return;
+        if (cat === 'Magia del rebote' && !showInflables) return;
+        if (filterAsesor !== 'TODOS' && b.asesor_registro !== filterAsesor) return;
+
         let filterId = '';
         let color = '#ec4899';
         let customClass = '';
-
-        let cat = b.categoria;
-        if (cat === 'Juego Inflable') cat = 'Magia del rebote';
 
         if (cat === 'Carrito Snacks') {
             color = '#db2777';
@@ -934,7 +950,28 @@ async function fetchBookings() {
             }
         }
     }
+    populateCalendarFilters();
     renderCalendarEvents();
+}
+
+function populateCalendarFilters() {
+    const filterAsesor = document.getElementById('filterAsesorCalendar');
+    if (!filterAsesor) return;
+    
+    const currentVal = filterAsesor.value;
+    const asesoras = new Set();
+    bookings.forEach(b => {
+        if (b.asesor_registro) asesoras.add(b.asesor_registro);
+    });
+    
+    filterAsesor.innerHTML = '<option value="TODOS">Todas las asesoras</option>';
+    Array.from(asesoras).sort().forEach(a => {
+        filterAsesor.innerHTML += `<option value="${a}">${a}</option>`;
+    });
+    
+    if (asesoras.has(currentVal)) {
+        filterAsesor.value = currentVal;
+    }
 }
 
 // ==========================================

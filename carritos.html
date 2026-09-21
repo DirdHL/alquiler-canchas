@@ -157,6 +157,29 @@
                 </button>
             </header>
 
+            <!-- Filters & Legend -->
+            <div class="filters-container" style="display: flex; gap: 16px; margin: 0 24px 16px 24px; flex-wrap: wrap; align-items: center; justify-content: space-between; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px 16px; border-radius: var(--radius-md);">
+                <div class="legend-area" style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
+                    <span style="font-size: 13px; font-weight: 600; color: var(--text-secondary);">Filtros y Leyenda:</span>
+                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                        <input type="checkbox" id="filterCarritos" checked style="accent-color: #db2777; width: 16px; height: 16px;">
+                        <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: #db2777;"></span>
+                        <span style="font-size: 13px; color: var(--text-primary);">Carritos</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                        <input type="checkbox" id="filterInflables" checked style="accent-color: #0284c7; width: 16px; height: 16px;">
+                        <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: #0284c7;"></span>
+                        <span style="font-size: 13px; color: var(--text-primary);">Inflables</span>
+                    </label>
+                </div>
+                <div class="asesor-filter-area" style="display: flex; gap: 8px; align-items: center;">
+                    <i data-lucide="filter" style="width: 16px; height: 16px; color: var(--text-muted);"></i>
+                    <select id="filterAsesorCalendar" style="background: rgba(0,0,0,0.2); border: 1px solid var(--border-color); border-radius: var(--radius-sm); color: var(--text-primary); padding: 6px 12px; font-size: 13px; outline: none; cursor: pointer;">
+                        <option value="TODOS">Todas las asesoras</option>
+                    </select>
+                </div>
+            </div>
+
             <!-- Calendar Container -->
             <div class="calendar-card">
                 <div class="calendar-scroll-wrapper">
