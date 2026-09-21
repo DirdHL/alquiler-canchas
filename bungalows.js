@@ -1195,6 +1195,23 @@ async function handleSaveBooking(e) {
         return;
     }
 
+    if (!isBlock) {
+        const nameValue = document.getElementById('bookingName').value.trim();
+        const dniValue = document.getElementById('bookingDni').value.trim();
+
+        if (!nameValue) {
+            errorEl.textContent = '⚠️ El Nombre es obligatorio.';
+            errorEl.style.display = 'block';
+            return;
+        }
+
+        if (!dniValue) {
+            errorEl.textContent = '⚠️ El DNI es obligatorio.';
+            errorEl.style.display = 'block';
+            return;
+        }
+    }
+
     const extraHours = parseInt(document.getElementById('bookingHorasExtras').value) || 0;
 
     // Check collisions / overlaps for all selected bungalows
