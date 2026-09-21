@@ -142,7 +142,20 @@ function setupEventListeners() {
     }
 
     if (bookingFecha) {
-        bookingFecha.addEventListener('change', updateEndDate);
+        bookingFecha.addEventListener('change', () => {
+            updateEndDate();
+            const catSelect = document.getElementById('bookingCategoria');
+            if (catSelect && catSelect.value) {
+                const checked = Array.from(document.querySelectorAll('input[name="bookingItem"]:checked')).map(cb => {
+                    if (cb.value.startsWith('Carrito Snacks')) {
+                        const qtyInput = document.getElementById(`qty_${cb.value.replace(/\s+/g, '_')}`);
+                        return qtyInput ? `${cb.value} (${qtyInput.value})` : cb.value;
+                    }
+                    return cb.value;
+                });
+                renderBookingItems(catSelect.value, checked);
+            }
+        });
     }
     if (bookingHoraInicio) {
         bookingHoraInicio.addEventListener('change', updateEndDate);
@@ -305,6 +318,9 @@ function renderBookingItems(categoryValue = '', selectedValues = []) {
     const items = articles[categoryValue] || [];
     let html = `<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px;">`;
     
+    const targetDate = document.getElementById('bookingFecha') ? document.getElementById('bookingFecha').value : '';
+    const currentBookingId = document.getElementById('bookingId') ? document.getElementById('bookingId').value : '';
+
     items.forEach(art => {
         let isChecked = false;
         let qty = 50;
@@ -319,18 +335,33 @@ function renderBookingItems(categoryValue = '', selectedValues = []) {
             });
         }
         
+        let isBooked = false;
+        if (targetDate) {
+            isBooked = bookings.some(b => 
+                b.fecha_reserva === targetDate && 
+                String(b.id) !== String(currentBookingId) &&
+                b.categoria === categoryValue &&
+                (b.item === art.value.split('|')[1] || (b.item && b.item.startsWith(art.value.split('|')[1] + " (")))
+            );
+        }
+        
+        if (isBooked) isChecked = false;
+
         const checkedAttr = isChecked ? 'checked' : '';
+        const disabledAttr = isBooked ? 'disabled' : '';
         const qtyDisplay = (categoryValue === 'Carrito Snacks' && isChecked) ? 'block' : 'none';
+        const spanStyle = isBooked ? 'color: #ef4444; text-decoration: line-through; opacity: 0.7;' : 'color: var(--text-secondary);';
+        const displayStatusText = isBooked ? ' <span style="font-size: 11px; color: #ef4444; margin-left: 4px;">(Reservado)</span>' : '';
         
         html += `
-            <div style="display: flex; align-items: center; gap: 6px; user-select: none;">
-                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 13px; flex: 1;">
-                    <input type="checkbox" name="bookingItem" value="${art.value}" class="item-checkbox" style="width: 16px; height: 16px; cursor: pointer;" ${checkedAttr} onchange="toggleQtyInput(this)">
-                    <span style="color: var(--text-secondary);">${art.text}</span>
+            <div style="display: flex; align-items: center; gap: 6px; user-select: none; opacity: ${isBooked ? '0.6' : '1'};">
+                <label style="display: flex; align-items: center; gap: 6px; cursor: ${isBooked ? 'not-allowed' : 'pointer'}; font-size: 13px; flex: 1;">
+                    <input type="checkbox" name="bookingItem" value="${art.value}" class="item-checkbox" style="width: 16px; height: 16px; cursor: ${isBooked ? 'not-allowed' : 'pointer'};" ${checkedAttr} ${disabledAttr} onchange="toggleQtyInput(this)">
+                    <span style="${spanStyle}">${art.text}${displayStatusText}</span>
                 </label>
                 ${categoryValue === 'Carrito Snacks' ? `
                 <div class="qty-container" style="display: ${qtyDisplay};">
-                    <input type="number" id="qty_${art.value.replace(/\s+/g, '_')}" class="item-qty-input" value="${qty}" min="1" max="999" style="width: 60px; padding: 4px; border: 1px solid var(--border-color); border-radius: 4px; background: rgba(0,0,0,0.2); color: white; font-size: 13px; text-align: center;" oninput="updateTotalQty()">
+                    <input type="number" id="qty_${art.value.replace(/\s+/g, '_')}" class="item-qty-input" value="${qty}" min="1" max="999" style="width: 60px; padding: 4px; border: 1px solid var(--border-color); border-radius: 4px; background: rgba(0,0,0,0.2); color: white; font-size: 13px; text-align: center;" oninput="updateTotalQty()" ${disabledAttr}>
                 </div>
                 ` : ''}
             </div>
@@ -388,7 +419,7 @@ function openBookingModal(booking = null, defaultDate = null) {
 
     // Operators
     const selectAsesor = document.getElementById('bookingNotes');
-    selectAsesor.innerHTML = `<option value="${activeOperator}" selected>${activeOperator}</option>`;
+    selectAsesor.innerHTML = `<option value="${activeOperator}">${activeOperator}</option>`;
 
     if (defaultDate) {
         document.getElementById('bookingFecha').value = defaultDate;
@@ -453,6 +484,13 @@ function openBookingModal(booking = null, defaultDate = null) {
             finInput.value = fechaFinStr;
         }
         document.getElementById('bookingSource').value = booking.medio_contacto || 'Msg masivo';
+        
+        const asesorOriginal = booking.asesor_registro || 'No asignado';
+        if (asesorOriginal !== activeOperator) {
+            selectAsesor.innerHTML += `<option value="${asesorOriginal}">${asesorOriginal}</option>`;
+        }
+        selectAsesor.value = asesorOriginal;
+        
         document.getElementById('bookingTotal').value = booking.monto_total;
         document.getElementById('bookingAdelanto').value = booking.monto_adelanto;
         document.getElementById('bookingComment').value = booking.notas || '';
@@ -489,6 +527,23 @@ async function handleSaveBooking(e) {
     if (checkedItems.length === 0) {
         document.getElementById('bookingError').textContent = 'Seleccione al menos un artÃ­culo.';
         return;
+    }
+    
+    const targetDate = document.getElementById('bookingFecha').value;
+    const bookingId = document.getElementById('bookingId').value;
+
+    for (const checkbox of checkedItems) {
+        let [categoria, itemBase] = checkbox.value.split('|');
+        const duplicate = bookings.find(b => 
+            b.fecha_reserva === targetDate && 
+            String(b.id) !== String(bookingId) && 
+            b.categoria === categoria && 
+            (b.item === itemBase || (b.item && b.item.startsWith(itemBase + " (")))
+        );
+        if (duplicate) {
+            document.getElementById('bookingError').textContent = `El artículo "${itemBase}" ya está reservado para el ${targetDate} por ${duplicate.asesor_registro || 'otro asesor'}.`;
+            return;
+        }
     }
     
     // Process multiple items
@@ -624,6 +679,7 @@ function initCalendar() {
         locale: 'es',
         firstDay: 1, // 1 = Lunes
         height: 'auto',
+        displayEventTime: false,
         initialView: 'multiMonthYear',
         multiMonthMaxColumns: isMobile ? 1 : 2,
         dayMaxEvents: isMobile ? false : 2,
@@ -640,8 +696,8 @@ function initCalendar() {
             today: 'Hoy',
             month: 'Mes',
             week: 'Semana',
-            day: 'DÃ­a',
-            multiMonthYear: 'AÃ±o'
+            day: 'Día',
+            multiMonthYear: 'Año'
         },
         dateClick: function (info) {
             openBookingModal(null, info.dateStr);
@@ -689,7 +745,7 @@ function initCalendar() {
                     const categoryClass = categoria.toLowerCase().replace(/\s+/g, '-');
                     contentHtml = `
                         <div class="tooltip-header tooltip-categoria-${categoryClass}">
-                            <span class="tooltip-icon">ðŸ­</span>
+                            <span class="tooltip-icon">ðŸ ­</span>
                             <strong>${categoria} - ${item}</strong>
                         </div>
                         <div class="tooltip-body">
@@ -766,7 +822,6 @@ function renderCalendarEvents() {
     bookings.forEach(b => {
         let filterId = '';
         let color = '#ec4899';
-        let titlePrefix = `[${b.item || ''}]`;
         let customClass = '';
 
         let cat = b.categoria;
@@ -780,9 +835,10 @@ function renderCalendarEvents() {
             customClass = 'event-castillo';
         }
 
-        let title = `${titlePrefix} ${b.nombre_cliente}${b.tipo_evento ? ' - ' + b.tipo_evento : ''}`;
+        const asesorName = b.asesor_registro || 'Sin asesor';
+        let title = `[${asesorName}] ${b.item || ''}`;
         if (b.estado_reserva === 'Bloqueado') {
-            title = `ðŸ”’ BLOQUEADO ${titlePrefix}`;
+            title = `🔒 BLOQUEADO [${asesorName}] ${b.item || ''}`;
             color = '#ef4444';
             customClass = 'event-bloqueado';
         }
