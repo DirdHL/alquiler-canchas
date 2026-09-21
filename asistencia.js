@@ -183,6 +183,111 @@ function updateLiveClock() {
     if (now.getSeconds() === 0 || now.getSeconds() === 30) {
         renderTeamLiveStatus();
     }
+
+    // Auto-checkout check every minute
+    if (now.getSeconds() === 0) {
+        autoCheckoutActiveShifts();
+    }
+}
+
+async function autoCheckoutActiveShifts() {
+    if (!attendanceRecords || attendanceRecords.length === 0) return;
+    
+    const now = new Date();
+    const currentMinutes = (now.getHours() * 60) + now.getMinutes();
+    const todayStr = getTodayDateString();
+
+    const activeShifts = attendanceRecords.filter(r => r.check_in && !r.check_out);
+    let hasUpdates = false;
+
+    for (const shift of activeShifts) {
+        const workerName = shift.employee_name;
+        const schedule = workerSchedules[workerName] || {};
+        
+        let shiftDayKey = DAYS_ES[now.getDay()];
+        if (shift.date !== todayStr) {
+            const shiftDateObj = new Date(shift.date + 'T12:00:00');
+            if (!isNaN(shiftDateObj.getDay())) {
+                 shiftDayKey = DAYS_ES[shiftDateObj.getDay()];
+            }
+        }
+        
+        const shiftSchedule = schedule[shiftDayKey];
+        if (!shiftSchedule || !shiftSchedule.active) continue;
+
+        const scheduledOutMinutes = timeStringToMinutes(shiftSchedule.out);
+        
+        let shouldClose = false;
+        if (shift.date === todayStr) {
+            if (currentMinutes >= scheduledOutMinutes) {
+                shouldClose = true;
+            }
+        } else {
+            shouldClose = true;
+        }
+
+        if (shouldClose) {
+            const checkInMinutes = timeStringToMinutes(shift.check_in);
+            
+            const checkoutTimeStr = (shift.date === todayStr && currentMinutes >= scheduledOutMinutes) 
+                                     ? shiftSchedule.out + ":00" 
+                                     : `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:00`;
+            
+            const finalOutMinutes = timeStringToMinutes(checkoutTimeStr);
+            const grossShiftMinutes = Math.max(0, finalOutMinutes - checkInMinutes);
+
+            const tookLunch = (shift.lunch !== undefined)
+                ? Boolean(shift.lunch)
+                : (shift.notes && shift.notes.includes('Sin refrigerio') ? false : true);
+            const lunchDeductionMinutes = tookLunch ? 60 : 0;
+            const netShiftMinutes = Math.max(0, grossShiftMinutes - lunchDeductionMinutes);
+
+            let notes = `${shift.notes ? shift.notes + ' | ' : ''}Salida automática del sistema a las ${formatTimeTo12H(checkoutTimeStr.substring(0, 5))}.`;
+            if (tookLunch) {
+                notes += ' Refrigerio descontado (-1h).';
+            } else {
+                notes += ' Jornada corrida.';
+            }
+
+            const updatedShift = {
+                ...shift,
+                check_out: checkoutTimeStr,
+                hours_credited: Number((netShiftMinutes / 60).toFixed(2)),
+                late_minutes: shift.late_minutes || 0,
+                extra_minutes: 0,
+                owed_minutes: 0,
+                lunch: tookLunch,
+                notes: notes
+            };
+
+            if (dbMode === 'supabase' && typeof supabaseClient !== 'undefined' && supabaseClient) {
+                await supabaseClient
+                    .from('asistencias_v2')
+                    .update({
+                        check_out: updatedShift.check_out,
+                        hours_credited: updatedShift.hours_credited,
+                        late_minutes: updatedShift.late_minutes,
+                        extra_minutes: updatedShift.extra_minutes,
+                        owed_minutes: updatedShift.owed_minutes,
+                        notes: updatedShift.notes
+                    })
+                    .eq('id', shift.id);
+            } else {
+                let localList = getLocalAttendance();
+                localList = localList.map(r => r.id === shift.id ? updatedShift : r);
+                saveLocalAttendance(localList);
+            }
+            
+            Object.assign(shift, updatedShift);
+            hasUpdates = true;
+        }
+    }
+    
+    if (hasUpdates) {
+        if (typeof renderTeamLiveStatus === 'function') renderTeamLiveStatus();
+        if (typeof updatePunchButtonState === 'function') updatePunchButtonState();
+        if (typeof renderAttendanceTable === 'function') renderAttendanceTable();
+    }
 }
 
 function timeStringToMinutes(timeStr) {
