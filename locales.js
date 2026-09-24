@@ -36,6 +36,41 @@ function loadOperatorSession() {
     }
 }
 
+function openOperatorEditModal() {
+    const currentName = localStorage.getItem('canchapro_user_name') || '';
+    document.getElementById('onboardingName').value = currentName;
+    openModal('modalUserOnboarding');
+}
+
+async function handleSaveOnboardingName(e) {
+    e.preventDefault();
+    const rawName = document.getElementById('onboardingName').value.trim();
+    if (!rawName) return;
+
+    const formattedName = rawName
+        .split(/\s+/)
+        .map(word => {
+            if (!word) return '';
+            return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+        })
+        .filter(word => word.length > 0)
+        .join(' ');
+
+    if (!formattedName) return;
+
+    const oldName = localStorage.getItem('canchapro_user_name');
+    localStorage.setItem('canchapro_user_name', formattedName);
+    activeOperator = formattedName;
+    document.getElementById('displayUserName').textContent = formattedName;
+    closeModal('modalUserOnboarding');
+
+    if (oldName && oldName !== formattedName) {
+        await addHistoryEntry('editar', `cambió su nombre (antes: ${oldName})`);
+    } else if (!oldName) {
+        await addHistoryEntry('crear', `ingresó al sistema`);
+    }
+}
+
 function setupEventListeners() {
     const btnToggleSidebar = document.getElementById('btnToggleSidebar');
     const btnCloseSidebar = document.getElementById('btnCloseSidebar');
@@ -51,6 +86,15 @@ function setupEventListeners() {
     document.getElementById('formSettings').addEventListener('submit', handleSaveSettings);
     document.getElementById('formBooking').addEventListener('submit', handleSaveBooking);
     document.getElementById('btnDeleteBooking').addEventListener('click', handleDeleteBooking);
+
+    const btnEditUser = document.getElementById('btnEditUser');
+    if (btnEditUser) {
+        btnEditUser.addEventListener('click', openOperatorEditModal);
+    }
+    const formUserOnboarding = document.getElementById('formUserOnboarding');
+    if (formUserOnboarding) {
+        formUserOnboarding.addEventListener('submit', handleSaveOnboardingName);
+    }
 
     const btnCopyReservation = document.getElementById('btnCopyReservation');
     if (btnCopyReservation) {
