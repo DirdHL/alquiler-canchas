@@ -83,7 +83,7 @@
                     style="text-decoration: none; display: flex; align-items: center; gap: 8px; margin-top: 8px;">
                     <i data-lucide="map-pin" style="width: 16px; height: 16px;"></i> Alquiler Locales
                 </a>
-            
+
                 <a href="brisas.html" class="btn btn-secondary btn-sm btn-sidebar-action btn-brisas"
                     style="text-decoration: none; display: flex; align-items: center; gap: 8px; margin-top: 8px;">
                     <i data-lucide="map" style="width: 16px; height: 16px;"></i> Sport Victoria (Las Brisas)
@@ -143,7 +143,8 @@
         <main class="main-content">
             <header class="app-header">
                 <div class="header-left">
-                    <button class="btn btn-secondary btn-menu" id="btnToggleSidebar" title="Mostrar / Ocultar Menú Lateral">
+                    <button class="btn btn-secondary btn-menu" id="btnToggleSidebar"
+                        title="Mostrar / Ocultar Menú Lateral">
                         <i data-lucide="menu"></i>
                         <span style="font-size: 13px; font-weight: 600; margin-left: 4px;">Menú</span>
                     </button>
@@ -158,23 +159,30 @@
             </header>
 
             <!-- Filters & Legend -->
-            <div class="filters-container" style="display: flex; gap: 16px; margin: 0 24px 16px 24px; flex-wrap: wrap; align-items: center; justify-content: space-between; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px 16px; border-radius: var(--radius-md);">
+            <div class="filters-container"
+                style="display: flex; gap: 16px; margin: 0 24px 16px 24px; flex-wrap: wrap; align-items: center; justify-content: space-between; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px 16px; border-radius: var(--radius-md);">
                 <div class="legend-area" style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
-                    <span style="font-size: 13px; font-weight: 600; color: var(--text-secondary);">Filtros y Leyenda:</span>
+                    <span style="font-size: 13px; font-weight: 600; color: var(--text-secondary);">Filtros y
+                        Leyenda:</span>
                     <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
-                        <input type="checkbox" id="filterCarritos" checked style="accent-color: #db2777; width: 16px; height: 16px;">
-                        <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: #db2777;"></span>
+                        <input type="checkbox" id="filterCarritos" checked
+                            style="accent-color: #db2777; width: 16px; height: 16px;">
+                        <span
+                            style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: #db2777;"></span>
                         <span style="font-size: 13px; color: var(--text-primary);">Carritos</span>
                     </label>
                     <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
-                        <input type="checkbox" id="filterInflables" checked style="accent-color: #0284c7; width: 16px; height: 16px;">
-                        <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: #0284c7;"></span>
+                        <input type="checkbox" id="filterInflables" checked
+                            style="accent-color: #0284c7; width: 16px; height: 16px;">
+                        <span
+                            style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: #0284c7;"></span>
                         <span style="font-size: 13px; color: var(--text-primary);">Inflables</span>
                     </label>
                 </div>
                 <div class="asesor-filter-area" style="display: flex; gap: 8px; align-items: center;">
                     <i data-lucide="filter" style="width: 16px; height: 16px; color: var(--text-muted);"></i>
-                    <select id="filterAsesorCalendar" style="background: rgba(0,0,0,0.2); border: 1px solid var(--border-color); border-radius: var(--radius-sm); color: var(--text-primary); padding: 6px 12px; font-size: 13px; outline: none; cursor: pointer;">
+                    <select id="filterAsesorCalendar"
+                        style="background: rgba(0,0,0,0.2); border: 1px solid var(--border-color); border-radius: var(--radius-sm); color: var(--text-primary); padding: 6px 12px; font-size: 13px; outline: none; cursor: pointer;">
                         <option value="TODOS">Todas las asesoras</option>
                     </select>
                 </div>
@@ -245,14 +253,19 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <!-- Artículos a Alquilar (Selección Múltiple) -->
                     <div class="form-group" style="margin-bottom: 16px;">
-                        <label style="margin-bottom: 8px; display: block;">Artículos a Alquilar (Selección Múltiple) *</label>
-                        <div id="bookingItemsContainer" style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 12px; max-height: 250px; overflow-y: auto;">
-                            <span style="color: var(--text-muted); font-size: 13px;">Seleccione una categoría primero...</span>
+                        <label style="margin-bottom: 8px; display: block;">Artículos a Alquilar (Selección Múltiple)
+                            *</label>
+                        <div id="bookingItemsContainer"
+                            style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 12px; max-height: 250px; overflow-y: auto;">
+                            <span style="color: var(--text-muted); font-size: 13px;">Seleccione una categoría
+                                primero...</span>
                         </div>
-                        <div class="form-error" id="itemsError" style="display: none; color: #ef4444; font-size: 13px; margin-top: 4px;">Seleccione al menos un artículo.</div>
+                        <div class="form-error" id="itemsError"
+                            style="display: none; color: #ef4444; font-size: 13px; margin-top: 4px;">Seleccione al menos
+                            un artículo.</div>
                     </div>
 
                     <!-- Tipo de evento y Lugar -->
@@ -270,6 +283,14 @@
                                 <i data-lucide="map-pin"></i>
                                 <input type="text" id="bookingLugar" placeholder="Ej. Las sirenitas" required>
                             </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="bookingReferencia">Referencia</label>
+                        <div class="input-wrapper">
+                            <i data-lucide="compass"></i>
+                            <input type="text" id="bookingReferencia" placeholder="Ej. Frente al parque / portón negro">
                         </div>
                     </div>
 
@@ -312,13 +333,20 @@
                             <label>Hora de Inicio *</label>
                             <!-- Hidden original input for backend compatibility -->
                             <input type="time" id="bookingHoraInicio" required style="display: none;">
-                            
-                            <div class="custom-time-wrapper" style="background: rgba(255, 255, 255, 0.65); border: 1px solid rgba(236, 72, 153, 0.2); border-radius: var(--radius-sm); display: flex; align-items: center; position: relative; height: 44px; transition: var(--transition-smooth);">
-                                <i data-lucide="clock" style="position: absolute; left: 14px; color: var(--text-muted); width: 18px; height: 18px;"></i>
-                                <input type="text" id="startHourSelect" placeholder="HH" maxlength="2" required autocomplete="off" style="width: 36px; text-align: right; border: none; background: transparent; padding: 0; outline: none; margin-left: 40px; font-weight: 600; color: var(--text-primary); font-size: 15px;">
+
+                            <div class="custom-time-wrapper"
+                                style="background: rgba(255, 255, 255, 0.65); border: 1px solid rgba(236, 72, 153, 0.2); border-radius: var(--radius-sm); display: flex; align-items: center; position: relative; height: 44px; transition: var(--transition-smooth);">
+                                <i data-lucide="clock"
+                                    style="position: absolute; left: 14px; color: var(--text-muted); width: 18px; height: 18px;"></i>
+                                <input type="text" id="startHourSelect" placeholder="HH" maxlength="2" required
+                                    autocomplete="off"
+                                    style="width: 36px; text-align: right; border: none; background: transparent; padding: 0; outline: none; margin-left: 40px; font-weight: 600; color: var(--text-primary); font-size: 15px;">
                                 <span style="font-weight: 600; color: var(--text-secondary); margin: 0 4px;">:</span>
-                                <input type="text" id="startMinSelect" placeholder="MM" maxlength="2" required autocomplete="off" style="width: 36px; text-align: left; border: none; background: transparent; padding: 0; outline: none; font-weight: 600; color: var(--text-primary); font-size: 15px;">
-                                <select id="startAmpmSelect" required style="border: none; background: transparent; outline: none; cursor: pointer; margin-left: auto; margin-right: 10px; font-weight: 600; color: var(--text-primary); font-size: 14px;">
+                                <input type="text" id="startMinSelect" placeholder="MM" maxlength="2" required
+                                    autocomplete="off"
+                                    style="width: 36px; text-align: left; border: none; background: transparent; padding: 0; outline: none; font-weight: 600; color: var(--text-primary); font-size: 15px;">
+                                <select id="startAmpmSelect" required
+                                    style="border: none; background: transparent; outline: none; cursor: pointer; margin-left: auto; margin-right: 10px; font-weight: 600; color: var(--text-primary); font-size: 14px;">
                                     <option value="am">AM</option>
                                     <option value="pm">PM</option>
                                 </select>
@@ -328,18 +356,38 @@
                             <label>Hora de Fin *</label>
                             <!-- Hidden original input for backend compatibility -->
                             <input type="time" id="bookingHoraFin" required style="display: none;">
-                            
-                            <div class="custom-time-wrapper" style="background: rgba(255, 255, 255, 0.65); border: 1px solid rgba(236, 72, 153, 0.2); border-radius: var(--radius-sm); display: flex; align-items: center; position: relative; height: 44px; transition: var(--transition-smooth);">
-                                <i data-lucide="clock" style="position: absolute; left: 14px; color: var(--text-muted); width: 18px; height: 18px;"></i>
-                                <input type="text" id="endHourSelect" placeholder="HH" maxlength="2" required autocomplete="off" style="width: 36px; text-align: right; border: none; background: transparent; padding: 0; outline: none; margin-left: 40px; font-weight: 600; color: var(--text-primary); font-size: 15px;">
+
+                            <div class="custom-time-wrapper"
+                                style="background: rgba(255, 255, 255, 0.65); border: 1px solid rgba(236, 72, 153, 0.2); border-radius: var(--radius-sm); display: flex; align-items: center; position: relative; height: 44px; transition: var(--transition-smooth);">
+                                <i data-lucide="clock"
+                                    style="position: absolute; left: 14px; color: var(--text-muted); width: 18px; height: 18px;"></i>
+                                <input type="text" id="endHourSelect" placeholder="HH" maxlength="2" required
+                                    autocomplete="off"
+                                    style="width: 36px; text-align: right; border: none; background: transparent; padding: 0; outline: none; margin-left: 40px; font-weight: 600; color: var(--text-primary); font-size: 15px;">
                                 <span style="font-weight: 600; color: var(--text-secondary); margin: 0 4px;">:</span>
-                                <input type="text" id="endMinSelect" placeholder="MM" maxlength="2" required autocomplete="off" style="width: 36px; text-align: left; border: none; background: transparent; padding: 0; outline: none; font-weight: 600; color: var(--text-primary); font-size: 15px;">
-                                <select id="endAmpmSelect" required style="border: none; background: transparent; outline: none; cursor: pointer; margin-left: auto; margin-right: 10px; font-weight: 600; color: var(--text-primary); font-size: 14px;">
+                                <input type="text" id="endMinSelect" placeholder="MM" maxlength="2" required
+                                    autocomplete="off"
+                                    style="width: 36px; text-align: left; border: none; background: transparent; padding: 0; outline: none; font-weight: 600; color: var(--text-primary); font-size: 15px;">
+                                <select id="endAmpmSelect" required
+                                    style="border: none; background: transparent; outline: none; cursor: pointer; margin-left: auto; margin-right: 10px; font-weight: 600; color: var(--text-primary); font-size: 14px;">
                                     <option value="am">AM</option>
                                     <option value="pm">PM</option>
                                 </select>
                             </div>
                         </div>
+                    </div>
+
+                    <!-- Incluye Movilidad -->
+                    <div class="form-group" style="margin-top: -4px; margin-bottom: 16px;">
+                        <label class="checkbox-container"
+                            style="display: inline-flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; background: #ffffff; border: 1px solid var(--border-color); box-shadow: 0 1px 3px rgba(0,0,0,0.03); padding: 10px 16px; border-radius: var(--radius-sm); transition: var(--transition-smooth);">
+                            <input type="checkbox" id="bookingIncluyeMovilidad"
+                                style="width: 18px; height: 18px; accent-color: #ec4899; cursor: pointer;">
+                            <span style="display: inline-flex; align-items: center; gap: 8px; font-weight: 600; color: var(--text-primary); font-size: 14px;">
+                                <i data-lucide="truck" style="width: 18px; height: 18px; color: #ec4899;"></i>
+                                ¿Incluye movilidad?
+                            </span>
+                        </label>
                     </div>
 
                     <div class="form-group hidden" id="customSourceGroup">
@@ -363,8 +411,8 @@
 
                     <!-- Notes/Comments -->
                     <div class="form-group">
-                        <label for="bookingComment">Comentarios / Observaciones</label>
-                        <textarea id="bookingComment" placeholder="Información adicional de la reserva..." rows="3"
+                        <label for="bookingComment">Observaciones</label>
+                        <textarea id="bookingComment" placeholder="Información u observaciones adicionales de la reserva..." rows="2"
                             style="width: 100%; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--border-color); border-radius: var(--radius-sm); color: white; padding: 10px; font-family: var(--font-sans);"></textarea>
                     </div>
 

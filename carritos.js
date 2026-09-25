@@ -87,7 +87,7 @@ function setupEventListeners() {
     document.getElementById('formSettings').addEventListener('submit', handleSaveSettings);
     document.getElementById('formBooking').addEventListener('submit', handleSaveBooking);
     document.getElementById('btnDeleteBooking').addEventListener('click', handleDeleteBooking);
-    
+
     const btnEditUser = document.getElementById('btnEditUser');
     if (btnEditUser) {
         btnEditUser.addEventListener('click', openOperatorEditModal);
@@ -117,7 +117,7 @@ function setupEventListeners() {
     }
     if (btnClearHistoryLocal) {
         btnClearHistoryLocal.addEventListener('click', () => {
-            if (confirm("Â¿EstÃ¡s seguro de que deseas limpiar el historial local? Esto no afectarÃ¡ la base de datos Supabase.")) {
+            if (confirm("¿Estás seguro de que deseas limpiar el historial local? Esto no afectará la base de datos Supabase.")) {
                 localStorage.removeItem('canchapro_historial_carritos');
                 openHistoryModal();
             }
@@ -272,35 +272,35 @@ function initCustomTimeInputs() {
         const hr = document.getElementById(`${type}HourSelect`);
         const min = document.getElementById(`${type}MinSelect`);
         const ampm = document.getElementById(`${type}AmpmSelect`);
-        
+
         const sync = () => syncCustomTime(type);
-        if(hr) {
-            hr.addEventListener('input', function() {
+        if (hr) {
+            hr.addEventListener('input', function () {
                 this.value = this.value.replace(/[^0-9]/g, '');
                 let val = parseInt(this.value, 10);
                 if (val > 12) this.value = '12';
                 if (this.value.length === 2 && min) min.focus();
                 sync();
             });
-            hr.addEventListener('blur', function() {
+            hr.addEventListener('blur', function () {
                 if (this.value === '0' || this.value === '00' || !this.value) this.value = '12';
                 sync();
             });
         }
-        if(min) {
-            min.addEventListener('input', function() {
+        if (min) {
+            min.addEventListener('input', function () {
                 this.value = this.value.replace(/[^0-9]/g, '');
                 let val = parseInt(this.value, 10);
                 if (val > 59) this.value = '59';
                 sync();
             });
-            min.addEventListener('blur', function() {
+            min.addEventListener('blur', function () {
                 if (this.value.length === 1) this.value = '0' + this.value;
                 if (!this.value) this.value = '00';
                 sync();
             });
         }
-        if(ampm) {
+        if (ampm) {
             ampm.addEventListener('change', sync);
         }
     });
@@ -317,14 +317,14 @@ function renderBookingItems(categoryValue = '', selectedValues = []) {
     if (!container) return;
 
     if (!categoryValue) {
-        container.innerHTML = '<span style="color: var(--text-muted); font-size: 13px;">Seleccione una categorÃ­a primero...</span>';
+        container.innerHTML = '<span style="color: var(--text-muted); font-size: 13px;">Seleccione una categoría primero...</span>';
         return;
     }
 
     const articles = {
         'Carrito Snacks': [
             { value: 'Carrito Snacks|Pop corn', text: 'Pop corn' },
-            { value: 'Carrito Snacks|AlgodÃ³n dulce', text: 'AlgodÃ³n dulce' },
+            { value: 'Carrito Snacks|Algodón dulce', text: 'Algodón dulce' },
             { value: 'Carrito Snacks|Manzana acaramelada', text: 'Manzana acaramelada' },
             { value: 'Carrito Snacks|Manzana achocolatada', text: 'Manzana achocolatada' },
             { value: 'Carrito Snacks|Churros', text: 'Churros' },
@@ -362,41 +362,41 @@ function renderBookingItems(categoryValue = '', selectedValues = []) {
             { value: 'Magia del rebote|Tortuga saltarina', text: 'Tortuga saltarina' },
             { value: 'Magia del rebote|Bolikche Bunker', text: 'Bolikche Bunker' },
             { value: 'Magia del rebote|Rueda Rueda', text: 'Rueda Rueda' },
-            { value: 'Magia del rebote|Campo de FÃºtbol', text: 'Campo de FÃºtbol' },
+            { value: 'Magia del rebote|Campo de Fútbol', text: 'Campo de Fútbol' },
             { value: 'Magia del rebote|Bumper Balls', text: 'Bumper Balls' }
         ]
     };
 
     const items = articles[categoryValue] || [];
     let html = `<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px;">`;
-    
+
     const targetDate = document.getElementById('bookingFecha') ? document.getElementById('bookingFecha').value : '';
     const currentBookingId = document.getElementById('bookingId') ? document.getElementById('bookingId').value : '';
 
     items.forEach(art => {
         let isChecked = false;
         let qty = 50;
-        
+
         if (selectedValues.length > 0) {
             selectedValues.forEach(val => {
                 if (val.startsWith(art.value)) {
-                   isChecked = true;
-                   const match = val.match(/\((\d+)\)$/);
-                   if (match) qty = match[1];
+                    isChecked = true;
+                    const match = val.match(/\((\d+)\)$/);
+                    if (match) qty = match[1];
                 }
             });
         }
-        
+
         let isBooked = false;
         if (targetDate) {
-            isBooked = bookings.some(b => 
-                b.fecha_reserva === targetDate && 
+            isBooked = bookings.some(b =>
+                b.fecha_reserva === targetDate &&
                 String(b.id) !== String(currentBookingId) &&
                 b.categoria === categoryValue &&
                 (b.item === art.value.split('|')[1] || (b.item && b.item.startsWith(art.value.split('|')[1] + " (")))
             );
         }
-        
+
         if (isBooked) isChecked = false;
 
         const checkedAttr = isChecked ? 'checked' : '';
@@ -404,7 +404,7 @@ function renderBookingItems(categoryValue = '', selectedValues = []) {
         const qtyDisplay = (categoryValue === 'Carrito Snacks' && isChecked) ? 'block' : 'none';
         const spanStyle = isBooked ? 'color: #ef4444; text-decoration: line-through; opacity: 0.7;' : 'color: var(--text-secondary);';
         const displayStatusText = isBooked ? ' <span style="font-size: 11px; color: #ef4444; margin-left: 4px;">(Reservado)</span>' : '';
-        
+
         html += `
             <div style="display: flex; align-items: center; gap: 6px; user-select: none; opacity: ${isBooked ? '0.6' : '1'};">
                 <label style="display: flex; align-items: center; gap: 6px; cursor: ${isBooked ? 'not-allowed' : 'pointer'}; font-size: 13px; flex: 1;">
@@ -419,9 +419,9 @@ function renderBookingItems(categoryValue = '', selectedValues = []) {
             </div>
         `;
     });
-    
+
     html += `</div>`;
-    
+
     if (categoryValue === 'Carrito Snacks') {
         html += `
         <div style="margin-top: 12px; padding-top: 8px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; align-items: center; gap: 8px;">
@@ -430,15 +430,15 @@ function renderBookingItems(categoryValue = '', selectedValues = []) {
         </div>
         `;
     }
-    
+
     container.innerHTML = html;
-    
+
     if (categoryValue === 'Carrito Snacks') {
         updateTotalQty();
     }
 }
 
-window.toggleQtyInput = function(checkbox) {
+window.toggleQtyInput = function (checkbox) {
     const qtyContainer = checkbox.closest('div').querySelector('.qty-container');
     if (qtyContainer) {
         qtyContainer.style.display = checkbox.checked ? 'block' : 'none';
@@ -446,10 +446,10 @@ window.toggleQtyInput = function(checkbox) {
     updateTotalQty();
 };
 
-window.updateTotalQty = function() {
+window.updateTotalQty = function () {
     const counter = document.getElementById('totalQtyCounter');
     if (!counter) return;
-    
+
     let total = 0;
     const checkboxes = document.querySelectorAll('input[name="bookingItem"]:checked');
     checkboxes.forEach(cb => {
@@ -468,6 +468,10 @@ function openBookingModal(booking = null, defaultDate = null) {
     document.getElementById('formBooking').reset();
     document.getElementById('bookingId').value = '';
     document.getElementById('bookingError').textContent = '';
+    const refInputReset = document.getElementById('bookingReferencia');
+    if (refInputReset) refInputReset.value = '';
+    const movInputReset = document.getElementById('bookingIncluyeMovilidad');
+    if (movInputReset) movInputReset.checked = false;
 
     // Operators
     const selectAsesor = document.getElementById('bookingNotes');
@@ -492,6 +496,17 @@ function openBookingModal(booking = null, defaultDate = null) {
 
         let tipoVal = booking.tipo_evento || '';
         let lugarVal = '';
+        let refVal = '';
+        let incluyeMovVal = false;
+        if (tipoVal.includes(' | Movilidad: Sí')) {
+            incluyeMovVal = true;
+            tipoVal = tipoVal.replace(' | Movilidad: Sí', '');
+        }
+        if (tipoVal.includes(' | Referencia: ')) {
+            let partsRef = tipoVal.split(' | Referencia: ');
+            tipoVal = partsRef[0];
+            refVal = partsRef[1] || '';
+        }
         if (tipoVal.includes(' | Lugar: ')) {
             let parts = tipoVal.split(' | Lugar: ');
             tipoVal = parts[0];
@@ -499,21 +514,25 @@ function openBookingModal(booking = null, defaultDate = null) {
         }
         document.getElementById('bookingTipoEvento').value = tipoVal;
         document.getElementById('bookingLugar').value = lugarVal;
+        const refInputModal = document.getElementById('bookingReferencia');
+        if (refInputModal) refInputModal.value = refVal;
+        const movInputModal = document.getElementById('bookingIncluyeMovilidad');
+        if (movInputModal) movInputModal.checked = incluyeMovVal;
 
-        // Cargar CategorÃ­a y ArtÃ­culo dinÃ¡micamente
+        // Cargar Categoría y Artículo dinámicamente
         const categorySelect = document.getElementById('bookingCategoria');
         let cat = booking.categoria || '';
         if (cat === 'Juego Inflable') cat = 'Magia del rebote';
-        
+
         if (categorySelect) {
             categorySelect.value = cat;
         }
-        
+
         const itemVal = `${booking.categoria}|${booking.item}`;
         renderBookingItems(cat, [itemVal]);
-        
+
         document.getElementById('bookingFecha').value = booking.fecha_reserva;
-        
+
         const hIni = booking.hora_inicio.substring(0, 5);
         const hFin = booking.hora_fin.substring(0, 5);
         document.getElementById('bookingHoraInicio').value = hIni;
@@ -536,29 +555,29 @@ function openBookingModal(booking = null, defaultDate = null) {
             finInput.value = fechaFinStr;
         }
         document.getElementById('bookingSource').value = booking.medio_contacto || 'Msg masivo';
-        
+
         const asesorOriginal = booking.asesor_registro || 'No asignado';
         if (asesorOriginal !== activeOperator) {
             selectAsesor.innerHTML += `<option value="${asesorOriginal}">${asesorOriginal}</option>`;
         }
         selectAsesor.value = asesorOriginal;
-        
+
         document.getElementById('bookingTotal').value = booking.monto_total;
         document.getElementById('bookingAdelanto').value = booking.monto_adelanto;
         document.getElementById('bookingComment').value = booking.notas || '';
         document.getElementById('bookingIsBlock').checked = booking.estado_reserva === 'Bloqueado';
         document.getElementById('btnDeleteBooking').classList.remove('hidden');
     } else {
-        document.getElementById('modalTitle').textContent = 'Nueva Reserva de ArtÃ­culo';
+        document.getElementById('modalTitle').textContent = 'Nueva Reserva de Artículo';
         document.getElementById('btnDeleteBooking').classList.add('hidden');
 
-        // Reset CategorÃ­a y ArtÃ­culo
+        // Reset Categoría y Artículo
         const categorySelect = document.getElementById('bookingCategoria');
         if (categorySelect) {
             categorySelect.value = '';
         }
         renderBookingItems();
-        
+
         // Valores por defecto
         document.getElementById('bookingHoraInicio').value = "09:00";
         document.getElementById('bookingHoraFin').value = "10:00";
@@ -577,19 +596,19 @@ async function handleSaveBooking(e) {
     // Check selected items from checkboxes
     const checkedItems = document.querySelectorAll('input[name="bookingItem"]:checked');
     if (checkedItems.length === 0) {
-        document.getElementById('bookingError').textContent = 'Seleccione al menos un artÃ­culo.';
+        document.getElementById('bookingError').textContent = 'Seleccione al menos un artículo.';
         return;
     }
-    
+
     const targetDate = document.getElementById('bookingFecha').value;
     const bookingId = document.getElementById('bookingId').value;
 
     for (const checkbox of checkedItems) {
         let [categoria, itemBase] = checkbox.value.split('|');
-        const duplicate = bookings.find(b => 
-            b.fecha_reserva === targetDate && 
-            String(b.id) !== String(bookingId) && 
-            b.categoria === categoria && 
+        const duplicate = bookings.find(b =>
+            b.fecha_reserva === targetDate &&
+            String(b.id) !== String(bookingId) &&
+            b.categoria === categoria &&
             (b.item === itemBase || (b.item && b.item.startsWith(itemBase + " (")))
         );
         if (duplicate) {
@@ -597,7 +616,7 @@ async function handleSaveBooking(e) {
             return;
         }
     }
-    
+
     // Process multiple items
     const promises = Array.from(checkedItems).map(async (checkbox) => {
         let [categoria, item] = checkbox.value.split('|');
@@ -607,12 +626,21 @@ async function handleSaveBooking(e) {
                 item = `${item} (${qtyInput.value})`;
             }
         }
-        
+
         let tipoEventoInput = document.getElementById('bookingTipoEvento').value;
         let lugarInput = document.getElementById('bookingLugar').value;
         let tipoEventoSave = tipoEventoInput;
-        if(lugarInput) {
+        if (lugarInput) {
             tipoEventoSave += ' | Lugar: ' + lugarInput;
+        }
+        const refEl = document.getElementById('bookingReferencia');
+        const refInput = refEl ? refEl.value.trim() : '';
+        if (refInput) {
+            tipoEventoSave += ' | Referencia: ' + refInput;
+        }
+        const movEl = document.getElementById('bookingIncluyeMovilidad');
+        if (movEl && movEl.checked) {
+            tipoEventoSave += ' | Movilidad: Sí';
         }
 
         const payload = {
@@ -662,7 +690,7 @@ async function handleSaveBooking(e) {
     const basePayload = promises[0]; // just for some info
     const nombreCliente = document.getElementById('bookingName').value;
     const fechaReserva = document.getElementById('bookingFecha').value;
-    const detailMessage = `${isEdit ? 'EditÃ³' : 'CreÃ³'} reserva(s) para ${nombreCliente} (${numItems} artÃ­culo/s) el ${fechaReserva}`;
+    const detailMessage = `${isEdit ? 'Editó' : 'Creó'} reserva(s) para ${nombreCliente} (${numItems} artículo/s) el ${fechaReserva}`;
     await addHistoryEntry(actionVerb, detailMessage);
 
     closeModal('modalBooking');
@@ -670,14 +698,14 @@ async function handleSaveBooking(e) {
 }
 
 async function handleDeleteBooking() {
-    if (!confirm('Â¿EstÃ¡s seguro de eliminar esta reserva?')) return;
+    if (!confirm('¿Estás seguro de eliminar esta reserva?')) return;
     const bookingId = document.getElementById('bookingId').value;
 
     const targetBooking = bookings.find(b => b.id === bookingId);
     const clientName = targetBooking ? targetBooking.nombre_cliente : 'Desconocido';
     const detailStr = targetBooking
-        ? `EliminÃ³ reserva para ${clientName} (${targetBooking.categoria} - ${targetBooking.item}) del ${targetBooking.fecha_reserva}`
-        : `EliminÃ³ reserva ID: ${bookingId}`;
+        ? `Eliminó reserva para ${clientName} (${targetBooking.categoria} - ${targetBooking.item}) del ${targetBooking.fecha_reserva}`
+        : `Eliminó reserva ID: ${bookingId}`;
 
     if (dbMode === 'supabase' && supabaseClient) {
         await supabaseClient.from('reservas_carritos').delete().eq('id', bookingId);
@@ -699,14 +727,14 @@ function formatClientName(fullName) {
     if (parts.length === 2) return `${parts[0]} ${parts[1]}`;
 
     const commonMiddleNames = [
-        'maria', 'marÃ­a', 'carlos', 'jose', 'josÃ©', 'luis', 'ana', 'juan',
-        'antonio', 'manuel', 'francisco', 'jesus', 'jesÃºs', 'miguel', 'angel',
-        'Ã¡ngel', 'pedro', 'javier', 'david', 'daniel', 'fernando', 'andres',
-        'andrÃ©s', 'ramon', 'ramÃ³n', 'jorge', 'alberto', 'eduardo', 'alejandro',
-        'enrique', 'diego', 'sergio', 'victor', 'vÃ­ctor', 'carmen', 'pilar',
-        'isabel', 'dolores', 'teresa', 'rosa', 'sofia', 'sofÃ­a', 'elena',
-        'margarita', 'lucia', 'lucÃ­a', 'patricia', 'laura', 'marta', 'cristina',
-        'mercedes', 'raquel', 'irene', 'beatriz', 'sandra', 'monica', 'mÃ³nica',
+        'maria', 'maría', 'carlos', 'jose', 'josé', 'luis', 'ana', 'juan',
+        'antonio', 'manuel', 'francisco', 'jesus', 'jesús', 'miguel', 'angel',
+        'ángel', 'pedro', 'javier', 'david', 'daniel', 'fernando', 'andres',
+        'andrés', 'ramon', 'ramón', 'jorge', 'alberto', 'eduardo', 'alejandro',
+        'enrique', 'diego', 'sergio', 'victor', 'víctor', 'carmen', 'pilar',
+        'isabel', 'dolores', 'teresa', 'rosa', 'sofia', 'sofía', 'elena',
+        'margarita', 'lucia', 'lucía', 'patricia', 'laura', 'marta', 'cristina',
+        'mercedes', 'raquel', 'irene', 'beatriz', 'sandra', 'monica', 'mónica',
         'de', 'del', 'la', 'las', 'los'
     ];
 
@@ -784,10 +812,10 @@ function initCalendar() {
                     contentHtml = `
                         <div class="tooltip-header tooltip-blocked">
                             <span class="tooltip-icon">ðŸ”’</span>
-                            <strong>ArtÃ­culo Bloqueado</strong>
+                            <strong>Artículo Bloqueado</strong>
                         </div>
                         <div class="tooltip-body">
-                            <p><strong>ArtÃ­culo:</strong> ${categoria} - ${item}</p>
+                            <p><strong>Artículo:</strong> ${categoria} - ${item}</p>
                             <p><strong>Horario:</strong> ${startTime} - ${endTime}</p>
                             ${b.notas ? `<p><strong>Motivo:</strong> ${b.notas}</p>` : ''}
                             <p><strong>Asesor:</strong> ${advisor}</p>
@@ -961,7 +989,7 @@ async function initDatabase() {
 
             document.getElementById('statusDot').className = 'status-dot connected';
             document.getElementById('statusText').textContent = 'Conectado a la Nube (Supabase)';
-            document.getElementById('statusDesc').textContent = 'SincronizaciÃ³n en tiempo real activa.';
+            document.getElementById('statusDesc').textContent = 'Sincronización en tiempo real activa.';
         } catch (e) {
             console.error('Supabase init error:', e);
             dbMode = 'local';
@@ -1001,18 +1029,18 @@ async function fetchBookings() {
 function populateCalendarFilters() {
     const filterAsesor = document.getElementById('filterAsesorCalendar');
     if (!filterAsesor) return;
-    
+
     const currentVal = filterAsesor.value;
     const asesoras = new Set();
     bookings.forEach(b => {
         if (b.asesor_registro) asesoras.add(b.asesor_registro);
     });
-    
+
     filterAsesor.innerHTML = '<option value="TODOS">Todas las asesoras</option>';
     Array.from(asesoras).sort().forEach(a => {
         filterAsesor.innerHTML += `<option value="${a}">${a}</option>`;
     });
-    
+
     if (asesoras.has(currentVal)) {
         filterAsesor.value = currentVal;
     }
@@ -1234,7 +1262,7 @@ function handleStatsAuth(e) {
         loadStatsDashboard();
     } else {
         const errorEl = document.getElementById('statsAuthError');
-        errorEl.textContent = 'âŒ ContraseÃ±a incorrecta. SolicÃ­tela al administrador.';
+        errorEl.textContent = 'âŒ Contraseña incorrecta. Solicítela al administrador.';
         errorEl.style.display = 'block';
     }
 }
@@ -1273,16 +1301,26 @@ function loadStatsDashboard() {
     let depositoTotal = 0;
     let otrosTotal = 0;
 
-    const itemsMap = {
-        'Carrito Snacks - Popcorn': { count: 0, revenue: 0, hours: 0, daysOccupied: 0 },
-        'Carrito Snacks - AlgodÃ³n de AzÃºcar': { count: 0, revenue: 0, hours: 0, daysOccupied: 0 },
-        'Carrito Snacks - Hot Dogs': { count: 0, revenue: 0, hours: 0, daysOccupied: 0 },
-        'Carrito Snacks - Manzanas Acarameladas': { count: 0, revenue: 0, hours: 0, daysOccupied: 0 },
-        'Juego Inflable - Castillo Inflable': { count: 0, revenue: 0, hours: 0, daysOccupied: 0 },
-        'Juego Inflable - TobogÃ¡n Gigante': { count: 0, revenue: 0, hours: 0, daysOccupied: 0 },
-        'Juego Inflable - Cama ElÃ¡stica': { count: 0, revenue: 0, hours: 0, daysOccupied: 0 },
-        'Juego Inflable - Toro MecÃ¡nico': { count: 0, revenue: 0, hours: 0, daysOccupied: 0 }
+    const articlesList = {
+        'Carrito Snacks': [
+            'Pop corn', 'Algodón dulce', 'Manzana acaramelada', 'Manzana achocolatada', 'Churros', 'Donuts',
+            'Mazamorra morada', 'Arroz con leche', 'Combinado', 'Helado', 'Panchos', 'Pan con hot dog',
+            'Hamburguesa', 'Brochetas', 'Choripan', 'Mini salchipapa', 'Mini pan hot dog', 'Mini Burger',
+            'Mini choripan', 'Wafles', 'Chicha morada', 'Inca Kola 300 ml', 'Coca Cola 300 ml', 'Fanta 300 ml', 'Agua cielo kids'
+        ],
+        'Magia del rebote': [
+            'INFLABLE FUNCITY', 'Cuatruple Resbalin', 'Escalando', 'Triple Resbalin', 'Pista de Obstaculos',
+            'Inflables de destreza', 'Castillo de obstaculos', 'Tobogan Arcohiris', 'Castillo saltarin',
+            'Tortuga saltarina', 'Bolikche Bunker', 'Rueda Rueda', 'Campo de Fútbol', 'Bumper Balls'
+        ]
     };
+
+    const itemsMap = {};
+    for (const cat in articlesList) {
+        articlesList[cat].forEach(item => {
+            itemsMap[`${cat} - ${item}`] = { count: 0, revenue: 0, hours: 0, daysOccupied: 0 };
+        });
+    }
 
     const clientsMap = {};
     const asesoresMap = {};
@@ -1292,7 +1330,7 @@ function loadStatsDashboard() {
         const adelanto = parseFloat(b.monto_adelanto) || 0;
         totalRevenue += tot;
 
-        if (b.tipo_pago === 'DepÃ³sito') {
+        if (b.tipo_pago === 'Depósito') {
             depositoTotal += tot;
         } else if (b.tipo_pago === 'Yape' || b.tipo_pago === 'Efectivo') {
             otrosTotal += tot;
@@ -1312,12 +1350,13 @@ function loadStatsDashboard() {
 
         // Item mapping
         const key = `${b.categoria} - ${b.item}`;
-        if (itemsMap[key]) {
-            itemsMap[key].count++;
-            itemsMap[key].revenue += tot;
-            itemsMap[key].hours += rentHours;
-            itemsMap[key].daysOccupied++;
+        if (!itemsMap[key]) {
+            itemsMap[key] = { count: 0, revenue: 0, hours: 0, daysOccupied: 0 };
         }
+        itemsMap[key].count++;
+        itemsMap[key].revenue += tot;
+        itemsMap[key].hours += rentHours;
+        itemsMap[key].daysOccupied++;
 
         // Client counts
         const clientName = b.nombre_cliente || 'Desconocido';
@@ -1370,8 +1409,9 @@ function loadStatsDashboard() {
                 <div>
                     <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px;">
                         <span style="font-weight: 500;">${itemName}</span>
-                        <span style="color: var(--text-secondary);">${data.daysOccupied} / ${daysInMonth} dÃ­as (${pct}%)</span>
+                        <span style="color: var(--text-secondary);">${data.daysOccupied} / ${daysInMonth} días (${pct}%)</span>
                     </div>
+
                     <div style="background: rgba(255, 255, 255, 0.05); height: 8px; border-radius: 4px; overflow: hidden;">
                         <div style="background: var(--primary); width: ${pct}%; height: 100%; border-radius: 4px; transition: width 0.3s ease;"></div>
                     </div>
@@ -1499,7 +1539,7 @@ async function exportAllDataToExcel() {
     // Title Block
     summaryWs.mergeCells(sr, 1, sr, 5);
     const mainTitleCell = summaryWs.getCell(sr, 1);
-    styleTitle(mainTitleCell, "REPORTE GENERAL DE RESERVAS Y ESTADÃSTICAS - CARRITOS E INFLABLES", 'FF0F766E', 'FFFFFFFF', 14);
+    styleTitle(mainTitleCell, "REPORTE GENERAL DE RESERVAS Y ESTADÍSTICAS - CARRITOS E INFLABLES", 'FF0F766E', 'FFFFFFFF', 14);
     summaryWs.getRow(sr).height = 40;
     sr += 2; // Blank row
 
@@ -1525,7 +1565,7 @@ async function exportAllDataToExcel() {
     styleTitle(summaryWs.getCell(sr, 1), "INGRESOS Y USOS MENSUALES", 'FF334155', 'FFFFFFFF', 11);
     summaryWs.getRow(sr).height = 24; sr++;
 
-    const headersM = ["Mes / PerÃ­odo", "Reservas", "Monto Cobrado", "Monto Adelanto", "Total Facturado"];
+    const headersM = ["Mes / Período", "Reservas", "Monto Cobrado", "Monto Adelanto", "Total Facturado"];
     headersM.forEach((h, idx) => {
         styleTitle(summaryWs.getCell(sr, idx + 1), h, 'FF1E293B', 'FFFFFFFF', 10);
     });
@@ -1601,10 +1641,10 @@ async function exportAllDataToExcel() {
 
     // 2. Item breakdown Block
     summaryWs.mergeCells(sr, 1, sr, 3);
-    styleTitle(summaryWs.getCell(sr, 1), "INGRESOS POR ARTÃCULO", 'FF334155', 'FFFFFFFF', 11);
+    styleTitle(summaryWs.getCell(sr, 1), "INGRESOS POR ARTÍCULO", 'FF334155', 'FFFFFFFF', 11);
     summaryWs.getRow(sr).height = 24; sr++;
 
-    const headersL = ["CategorÃ­a / ArtÃ­culo", "Reservas", "Monto Alquileres"];
+    const headersL = ["Categoría / Artículo", "Reservas", "Monto Alquileres"];
     headersL.forEach((h, idx) => {
         styleTitle(summaryWs.getCell(sr, idx + 1), h, 'FF1E293B', 'FFFFFFFF', 10);
     });
@@ -1641,10 +1681,10 @@ async function exportAllDataToExcel() {
 
     // â”€â”€â”€ DATA WORKSHEETS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const columnsDef = [
-        { header: 'CategorÃ­a', key: 'categoria', width: 18 },
-        { header: 'ArtÃ­culo', key: 'item', width: 22 },
+        { header: 'Categoría', key: 'categoria', width: 18 },
+        { header: 'Artículo', key: 'item', width: 22 },
         { header: 'Cliente', key: 'cliente', width: 25 },
-        { header: 'DNI / TelÃ©fono', key: 'celular', width: 14 },
+        { header: 'DNI / Teléfono', key: 'celular', width: 14 },
         { header: 'Fecha Reserva', key: 'fecha_reserva', width: 14 },
         { header: 'Hora Inicio', key: 'hora_inicio', width: 12 },
         { header: 'Hora Fin', key: 'hora_fin', width: 12 },
@@ -1755,7 +1795,7 @@ async function exportAllDataToExcel() {
         link.click();
     }).catch(err => {
         console.error("Error al exportar:", err);
-        alert("OcurriÃ³ un error al generar el archivo Excel: " + err.message);
+        alert("Ocurrió un error al generar el archivo Excel: " + err.message);
     });
 }
 
@@ -1849,18 +1889,23 @@ function formatDateWsp(dateStr) {
 function handleCopyReservation() {
     const categoria = document.getElementById('bookingCategoria').value || 'Carrito Snacks';
     const isSnacks = categoria === 'Carrito Snacks';
-    const title = isSnacks ? 'RESERVA DE CARRITOS SNACKS' : 'RESERVA DE INFLABLES';
-    
-    const nombre = document.getElementById('bookingName').value;
-    const dni = document.getElementById('bookingDni').value;
-    const tipoEvento = document.getElementById('bookingTipoEvento').value;
-    const lugar = document.getElementById('bookingLugar').value;
+    const title = isSnacks ? '📝 *RESERVA DE CARRITOS SNACKS* 🩷' : '📝 *RESERVA DE INFLABLES* 💛';
+
+    const nombre = (document.getElementById('bookingName').value || '').trim();
+    const dni = (document.getElementById('bookingDni').value || '').trim();
+    const tipoEvento = (document.getElementById('bookingTipoEvento').value || '').trim();
+    const lugar = (document.getElementById('bookingLugar').value || '').trim();
+    const refEl = document.getElementById('bookingReferencia');
+    const referencia = refEl ? refEl.value.trim() : '';
     const fecha = document.getElementById('bookingFecha').value;
     const horaInicio = document.getElementById('bookingHoraInicio').value;
     const horaFin = document.getElementById('bookingHoraFin').value;
-    const medio = document.getElementById('bookingSource').value;
-    const asesora = document.getElementById('bookingNotes').value;
-    
+    const medio = (document.getElementById('bookingSource').value || '').trim();
+    const asesora = (document.getElementById('bookingNotes').value || '').trim();
+    const movEl = document.getElementById('bookingIncluyeMovilidad');
+    const incluyeMovilidad = movEl ? movEl.checked : false;
+    const observaciones = (document.getElementById('bookingComment').value || '').trim();
+
     // items
     const checkedItems = document.querySelectorAll('input[name="bookingItem"]:checked');
     const itemsList = [];
@@ -1877,32 +1922,42 @@ function handleCopyReservation() {
             itemsList.push(`* ${itemText}`);
         }
     });
-    
-    let packText = '';
-    if (isSnacks) {
-        packText = checkedItems.length > 1 ? '*Pack de Carritos con:*' : '*Carrito con:*';
-    } else {
-        packText = checkedItems.length > 1 ? '*Pack de Inflables con:*' : '*Inflable con:*';
-    }
+
+    const modeloTitle = isSnacks ? '*Combos de snacks:*' : '*Modelo de Inflable(s):*';
 
     const total = parseFloat(document.getElementById('bookingTotal').value) || 0;
     const adelanto = parseFloat(document.getElementById('bookingAdelanto').value) || 0;
     const saldo = (total - adelanto).toFixed(2);
-    
-    let text = `${title}\n`;
+
+    let text = `${title}\n\n`;
     text += `*Cliente:* ${nombre}\n`;
     if (dni) text += `*DNI:* ${dni}\n`;
     if (tipoEvento) text += `*Tipo de evento:* ${tipoEvento}\n`;
     text += `*Fecha de evento:* ${formatDateWsp(fecha)}\n`;
     text += `*Hora:* ${formatTime12h(horaInicio)} a ${formatTime12h(horaFin)}\n`;
     if (lugar) text += `*Lugar:* ${lugar}\n`;
-    text += `*Medio:* ${medio}\n`;
-    text += `*Asesora:* ${asesora}\n`;
-    
-    text += `\n${packText}\n`;
-    text += itemsList.join('\n') + '\n\n';
-    text += `*Saldo pendiente a cancelar:* S/${saldo}, antes de instalación\n`;
-    text += `*No incluye movilidad*\n`;
+    if (referencia) text += `*Referencia:* ${referencia}\n`;
+    if (medio) text += `*Medio:* ${medio}\n`;
+    if (asesora && asesora !== 'No asignado') {
+        text += `*Asesor(a):* ${asesora}\n`;
+    }
+
+    text += `\n${modeloTitle}\n`;
+    if (itemsList.length > 0) {
+        text += itemsList.join('\n') + '\n\n';
+    } else {
+        text += `* Ninguno seleccionado\n\n`;
+    }
+    text += `*Saldo pendiente a cancelar S/${saldo}, antes de la instalación*\n`;
+    if (incluyeMovilidad) {
+        text += `✅ *Incluye movilidad*\n`;
+    } else {
+        text += `🚫 *No incluye movilidad*\n`;
+    }
+    if (observaciones) {
+        text += `*Observaciones:* ${observaciones}\n`;
+    }
+    text += `\n*¡Gracias por la confianza!* 😊🙌🏼`;
 
     navigator.clipboard.writeText(text).then(() => {
         const btn = document.getElementById('btnCopyReservation');
