@@ -1537,7 +1537,7 @@ async function fetchBookings() {
     }
 
     // Filter to only include Las Brisas courts to prevent data contamination from other complexes
-    const lasBrisasCourts = ['Cancha 1 (10 jug)', 'Cancha 2 (12 jug)', 'Cancha 3 (16 jug)', 'Cancha Vóley 1', 'Cancha Vóley 2', 'Cancha Vóley 3'];
+    const lasBrisasCourts = ['Cancha 1 (10 jug)', 'Cancha 2 (12 jug)', 'Cancha 3 (16 jug)', 'Cancha Vóley 1', 'Cancha Vóley 2'];
     return bookings.filter(b => lasBrisasCourts.includes(b.court));
 }
 
@@ -2956,8 +2956,7 @@ function updateCourtAvailabilityChecker() {
         { id: 'Cancha 2 (12 jug)', name: 'Cancha 2', dotClass: 'dot-grande' },
         { id: 'Cancha 3 (16 jug)', name: 'Cancha 3', dotClass: 'dot-grande' },
         { id: 'Cancha Vóley 1', name: 'Cancha Vóley 1', dotClass: 'dot-pequena' },
-        { id: 'Cancha Vóley 2', name: 'Cancha Vóley 2', dotClass: 'dot-pequena' },
-        { id: 'Cancha Vóley 3', name: 'Cancha Vóley 3', dotClass: 'dot-pequena' }
+        { id: 'Cancha Vóley 2', name: 'Cancha Vóley 2', dotClass: 'dot-pequena' }
     ];
 
     let html = '';
@@ -3069,7 +3068,7 @@ function updateAvailabilityGrid() {
     const day = String(currentDate.getDate()).padStart(2, '0');
     const dateStr = `${year}-${month}-${day}`;
 
-    const courts = ['Cancha 1 (10 jug)', 'Cancha 2 (12 jug)', 'Cancha 3 (16 jug)', 'Cancha Vóley 1', 'Cancha Vóley 2', 'Cancha Vóley 3'];
+    const courts = ['Cancha 1 (10 jug)', 'Cancha 2 (12 jug)', 'Cancha 3 (16 jug)', 'Cancha Vóley 1', 'Cancha Vóley 2'];
 
     const slotDuration = 30;
     const numSlots = (19 * 60) / slotDuration;
