@@ -2082,7 +2082,7 @@ function setupAdminRegisterModal() {
             if (selectedWorker) {
                 updateWorkerStats();
             }
-            alert(`¡${type} registrado con éxito!`);
+
         } catch (err) {
             alert('Error al registrar feriado/permiso: ' + err.message);
         }
