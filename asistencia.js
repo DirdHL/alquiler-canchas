@@ -796,10 +796,23 @@ function evaluateCheckInTiming() {
     if (!selectedWorker) return;
     const now = new Date();
     const nowMinutes = (now.getHours() * 60) + now.getMinutes();
+    const todayStr = getTodayDateString();
 
     const todayDayKey = DAYS_ES[now.getDay()];
     const schedule = workerSchedules[selectedWorker.name] || {};
     const todaySchedule = schedule[todayDayKey];
+
+    const hasCompletedShiftToday = attendanceRecords.some(r =>
+        r.employee_name === selectedWorker.name &&
+        r.date === todayStr &&
+        r.check_out !== null
+    );
+
+    if (hasCompletedShiftToday) {
+        earlyCheckinCard.style.display = 'none';
+        employeeStatusBox.innerHTML = '<span class="status-title" style="color: #6366f1; font-weight: 700;">🟣 Turno Extra / Recuperación (Inicia sin tardanza)</span>';
+        return;
+    }
 
     if (!todaySchedule || !todaySchedule.active) {
         // No schedule today: standard entry
@@ -957,7 +970,15 @@ async function handleAttendancePunch() {
                 notes += ' [Sin refrigerio: jornada corrida].';
             }
 
-            if (todaySchedule && todaySchedule.active) {
+            const hasCompletedShiftToday = attendanceRecords.some(r =>
+                r.employee_name === selectedWorker.name &&
+                r.date === todayStr &&
+                r.check_out !== null
+            );
+
+            if (hasCompletedShiftToday) {
+                notes += ' [Turno extra/recuperación en el mismo día].';
+            } else if (todaySchedule && todaySchedule.active) {
                 const scheduledInMinutes = timeStringToMinutes(todaySchedule.in);
                 const diffMinutes = scheduledInMinutes - currentMinutes;
 
