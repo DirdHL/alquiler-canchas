@@ -133,7 +133,79 @@ function setupEventListeners() {
     const bookingCategoria = document.getElementById('bookingCategoria');
     if (bookingCategoria) {
         bookingCategoria.addEventListener('change', function () {
-            renderBookingItems(this.value);
+            const cat = this.value;
+            renderBookingItems(cat);
+            
+            const containerTipo = document.getElementById('containerTipoAlquiler');
+            const radioArticulos = document.querySelector('input[name="bookingTipoAlquiler"][value="Articulos"]');
+            
+            if (cat === 'Carrito Snacks') {
+                if (containerTipo) containerTipo.style.display = 'block';
+                if (radioArticulos) radioArticulos.checked = true;
+                document.getElementById('containerArticulos').style.display = 'block';
+                document.getElementById('containerCombos').style.display = 'none';
+            } else {
+                if (containerTipo) containerTipo.style.display = 'none';
+                if (radioArticulos) radioArticulos.checked = true;
+                document.getElementById('containerArticulos').style.display = 'block';
+                document.getElementById('containerCombos').style.display = 'none';
+            }
+        });
+    }
+
+    const tipoAlquilerRadios = document.querySelectorAll('input[name="bookingTipoAlquiler"]');
+    tipoAlquilerRadios.forEach(radio => {
+        radio.addEventListener('change', function () {
+            if (this.value === 'Articulos') {
+                document.getElementById('containerArticulos').style.display = 'block';
+                document.getElementById('containerCombos').style.display = 'none';
+            } else {
+                document.getElementById('containerArticulos').style.display = 'none';
+                document.getElementById('containerCombos').style.display = 'block';
+                renderBookingCombos();
+            }
+        });
+    });
+
+    // Movilidad Logic
+    const movCheckbox = document.getElementById('bookingIncluyeMovilidad');
+    const movContainer = document.getElementById('containerPrecioMovilidad');
+    const movPriceInput = document.getElementById('bookingPrecioMovilidad');
+    const totalInput = document.getElementById('bookingTotal');
+
+    if (movCheckbox) {
+        movCheckbox.addEventListener('change', function() {
+            if (this.checked) {
+                if (movContainer) movContainer.style.display = 'block';
+            } else {
+                if (movContainer) movContainer.style.display = 'none';
+                
+                // if unchecked, subtract previous price from total
+                if (totalInput && movPriceInput && movPriceInput._previousValue > 0) {
+                    let currentTotal = parseFloat(totalInput.value) || 0;
+                    totalInput.value = Math.max(0, currentTotal - movPriceInput._previousValue).toFixed(2);
+                    if (typeof runDynamicCalculations === 'function') runDynamicCalculations();
+                }
+                
+                if (movPriceInput) {
+                    movPriceInput.value = '';
+                    movPriceInput._previousValue = 0;
+                }
+            }
+        });
+    }
+
+    if (movPriceInput) {
+        movPriceInput.addEventListener('input', function() {
+            let newPrice = parseFloat(this.value) || 0;
+            let prevPrice = this._previousValue || 0;
+            if (totalInput) {
+                let currentTotal = parseFloat(totalInput.value) || 0;
+                currentTotal = currentTotal - prevPrice + newPrice;
+                totalInput.value = Math.max(0, currentTotal).toFixed(2);
+                if (typeof runDynamicCalculations === 'function') runDynamicCalculations();
+            }
+            this._previousValue = newPrice;
         });
     }
 
@@ -461,6 +533,182 @@ window.updateTotalQty = function () {
     counter.textContent = total;
 }
 
+function renderBookingCombos(selectedValues = []) {
+    const container = document.getElementById('bookingCombosContainer');
+    if (!container) return;
+
+    const combos = [
+        {
+            value: 'Combo|Combo 1',
+            name: 'COMBO 01',
+            price: 620,
+            description: '- POP CORN ILIMITADO<br>- Mini Hamburguesa (50)<br>- Panchos (50)<br>- 2 Carritos'
+        },
+        {
+            value: 'Combo|Combo 2',
+            name: 'COMBO 02',
+            price: 660,
+            description: '- POP CORN ILIMITADO<br>- HELADOS (50)<br>- MANZANA ACARAMELADA (50)<br>- 2 CARRITOS'
+        },
+        {
+            value: 'Combo|Combo 3',
+            name: 'COMBO 03',
+            price: 600,
+            description: '- CHORIPAN (50)<br>- CHURROS (50)<br>- 2 CARRITOS'
+        },
+        {
+            value: 'Combo|Combo 4',
+            name: 'COMBO 04',
+            price: 700,
+            description: '- MINI HAMBURGUESA (50)<br>- MINI SALCHIPAPA (50)<br>- 1 CARRITOS'
+        },
+        {
+            value: 'Combo|Combo 5',
+            name: 'COMBO 05',
+            price: 720,
+            description: '- MINI HAMBURGUESA (50)<br>- CHURROS (50)<br>- ALGODÓN DULCE ILIMITADO<br>- 2 CARRITOS'
+        },
+        {
+            value: 'Combo|Combo 6',
+            name: 'COMBO 06',
+            price: 690,
+            description: '- MINI HAMBURGUESA (50)<br>- HELADOS (50)<br>- PANCHOS (50)<br>- 2 CARRITOS'
+        },
+        {
+            value: 'Combo|Combo 7',
+            name: 'COMBO 07',
+            price: 840,
+            description: '- MINI HAMBURGUESA (50)<br>- CHURROS (50)<br>- WAFFLES (50)<br>- 2 CARRITOS'
+        },
+        {
+            value: 'Combo|Combo 8',
+            name: 'COMBO 08',
+            price: 785,
+            description: '- HELADOS (50)<br>- CHURROS (50)<br>- 3 CARRITOS'
+        },
+        {
+            value: 'Combo|Combo 9',
+            name: 'COMBO 09',
+            price: 950,
+            description: '- SALCHI PAPA (50)<br>- CHURROS (50)<br>- PANCHOS (50)<br>- 2 CARRITOS'
+        },
+        {
+            value: 'Combo|Combo 10',
+            name: 'COMBO 10',
+            price: 500,
+            description: '- POP CORN (100)<br>- ALGODON (100)<br>- 2 CARRITOS'
+        },
+        {
+            value: 'Combo|Combo 11',
+            name: 'COMBO 11',
+            price: 590,
+            description: '- PANCHOS (100)<br>- POP CORN ILIMITADO<br>- 2 CARRITOS'
+        },
+        {
+            value: 'Combo|Combo 12',
+            name: 'COMBO 12',
+            price: 1040,
+            description: '- HAMBURGUESA (100)<br>- CHURROS (100)<br>- PANCHOS (100)<br>- 2 CARRITOS'
+        },
+        {
+            value: 'Combo|Combo 13',
+            name: 'COMBO 13',
+            price: 980,
+            description: '- POP CORN ILIMITADO<br>- MINI HAMBURGUESA (100)<br>- PANCHOS (100)<br>- 2 CARRITOS'
+        },
+        {
+            value: 'Combo|Combo 14',
+            name: 'COMBO 14',
+            price: 970,
+            description: '- POP CORN ILIMITADO<br>- HELADOS (100)<br>- PANCHOS (100)<br>- 3 CARRITOS'
+        },
+        {
+            value: 'Combo|Combo 15',
+            name: 'COMBO 15',
+            price: 920,
+            description: '- POP CORN ILIMITADO<br>- MANZANA ACARAMELADA (100)<br>- PANCHOS (100)<br>- 2 CARRITOS'
+        },
+        {
+            value: 'Combo|Combo 16',
+            name: 'COMBO 16',
+            price: 930,
+            description: '- POP CORN ILIMITADO<br>- CHURROS (100)<br>- PANCHOS (100)<br>- 2 CARRITOS'
+        }
+
+    ];
+
+    let html = '';
+    combos.forEach((combo, index) => {
+        if (index === 0) {
+            html += `<h5 style="margin: 8px 0 8px 8px; color: var(--primary); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.8;">Combos de 50 Unidades / Porciones</h5>`;
+        } else if (index === 9) {
+            html += `<h5 style="margin: 16px 0 8px 8px; color: var(--primary); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.8;">Combos de 100 Unidades / Porciones</h5>`;
+        }
+        
+        const isChecked = selectedValues.includes(combo.value) || selectedValues.some(v => v.startsWith(combo.value + " (")) ? 'checked' : '';
+        html += `
+            <div style="padding: 8px 12px; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin: 0;">
+                    <input type="checkbox" name="bookingCombo" value="${combo.value}" ${isChecked} data-desc="${encodeURIComponent(combo.description)}" data-name="${combo.name}" data-price="${combo.price}" style="accent-color: #ec4899; width: 16px; height: 16px;">
+                    <span style="font-size: 14px; color: var(--text-primary); font-weight: 500;">${combo.name} - S/. ${combo.price}</span>
+                </label>
+            </div>
+        `;
+    });
+    container.innerHTML = html;
+
+    // Agregar event listeners para actualizar la descripción
+    const checkboxes = container.querySelectorAll('input[name="bookingCombo"]');
+    checkboxes.forEach(cb => {
+        cb.addEventListener('change', updateCombosDescription);
+    });
+
+    // Llamada inicial para actualizar si hay combos pre-seleccionados
+    updateCombosDescription();
+}
+
+window.updateCombosDescription = function () {
+    const checkboxes = document.querySelectorAll('input[name="bookingCombo"]:checked');
+    const descContainer = document.getElementById('combosDescriptionContainer');
+    const descContent = document.getElementById('combosDescriptionContent');
+    const priceInput = document.getElementById('bookingTotal');
+
+    if (checkboxes.length > 0) {
+        let contentHtml = '';
+        let totalPrice = 0;
+        checkboxes.forEach(cb => {
+            const name = cb.getAttribute('data-name');
+            const desc = decodeURIComponent(cb.getAttribute('data-desc'));
+            const price = parseFloat(cb.getAttribute('data-price')) || 0;
+            totalPrice += price;
+
+            contentHtml += `
+                <div style="margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px dashed rgba(255,255,255,0.1);">
+                    <strong style="color: #ec4899; display: block; margin-bottom: 4px;">${name}</strong>
+                    <div style="padding-left: 8px;">${desc}</div>
+                </div>
+            `;
+        });
+        if (descContent) descContent.innerHTML = contentHtml;
+        if (descContainer) descContainer.style.display = 'block';
+
+        // Auto-update price if it's empty, 0, or user just clicked (simplificado)
+        if (priceInput && (!priceInput.value || parseFloat(priceInput.value) === 0)) {
+            priceInput.value = totalPrice.toFixed(2);
+            if (typeof runDynamicCalculations === 'function') runDynamicCalculations();
+        }
+    } else {
+        if (descContainer) descContainer.style.display = 'none';
+        if (descContent) descContent.innerHTML = '';
+        if (priceInput && typeof runDynamicCalculations === 'function') {
+            // Reset si se deselecciona todo y el precio concuerda
+            if (priceInput.value) {
+                // optionally you could reset the price, but it's safer to just let the user handle it
+            }
+        }
+    }
+}
+
 function openModal(id) { document.getElementById(id).classList.add('active'); }
 function closeModal(id) { document.getElementById(id).classList.remove('active'); }
 
@@ -472,6 +720,13 @@ function openBookingModal(booking = null, defaultDate = null) {
     if (refInputReset) refInputReset.value = '';
     const movInputReset = document.getElementById('bookingIncluyeMovilidad');
     if (movInputReset) movInputReset.checked = false;
+    const movContainerReset = document.getElementById('containerPrecioMovilidad');
+    if (movContainerReset) movContainerReset.style.display = 'none';
+    const movPriceReset = document.getElementById('bookingPrecioMovilidad');
+    if (movPriceReset) {
+        movPriceReset.value = '';
+        movPriceReset._previousValue = 0;
+    }
 
     // Operators
     const selectAsesor = document.getElementById('bookingNotes');
@@ -498,9 +753,19 @@ function openBookingModal(booking = null, defaultDate = null) {
         let lugarVal = '';
         let refVal = '';
         let incluyeMovVal = false;
+        let movPriceVal = '';
         if (tipoVal.includes(' | Movilidad: Sí')) {
             incluyeMovVal = true;
-            tipoVal = tipoVal.replace(' | Movilidad: Sí', '');
+            const match = tipoVal.match(/ \| Movilidad: Sí \(S\/\. ([\d.]+)\)/);
+            if (match) {
+                movPriceVal = match[1];
+                tipoVal = tipoVal.replace(match[0], '');
+            } else {
+                tipoVal = tipoVal.replace(' | Movilidad: Sí', '');
+            }
+        } else if (tipoVal.includes(' | Movilidad: Gratis')) {
+            incluyeMovVal = true;
+            tipoVal = tipoVal.replace(' | Movilidad: Gratis', '');
         }
         if (tipoVal.includes(' | Referencia: ')) {
             let partsRef = tipoVal.split(' | Referencia: ');
@@ -517,19 +782,48 @@ function openBookingModal(booking = null, defaultDate = null) {
         const refInputModal = document.getElementById('bookingReferencia');
         if (refInputModal) refInputModal.value = refVal;
         const movInputModal = document.getElementById('bookingIncluyeMovilidad');
-        if (movInputModal) movInputModal.checked = incluyeMovVal;
+        const movContainer = document.getElementById('containerPrecioMovilidad');
+        const movPriceInput = document.getElementById('bookingPrecioMovilidad');
+        if (movInputModal) {
+            movInputModal.checked = incluyeMovVal;
+            if (movContainer) movContainer.style.display = incluyeMovVal ? 'block' : 'none';
+        }
+        if (movPriceInput) {
+            movPriceInput.value = movPriceVal;
+            movPriceInput._previousValue = parseFloat(movPriceVal) || 0;
+        }
 
         // Cargar Categoría y Artículo dinámicamente
         const categorySelect = document.getElementById('bookingCategoria');
+        const containerTipo = document.getElementById('containerTipoAlquiler');
         let cat = booking.categoria || '';
         if (cat === 'Juego Inflable') cat = 'Magia del rebote';
 
-        if (categorySelect) {
-            categorySelect.value = cat;
-        }
+        if (cat === 'Combo') {
+            if (categorySelect) categorySelect.value = 'Carrito Snacks';
+            if (containerTipo) containerTipo.style.display = 'block';
+            
+            const radioCombos = document.querySelector('input[name="bookingTipoAlquiler"][value="Combos"]');
+            if (radioCombos) radioCombos.checked = true;
+            document.getElementById('containerArticulos').style.display = 'none';
+            document.getElementById('containerCombos').style.display = 'block';
+            renderBookingCombos([`Combo|${booking.item}`]);
+        } else {
+            if (categorySelect) {
+                categorySelect.value = cat;
+            }
+            if (containerTipo) {
+                containerTipo.style.display = cat === 'Carrito Snacks' ? 'block' : 'none';
+            }
+            
+            const radioArticulos = document.querySelector('input[name="bookingTipoAlquiler"][value="Articulos"]');
+            if (radioArticulos) radioArticulos.checked = true;
+            document.getElementById('containerArticulos').style.display = 'block';
+            document.getElementById('containerCombos').style.display = 'none';
 
-        const itemVal = `${booking.categoria}|${booking.item}`;
-        renderBookingItems(cat, [itemVal]);
+            const itemVal = `${booking.categoria}|${booking.item}`;
+            renderBookingItems(cat, [itemVal]);
+        }
 
         document.getElementById('bookingFecha').value = booking.fecha_reserva;
 
@@ -577,6 +871,14 @@ function openBookingModal(booking = null, defaultDate = null) {
             categorySelect.value = '';
         }
         renderBookingItems();
+        
+        const containerTipo = document.getElementById('containerTipoAlquiler');
+        if (containerTipo) containerTipo.style.display = 'none';
+
+        const radioArticulos = document.querySelector('input[name="bookingTipoAlquiler"][value="Articulos"]');
+        if (radioArticulos) radioArticulos.checked = true;
+        document.getElementById('containerArticulos').style.display = 'block';
+        document.getElementById('containerCombos').style.display = 'none';
 
         // Valores por defecto
         document.getElementById('bookingHoraInicio').value = "09:00";
@@ -594,9 +896,12 @@ async function handleSaveBooking(e) {
     const isBlock = document.getElementById('bookingIsBlock').checked;
 
     // Check selected items from checkboxes
-    const checkedItems = document.querySelectorAll('input[name="bookingItem"]:checked');
+    const tipoAlquiler = document.querySelector('input[name="bookingTipoAlquiler"]:checked').value;
+    const nameAttr = tipoAlquiler === 'Articulos' ? 'bookingItem' : 'bookingCombo';
+    const checkedItems = document.querySelectorAll(`input[name="${nameAttr}"]:checked`);
+
     if (checkedItems.length === 0) {
-        document.getElementById('bookingError').textContent = 'Seleccione al menos un artículo.';
+        document.getElementById('bookingError').textContent = `Seleccione al menos un ${tipoAlquiler === 'Articulos' ? 'artículo' : 'combo'}.`;
         return;
     }
 
@@ -640,7 +945,13 @@ async function handleSaveBooking(e) {
         }
         const movEl = document.getElementById('bookingIncluyeMovilidad');
         if (movEl && movEl.checked) {
-            tipoEventoSave += ' | Movilidad: Sí';
+            const movPriceInput = document.getElementById('bookingPrecioMovilidad');
+            const movPrice = movPriceInput ? parseFloat(movPriceInput.value) : 0;
+            if (movPrice > 0) {
+                tipoEventoSave += ` | Movilidad: Sí (S/. ${movPrice.toFixed(2)})`;
+            } else {
+                tipoEventoSave += ' | Movilidad: Gratis';
+            }
         }
 
         const payload = {
@@ -948,6 +1259,7 @@ function renderCalendarEvents() {
             end: endIso,
             backgroundColor: color,
             borderColor: color,
+            display: 'block',
             classNames: [customClass],
             extendedProps: { rawBooking: b }
         });
@@ -1906,24 +2218,45 @@ function handleCopyReservation() {
     const incluyeMovilidad = movEl ? movEl.checked : false;
     const observaciones = (document.getElementById('bookingComment').value || '').trim();
 
-    // items
-    const checkedItems = document.querySelectorAll('input[name="bookingItem"]:checked');
+    // items o combos
+    const tipoAlquiler = document.querySelector('input[name="bookingTipoAlquiler"]:checked');
+    const isCombo = tipoAlquiler && tipoAlquiler.value === 'Combos';
     const itemsList = [];
-    checkedItems.forEach(cb => {
-        let [, itemText] = cb.value.split('|');
-        if (isSnacks) {
-            const qtyInput = document.getElementById(`qty_${cb.value.replace(/\s+/g, '_')}`);
-            if (qtyInput) {
-                itemsList.push(`* ${qtyInput.value} ${itemText}`);
-            } else {
-                itemsList.push(`* ${itemText}`);
-            }
-        } else {
-            itemsList.push(`* ${itemText}`);
-        }
-    });
 
-    const modeloTitle = isSnacks ? '*Combos de snacks:*' : '*Modelo de Inflable(s):*';
+    if (isCombo) {
+        const checkedCombos = document.querySelectorAll('input[name="bookingCombo"]:checked');
+        checkedCombos.forEach(cb => {
+            const comboName = cb.getAttribute('data-name') || '';
+            const comboDesc = decodeURIComponent(cb.getAttribute('data-desc') || '');
+            itemsList.push(`${comboName}:`);
+            const descLines = comboDesc.split('<br>').map(line => line.trim());
+            descLines.forEach(line => {
+                // Remove initial hyphen if present to style it nicely, or just leave it
+                if (line.startsWith('- ')) line = '• ' + line.substring(2);
+                else if (line.startsWith('-')) line = '• ' + line.substring(1);
+                
+                if (line) itemsList.push(`${line}`);
+            });
+            itemsList.push('');
+        });
+    } else {
+        const checkedItems = document.querySelectorAll('input[name="bookingItem"]:checked');
+        checkedItems.forEach(cb => {
+            let [, itemText] = cb.value.split('|');
+            if (isSnacks) {
+                const qtyInput = document.getElementById(`qty_${cb.value.replace(/\s+/g, '_')}`);
+                if (qtyInput) {
+                    itemsList.push(`• ${qtyInput.value} ${itemText}`);
+                } else {
+                    itemsList.push(`• ${itemText}`);
+                }
+            } else {
+                itemsList.push(`• ${itemText}`);
+            }
+        });
+    }
+
+    const modeloTitle = isSnacks ? (isCombo ? '*Combos:*' : '*Artículos de snacks:*') : '*Modelo de Inflable(s):*';
 
     const total = parseFloat(document.getElementById('bookingTotal').value) || 0;
     const adelanto = parseFloat(document.getElementById('bookingAdelanto').value) || 0;
@@ -1944,13 +2277,20 @@ function handleCopyReservation() {
 
     text += `\n${modeloTitle}\n`;
     if (itemsList.length > 0) {
-        text += itemsList.join('\n') + '\n\n';
+        text += itemsList.join('\n');
+        if (!isCombo) text += '\n'; // add extra newline if it's not combo (combo already adds empty lines)
     } else {
-        text += `* Ninguno seleccionado\n\n`;
+        text += `* Ninguno seleccionado\n`;
     }
-    text += `*Saldo pendiente a cancelar S/${saldo}, antes de la instalación*\n`;
+    text += `\n*Saldo pendiente a cancelar S/${saldo}, antes de la instalación*\n`;
     if (incluyeMovilidad) {
-        text += `✅ *Incluye movilidad*\n`;
+        const movPriceInput = document.getElementById('bookingPrecioMovilidad');
+        const movPrice = movPriceInput ? parseFloat(movPriceInput.value) : 0;
+        if (movPrice > 0) {
+            text += `✅ *Incluye movilidad (S/. ${movPrice.toFixed(2)})*\n`;
+        } else {
+            text += `✅ *Incluye movilidad (Gratis)*\n`;
+        }
     } else {
         text += `🚫 *No incluye movilidad*\n`;
     }

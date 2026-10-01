@@ -649,7 +649,7 @@ function openBookingEditModal(booking) {
     if (phoneInput) phoneInput.value = booking.telefono_cliente || '';
     // Buscar otros bungalows del mismo grupo (misma reserva original)
     // Criterio: Mismo DNI, nombre, fecha ingreso, fecha salida, horario.
-    const groupedBookings = bookings.filter(b => 
+    const groupedBookings = bookings.filter(b =>
         b.dni_cliente === booking.dni_cliente &&
         b.nombre_cliente === booking.nombre_cliente &&
         b.fecha_ingreso === booking.fecha_ingreso &&
@@ -692,27 +692,7 @@ function openBookingEditModal(booking) {
     const ninosAdicEdit = document.getElementById('bookingNinosAdicionales');
     if (ninosAdicEdit) ninosAdicEdit.value = booking.ninos_pagantes || 0;
     document.getElementById('bookingHorasExtras').value = booking.horas_extras || 0;
-    
-    // Sumar montos de todo el grupo
-    let totalAdicHoras = 0;
-    let totalMonto = 0;
-    let totalAdelanto = 0;
-    groupToLoad.forEach(b => {
-        totalAdicHoras += parseFloat(b.adicional_horas) || 0;
-        totalMonto += parseFloat(b.monto_total) || 0;
-        totalAdelanto += parseFloat(b.monto_adelanto) || 0;
-    });
 
-    document.getElementById('bookingAdicionalHoras').value = totalAdicHoras;
-    document.getElementById('bookingTotal').value = totalMonto.toFixed(2);
-    document.getElementById('bookingAdelanto').value = totalAdelanto.toFixed(2);
-    document.getElementById('bookingPaymentType').value = booking.tipo_pago;
-    
-    let notesValue = booking.notas || '';
-    if (document.getElementById('bookingVino')) document.getElementById('bookingVino').checked = notesValue.includes('🍷');
-    if (document.getElementById('bookingTorta')) document.getElementById('bookingTorta').checked = notesValue.includes('🎂');
-    if (document.getElementById('bookingCuatrimoto')) document.getElementById('bookingCuatrimoto').checked = notesValue.includes('🏍️');
-    
     document.getElementById('bookingComment').value = notesValue.replace(/[🍷🎂🏍️]/g, '').replace(/ - /g, '').trim();
 
     // Handle divided payment
@@ -1066,7 +1046,7 @@ async function initDatabase() {
         try {
             supabaseClient = supabase.createClient(url, key);
 
-            // Directly test query on reservas_bungalows table
+            // Directly test query on reservas_bungalows table1
             const { data, error } = await supabaseClient.from('reservas_bungalows').select('id').limit(1);
 
             if (!error) {
@@ -1308,7 +1288,7 @@ async function handleSaveBooking(e) {
             fecha_salida: checkOut,
             horario: horario,
             estado_reserva: isBlock ? 'Bloqueado' : 'Confirmado',
-            notas: (function(){
+            notas: (function () {
                 let finalNotes = document.getElementById('bookingComment').value.trim();
                 let icons = [];
                 if (document.getElementById('bookingVino') && document.getElementById('bookingVino').checked) icons.push('🍷');
@@ -1374,10 +1354,10 @@ async function handleSaveBooking(e) {
 
             // Calculate the correct proportion for this bungalow based on the total negotiated price.
             // totalCalculado represents the total price for all selected bungalows combined.
-            const singleTotalCalculado = (totalCalculado > 0) 
+            const singleTotalCalculado = (totalCalculado > 0)
                 ? safeDivide(totalCalculado, selectedBungalows.length, index)
                 : (payload.precio_base + payload.adicional_personas + payload.adicional_horas);
-            
+
             payload.monto_total = singleTotalCalculado;
 
             if (totalCalculado > 0) {
@@ -1394,9 +1374,23 @@ async function handleSaveBooking(e) {
                     payload.monto_efectivo = 0;
                     payload.monto_yape = 0;
                 }
+                payload.monto_deposito = 0;
+            } else if (payload.tipo_pago === 'Efectivo') {
+                payload.monto_efectivo = singleTotalCalculado;
+                payload.monto_yape = 0;
+                payload.monto_deposito = 0;
+            } else if (payload.tipo_pago === 'Yape') {
+                payload.monto_efectivo = 0;
+                payload.monto_yape = singleTotalCalculado;
+                payload.monto_deposito = 0;
+            } else if (payload.tipo_pago === 'Depósito') {
+                payload.monto_efectivo = 0;
+                payload.monto_yape = 0;
+                payload.monto_deposito = singleTotalCalculado;
             } else {
                 payload.monto_efectivo = 0;
                 payload.monto_yape = 0;
+                payload.monto_deposito = 0;
             }
         }
         return payload;
@@ -1408,7 +1402,7 @@ async function handleSaveBooking(e) {
                 // Modo Edición Grupal:
                 const oldBooking = bookings.find(b => b.id === id);
                 if (oldBooking) {
-                    const groupBookings = bookings.filter(b => 
+                    const groupBookings = bookings.filter(b =>
                         b.dni_cliente === oldBooking.dni_cliente &&
                         b.nombre_cliente === oldBooking.nombre_cliente &&
                         b.fecha_ingreso === oldBooking.fecha_ingreso &&
@@ -1430,7 +1424,7 @@ async function handleSaveBooking(e) {
 
                 // 2. Insertar los nuevos seleccionados con la info actualizada
                 const payloads = selectedBungalows.map((bNo, idx) => getPayloadForBungalow(bNo, idx));
-                
+
                 // Tratar de preservar el created_at original si existe
                 if (oldBooking && oldBooking.created_at) {
                     payloads.forEach(p => p.created_at = oldBooking.created_at);
@@ -1440,7 +1434,7 @@ async function handleSaveBooking(e) {
                     .from('reservas_bungalows')
                     .insert(payloads);
                 if (insErr) throw insErr;
-                
+
                 logSessionActivity(`Reserva grupal editada para: ${payloads[0].nombre_cliente}`);
             } else {
                 // Modo Creación: Insertar todos los bungalows seleccionados
@@ -1644,7 +1638,7 @@ function initCalendar() {
             let emoji = '☀️🌙';
             if (b.horario === 'Full Day') emoji = '☀️';
             else if (b.horario === 'Horario Extendido') emoji = '✨';
-                else if (b.horario === '9am a 12pm') emoji = '🌅';
+            else if (b.horario === '9am a 12pm') emoji = '🌅';
             else if (b.horario === '9am a 12pm') emoji = '🌅';
 
             let extrasIconsHtml = '';
@@ -1678,7 +1672,7 @@ function initCalendar() {
             const isSmallScreen = window.innerWidth <= 768;
             const fcEvents = bookings.map(b => {
                 const isBlocked = b.estado_reserva === 'Bloqueado';
-                
+
                 // Calcular horas de entrada y salida
                 let startHour = '3:00 PM';
                 let endHour = '12:00 PM';
@@ -1702,7 +1696,7 @@ function initCalendar() {
                 if (b.horario === 'Full Day') emoji = '☀️';
                 else if (b.horario === 'Horario Extendido') emoji = '✨';
                 else if (b.horario === '9am a 12pm') emoji = '🌅';
-            else if (b.horario === '9am a 12pm') emoji = '🌅';
+                else if (b.horario === '9am a 12pm') emoji = '🌅';
 
                 let title = "";
                 if (isBlocked) {
@@ -1748,7 +1742,7 @@ function initCalendar() {
             const filterAsesorVal = document.getElementById('filterAsesor') ? document.getElementById('filterAsesor').value : 'TODOS';
             const filteredEvents = fcEvents.filter(event => {
                 const bNo = event.extendedProps.bungalow_numero;
-                
+
                 // Filtrar según la pestaña activa (B1 a B6 o Todos)
                 if (currentBungalowTab !== 'all' && bNo !== parseInt(currentBungalowTab)) {
                     return false;
@@ -2409,7 +2403,7 @@ function updateAvailabilityChecker() {
 
 window.quickBookFromChecker = function (bNum, inStr, outStr, horario) {
     openBookingModal(inStr);
-    
+
     // Marcar el bungalow
     const chkList = document.querySelectorAll('input[name="bungalowSelect"]');
     chkList.forEach(chk => {
@@ -2639,6 +2633,94 @@ async function exportAllDataToExcel() {
         return;
     }
 
+    // ─── BORRÓN Y CUENTA NUEVA: DESDE EL 1 DE OCTUBRE DE 2026 ─────
+    const START_DATE = '2026-10-01';
+    const filteredBookings = bookings.filter(b => {
+        if (!b.fecha_ingreso) return false;
+        return b.fecha_ingreso >= START_DATE;
+    });
+
+    if (filteredBookings.length === 0) {
+        alert("No hay reservas registradas a partir del 1 de Octubre de 2026 para exportar.");
+        return;
+    }
+
+    // Helper para consolidar reservas que pertenecen a un mismo cliente / fechas / horario
+    // Garantiza que si se alquilan 5 bungalows por S/. 500, el monto total sea S/. 500 (NO 500 x 5)
+    function consolidateBookings(items) {
+        const grouped = {};
+        items.forEach(b => {
+            const key = `${(b.dni_cliente || 'nodni').trim()}_${(b.nombre_cliente || 'noname').trim()}_${b.fecha_ingreso}_${b.fecha_salida}_${b.horario}_${b.estado_reserva}`;
+            let efectivo = parseFloat(b.monto_efectivo) || 0;
+            let yape = parseFloat(b.monto_yape) || 0;
+            let deposito = parseFloat(b.monto_deposito) || 0;
+            const tot = parseFloat(b.monto_total) || 0;
+
+            if (b.tipo_pago === 'Efectivo' && efectivo === 0) efectivo = tot;
+            if (b.tipo_pago === 'Yape' && yape === 0) yape = tot;
+            if (b.tipo_pago === 'Depósito' && deposito === 0) deposito = tot;
+
+            if (!grouped[key]) {
+                grouped[key] = {
+                    ...b,
+                    first_record: b,
+                    bungalows_arr: [b.bungalow_numero],
+                    raw_monto_total: tot,
+                    raw_monto_adelanto: parseFloat(b.monto_adelanto) || 0,
+                    raw_monto_efectivo: efectivo,
+                    raw_monto_yape: yape,
+                    raw_monto_deposito: deposito,
+                    monto_adic_personas: parseFloat(b.adicional_personas) || 0,
+                    monto_adic_horas: parseFloat(b.adicional_horas) || 0
+                };
+            } else {
+                grouped[key].bungalows_arr.push(b.bungalow_numero);
+                grouped[key].raw_monto_total += tot;
+                grouped[key].raw_monto_adelanto += (parseFloat(b.monto_adelanto) || 0);
+                grouped[key].raw_monto_efectivo += efectivo;
+                grouped[key].raw_monto_yape += yape;
+                grouped[key].raw_monto_deposito += deposito;
+                grouped[key].monto_adic_personas += (parseFloat(b.adicional_personas) || 0);
+                grouped[key].monto_adic_horas += (parseFloat(b.adicional_horas) || 0);
+            }
+        });
+
+        return Object.values(grouped).map(g => {
+            const N = g.bungalows_arr.length;
+            let finalTotal = g.raw_monto_total;
+            let finalAdelanto = g.raw_monto_adelanto;
+            let finalEfectivo = g.raw_monto_efectivo;
+            let finalYape = g.raw_monto_yape;
+            let finalDeposito = g.raw_monto_deposito;
+
+            // Detección de seguridad para registros antiguos guardados sin dividir:
+            // Si cada fila tenía guardado el total completo (ej. 500) en lugar de dividirse (100)
+            if (N > 1 && g.first_record) {
+                const singleMonto = parseFloat(g.first_record.monto_total) || 0;
+                const singleBase = parseFloat(g.first_record.precio_base) || 0;
+                if (singleBase > 0 && singleMonto >= (singleBase * 0.8)) {
+                    if (Math.abs(g.raw_monto_total - (singleMonto * N)) < 0.05) {
+                        finalTotal = singleMonto;
+                        finalAdelanto = parseFloat(g.first_record.monto_adelanto) || 0;
+                        finalEfectivo = g.first_record.tipo_pago === 'Efectivo' ? singleMonto : (parseFloat(g.first_record.monto_efectivo) || 0);
+                        finalYape = g.first_record.tipo_pago === 'Yape' ? singleMonto : (parseFloat(g.first_record.monto_yape) || 0);
+                        finalDeposito = g.first_record.tipo_pago === 'Depósito' ? singleMonto : (parseFloat(g.first_record.monto_deposito) || 0);
+                    }
+                }
+            }
+
+            return {
+                ...g,
+                bungalow_numero: g.bungalows_arr.sort((a, b) => a - b).join(', '),
+                monto_total: finalTotal,
+                monto_adelanto: finalAdelanto,
+                monto_efectivo: finalEfectivo,
+                monto_yape: finalYape,
+                monto_deposito: finalDeposito
+            };
+        });
+    }
+
     const workbook = new ExcelJS.Workbook();
 
     // ─── RESUMEN SHEET ─────────────────────────────────────────────
@@ -2657,6 +2739,7 @@ async function exportAllDataToExcel() {
             right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
         };
     }
+
     function styleValue(cell, value, isMoney = false) {
         cell.value = isMoney ? parseFloat(parseFloat(value).toFixed(2)) : value;
         if (isMoney) cell.numFmt = '"S/. "#,##0.00';
@@ -2671,11 +2754,11 @@ async function exportAllDataToExcel() {
         };
     }
 
-    summaryWs.getColumn(1).width = 30;
+    summaryWs.getColumn(1).width = 32;
     summaryWs.getColumn(2).width = 20;
-    summaryWs.getColumn(3).width = 20;
-    summaryWs.getColumn(4).width = 20;
-    summaryWs.getColumn(5).width = 20;
+    summaryWs.getColumn(3).width = 22;
+    summaryWs.getColumn(4).width = 22;
+    summaryWs.getColumn(5).width = 22;
 
     let sr = 1;
     const monthColorsS = ['FFFFFFFF', 'FFF8FAFC'];
@@ -2683,14 +2766,13 @@ async function exportAllDataToExcel() {
     // Title Block
     summaryWs.mergeCells(sr, 1, sr, 5);
     const mainTitleCell = summaryWs.getCell(sr, 1);
-    styleTitle(mainTitleCell, "REPORTE GENERAL DE RESERVAS Y ESTADÍSTICAS - BUNGALOWS", 'FF0F766E', 'FFFFFFFF', 14);
+    styleTitle(mainTitleCell, "REPORTE GENERAL DE RESERVAS Y ESTADÍSTICAS - BUNGALOWS (DESDE OCTUBRE 2026)", 'FF0F766E', 'FFFFFFFF', 13);
     summaryWs.getRow(sr).height = 40;
     sr += 2; // Blank row
 
-    // Group events by Month based on fecha_ingreso
+    // Group filtered bookings by Month
     const groups = {};
-    bookings.forEach(b => {
-        if (!b.fecha_ingreso) return;
+    filteredBookings.forEach(b => {
         const dateParts = b.fecha_ingreso.split('-');
         if (dateParts.length < 2) return;
         const year = dateParts[0];
@@ -2706,7 +2788,7 @@ async function exportAllDataToExcel() {
 
     // 1. Month Summary Block
     summaryWs.mergeCells(sr, 1, sr, 5);
-    styleTitle(summaryWs.getCell(sr, 1), "INGRESOS Y USOS MENSUALES", 'FF334155', 'FFFFFFFF', 11);
+    styleTitle(summaryWs.getCell(sr, 1), "INGRESOS Y USOS MENSUALES (OCTUBRE 2026 EN ADELANTE)", 'FF334155', 'FFFFFFFF', 11);
     summaryWs.getRow(sr).height = 24; sr++;
 
     const headersM = ["Mes / Período", "Reservas", "Monto Hospedaje", "Monto Adicionales", "Total Facturado"];
@@ -2720,22 +2802,23 @@ async function exportAllDataToExcel() {
     let grandTotalAdic = 0;
     let grandTotalSum = 0;
 
+    const monthDataStartRow = sr;
     let rowIdx = 0;
     for (const [monthLabel, items] of Object.entries(groups)) {
         const bg = monthColorsS[rowIdx % 2];
         const activeItems = items.filter(b => b.estado_reserva !== 'Bloqueado');
+        const consolidatedActive = consolidateBookings(activeItems);
 
-        let count = activeItems.length;
+        let count = consolidatedActive.length;
         let hMonto = 0;
         let adicMonto = 0;
         let tMonto = 0;
 
-        activeItems.forEach(b => {
+        consolidatedActive.forEach(b => {
             const tot = parseFloat(b.monto_total) || 0;
-            const extraP = parseFloat(b.adicional_personas) || 0;
-            const extraH = parseFloat(b.adicional_horas) || 0;
+            const extraP = parseFloat(b.monto_adic_personas) || 0;
+            const extraH = parseFloat(b.monto_adic_horas) || 0;
 
-            // Hospedaje base (total minus extras)
             const base = Math.max(0, tot - extraP - extraH);
             hMonto += base;
             adicMonto += extraP + extraH;
@@ -2748,7 +2831,8 @@ async function exportAllDataToExcel() {
         grandTotalSum += tMonto;
 
         const c1 = summaryWs.getCell(sr, 1);
-        c1.value = monthLabel; c1.font = { name: 'Outfit', bold: true, size: 10, color: { argb: 'FF1E293B' } };
+        c1.value = monthLabel;
+        c1.font = { name: 'Outfit', bold: true, size: 10, color: { argb: 'FF1E293B' } };
         c1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
         c1.alignment = { vertical: 'middle', horizontal: 'left' };
         c1.border = { top: { style: 'thin', color: { argb: 'FFE2E8F0' } }, left: { style: 'thin', color: { argb: 'FFE2E8F0' } }, bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } }, right: { style: 'thin', color: { argb: 'FFE2E8F0' } } };
@@ -2756,9 +2840,15 @@ async function exportAllDataToExcel() {
         styleValue(summaryWs.getCell(sr, 2), count, false);
         styleValue(summaryWs.getCell(sr, 3), hMonto, true);
         styleValue(summaryWs.getCell(sr, 4), adicMonto, true);
-        styleValue(summaryWs.getCell(sr, 5), tMonto, true);
+        
+        // Fórmula de Excel para Total Facturado: Hospedaje + Adicionales
+        const cellTotal = summaryWs.getCell(sr, 5);
+        cellTotal.value = { formula: `C${sr}+D${sr}`, result: tMonto };
+        cellTotal.numFmt = '"S/. "#,##0.00';
+        cellTotal.font = { name: 'Outfit', bold: true, size: 10, color: { argb: 'FF0F766E' } };
+        cellTotal.alignment = { vertical: 'middle', horizontal: 'right' };
+        cellTotal.border = { top: { style: 'thin', color: { argb: 'FFE2E8F0' } }, left: { style: 'thin', color: { argb: 'FFE2E8F0' } }, bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } }, right: { style: 'thin', color: { argb: 'FFE2E8F0' } } };
 
-        // Apply row BG to values
         for (let col = 2; col <= 5; col++) {
             summaryWs.getCell(sr, col).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
         }
@@ -2768,27 +2858,48 @@ async function exportAllDataToExcel() {
         rowIdx++;
     }
 
-    // Totals Row for Months
+    const monthDataEndRow = sr - 1;
+
+    // Totals Row for Months with Native Excel Formulas
     const totalCell = summaryWs.getCell(sr, 1);
     totalCell.value = "TOTAL GENERAL";
     totalCell.font = { name: 'Outfit', bold: true, size: 10, color: { argb: 'FFFFFFFF' } };
     totalCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F766E' } };
     totalCell.alignment = { vertical: 'middle', horizontal: 'left' };
-    totalCell.border = { top: { style: 'thin', color: { argb: 'FF0F766E' } }, left: { style: 'thin', color: { argb: 'FF0F766E' } }, bottom: { style: 'thin', color: { argb: 'FF0F766E' } }, right: { style: 'thin', color: { argb: 'FF0F766E' } } };
+    totalCell.border = { top: { style: 'medium', color: { argb: 'FF0F766E' } }, left: { style: 'thin', color: { argb: 'FF0F766E' } }, bottom: { style: 'medium', color: { argb: 'FF0F766E' } }, right: { style: 'thin', color: { argb: 'FF0F766E' } } };
 
-    styleValue(summaryWs.getCell(sr, 2), grandTotalBookings, false);
-    styleValue(summaryWs.getCell(sr, 3), grandTotalHospedaje, true);
-    styleValue(summaryWs.getCell(sr, 4), grandTotalAdic, true);
-    styleValue(summaryWs.getCell(sr, 5), grandTotalSum, true);
+    if (monthDataEndRow >= monthDataStartRow) {
+        summaryWs.getCell(sr, 2).value = { formula: `SUM(B${monthDataStartRow}:B${monthDataEndRow})`, result: grandTotalBookings };
+        summaryWs.getCell(sr, 3).value = { formula: `SUM(C${monthDataStartRow}:C${monthDataEndRow})`, result: grandTotalHospedaje };
+        summaryWs.getCell(sr, 4).value = { formula: `SUM(D${monthDataStartRow}:D${monthDataEndRow})`, result: grandTotalAdic };
+        summaryWs.getCell(sr, 5).value = { formula: `SUM(E${monthDataStartRow}:E${monthDataEndRow})`, result: grandTotalSum };
+    } else {
+        styleValue(summaryWs.getCell(sr, 2), 0, false);
+        styleValue(summaryWs.getCell(sr, 3), 0, true);
+        styleValue(summaryWs.getCell(sr, 4), 0, true);
+        styleValue(summaryWs.getCell(sr, 5), 0, true);
+    }
+
+    summaryWs.getCell(sr, 2).font = { name: 'Outfit', bold: true, size: 10, color: { argb: 'FFFFFFFF' } };
+    summaryWs.getCell(sr, 2).alignment = { vertical: 'middle', horizontal: 'left' };
+    summaryWs.getCell(sr, 3).numFmt = '"S/. "#,##0.00';
+    summaryWs.getCell(sr, 3).font = { name: 'Outfit', bold: true, size: 10, color: { argb: 'FFFFFFFF' } };
+    summaryWs.getCell(sr, 3).alignment = { vertical: 'middle', horizontal: 'right' };
+    summaryWs.getCell(sr, 4).numFmt = '"S/. "#,##0.00';
+    summaryWs.getCell(sr, 4).font = { name: 'Outfit', bold: true, size: 10, color: { argb: 'FFFFFFFF' } };
+    summaryWs.getCell(sr, 4).alignment = { vertical: 'middle', horizontal: 'right' };
+    summaryWs.getCell(sr, 5).numFmt = '"S/. "#,##0.00';
+    summaryWs.getCell(sr, 5).font = { name: 'Outfit', bold: true, size: 10, color: { argb: 'FFFFFFFF' } };
+    summaryWs.getCell(sr, 5).alignment = { vertical: 'middle', horizontal: 'right' };
 
     for (let col = 2; col <= 5; col++) {
-        summaryWs.getCell(sr, col).font.color = { argb: 'FFFFFFFF' };
         summaryWs.getCell(sr, col).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F766E' } };
+        summaryWs.getCell(sr, col).border = { top: { style: 'medium', color: { argb: 'FF0F766E' } }, bottom: { style: 'medium', color: { argb: 'FF0F766E' } }, left: { style: 'thin', color: { argb: 'FFE2E8F0' } }, right: { style: 'thin', color: { argb: 'FFE2E8F0' } } };
     }
     summaryWs.getRow(sr).height = 22;
     sr += 3; // Blank rows
 
-    // Helper function to format local YYYY-MM-DD
+    // Helper functions for dates
     const getLocalYYYYMMDD = (d) => {
         const y = d.getFullYear();
         const m = String(d.getMonth() + 1).padStart(2, '0');
@@ -2796,7 +2907,6 @@ async function exportAllDataToExcel() {
         return `${y}-${m}-${r}`;
     };
 
-    // Calculate all 7 days of the current week (Monday-Sunday)
     const getWeekDaysList = () => {
         const t = new Date();
         const day = t.getDay();
@@ -2814,97 +2924,76 @@ async function exportAllDataToExcel() {
     const currentWeekDays = getWeekDaysList();
     const todayStr = getLocalYYYYMMDD(new Date());
 
-    // ─── FINANCIAL SUMMARY OF CURRENT MONTH Block ───────────────────
-    const today = new Date();
-    const thisMonth = today.getMonth(); // 0-indexed (0-11)
-    const thisYear = today.getFullYear();
-
-    const monthBookings = bookings.filter(b => {
-        if (b.estado_reserva === 'Bloqueado' || b.estado_reserva === 'Bloqueo') return false;
-        if (!b.fecha_ingreso) return false;
-        const parts = b.fecha_ingreso.split('-');
-        if (parts.length < 2) return false;
-        const year = parseInt(parts[0]);
-        const month = parseInt(parts[1]) - 1; // Convert to 0-indexed
-        return (month === thisMonth && year === thisYear);
-    });
+    // ─── RESUMEN FINANCIERO CONSOLIDADOS (OCTUBRE 2026 EN ADELANTE) ─
+    const activeOctConsolidated = consolidateBookings(filteredBookings.filter(b => b.estado_reserva !== 'Bloqueado' && b.estado_reserva !== 'Bloqueo'));
 
     let monthRevenue = 0;
     let monthDeposito = 0;
-    let monthOtros = 0;
+    let monthEfectivo = 0;
+    let monthYape = 0;
     let monthDayNightRevenue = 0;
     let monthFullDayRevenue = 0;
+    let monthHorarioExtRevenue = 0;
     let monthAdicPersonas = 0;
+    let monthAdicHoras = 0;
 
-
-    monthBookings.forEach(b => {
+    activeOctConsolidated.forEach(b => {
         const amt = parseFloat(b.monto_total) || 0;
         monthRevenue += amt;
 
-        if (b.tipo_pago === 'Depósito') {
-            monthDeposito += amt;
-        } else if (b.tipo_pago === 'Yape' || b.tipo_pago === 'Efectivo') {
-            monthOtros += amt;
-        } else if (b.tipo_pago === 'Dividido') {
-            monthDeposito += parseFloat(b.monto_efectivo) || 0;
-            monthOtros += parseFloat(b.monto_yape) || 0;
-        }
+        monthDeposito += (parseFloat(b.monto_deposito) || 0);
+        monthEfectivo += (parseFloat(b.monto_efectivo) || 0);
+        monthYape += (parseFloat(b.monto_yape) || 0);
 
-        const isFullDay = b.horario === 'Full Day';
-        if (isFullDay) {
+        if (b.horario === 'Full Day') {
             monthFullDayRevenue += amt;
+        } else if (b.horario === 'Horario Extendido' || b.horario === '9am a 12pm') {
+            monthHorarioExtRevenue += amt;
         } else {
             monthDayNightRevenue += amt;
         }
 
-        monthAdicPersonas += parseFloat(b.adicional_personas) || 0;
+        monthAdicPersonas += (parseFloat(b.monto_adic_personas) || 0);
+        monthAdicHoras += (parseFloat(b.monto_adic_horas) || 0);
     });
 
-    // Today bookings calculations
-    const todayBookings = bookings.filter(b => {
-        if (b.estado_reserva === 'Bloqueado' || b.estado_reserva === 'Bloqueo') return false;
-        return b.fecha_ingreso === todayStr;
-    });
-
+    // Today bookings calculations (desde Octubre)
+    const todayConsolidated = consolidateBookings(filteredBookings.filter(b => b.estado_reserva !== 'Bloqueado' && b.estado_reserva !== 'Bloqueo' && b.fecha_ingreso === todayStr));
     let todayBungalowBase = 0;
     let todayAdicionales = 0;
     let todayTotal = 0;
 
-    todayBookings.forEach(b => {
+    todayConsolidated.forEach(b => {
         const tot = parseFloat(b.monto_total) || 0;
-        const extraP = parseFloat(b.adicional_personas) || 0;
-        const extraH = parseFloat(b.adicional_horas) || 0;
+        const extraP = parseFloat(b.monto_adic_personas) || 0;
+        const extraH = parseFloat(b.monto_adic_horas) || 0;
         const extra = extraP + extraH;
 
-        todayBungalowBase += (tot - extra);
+        todayBungalowBase += Math.max(0, tot - extra);
         todayAdicionales += extra;
         todayTotal += tot;
     });
 
-    // Week bookings calculations
-    const weekBookings = bookings.filter(b => {
-        if (b.estado_reserva === 'Bloqueado' || b.estado_reserva === 'Bloqueo') return false;
-        return currentWeekDays.includes(b.fecha_ingreso);
-    });
-
+    // Week bookings calculations (desde Octubre)
+    const weekConsolidated = consolidateBookings(filteredBookings.filter(b => b.estado_reserva !== 'Bloqueado' && b.estado_reserva !== 'Bloqueo' && currentWeekDays.includes(b.fecha_ingreso)));
     let weekBungalowBase = 0;
     let weekAdicionales = 0;
     let weekTotal = 0;
 
-    weekBookings.forEach(b => {
+    weekConsolidated.forEach(b => {
         const tot = parseFloat(b.monto_total) || 0;
-        const extraP = parseFloat(b.adicional_personas) || 0;
-        const extraH = parseFloat(b.adicional_horas) || 0;
+        const extraP = parseFloat(b.monto_adic_personas) || 0;
+        const extraH = parseFloat(b.monto_adic_horas) || 0;
         const extra = extraP + extraH;
 
-        weekBungalowBase += (tot - extra);
+        weekBungalowBase += Math.max(0, tot - extra);
         weekAdicionales += extra;
         weekTotal += tot;
     });
 
-    sr += 3;
+    // ─── BLOQUE FINANCIERO OCTUBRE 2026 ─────────────────────────────
     summaryWs.mergeCells(sr, 1, sr, 3);
-    styleTitle(summaryWs.getCell(sr, 1), "INGRESO DE DINERO EN BUNGALOWS (MES ACTUAL)", 'FF0F766E', 'FFFFFFFF', 11);
+    styleTitle(summaryWs.getCell(sr, 1), "INGRESO DE DINERO EN BUNGALOWS (OCTUBRE 2026 / PERÍODO VIGENTE)", 'FF0F766E', 'FFFFFFFF', 11);
     summaryWs.getRow(sr).height = 24; sr++;
 
     styleTitle(summaryWs.getCell(sr, 1), "Concepto", 'FF1E293B', 'FFFFFFFF', 10);
@@ -2912,12 +3001,15 @@ async function exportAllDataToExcel() {
     summaryWs.getRow(sr).height = 22; sr++;
 
     const financialData = [
-        ["Ganancia del Mes Total", monthRevenue],
-        ["Depósitos del Mes", monthDeposito],
-        ["Yape / Otros Pagos del Mes", monthOtros],
-        ["Ganancia del Mes Día y Noche", monthDayNightRevenue],
-        ["Ganancia de Full Day del Mes", monthFullDayRevenue],
-        ["Ganancia de Personas Adicionales", monthAdicPersonas]
+        ["Ganancia Total Facturada", monthRevenue],
+        ["Cobrado en Depósitos Bancarios", monthDeposito],
+        ["Cobrado en Efectivo", monthEfectivo],
+        ["Cobrado en Yape / Plin", monthYape],
+        ["Ganancia por Turno Día y Noche", monthDayNightRevenue],
+        ["Ganancia por Turno Full Day", monthFullDayRevenue],
+        ["Ganancia por Horario Extendido / 9am a 12pm", monthHorarioExtRevenue],
+        ["Ganancia por Personas Adicionales", monthAdicPersonas],
+        ["Ganancia por Horas Extras", monthAdicHoras]
     ];
 
     financialData.forEach(([concept, val], fIdx) => {
@@ -2927,12 +3019,7 @@ async function exportAllDataToExcel() {
         c1.font = { name: 'Outfit', bold: true, size: 10, color: { argb: 'FF1E293B' } };
         c1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
         c1.alignment = { vertical: 'middle', horizontal: 'left' };
-        c1.border = {
-            top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
-            left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
-            bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
-            right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
-        };
+        c1.border = { top: { style: 'thin', color: { argb: 'FFE2E8F0' } }, left: { style: 'thin', color: { argb: 'FFE2E8F0' } }, bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } }, right: { style: 'thin', color: { argb: 'FFE2E8F0' } } };
 
         styleValue(summaryWs.getCell(sr, 2), val, true);
         summaryWs.getCell(sr, 2).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
@@ -2941,8 +3028,8 @@ async function exportAllDataToExcel() {
         sr++;
     });
 
-    // ─── INGRESO DE DINERO EN BUNGALOWS (SEMANA ACTUAL) ────────────
-    sr += 3;
+    // ─── INGRESO DE DINERO (SEMANA ACTUAL) ──────────────────────────
+    sr += 2;
     summaryWs.mergeCells(sr, 1, sr, 3);
     styleTitle(summaryWs.getCell(sr, 1), "INGRESO DE DINERO EN BUNGALOWS (SEMANA ACTUAL)", 'FF0F766E', 'FFFFFFFF', 11);
     summaryWs.getRow(sr).height = 24; sr++;
@@ -2952,9 +3039,9 @@ async function exportAllDataToExcel() {
     summaryWs.getRow(sr).height = 22; sr++;
 
     const weekData = [
-        ["Ganancias de Bungalows Totales", weekBungalowBase],
+        ["Ganancias de Hospedaje Base", weekBungalowBase],
         ["Ganancias de Adicionales", weekAdicionales],
-        ["Total", weekTotal]
+        ["Total Semana", weekTotal]
     ];
 
     weekData.forEach(([concept, val], fIdx) => {
@@ -2964,12 +3051,7 @@ async function exportAllDataToExcel() {
         c1.font = { name: 'Outfit', bold: true, size: 10, color: { argb: 'FF1E293B' } };
         c1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
         c1.alignment = { vertical: 'middle', horizontal: 'left' };
-        c1.border = {
-            top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
-            left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
-            bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
-            right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
-        };
+        c1.border = { top: { style: 'thin', color: { argb: 'FFE2E8F0' } }, left: { style: 'thin', color: { argb: 'FFE2E8F0' } }, bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } }, right: { style: 'thin', color: { argb: 'FFE2E8F0' } } };
 
         styleValue(summaryWs.getCell(sr, 2), val, true);
         summaryWs.getCell(sr, 2).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
@@ -2978,8 +3060,8 @@ async function exportAllDataToExcel() {
         sr++;
     });
 
-    // ─── INGRESO DE DINERO EN BUNGALOWS (DÍA DE HOY) ────────────────
-    sr += 3;
+    // ─── INGRESO DE DINERO (DÍA DE HOY) ─────────────────────────────
+    sr += 2;
     summaryWs.mergeCells(sr, 1, sr, 3);
     styleTitle(summaryWs.getCell(sr, 1), "INGRESO DE DINERO EN BUNGALOWS (DÍA DE HOY)", 'FF0F766E', 'FFFFFFFF', 11);
     summaryWs.getRow(sr).height = 24; sr++;
@@ -2989,9 +3071,9 @@ async function exportAllDataToExcel() {
     summaryWs.getRow(sr).height = 22; sr++;
 
     const todayData = [
-        ["Ganancias de Bungalows Totales", todayBungalowBase],
+        ["Ganancias de Hospedaje Base", todayBungalowBase],
         ["Ganancias de Adicionales", todayAdicionales],
-        ["Total", todayTotal]
+        ["Total Hoy", todayTotal]
     ];
 
     todayData.forEach(([concept, val], fIdx) => {
@@ -3001,12 +3083,7 @@ async function exportAllDataToExcel() {
         c1.font = { name: 'Outfit', bold: true, size: 10, color: { argb: 'FF1E293B' } };
         c1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
         c1.alignment = { vertical: 'middle', horizontal: 'left' };
-        c1.border = {
-            top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
-            left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
-            bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
-            right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
-        };
+        c1.border = { top: { style: 'thin', color: { argb: 'FFE2E8F0' } }, left: { style: 'thin', color: { argb: 'FFE2E8F0' } }, bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } }, right: { style: 'thin', color: { argb: 'FFE2E8F0' } } };
 
         styleValue(summaryWs.getCell(sr, 2), val, true);
         summaryWs.getCell(sr, 2).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
@@ -3025,42 +3102,23 @@ async function exportAllDataToExcel() {
         { header: 'Asesores que lo atendieron', key: 'asesores', width: 35 },
         { header: 'Medios de Contacto', key: 'medios', width: 30 },
         { header: 'Número de Reservas', key: 'num_reservas', width: 20 },
-        { header: 'Fechas de Reservas', key: 'fechas_reservas', width: 28 },
+        { header: 'Fechas de Reservas', key: 'fechas_reservas', width: 30 },
         { header: 'Total Bungalows Reservados', key: 'total_bungalows', width: 24 }
     ];
     clientsWs.columns = clientColsDef;
 
-    // Style client header row
     const clientHeaderRow = clientsWs.getRow(1);
     clientHeaderRow.height = 26;
     clientHeaderRow.eachCell((cell) => {
-        cell.fill = {
-            type: 'pattern',
-            pattern: 'solid',
-            fgColor: { argb: 'FF10B981' }
-        };
-        cell.font = {
-            name: 'Outfit',
-            color: { argb: 'FFFFFFFF' },
-            bold: true,
-            size: 11
-        };
-        cell.alignment = {
-            vertical: 'middle',
-            horizontal: 'center',
-            wrapText: true
-        };
-        cell.border = {
-            top: { style: 'thin', color: { argb: 'FF1E293B' } },
-            left: { style: 'thin', color: { argb: 'FF1E293B' } },
-            bottom: { style: 'medium', color: { argb: 'FF1E293B' } },
-            right: { style: 'thin', color: { argb: 'FF1E293B' } }
-        };
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF10B981' } };
+        cell.font = { name: 'Outfit', color: { argb: 'FFFFFFFF' }, bold: true, size: 11 };
+        cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+        cell.border = { top: { style: 'thin', color: { argb: 'FF1E293B' } }, left: { style: 'thin', color: { argb: 'FF1E293B' } }, bottom: { style: 'medium', color: { argb: 'FF1E293B' } }, right: { style: 'thin', color: { argb: 'FF1E293B' } } };
     });
 
-    // Group active bookings by DNI (or Name if empty)
+    // Group active bookings by DNI (desde Octubre 1)
     const clientsExcelMap = {};
-    const activeAllExcelBookings = bookings.filter(b => b.estado_reserva !== 'Bloqueo' && b.estado_reserva !== 'Bloqueado');
+    const activeAllExcelBookings = consolidateBookings(filteredBookings.filter(b => b.estado_reserva !== 'Bloqueo' && b.estado_reserva !== 'Bloqueado'));
 
     activeAllExcelBookings.forEach(b => {
         const name = capitalizeName(b.nombre_cliente || 'Desconocido');
@@ -3097,7 +3155,8 @@ async function exportAllDataToExcel() {
             clientsExcelMap[key].dateCounts[d] = (clientsExcelMap[key].dateCounts[d] || 0) + 1;
         }
 
-        clientsExcelMap[key].bungalowsCount++;
+        const countInBooking = b.bungalows_arr ? b.bungalows_arr.length : 1;
+        clientsExcelMap[key].bungalowsCount += countInBooking;
     });
 
     const clientsExcelList = Object.values(clientsExcelMap).sort((a, b) => Object.keys(b.dateCounts).length - Object.keys(a.dateCounts).length);
@@ -3134,17 +3193,8 @@ async function exportAllDataToExcel() {
         const isAlternate = (clientRowNo % 2 === 0);
         dataRow.eachCell((cell, colNumber) => {
             cell.font = { name: 'Outfit', size: 10 };
-            cell.fill = {
-                type: 'pattern',
-                pattern: 'solid',
-                fgColor: { argb: isAlternate ? 'FFF8FAFC' : 'FFFFFFFF' }
-            };
-            cell.border = {
-                top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
-                left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
-                bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
-                right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
-            };
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: isAlternate ? 'FFF8FAFC' : 'FFFFFFFF' } };
+            cell.border = { top: { style: 'thin', color: { argb: 'FFE2E8F0' } }, left: { style: 'thin', color: { argb: 'FFE2E8F0' } }, bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } }, right: { style: 'thin', color: { argb: 'FFE2E8F0' } } };
 
             const colKey = clientColsDef[colNumber - 1].key;
             if (colKey === 'dni' || colKey === 'num_reservas' || colKey === 'total_bungalows' || colKey === 'fechas_reservas') {
@@ -3157,137 +3207,56 @@ async function exportAllDataToExcel() {
         clientRowNo++;
     });
 
-
-
-    // ─── DATA WORKSEETS ───────────────────────────────────────────
+    // ─── HOJAS MENSUALES DE DATOS CON FÓRMULAS ─────────────────────
     const columnsDef = [
-        { header: 'Bungalow', key: 'bungalow', width: 14 },
-        { header: 'Fecha Entrada', key: 'fecha_entrada', width: 14 },
-        { header: 'Fecha Salida', key: 'fecha_salida', width: 14 },
-        { header: 'Horario', key: 'horario', width: 12 },
-        { header: 'Cliente', key: 'cliente', width: 25 },
-        { header: 'DNI', key: 'dni', width: 12 },
-        { header: 'Teléfono', key: 'telefono', width: 14 },
-        { header: 'Asesor', key: 'asesor', width: 16 },
-        { header: 'Medio de Contacto', key: 'medio', width: 18 },
-        { header: 'Tipo de Pago', key: 'tipo_pago', width: 18 },
-        { header: 'Monto Total (S/.)', key: 'monto_total', width: 18 },
-        { header: 'Adelanto (S/.)', key: 'monto_adelanto', width: 18 },
-        { header: 'Efectivo (S/.)', key: 'monto_efectivo', width: 18 },
-        { header: 'Yape (S/.)', key: 'monto_yape', width: 18 },
-        { header: 'Depósito (S/.)', key: 'monto_deposito', width: 18 },
-        { header: 'Extra Personas (S/.)', key: 'monto_adic_personas', width: 20 },
-        { header: 'Extra Horas (S/.)', key: 'monto_adic_horas', width: 20 },
-        { header: 'Estado', key: 'estado', width: 14 },
-        { header: 'Observaciones', key: 'observaciones', width: 30 },
-        { header: 'Fecha Registro', key: 'registro', width: 22 }
+        { header: 'Bungalow(s)', key: 'bungalow', width: 16 },                 // Col A (1)
+        { header: 'Fecha Entrada', key: 'fecha_entrada', width: 14 },           // Col B (2)
+        { header: 'Fecha Salida', key: 'fecha_salida', width: 14 },             // Col C (3)
+        { header: 'Horario', key: 'horario', width: 16 },                      // Col D (4)
+        { header: 'Cliente', key: 'cliente', width: 28 },                      // Col E (5)
+        { header: 'DNI', key: 'dni', width: 14 },                              // Col F (6)
+        { header: 'Teléfono', key: 'telefono', width: 14 },                    // Col G (7)
+        { header: 'Asesor', key: 'asesor', width: 18 },                        // Col H (8)
+        { header: 'Medio de Contacto', key: 'medio', width: 18 },              // Col I (9)
+        { header: 'Tipo de Pago', key: 'tipo_pago', width: 16 },               // Col J (10)
+        { header: 'Monto Total (S/.)', key: 'monto_total', width: 18 },        // Col K (11)
+        { header: 'Adelanto (S/.)', key: 'monto_adelanto', width: 18 },        // Col L (12)
+        { header: 'Saldo Pendiente (S/.)', key: 'saldo_pendiente', width: 18 },// Col M (13) -> Fórmula: =K - L
+        { header: 'Efectivo (S/.)', key: 'monto_efectivo', width: 18 },        // Col N (14)
+        { header: 'Yape (S/.)', key: 'monto_yape', width: 18 },                // Col O (15)
+        { header: 'Depósito (S/.)', key: 'monto_deposito', width: 18 },        // Col P (16)
+        { header: 'Extra Personas (S/.)', key: 'monto_adic_personas', width: 20 }, // Col Q (17)
+        { header: 'Extra Horas (S/.)', key: 'monto_adic_horas', width: 20 },    // Col R (18)
+        { header: 'Estado', key: 'estado', width: 14 },                        // Col S (19)
+        { header: 'Observaciones', key: 'observaciones', width: 32 },          // Col T (20)
+        { header: 'Fecha Registro', key: 'registro', width: 22 }               // Col U (21)
     ];
 
     for (const [monthLabel, bookingsInMonth] of Object.entries(groups)) {
         const worksheet = workbook.addWorksheet(monthLabel);
-
-        // Grid lines visible
         worksheet.views = [{ showGridLines: true }];
         worksheet.columns = columnsDef;
-
-        // Auto filter
         worksheet.autoFilter = `A1:${getColLetter(columnsDef.length)}1`;
 
         // Style header row
         const headerRow = worksheet.getRow(1);
         headerRow.height = 26;
         headerRow.eachCell((cell) => {
-            cell.fill = {
-                type: 'pattern',
-                pattern: 'solid',
-                fgColor: { argb: 'FF0F766E' }
-            };
-            cell.font = {
-                name: 'Outfit',
-                color: { argb: 'FFFFFFFF' },
-                bold: true,
-                size: 11
-            };
-            cell.alignment = {
-                vertical: 'middle',
-                horizontal: 'center',
-                wrapText: true
-            };
-            cell.border = {
-                top: { style: 'thin', color: { argb: 'FF1E293B' } },
-                left: { style: 'thin', color: { argb: 'FF1E293B' } },
-                bottom: { style: 'medium', color: { argb: 'FF1E293B' } },
-                right: { style: 'thin', color: { argb: 'FF1E293B' } }
-            };
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F766E' } };
+            cell.font = { name: 'Outfit', color: { argb: 'FFFFFFFF' }, bold: true, size: 11 };
+            cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+            cell.border = { top: { style: 'thin', color: { argb: 'FF1E293B' } }, left: { style: 'thin', color: { argb: 'FF1E293B' } }, bottom: { style: 'medium', color: { argb: 'FF1E293B' } }, right: { style: 'thin', color: { argb: 'FF1E293B' } } };
         });
 
         let rowNumber = 2;
+        const consolidatedMonthBookings = consolidateBookings(bookingsInMonth);
 
-        // Agrupar reservas por cliente, fechas y horario
-        const groupedBookings = {};
-        bookingsInMonth.forEach(b => {
-            const key = `${b.dni_cliente || 'nodni'}_${b.nombre_cliente || 'noname'}_${b.fecha_ingreso}_${b.fecha_salida}_${b.horario}`;
-            if (!groupedBookings[key]) {
-                groupedBookings[key] = {
-                    ...b,
-                    first_record: b,
-                    bungalows_arr: [b.bungalow_numero],
-                    raw_monto_total: parseFloat(b.monto_total) || 0,
-                    raw_monto_adelanto: parseFloat(b.monto_adelanto) || 0,
-                    raw_monto_efectivo: parseFloat(b.monto_efectivo) || 0,
-                    raw_monto_yape: parseFloat(b.monto_yape) || 0,
-                    raw_monto_deposito: parseFloat(b.monto_deposito) || 0,
-                    monto_adic_personas: parseFloat(b.adicional_personas) || 0,
-                    monto_adic_horas: parseFloat(b.adicional_horas) || 0
-                };
-            } else {
-                groupedBookings[key].bungalows_arr.push(b.bungalow_numero);
-                groupedBookings[key].raw_monto_total += (parseFloat(b.monto_total) || 0);
-                groupedBookings[key].raw_monto_adelanto += (parseFloat(b.monto_adelanto) || 0);
-                groupedBookings[key].raw_monto_efectivo += (parseFloat(b.monto_efectivo) || 0);
-                groupedBookings[key].raw_monto_yape += (parseFloat(b.monto_yape) || 0);
-                groupedBookings[key].raw_monto_deposito += (parseFloat(b.monto_deposito) || 0);
-                groupedBookings[key].monto_adic_personas += (parseFloat(b.adicional_personas) || 0);
-                groupedBookings[key].monto_adic_horas += (parseFloat(b.adicional_horas) || 0);
-            }
-        });
+        consolidatedMonthBookings.forEach(b => {
+            const rowNum = rowNumber;
+            const totVal = parseFloat(b.monto_total) || 0;
+            const adeVal = parseFloat(b.monto_adelanto) || 0;
+            const remVal = Math.max(0, totVal - adeVal);
 
-        const mergedBookings = Object.values(groupedBookings).map(g => {
-            const N = g.bungalows_arr.length;
-            let finalTotal = g.raw_monto_total;
-            let finalAdelanto = g.raw_monto_adelanto;
-            let finalEfectivo = g.raw_monto_efectivo;
-            let finalYape = g.raw_monto_yape;
-            let finalDeposito = g.raw_monto_deposito;
-
-            if (N > 1 && g.first_record) {
-                const singleBase = (parseFloat(g.first_record.precio_base) || 0) + (parseFloat(g.first_record.adicional_personas) || 0) + (parseFloat(g.first_record.adicional_horas) || 0);
-                const singleMonto = parseFloat(g.first_record.monto_total) || 0;
-                
-                // Heurística: Si el monto_total de un SOLO bungalow es igual o mayor al (precio base individual * N * 0.8), 
-                // significa que el registro en la BD es antiguo y nunca se dividió.
-                if (singleBase > 0 && singleMonto >= (singleBase * N * 0.8)) {
-                    // En este caso, el valor individual ya era el total de todo el grupo.
-                    finalTotal = singleMonto;
-                    finalAdelanto = parseFloat(g.first_record.monto_adelanto) || 0;
-                    finalEfectivo = parseFloat(g.first_record.monto_efectivo) || 0;
-                    finalYape = parseFloat(g.first_record.monto_yape) || 0;
-                    finalDeposito = parseFloat(g.first_record.monto_deposito) || 0;
-                }
-            }
-
-            return {
-                ...g,
-                bungalow_numero: g.bungalows_arr.join(', '),
-                monto_total: finalTotal,
-                monto_adelanto: finalAdelanto,
-                monto_efectivo: finalEfectivo,
-                monto_yape: finalYape,
-                monto_deposito: finalDeposito
-            };
-        });
-
-        mergedBookings.forEach(b => {
             const dataRow = worksheet.addRow({
                 bungalow: b.bungalow_numero || '',
                 fecha_entrada: b.fecha_ingreso || '',
@@ -3299,15 +3268,16 @@ async function exportAllDataToExcel() {
                 asesor: capitalizeName(b.asesor_registro || ''),
                 medio: b.medio_contacto || '',
                 tipo_pago: b.tipo_pago || '',
-                monto_total: b.monto_total,
-                monto_adelanto: b.monto_adelanto,
-                monto_efectivo: b.monto_efectivo,
-                monto_yape: b.monto_yape,
-                monto_deposito: b.monto_deposito,
-                monto_adic_personas: b.monto_adic_personas,
-                monto_adic_horas: b.monto_adic_horas,
+                monto_total: totVal,
+                monto_adelanto: adeVal,
+                saldo_pendiente: { formula: `K${rowNum}-L${rowNum}`, result: remVal },
+                monto_efectivo: parseFloat(b.monto_efectivo) || 0,
+                monto_yape: parseFloat(b.monto_yape) || 0,
+                monto_deposito: parseFloat(b.monto_deposito) || 0,
+                monto_adic_personas: parseFloat(b.monto_adic_personas) || 0,
+                monto_adic_horas: parseFloat(b.monto_adic_horas) || 0,
                 estado: b.estado_reserva || '',
-                observaciones: b.observaciones || '',
+                observaciones: b.observaciones || b.notas || '',
                 registro: b.created_at ? new Date(b.created_at).toLocaleString('es-PE') : ''
             });
 
@@ -3316,22 +3286,13 @@ async function exportAllDataToExcel() {
             const isAlternate = (rowNumber % 2 === 0);
             dataRow.eachCell((cell, colNumber) => {
                 cell.font = { name: 'Outfit', size: 10 };
-                cell.fill = {
-                    type: 'pattern',
-                    pattern: 'solid',
-                    fgColor: { argb: isAlternate ? 'FFF8FAFC' : 'FFFFFFFF' }
-                };
-                cell.border = {
-                    top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
-                    left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
-                    bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
-                    right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
-                };
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: isAlternate ? 'FFF8FAFC' : 'FFFFFFFF' } };
+                cell.border = { top: { style: 'thin', color: { argb: 'FFE2E8F0' } }, left: { style: 'thin', color: { argb: 'FFE2E8F0' } }, bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } }, right: { style: 'thin', color: { argb: 'FFE2E8F0' } } };
 
                 const colKey = columnsDef[colNumber - 1].key;
                 if (['fecha_entrada', 'fecha_salida', 'horario', 'dni', 'telefono', 'tipo_pago', 'medio', 'estado'].includes(colKey)) {
                     cell.alignment = { horizontal: 'center', vertical: 'middle' };
-                } else if (['monto_total', 'monto_adelanto', 'monto_efectivo', 'monto_yape', 'monto_deposito', 'monto_adic_personas', 'monto_adic_horas'].includes(colKey)) {
+                } else if (['monto_total', 'monto_adelanto', 'saldo_pendiente', 'monto_efectivo', 'monto_yape', 'monto_deposito', 'monto_adic_personas', 'monto_adic_horas'].includes(colKey)) {
                     cell.alignment = { horizontal: 'right', vertical: 'middle' };
                     cell.numFmt = '"S/. "#,##0.00';
                 } else {
@@ -3341,15 +3302,56 @@ async function exportAllDataToExcel() {
 
             rowNumber++;
         });
+
+        // ─── FILA FINAL DE TOTALES CON FÓRMULAS DE EXCEL (=SUMA) ───
+        const lastDataRow = rowNumber - 1;
+        if (lastDataRow >= 2) {
+            const totalRow = worksheet.getRow(rowNumber);
+            totalRow.height = 24;
+
+            worksheet.mergeCells(rowNumber, 1, rowNumber, 10);
+            const labelCell = worksheet.getCell(rowNumber, 1);
+            labelCell.value = 'TOTAL';
+            labelCell.font = { name: 'Outfit', bold: true, size: 11, color: { argb: 'FFFFFFFF' } };
+            labelCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F766E' } };
+            labelCell.alignment = { vertical: 'middle', horizontal: 'center' };
+            labelCell.border = { top: { style: 'medium', color: { argb: 'FF0F766E' } }, bottom: { style: 'medium', color: { argb: 'FF0F766E' } }, left: { style: 'thin', color: { argb: 'FF0F766E' } }, right: { style: 'thin', color: { argb: 'FF0F766E' } } };
+
+            const formulaCols = [
+                { col: 11, colLetter: 'K' }, // Monto Total
+                { col: 12, colLetter: 'L' }, // Adelanto
+                { col: 13, colLetter: 'M' }, // Saldo Pendiente
+                { col: 14, colLetter: 'N' }, // Efectivo
+                { col: 15, colLetter: 'O' }, // Yape
+                { col: 16, colLetter: 'P' }, // Depósito
+                { col: 17, colLetter: 'Q' }, // Extra Personas
+                { col: 18, colLetter: 'R' }  // Extra Horas
+            ];
+
+            formulaCols.forEach(({ col, colLetter }) => {
+                const cell = worksheet.getCell(rowNumber, col);
+                cell.value = { formula: `SUM(${colLetter}2:${colLetter}${lastDataRow})` };
+                cell.numFmt = '"S/. "#,##0.00';
+                cell.font = { name: 'Outfit', bold: true, size: 10, color: { argb: 'FFFFFFFF' } };
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F766E' } };
+                cell.alignment = { vertical: 'middle', horizontal: 'right' };
+                cell.border = { top: { style: 'medium', color: { argb: 'FF0F766E' } }, bottom: { style: 'medium', color: { argb: 'FF0F766E' } }, left: { style: 'thin', color: { argb: 'FFE2E8F0' } }, right: { style: 'thin', color: { argb: 'FFE2E8F0' } } };
+            });
+
+            // Celdas restantes (Estado, Observaciones, Fecha Registro)
+            for (let c = 19; c <= 21; c++) {
+                const cell = worksheet.getCell(rowNumber, c);
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F766E' } };
+                cell.border = { top: { style: 'medium', color: { argb: 'FF0F766E' } }, bottom: { style: 'medium', color: { argb: 'FF0F766E' } } };
+            }
+        }
     }
-
-
 
     workbook.xlsx.writeBuffer().then((buffer) => {
         const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
-        link.download = 'Reporte_Reservas_Bungalows.xlsx';
+        link.download = 'Reporte_Reservas_Bungalows_Octubre.xlsx';
         link.click();
     }).catch(err => {
         console.error("Error al exportar:", err);
@@ -3736,7 +3738,7 @@ function openSettingsModal() {
 
 async function handleSaveSettings(e) {
     e.preventDefault();
-    const url = document.getElementById('supabaseUrl').value.trim();
+    let url = document.getElementById('supabaseUrl').value.trim().replace(/\/+$/, '');
     const key = document.getElementById('supabaseKey').value.trim();
     const feedback = document.getElementById('settingsFeedback');
 
@@ -3744,29 +3746,27 @@ async function handleSaveSettings(e) {
     feedback.style.color = '#fbbf24';
 
     try {
-        const reachable = await checkSupabaseReachable(url);
-        if (reachable) {
-            localStorage.setItem('canchapro_supabase_url', url);
-            localStorage.setItem('canchapro_supabase_key', key);
-            feedback.textContent = '✅ Credenciales válidas. Conexión establecida.';
-            feedback.style.color = '#34d399';
+        const testClient = supabase.createClient(url, key);
+        const { data, error } = await testClient.from('reservas_bungalows').select('id').limit(1);
+        if (error) throw error;
 
-            setTimeout(() => {
-                closeModal('modalSettings');
-                // Reboot database connection
-                initDatabase().then(() => fetchBookings());
-            }, 1000);
-        } else {
-            throw new Error("No se pudo alcanzar el servidor REST de Supabase. Revisa la URL.");
-        }
+        localStorage.setItem('canchapro_supabase_url', url);
+        localStorage.setItem('canchapro_supabase_key', key);
+        feedback.textContent = '✅ Credenciales válidas. Conexión establecida.';
+        feedback.style.color = '#34d399';
+
+        setTimeout(() => {
+            closeModal('modalSettings');
+            initDatabase().then(() => fetchBookings());
+        }, 800);
     } catch (err) {
-        feedback.textContent = '❌ Fallo en la conexión: ' + err.message;
+        feedback.textContent = '❌ Fallo en la conexión: ' + (err.message || err);
         feedback.style.color = '#ef4444';
     }
 }
 
 async function testSupabaseConnection() {
-    const url = document.getElementById('supabaseUrl').value.trim();
+    let url = document.getElementById('supabaseUrl').value.trim().replace(/\/+$/, '');
     const key = document.getElementById('supabaseKey').value.trim();
     const feedback = document.getElementById('settingsFeedback');
 
@@ -3780,16 +3780,14 @@ async function testSupabaseConnection() {
     feedback.style.color = '#fbbf24';
 
     try {
-        const reachable = await checkSupabaseReachable(url);
-        if (reachable) {
-            feedback.textContent = '✅ Conexión exitosa. El servidor responde correctamente.';
-            feedback.style.color = '#34d399';
-        } else {
-            feedback.textContent = '❌ No se pudo alcanzar el servidor. Compruebe la URL.';
-            feedback.style.color = '#ef4444';
-        }
+        const testClient = supabase.createClient(url, key);
+        const { data, error } = await testClient.from('reservas_bungalows').select('id').limit(1);
+        if (error) throw error;
+
+        feedback.textContent = '✅ Conexión exitosa con la base de datos Supabase.';
+        feedback.style.color = '#34d399';
     } catch (e) {
-        feedback.textContent = '❌ Fallo en la conexión: ' + e.message;
+        feedback.textContent = '❌ Error de conexión: ' + (e.message || e);
         feedback.style.color = '#ef4444';
     }
 }

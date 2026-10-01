@@ -254,18 +254,49 @@
                         </div>
                     </div>
 
-                    <!-- Artículos a Alquilar (Selección Múltiple) -->
-                    <div class="form-group" style="margin-bottom: 16px;">
-                        <label style="margin-bottom: 8px; display: block;">Artículos a Alquilar (Selección Múltiple)
-                            *</label>
-                        <div id="bookingItemsContainer"
-                            style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 12px; max-height: 250px; overflow-y: auto;">
-                            <span style="color: var(--text-muted); font-size: 13px;">Seleccione una categoría
-                                primero...</span>
+                    <!-- Tipo de Alquiler -->
+                    <div class="form-group" id="containerTipoAlquiler" style="display: none; margin-bottom: 16px;">
+                        <label>Tipo de Alquiler *</label>
+                        <div style="display: flex; gap: 16px; margin-top: 8px;">
+                            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                                <input type="radio" name="bookingTipoAlquiler" value="Articulos" checked style="accent-color: #ec4899; width: 16px; height: 16px;">
+                                <span style="font-size: 14px; font-weight: 500; color: var(--text-primary);">Artículos</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                                <input type="radio" name="bookingTipoAlquiler" value="Combos" style="accent-color: #ec4899; width: 16px; height: 16px;">
+                                <span style="font-size: 14px; font-weight: 500; color: var(--text-primary);">Combos</span>
+                            </label>
                         </div>
-                        <div class="form-error" id="itemsError"
-                            style="display: none; color: #ef4444; font-size: 13px; margin-top: 4px;">Seleccione al menos
-                            un artículo.</div>
+                    </div>
+
+                    <!-- Contenedor de Artículos -->
+                    <div id="containerArticulos">
+                        <!-- Artículos a Alquilar (Selección Múltiple) -->
+                        <div class="form-group" style="margin-bottom: 16px;">
+                            <label style="margin-bottom: 8px; display: block;">Artículos a Alquilar (Selección Múltiple) *</label>
+                            <div id="bookingItemsContainer" style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 12px; max-height: 250px; overflow-y: auto;">
+                                <span style="color: var(--text-muted); font-size: 13px;">Seleccione una categoría primero...</span>
+                            </div>
+                            <div class="form-error" id="itemsError" style="display: none; color: #ef4444; font-size: 13px; margin-top: 4px;">Seleccione al menos un artículo.</div>
+                        </div>
+                    </div>
+
+                    <!-- Contenedor de Combos -->
+                    <div id="containerCombos" style="display: none; margin-bottom: 16px;">
+                        <div class="form-group">
+                            <label style="margin-bottom: 8px; display: block;">Combos a Alquilar (Selección Múltiple) *</label>
+                            <div id="bookingCombosContainer" style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 12px; max-height: 250px; overflow-y: auto;">
+                                <!-- Los combos se cargarán con JS -->
+                            </div>
+                            
+                            <!-- Contenedor para descripción de Combos seleccionados -->
+                            <div id="combosDescriptionContainer" style="margin-top: 12px; background: rgba(0, 0, 0, 0.2); border-left: 3px solid #ec4899; padding: 10px 14px; border-radius: 0 var(--radius-sm) var(--radius-sm) 0; display: none;">
+                                <h4 style="font-size: 13px; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase;">Detalles de combos seleccionados:</h4>
+                                <div id="combosDescriptionContent" style="font-size: 13.5px; color: var(--text-primary); line-height: 1.5;"></div>
+                            </div>
+                            
+                            <div class="form-error" id="combosError" style="display: none; color: #ef4444; font-size: 13px; margin-top: 4px;">Seleccione al menos un combo.</div>
+                        </div>
                     </div>
 
                     <!-- Tipo de evento y Lugar -->
@@ -388,6 +419,15 @@
                                 ¿Incluye movilidad?
                             </span>
                         </label>
+                        
+                        <!-- Precio de Movilidad -->
+                        <div id="containerPrecioMovilidad" style="display: none; margin-top: 12px; margin-left: 4px;">
+                            <label for="bookingPrecioMovilidad" style="font-size: 13px; font-weight: 500; color: var(--text-secondary); margin-bottom: 6px; display: block;">Precio de Movilidad (Deje en 0 o vacío si es gratis)</label>
+                            <div class="input-wrapper" style="width: 250px;">
+                                <i data-lucide="coins"></i>
+                                <input type="number" id="bookingPrecioMovilidad" placeholder="0.00" step="0.10" min="0">
+                            </div>
+                        </div>
                     </div>
 
                     <div class="form-group hidden" id="customSourceGroup">
