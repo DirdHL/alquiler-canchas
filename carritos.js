@@ -2228,7 +2228,7 @@ function handleCopyReservation() {
         checkedCombos.forEach(cb => {
             const comboName = cb.getAttribute('data-name') || '';
             const comboDesc = decodeURIComponent(cb.getAttribute('data-desc') || '');
-            itemsList.push(`${comboName}:`);
+            itemsList.push(`*${comboName}:*`);
             const descLines = comboDesc.split('<br>').map(line => line.trim());
             descLines.forEach(line => {
                 // Remove initial hyphen if present to style it nicely, or just leave it
@@ -2256,7 +2256,7 @@ function handleCopyReservation() {
         });
     }
 
-    const modeloTitle = isSnacks ? (isCombo ? '*Combos:*' : '*Artículos de snacks:*') : '*Modelo de Inflable(s):*';
+    const modeloTitle = isSnacks ? (isCombo ? '' : '*Snacks:*') : '*Modelo de Inflable(s):*';
 
     const total = parseFloat(document.getElementById('bookingTotal').value) || 0;
     const adelanto = parseFloat(document.getElementById('bookingAdelanto').value) || 0;
@@ -2275,25 +2275,32 @@ function handleCopyReservation() {
         text += `*Asesor(a):* ${asesora}\n`;
     }
 
-    text += `\n${modeloTitle}\n`;
+    text += `\n`;
+    if (modeloTitle) {
+        text += `${modeloTitle}\n`;
+    }
+    
     if (itemsList.length > 0) {
         text += itemsList.join('\n');
-        if (!isCombo) text += '\n'; // add extra newline if it's not combo (combo already adds empty lines)
+        if (!text.endsWith('\n')) text += '\n';
     } else {
         text += `* Ninguno seleccionado\n`;
     }
-    text += `\n*Saldo pendiente a cancelar S/${saldo}, antes de la instalación*\n`;
+    
+    // Renglón en blanco antes de movilidad o saldo
+    if (!text.endsWith('\n\n')) text += '\n';
+    
     if (incluyeMovilidad) {
         const movPriceInput = document.getElementById('bookingPrecioMovilidad');
         const movPrice = movPriceInput ? parseFloat(movPriceInput.value) : 0;
         if (movPrice > 0) {
-            text += `✅ *Incluye movilidad (S/. ${movPrice.toFixed(2)})*\n`;
+            text += `✅ *Incluye movilidad (S/. ${movPrice.toFixed(2)})*\n\n`;
         } else {
-            text += `✅ *Incluye movilidad (Gratis)*\n`;
+            text += `✅ *Incluye movilidad (Gratis)*\n\n`;
         }
-    } else {
-        text += `🚫 *No incluye movilidad*\n`;
     }
+
+    text += `*Saldo pendiente a cancelar S/${saldo}, antes de la instalación*\n`;
     if (observaciones) {
         text += `*Observaciones:* ${observaciones}\n`;
     }
