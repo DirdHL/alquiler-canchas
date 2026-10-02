@@ -894,7 +894,18 @@ function setupEventListeners() {
         bookingCourtInput.addEventListener('change', updateModalCalculatedTotal);
     }
     if (bookingSportInput) {
-        bookingSportInput.addEventListener('change', updateModalCalculatedTotal);
+        bookingSportInput.addEventListener('change', (e) => {
+            if (!bookingIdInput.value) {
+                if (bookingSportInput.value === 'Vóley') {
+                    setToggleValue('pelota', true);
+                    setToggleValue('chaleco', false);
+                } else if (bookingSportInput.value === 'Fútbol') {
+                    setToggleValue('pelota', false);
+                    setToggleValue('chaleco', false);
+                }
+            }
+            updateModalCalculatedTotal();
+        });
     }
     if (bookingDateInput) {
         bookingDateInput.addEventListener('change', updateModalCalculatedTotal);
