@@ -173,7 +173,7 @@
                         <span style="font-size: 13px; font-weight: 600; margin-left: 4px;">Menú</span>
                     </button>
                     <div class="header-title">
-                        <h1 id="mainPageTitle">Calendario - Bungalow 1</h1>
+                        <h1 id="mainPageTitle">Calendario - Todos los Bungalows</h1>
                         <p>Gestione el hospedaje, turnos y disponibilidad de cada bungalow.</p>
                     </div>
                 </div>
@@ -265,7 +265,7 @@
             <!-- Bungalow Navigation Tabs Bar -->
             <div class="bungalow-tabs-container">
                 <div class="bungalow-tabs" id="bungalowTabs">
-                    <button type="button" class="bungalow-tab active" data-bungalow="1">
+                    <button type="button" class="bungalow-tab" data-bungalow="1">
                         <span class="tab-color-dot color-b1"></span>
                         <span>Bungalow 1</span>
                     </button>
@@ -289,7 +289,7 @@
                         <span class="tab-color-dot color-b6"></span>
                         <span>Bungalow 6</span>
                     </button>
-                    <button type="button" class="bungalow-tab" data-bungalow="all">
+                    <button type="button" class="bungalow-tab active" data-bungalow="all">
                         <i data-lucide="layout-grid"></i>
                         <span>Ver Todos</span>
                     </button>
@@ -534,10 +534,10 @@
                             </div>
                         </div>
                         <div class="form-group">
-                            <label for="bookingAdicionalHoras">Monto por Horas Extras (S/.)</label>
+                            <label for="bookingAdicionalHoras">Precio por Hora Extra (S/.)</label>
                             <div class="input-wrapper">
                                 <i data-lucide="banknote"></i>
-                                <input type="number" id="bookingAdicionalHoras" min="0" value="0" step="any">
+                                <input type="number" id="bookingAdicionalHoras" min="0" value="0" step="any" disabled>
                             </div>
                         </div>
                     </div>
@@ -657,7 +657,7 @@
                             <span id="breakdownGuests" style="font-weight: 700; font-size: 15px;">S/. 0.00</span>
                         </div>
                         <div>
-                            <span class="text-secondary" style="display: block;">Extras (Horas/Motos):</span>
+                            <span class="text-secondary" style="display: block;">Horas Extras:</span>
                             <span id="breakdownExtras" style="font-weight: 700; font-size: 15px;">S/. 0.00</span>
                         </div>
                         <div style="display: none; border-left: 1px solid rgba(245, 158, 11, 0.2); padding-left: 12px;">
