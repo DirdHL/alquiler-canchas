@@ -1618,6 +1618,8 @@ function getBookingInterval(checkInStr, checkOutStr, horarioStr, extraHours = 0)
     if (extraHours > 0) {
         end.setHours(end.getHours() + extraHours);
     }
+    // Agregar 1 hora de margen para limpieza
+    end.setHours(end.getHours() + 1);
 
     return { start, end };
 }
