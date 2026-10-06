@@ -658,7 +658,7 @@ function openBookingModal(dateStr = null) {
     }
 
     // Prepopulate operator dynamically
-    populateAsesoresDropdown('');
+    populateAsesoresDropdown(activeOperator);
 
     runDynamicCalculations();
     openModal('modalBooking');
