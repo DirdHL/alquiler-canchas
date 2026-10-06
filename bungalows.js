@@ -187,6 +187,24 @@ function setupEventListeners() {
         }
     });
 
+    // Handle Edit Group Toggle
+    const toggleGroup = document.getElementById('bookingEditGroupToggle');
+    if (toggleGroup) {
+        toggleGroup.addEventListener('change', (e) => {
+            const isGroup = e.target.checked;
+            const chkList = document.querySelectorAll('input[name="bungalowSelect"]');
+            chkList.forEach(chk => {
+                const val = parseInt(chk.value);
+                if (isGroup) {
+                    chk.checked = window.currentEditGroupBungalows && window.currentEditGroupBungalows.includes(val);
+                } else {
+                    chk.checked = (val === window.currentEditBungalow);
+                }
+            });
+            runDynamicCalculations();
+        });
+    }
+
     // Handle schedule change (Full Day, Día y Noche, Horario Extendido)
     document.getElementById('bookingHorario').addEventListener('change', (e) => {
         const horario = e.target.value;
@@ -572,6 +590,7 @@ function openBookingModal(dateStr = null) {
     document.getElementById('modalTitle').textContent = 'Nueva Reserva de Bungalow';
     document.getElementById('btnDeleteBooking').classList.add('hidden');
     document.getElementById('bookingIsBlock').checked = false;
+    document.getElementById('groupEditToggleContainer').style.display = 'none';
 
     // Reset custom checkboxes selection
     const chkList = document.querySelectorAll('input[name="bungalowSelect"]');
@@ -680,12 +699,30 @@ function openBookingEditModal(booking) {
 
     document.getElementById('bookingBungalow').value = groupToLoad[0].bungalow_numero;
 
-    // Set matching checkboxes in grid
+    // Configure Group Edit Toggle
     const groupBungalows = groupToLoad.map(b => b.bungalow_numero);
+    window.currentEditGroupBungalows = groupBungalows;
+    window.currentEditBungalow = booking.bungalow_numero;
+    
+    const toggleContainer = document.getElementById('groupEditToggleContainer');
+    const toggleCheck = document.getElementById('bookingEditGroupToggle');
+    const countSpan = document.getElementById('groupEditCount');
     const chkList = document.querySelectorAll('input[name="bungalowSelect"]');
-    chkList.forEach(chk => {
-        chk.checked = groupBungalows.includes(parseInt(chk.value));
-    });
+
+    if (groupToLoad.length > 1) {
+        toggleContainer.style.display = 'block';
+        toggleCheck.checked = true;
+        countSpan.textContent = groupToLoad.length;
+        chkList.forEach(chk => {
+            chk.checked = groupBungalows.includes(parseInt(chk.value));
+        });
+    } else {
+        toggleContainer.style.display = 'none';
+        toggleCheck.checked = false;
+        chkList.forEach(chk => {
+            chk.checked = (parseInt(chk.value) === booking.bungalow_numero);
+        });
+    }
 
     updateNinosLimit();
 
@@ -1425,7 +1462,17 @@ async function handleSaveBooking(e) {
                         b.horario === oldBooking.horario &&
                         b.estado_reserva !== 'Bloqueo'
                     );
-                    const groupIds = groupBookings.map(b => b.id);
+                    
+                    const isGroupEditToggle = document.getElementById('groupEditToggleContainer').style.display !== 'none' 
+                        ? document.getElementById('bookingEditGroupToggle').checked 
+                        : false;
+                    
+                    let groupIds = [];
+                    if (isGroupEditToggle || groupBookings.length === 1) {
+                        groupIds = groupBookings.map(b => b.id);
+                    } else {
+                        groupIds = [id]; // Modo individual: Solo eliminar la reserva principal seleccionada
+                    }
 
                     // 1. Eliminar los registros antiguos del grupo
                     if (groupIds.length > 0) {
@@ -1472,15 +1519,22 @@ async function handleSaveBooking(e) {
             // Modo Edición Grupal:
             const oldBooking = bookings.find(b => b.id === id);
             if (oldBooking) {
-                // Eliminar del array local los antiguos del mismo grupo
-                bookings = bookings.filter(b => !(
-                    b.dni_cliente === oldBooking.dni_cliente &&
-                    b.nombre_cliente === oldBooking.nombre_cliente &&
-                    b.fecha_ingreso === oldBooking.fecha_ingreso &&
-                    b.fecha_salida === oldBooking.fecha_salida &&
-                    b.horario === oldBooking.horario &&
-                    b.estado_reserva !== 'Bloqueo'
-                ));
+                const isGroupEditToggle = document.getElementById('groupEditToggleContainer').style.display !== 'none' 
+                    ? document.getElementById('bookingEditGroupToggle').checked 
+                    : false;
+
+                if (isGroupEditToggle) {
+                    bookings = bookings.filter(b => !(
+                        b.dni_cliente === oldBooking.dni_cliente &&
+                        b.nombre_cliente === oldBooking.nombre_cliente &&
+                        b.fecha_ingreso === oldBooking.fecha_ingreso &&
+                        b.fecha_salida === oldBooking.fecha_salida &&
+                        b.horario === oldBooking.horario &&
+                        b.estado_reserva !== 'Bloqueo'
+                    ));
+                } else {
+                    bookings = bookings.filter(b => b.id !== id);
+                }
             }
 
             // Insertar los nuevos seleccionados
