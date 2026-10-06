@@ -455,14 +455,12 @@ body {
 
 /* Día y Noche: Ocupa la 2da mitad del cuadro en el día de ingreso (desde 3:00 PM) */
 .fc-daygrid-event.event-horario-dianoche.fc-event-start:not(.fc-event-end) {
-    margin-left: 50% !important;
     border-top-left-radius: 4px !important;
     border-bottom-left-radius: 4px !important;
 }
 
 /* Día y Noche: Ocupa la 1ra mitad del cuadro en el día de salida (hasta 12:00 PM) */
 .fc-daygrid-event.event-horario-dianoche.fc-event-end:not(.fc-event-start) {
-    margin-right: 50% !important;
     border-top-right-radius: 4px !important;
     border-bottom-right-radius: 4px !important;
 }
