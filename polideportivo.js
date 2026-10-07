@@ -56,6 +56,12 @@ const bookingStartTimeInput = {
         let ampm = h >= 12 ? 'pm' : 'am';
         let h12 = h % 12;
         if (h12 === 0) h12 = 12;
+        
+        const startAmpmSelect = document.getElementById('startAmpmSelect');
+        if (ampm === 'am' && startAmpmSelect && !startAmpmSelect.querySelector('option[value="am"]')) {
+            ampm = 'pm';
+        }
+
         document.getElementById('startHourSelect').value = String(h12);
         document.getElementById('startMinSelect').value = String(m).padStart(2, '0');
         document.getElementById('startAmpmSelect').value = ampm;
@@ -118,6 +124,12 @@ const bookingEndTimeInput = {
         let ampm = h >= 12 ? 'pm' : 'am';
         let h12 = h % 12;
         if (h12 === 0) h12 = 12;
+
+        const endAmpmSelect = document.getElementById('endAmpmSelect');
+        if (ampm === 'am' && endAmpmSelect && !endAmpmSelect.querySelector('option[value="am"]')) {
+            ampm = 'pm';
+        }
+
         document.getElementById('endHourSelect').value = String(h12);
         document.getElementById('endMinSelect').value = String(m).padStart(2, '0');
         document.getElementById('endAmpmSelect').value = ampm;
@@ -772,6 +784,52 @@ function setupEventListeners() {
         });
     }
 
+    // AM Activation Checkbox (Booking Modal)
+    const checkEnableAm = document.getElementById('checkEnableAm');
+    if (checkEnableAm) {
+        checkEnableAm.addEventListener('change', (e) => {
+            const startSelect = document.getElementById('startAmpmSelect');
+            const endSelect = document.getElementById('endAmpmSelect');
+            if (e.target.checked) {
+                if (!startSelect.querySelector('option[value="am"]')) {
+                    startSelect.insertAdjacentHTML('beforeend', '<option value="am">am</option>');
+                    endSelect.insertAdjacentHTML('beforeend', '<option value="am">am</option>');
+                }
+            } else {
+                const startAm = startSelect.querySelector('option[value="am"]');
+                if (startAm) startAm.remove();
+                const endAm = endSelect.querySelector('option[value="am"]');
+                if (endAm) endAm.remove();
+                startSelect.value = 'pm';
+                endSelect.value = 'pm';
+            }
+        });
+    }
+
+    // AM Activation Checkbox (Availability Checker)
+    const checkEnableAmChecker = document.getElementById('checkEnableAmChecker');
+    if (checkEnableAmChecker) {
+        checkEnableAmChecker.addEventListener('change', (e) => {
+            const startSelect = document.getElementById('checkCourtStartAmpm');
+            const endSelect = document.getElementById('checkCourtEndAmpm');
+            if (startSelect && endSelect) {
+                if (e.target.checked) {
+                    if (!startSelect.querySelector('option[value="am"]')) {
+                        startSelect.insertAdjacentHTML('beforeend', '<option value="am">AM</option>');
+                        endSelect.insertAdjacentHTML('beforeend', '<option value="am">AM</option>');
+                    }
+                } else {
+                    const startAm = startSelect.querySelector('option[value="am"]');
+                    if (startAm) startAm.remove();
+                    const endAm = endSelect.querySelector('option[value="am"]');
+                    if (endAm) endAm.remove();
+                    startSelect.value = 'pm';
+                    endSelect.value = 'pm';
+                }
+            }
+        });
+    }
+
     // Stats Dashboard Actions
     if (btnOpenStats) {
         btnOpenStats.addEventListener('click', handleOpenStatsClick);
@@ -1245,8 +1303,20 @@ function openBookingModal(booking = null, defaults = null) {
         bookingCourtInput.value = booking.court;
         bookingSportInput.value = isBlock ? 'Fútbol' : booking.sport;
         bookingDateInput.value = booking.date;
-        bookingStartTimeInput.value = booking.start_time ? booking.start_time.substring(0, 5) : "";
-        bookingEndTimeInput.value = booking.end_time ? booking.end_time.substring(0, 5) : "";
+
+        const sTime = booking.start_time ? booking.start_time.substring(0, 5) : "";
+        const eTime = booking.end_time ? booking.end_time.substring(0, 5) : "";
+        
+        // Auto-enable AM if times are in AM
+        const checkEnableAm = document.getElementById('checkEnableAm');
+        if (checkEnableAm) {
+            const isAm = (sTime && parseInt(sTime.split(':')[0]) < 12) || (eTime && parseInt(eTime.split(':')[0]) < 12);
+            checkEnableAm.checked = isAm;
+            checkEnableAm.dispatchEvent(new Event('change'));
+        }
+
+        bookingStartTimeInput.value = sTime;
+        bookingEndTimeInput.value = eTime;
 
         // Check if it is an all-day block ("06:00" to "23:00")
         const isAllDay = isBlock &&
@@ -1363,7 +1433,18 @@ function openBookingModal(booking = null, defaults = null) {
         // Apply defaults if clicked on calendar
         if (defaults) {
             bookingDateInput.value = defaults.date;
-            bookingStartTimeInput.value = defaults.start_time ? defaults.start_time.substring(0, 5) : "";
+            
+            const sTime = defaults.start_time ? defaults.start_time.substring(0, 5) : "";
+            const eTime = defaults.end_time ? defaults.end_time.substring(0, 5) : "";
+            
+            const checkEnableAm = document.getElementById('checkEnableAm');
+            if (checkEnableAm) {
+                const isAm = (sTime && parseInt(sTime.split(':')[0]) < 12) || (eTime && parseInt(eTime.split(':')[0]) < 12);
+                checkEnableAm.checked = isAm;
+                checkEnableAm.dispatchEvent(new Event('change'));
+            }
+
+            bookingStartTimeInput.value = sTime;
 
             if (defaults.start_time && !defaults.end_time) {
                 const parts = defaults.start_time.split(':');
@@ -1393,6 +1474,13 @@ function openBookingModal(booking = null, defaults = null) {
             // Standard defaults
             const today = getLocalDateString(new Date());
             bookingDateInput.value = today;
+            
+            const checkEnableAm = document.getElementById('checkEnableAm');
+            if (checkEnableAm) {
+                checkEnableAm.checked = false;
+                checkEnableAm.dispatchEvent(new Event('change'));
+            }
+
             bookingStartTimeInput.value = '14:00';
             bookingEndTimeInput.value = '15:00';
         }
@@ -2754,6 +2842,12 @@ function setCheckerCourtStartTime(val) {
     let ampm = h >= 12 ? 'pm' : 'am';
     let h12 = h % 12;
     if (h12 === 0) h12 = 12;
+    
+    const startAmpmSelect = document.getElementById('checkCourtStartAmpm');
+    if (ampm === 'am' && startAmpmSelect && !startAmpmSelect.querySelector('option[value="am"]')) {
+        ampm = 'pm';
+    }
+
     if (document.getElementById('checkCourtStartHour')) document.getElementById('checkCourtStartHour').value = String(h12);
     if (document.getElementById('checkCourtStartMin')) document.getElementById('checkCourtStartMin').value = String(m).padStart(2, '0');
     if (document.getElementById('checkCourtStartAmpm')) document.getElementById('checkCourtStartAmpm').value = ampm;
@@ -2785,6 +2879,12 @@ function setCheckerCourtEndTime(val) {
     let ampm = h >= 12 ? 'pm' : 'am';
     let h12 = h % 12;
     if (h12 === 0) h12 = 12;
+
+    const endAmpmSelect = document.getElementById('checkCourtEndAmpm');
+    if (ampm === 'am' && endAmpmSelect && !endAmpmSelect.querySelector('option[value="am"]')) {
+        ampm = 'pm';
+    }
+
     if (document.getElementById('checkCourtEndHour')) document.getElementById('checkCourtEndHour').value = String(h12);
     if (document.getElementById('checkCourtEndMin')) document.getElementById('checkCourtEndMin').value = String(m).padStart(2, '0');
     if (document.getElementById('checkCourtEndAmpm')) document.getElementById('checkCourtEndAmpm').value = ampm;

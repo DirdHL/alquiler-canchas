@@ -188,6 +188,13 @@
                     </div>
                 </div>
 
+                <div style="display: flex; justify-content: flex-end; margin-bottom: 5px;">
+                    <label class="checkbox-container" style="display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none;">
+                        <input type="checkbox" id="checkEnableAmChecker" style="width: 16px; height: 16px;">
+                        <span style="font-size: 13px; font-weight: 600; color: #10b981;">Activar horario AM</span>
+                    </label>
+                </div>
+
                 <div class="checker-form-grid">
                     <div class="checker-field">
                         <label for="checkCourtDate"><i data-lucide="calendar"></i> Fecha:</label>
@@ -206,7 +213,6 @@
                             </div>
                             <select id="checkCourtStartAmpm" class="time-ampm-select">
                                 <option value="pm">PM</option>
-                                <option value="am">AM</option>
                             </select>
                         </div>
                     </div>
@@ -223,11 +229,9 @@
                             </div>
                             <select id="checkCourtEndAmpm" class="time-ampm-select">
                                 <option value="pm">PM</option>
-                                <option value="am">AM</option>
                             </select>
                         </div>
                     </div>
-
                 </div>
 
                 <!-- Cuadrícula de resultados de disponibilidad instantánea de canchas -->
@@ -451,6 +455,13 @@
                         </div>
                     </div>
 
+                    <div class="form-group" style="display: flex; justify-content: flex-end; margin-bottom: 5px;">
+                        <label class="checkbox-container" style="display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none;">
+                            <input type="checkbox" id="checkEnableAm" style="width: 16px; height: 16px;">
+                            <span style="font-size: 13px; font-weight: 600; color: var(--primary);">Activar horario AM</span>
+                        </label>
+                    </div>
+
                     <div class="form-row">
                         <div class="form-group">
                             <label>Hora Inicio *</label>
@@ -466,7 +477,6 @@
                                 <div class="input-wrapper ampm-wrapper">
                                     <select id="startAmpmSelect" class="ampm-select" required>
                                         <option value="pm">pm</option>
-                                        <option value="am">am</option>
                                     </select>
                                 </div>
                             </div>
@@ -485,7 +495,6 @@
                                 <div class="input-wrapper ampm-wrapper">
                                     <select id="endAmpmSelect" class="ampm-select" required>
                                         <option value="pm">pm</option>
-                                        <option value="am">am</option>
                                     </select>
                                 </div>
                             </div>
