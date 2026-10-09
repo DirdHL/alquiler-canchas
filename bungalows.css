@@ -2654,3 +2654,57 @@ body {
         grid-template-columns: 1fr !important;
     }
 }
+/* =======================================================
+   Panel inline: Agregar nuevo Medio de Contacto
+   ======================================================= */
+.add-medio-panel {
+    margin-top: 12px;
+    padding: 12px;
+    border: 1px dashed var(--primary);
+    border-radius: var(--radius-sm);
+    background: var(--primary-glow);
+    animation: addMedioSlideIn 0.2s ease-out;
+}
+
+.add-medio-row {
+    display: flex;
+    gap: 8px;
+    align-items: stretch;
+}
+
+.add-medio-row .input-wrapper {
+    flex: 1;
+    min-width: 0;
+}
+
+.add-medio-row .btn {
+    white-space: nowrap;
+}
+
+.add-medio-row .btn:disabled {
+    opacity: 0.6;
+    cursor: wait;
+}
+
+.add-medio-hint {
+    display: block;
+    margin-top: 6px;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.add-medio-hint.error {
+    color: var(--danger);
+    font-weight: 600;
+}
+
+@keyframes addMedioSlideIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 480px) {
+    .add-medio-row { flex-wrap: wrap; }
+    .add-medio-row .input-wrapper { flex-basis: 100%; }
+    .add-medio-row .btn { flex: 1; }
+}

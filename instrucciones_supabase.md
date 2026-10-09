@@ -218,6 +218,35 @@ ALTER PUBLICATION supabase_realtime ADD TABLE personal_asesores;
 
 ---
 
+## 📣 Paso Extra: Configurar Tabla de Medios de Contacto (Bungalows)
+
+Permite que los asesores registren nuevos medios de contacto (ej: "Radio") desde la opción **"➕ Agregar otro medio..."** del formulario de reservas, y que aparezcan al instante para todos.
+
+```sql
+-- 1. Crear tabla de medios de contacto personalizados
+CREATE TABLE IF NOT EXISTS medios_contacto (
+  nombre TEXT PRIMARY KEY,
+  creado_por TEXT,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Evitar duplicados ignorando mayúsculas ("Radio" = "radio")
+CREATE UNIQUE INDEX IF NOT EXISTS medios_contacto_nombre_ci ON medios_contacto (lower(nombre));
+
+-- Habilitar RLS (Row Level Security) obligatorio en Supabase
+ALTER TABLE medios_contacto ENABLE ROW LEVEL SECURITY;
+
+-- Crear regla de acceso público
+CREATE POLICY "Acceso publico medios_contacto" ON medios_contacto FOR ALL USING (true) WITH CHECK (true);
+
+-- Habilitar tiempo real
+ALTER PUBLICATION supabase_realtime ADD TABLE medios_contacto;
+```
+
+> Los medios base (Facebook, TikTok, Instagram, Estado WSP, Msg masivo, Cliente frecuente, Recomendación, Afiche) vienen en el código; esta tabla solo guarda los nuevos.
+
+---
+
 ## 🏢 Paso Especial: Configurar Base de Datos para Alquiler de Locales
 
 Para activar el nuevo sistema de reservas de **Locales**, debes crear la tabla correspondiente en tu base de datos de Supabase.

@@ -12,6 +12,9 @@ let calendar = null;
 let bookings = [];
 let activeOperator = 'Invitado';
 let activeAdvisorsList = [];
+let mediosContactoList = []; // Medios de contacto (base + registrados en BD)
+const ADD_MEDIO_VALUE = '_add_medio_';
+const DEFAULT_MEDIOS = ['Facebook', 'TikTok', 'Instagram', 'Estado WSP', 'Msg masivo', 'Cliente frecuente', 'Recomendación', 'Afiche'];
 let isTotalManuallyEdited = false;
 let selectedDate = new Date();
 let currentBungalowTab = 'all'; // Cada 15 segundos 
@@ -262,17 +265,30 @@ function setupEventListeners() {
         }
     });
 
-    // Handle dynamic custom inputs for Contact Source and Advisor
-    document.getElementById('bookingSource').addEventListener('change', (e) => {
-        const customGroup = document.getElementById('customSourceGroup');
-        const customInput = document.getElementById('bookingSourceCustom');
-        if (e.target.value === 'Otro') {
-            customGroup.classList.remove('hidden');
-            customInput.required = true;
+    // Medio de contacto: opción "Agregar otro medio" abre el panel inline
+    const sourceSelect = document.getElementById('bookingSource');
+    sourceSelect.addEventListener('focus', () => {
+        // Recordar la última selección válida para poder restaurarla si se cancela
+        if (sourceSelect.value !== ADD_MEDIO_VALUE) sourceSelect.dataset.prev = sourceSelect.value;
+    });
+    sourceSelect.addEventListener('change', (e) => {
+        if (e.target.value === ADD_MEDIO_VALUE) {
+            openAddMedioPanel();
         } else {
-            customGroup.classList.add('hidden');
-            customInput.required = false;
-            customInput.value = '';
+            sourceSelect.dataset.prev = e.target.value;
+            closeAddMedioPanel(false);
+        }
+    });
+    document.getElementById('btnSaveMedio').addEventListener('click', handleSaveNewMedio);
+    document.getElementById('btnCancelMedio').addEventListener('click', () => closeAddMedioPanel(true));
+    document.getElementById('bookingSourceCustom').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault(); // Evita enviar el formulario de la reserva
+            handleSaveNewMedio();
+        } else if (e.key === 'Escape') {
+            e.preventDefault();
+            e.stopPropagation();
+            closeAddMedioPanel(true);
         }
     });
 
@@ -628,7 +644,8 @@ function openBookingModal(dateStr = null) {
     document.getElementById('rowExtras').style.display = 'flex';
     document.getElementById('rowMedioPago').style.display = 'flex';
     document.getElementById('splitPaymentRow').classList.add('hidden');
-    document.getElementById('customSourceGroup').classList.add('hidden');
+    closeAddMedioPanel(false);
+    populateMediosDropdown(DEFAULT_MEDIOS[0]);
     document.getElementById('bookingName').required = true;
     document.getElementById('bookingDni').required = true;
 
@@ -760,27 +777,13 @@ function openBookingEditModal(booking) {
     }
 
     // Handle source of contact
-    const sourceSelect = document.getElementById('bookingSource');
     let medio = booking.medio_contacto || '';
     if (medio === 'WhatsApp') {
         medio = 'Estado WSP';
     }
-    let hasSource = false;
-    for (let i = 0; i < sourceSelect.options.length; i++) {
-        if (sourceSelect.options[i].value === medio) {
-            sourceSelect.selectedIndex = i;
-            hasSource = true;
-            break;
-        }
-    }
-    if (!hasSource && medio) {
-        sourceSelect.value = 'Otro';
-        document.getElementById('customSourceGroup').classList.remove('hidden');
-        document.getElementById('bookingSourceCustom').value = medio;
-        document.getElementById('bookingSourceCustom').required = true;
-    } else {
-        document.getElementById('customSourceGroup').classList.add('hidden');
-    }
+    // Si el medio guardado no está en la lista (registros antiguos), se agrega como opción temporal
+    populateMediosDropdown(medio || DEFAULT_MEDIOS[0]);
+    closeAddMedioPanel(false);
 
     // Handle operator dynamically
     populateAsesoresDropdown(booking.asesor_registro || '');
@@ -1115,6 +1118,7 @@ async function initDatabase() {
 
                 // Fetch active advisors list
                 await fetchAdvisors();
+                await fetchMediosContacto();
 
                 setupRealtimeListener();
                 return;
@@ -1137,6 +1141,7 @@ async function initDatabase() {
 
     // Fetch active advisors list
     fetchAdvisors();
+    fetchMediosContacto();
 }
 
 async function checkSupabaseReachable(url) {
@@ -1165,6 +1170,9 @@ function setupRealtimeListener() {
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'personal_asesores' }, async () => {
             await fetchAdvisors();
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'medios_contacto' }, async () => {
+            await fetchMediosContacto();
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'historial' }, async () => {
             const modal = document.getElementById('modalHistory');
@@ -1320,9 +1328,12 @@ async function handleSaveBooking(e) {
 
     // Build data payloads
     let source = document.getElementById('bookingSource').value;
-    if (source === 'Otro') {
-        source = document.getElementById('bookingSourceCustom').value.trim() || 'Otro';
+    if (!isBlock && (!source || source === ADD_MEDIO_VALUE)) {
+        errorEl.textContent = '⚠️ Selecciona un Medio de Contacto (o guarda el nuevo medio antes de continuar).';
+        errorEl.style.display = 'block';
+        return;
     }
+    if (source === ADD_MEDIO_VALUE) source = '';
 
     let notes = document.getElementById('bookingNotes').value;
 
@@ -4365,6 +4376,195 @@ async function handleDeleteAsesor(selectAsesor) {
     } else {
         if (pwd !== null) alert("Contraseña incorrecta o cancelado.");
         selectAsesor.value = '';
+    }
+}
+
+// ============================================================
+// Medios de Contacto dinámicos (tabla medios_contacto)
+// ============================================================
+function normalizeMedioKey(name) {
+    return (name || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
+}
+
+function formatMedioName(name) {
+    const clean = (name || '').replace(/\s+/g, ' ').trim();
+    return clean ? clean.charAt(0).toUpperCase() + clean.slice(1) : '';
+}
+
+function mergeMedios(customList) {
+    const result = [...DEFAULT_MEDIOS];
+    const keys = new Set(result.map(normalizeMedioKey));
+    (customList || []).forEach(m => {
+        const key = normalizeMedioKey(m);
+        if (key && !keys.has(key)) {
+            keys.add(key);
+            result.push(m);
+        }
+    });
+    return result;
+}
+
+function loadCustomMediosLocal() {
+    try {
+        return JSON.parse(localStorage.getItem('canchapro_medios_contacto') || '[]');
+    } catch (e) {
+        return [];
+    }
+}
+
+function saveCustomMedioLocal(name) {
+    const list = loadCustomMediosLocal();
+    if (!list.some(m => normalizeMedioKey(m) === normalizeMedioKey(name))) {
+        list.push(name);
+        localStorage.setItem('canchapro_medios_contacto', JSON.stringify(list));
+    }
+}
+
+async function fetchMediosContacto() {
+    let customList = [];
+    if (dbMode === 'supabase' && supabaseClient) {
+        try {
+            const { data, error } = await supabaseClient
+                .from('medios_contacto')
+                .select('nombre')
+                .order('created_at', { ascending: true });
+            if (error) throw error;
+            customList = (data || []).map(r => r.nombre);
+        } catch (err) {
+            console.warn("Tabla medios_contacto no disponible, usando respaldo local:", err.message);
+            customList = loadCustomMediosLocal();
+        }
+    } else {
+        customList = loadCustomMediosLocal();
+    }
+    mediosContactoList = mergeMedios(customList);
+
+    // Refrescar el select conservando la selección actual
+    const select = document.getElementById('bookingSource');
+    if (select) {
+        const current = select.value && select.value !== ADD_MEDIO_VALUE
+            ? select.value
+            : (select.dataset.prev || DEFAULT_MEDIOS[0]);
+        populateMediosDropdown(current);
+        // Si el panel de nuevo medio está abierto, mantener la opción "Agregar" seleccionada
+        const panel = document.getElementById('customSourceGroup');
+        if (panel && !panel.classList.contains('hidden')) select.value = ADD_MEDIO_VALUE;
+    }
+}
+
+function populateMediosDropdown(selectedValue = '') {
+    const select = document.getElementById('bookingSource');
+    if (!select) return;
+    if (mediosContactoList.length === 0) mediosContactoList = mergeMedios(loadCustomMediosLocal());
+
+    select.innerHTML = '';
+    mediosContactoList.forEach(m => {
+        const opt = document.createElement('option');
+        opt.value = m;
+        opt.textContent = m;
+        select.appendChild(opt);
+    });
+
+    // Valor histórico que ya no está en la lista (ej: reservas antiguas con "Otro")
+    if (selectedValue && selectedValue !== ADD_MEDIO_VALUE && !mediosContactoList.includes(selectedValue)) {
+        const opt = document.createElement('option');
+        opt.value = selectedValue;
+        opt.textContent = selectedValue;
+        select.appendChild(opt);
+    }
+
+    const optAdd = document.createElement('option');
+    optAdd.value = ADD_MEDIO_VALUE;
+    optAdd.textContent = '➕ Agregar otro medio...';
+    optAdd.style.fontWeight = '600';
+    optAdd.style.color = 'var(--primary)';
+    select.appendChild(optAdd);
+
+    select.value = selectedValue || DEFAULT_MEDIOS[0];
+    if (!select.value) select.value = DEFAULT_MEDIOS[0];
+    select.dataset.prev = select.value;
+}
+
+function setAddMedioHint(text, isError = false) {
+    const hint = document.getElementById('addMedioHint');
+    if (!hint) return;
+    hint.textContent = text;
+    hint.classList.toggle('error', isError);
+}
+
+function openAddMedioPanel() {
+    const panel = document.getElementById('customSourceGroup');
+    const input = document.getElementById('bookingSourceCustom');
+    panel.classList.remove('hidden');
+    input.value = '';
+    setAddMedioHint('Se guardará para todos los asesores.');
+    setTimeout(() => input.focus(), 50);
+}
+
+function closeAddMedioPanel(restorePrevious = true) {
+    const panel = document.getElementById('customSourceGroup');
+    const input = document.getElementById('bookingSourceCustom');
+    const select = document.getElementById('bookingSource');
+    if (panel) panel.classList.add('hidden');
+    if (input) input.value = '';
+    if (restorePrevious && select && select.value === ADD_MEDIO_VALUE) {
+        select.value = select.dataset.prev || DEFAULT_MEDIOS[0];
+    }
+}
+
+async function handleSaveNewMedio() {
+    const input = document.getElementById('bookingSourceCustom');
+    const btn = document.getElementById('btnSaveMedio');
+    const select = document.getElementById('bookingSource');
+    const cleanName = formatMedioName(input.value);
+
+    if (!cleanName) {
+        setAddMedioHint('Escribe el nombre del medio.', true);
+        input.focus();
+        return;
+    }
+    if (normalizeMedioKey(cleanName) === normalizeMedioKey(ADD_MEDIO_VALUE)) return;
+
+    // Si ya existe (ignorando mayúsculas/tildes), solo se selecciona
+    const existing = mediosContactoList.find(m => normalizeMedioKey(m) === normalizeMedioKey(cleanName));
+    if (existing) {
+        closeAddMedioPanel(false);
+        populateMediosDropdown(existing);
+        return;
+    }
+
+    btn.disabled = true;
+    setAddMedioHint('Guardando...');
+    let savedName = cleanName;
+
+    if (dbMode === 'supabase' && supabaseClient) {
+        try {
+            const { error } = await supabaseClient
+                .from('medios_contacto')
+                .insert([{ nombre: cleanName, creado_por: activeOperator }]);
+            // 23505 = ya registrado por otro asesor al mismo tiempo; se considera válido
+            if (error && error.code !== '23505') throw error;
+        } catch (err) {
+            console.error("No se pudo guardar el medio en Supabase:", err);
+            btn.disabled = false;
+            setAddMedioHint('⚠️ No se pudo guardar en la base de datos. Verifica que exista la tabla "medios_contacto".', true);
+            return;
+        }
+    } else {
+        saveCustomMedioLocal(cleanName);
+    }
+
+    await fetchMediosContacto();
+    const match = mediosContactoList.find(m => normalizeMedioKey(m) === normalizeMedioKey(cleanName));
+    if (match) savedName = match;
+
+    btn.disabled = false;
+    closeAddMedioPanel(false);
+    populateMediosDropdown(savedName);
+    select.focus();
+
+    if (typeof logSessionActivity === 'function') {
+        logSessionActivity(`registró el nuevo medio de contacto: ${savedName}`);
     }
 }
 
