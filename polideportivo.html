@@ -544,7 +544,6 @@
                                     <option value="Recomendación">Recomendación</option>
                                     <option value="Afiche">Afiche</option>
                                     <option value="Volante">Volante</option>
-                                    <option value="Otro...">Otro...</option>
                                 </select>
                             </div>
                         </div>
@@ -579,12 +578,23 @@
                             </div>
                         </div>
                     </div>
-                    <div class="form-group hidden" id="customSourceGroup">
-                        <label for="bookingSourceCustom">Escribe el Nombre del Medio *</label>
-                        <div class="input-wrapper">
-                            <i data-lucide="pencil"></i>
-                            <input type="text" id="bookingSourceCustom" placeholder="Nombre del nuevo medio...">
+                    <!-- Panel inline para registrar un nuevo medio de contacto (medios-contacto.js) -->
+                    <div class="form-group hidden add-medio-panel" id="customSourceGroup">
+                        <label for="bookingSourceCustom">Nuevo Medio de Contacto</label>
+                        <div class="add-medio-row">
+                            <div class="input-wrapper">
+                                <i data-lucide="pencil"></i>
+                                <input type="text" id="bookingSourceCustom" maxlength="40"
+                                    placeholder="Ej: Radio, Google, Volante..." autocomplete="off">
+                            </div>
+                            <button type="button" class="btn btn-primary btn-sm" id="btnSaveMedio">
+                                <i data-lucide="check"></i> Guardar
+                            </button>
+                            <button type="button" class="btn btn-secondary btn-sm" id="btnCancelMedio">
+                                Cancelar
+                            </button>
                         </div>
+                        <small class="add-medio-hint" id="addMedioHint">Se guardará para todos los asesores.</small>
                     </div>
 
                     <div class="form-group">
@@ -1218,6 +1228,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE reservas, historial;
 
     <!-- Custom JS -->
     <script src="polideportivo.js"></script>
+    <script src="medios-contacto.js"></script>
 </body>
 
 </html>
