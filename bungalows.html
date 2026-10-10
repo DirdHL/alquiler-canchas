@@ -87,7 +87,7 @@
                     style="text-decoration: none; display: flex; align-items: center; gap: 8px; margin-top: 8px;">
                     <i data-lucide="lollipop" style="width: 16px; height: 16px;"></i> Carritos e inflables
                 </a>
-            
+
                 <a href="brisas.html" class="btn btn-secondary btn-sm btn-sidebar-action btn-brisas"
                     style="text-decoration: none; display: flex; align-items: center; gap: 8px; margin-top: 8px;">
                     <i data-lucide="map" style="width: 16px; height: 16px;"></i> Sport Victoria (Las Brisas)
@@ -295,16 +295,30 @@
                     </button>
                 </div>
 
-                <!-- Right: Asesor Filter -->
-                <div class="top-filter-section">
-                    <span class="top-filter-label">
-                        <i data-lucide="user-check" style="width: 15px; height: 15px; color: var(--primary);"></i>
-                        Asesor:
-                    </span>
-                    <select id="filterAsesor" class="form-control"
-                        style="font-size: 13px; padding: 6px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: #ffffff; color: var(--text-primary); cursor: pointer; min-width: 160px; font-weight: 500;">
-                        <option value="TODOS">Todos los asesores</option>
-                    </select>
+
+                <div class="top-filter-section" style="display: flex; align-items: center; gap: 16px;">
+                    <!-- INVENTARIO DE VINOS -->
+                    <div
+                        style="display: flex; align-items: center; gap: 8px; background: rgba(225, 29, 72, 0.1); padding: 4px 12px; border-radius: 20px; border: 1px solid rgba(225, 29, 72, 0.3);">
+                        <span
+                            style="font-weight: 600; color: #e11d48; font-size: 13px; display: flex; align-items: center; gap: 4px;">🍷
+                            VINO: <span id="vinoInventoryCount">12</span></span>
+                        <button type="button" id="btnAddVino"
+                            style="margin-left: 12px; background: #e11d48; color: white; border: none; border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-weight: bold; font-size: 16px; padding: 0; line-height: 1;"
+                            title="Agregar Vino">+</button>
+                    </div>
+
+
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <span class="top-filter-label" style="margin-right: 0;">
+                            <i data-lucide="user-check" style="width: 15px; height: 15px; color: var(--primary);"></i>
+                            Asesor:
+                        </span>
+                        <select id="filterAsesor" class="form-control"
+                            style="font-size: 13px; padding: 6px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: #ffffff; color: var(--text-primary); cursor: pointer; min-width: 160px; font-weight: 500;">
+                            <option value="TODOS">Todos los asesores</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 
@@ -357,12 +371,19 @@
                     <input type="hidden" id="bookingId">
 
                     <!-- Edición Grupal Toggle -->
-                    <div id="groupEditToggleContainer" class="form-group" style="display: none; margin-bottom: 16px; background: rgba(59, 130, 246, 0.1); padding: 12px; border-radius: 8px; border: 1px solid rgba(59, 130, 246, 0.2);">
-                        <label class="checkbox-container" style="display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;">
-                            <input type="checkbox" id="bookingEditGroupToggle" checked style="width: 18px; height: 18px; cursor: pointer;">
-                            <span style="font-weight: 600; color: var(--primary-color);">👥 Editar Grupo Completo (<span id="groupEditCount">0</span> Bungalows)</span>
+                    <div id="groupEditToggleContainer" class="form-group"
+                        style="display: none; margin-bottom: 16px; background: rgba(59, 130, 246, 0.1); padding: 12px; border-radius: 8px; border: 1px solid rgba(59, 130, 246, 0.2);">
+                        <label class="checkbox-container"
+                            style="display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;">
+                            <input type="checkbox" id="bookingEditGroupToggle" checked
+                                style="width: 18px; height: 18px; cursor: pointer;">
+                            <span style="font-weight: 600; color: var(--primary-color);">👥 Editar Grupo Completo (<span
+                                    id="groupEditCount">0</span> Bungalows)</span>
                         </label>
-                        <p style="font-size: 12px; color: var(--text-secondary); margin-top: 6px; margin-left: 26px; line-height: 1.4;">Si desmarcas esta opción, los cambios afectarán solo a este bungalow, separándolo del grupo.</p>
+                        <p
+                            style="font-size: 12px; color: var(--text-secondary); margin-top: 6px; margin-left: 26px; line-height: 1.4;">
+                            Si desmarcas esta opción, los cambios afectarán solo a este bungalow, separándolo del grupo.
+                        </p>
                     </div>
 
                     <!-- Maintenance Mode / Block -->
@@ -556,12 +577,13 @@
                         <label style="display: block; margin-bottom: 8px; font-weight: 600;">Servicios
                             Especiales</label>
                         <div style="display: flex; gap: 16px; flex-wrap: wrap;">
-                            <label class="checkbox-container"
-                                style="display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;">
-                                <input type="checkbox" id="bookingVino"
-                                    style="width: 18px; height: 18px; cursor: pointer;">
-                                <span style="font-weight: 500;">🍷 Vino</span>
-                            </label>
+                            <div
+                                style="display: flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.1); padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border-color);">
+                                <span style="font-weight: 500; display: flex; align-items: center; gap: 4px;">🍷
+                                    Vino:</span>
+                                <input type="number" id="bookingVinoCant" min="0" value="0"
+                                    style="width: 50px; padding: 2px 4px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-card); color: var(--text-primary); text-align: center;">
+                            </div>
                             <label class="checkbox-container"
                                 style="display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;">
                                 <input type="checkbox" id="bookingTorta"
@@ -1054,6 +1076,64 @@
                             </tbody>
                         </table>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Modal Manage Vino -->
+    <div class="modal-backdrop" id="modalAddVino">
+        <div class="modal-card modal-sm" style="max-width: 350px;">
+            <div class="modal-header">
+                <h3>Gestionar Inventario de Vinos</h3>
+                <button class="btn-close" id="btnCloseAddVino"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <p style="color: var(--text-secondary); font-size: 14px; margin-bottom: 16px;">
+                    Inventario actual: <strong id="currentVinoCountDisplay" style="color: #e11d48; font-size: 16px;">0</strong>
+                </p>
+                <div class="form-group">
+                    <label for="addVinoAmount">Cantidad a modificar:</label>
+                    <div class="input-wrapper">
+                        <i data-lucide="wine"></i>
+                        <input type="number" id="addVinoAmount" min="1" value="1" style="font-weight: bold;">
+                    </div>
+                </div>
+                <div class="modal-actions" style="margin-top: 20px; display: flex; gap: 10px;">
+                    <button type="button" class="btn btn-primary" id="btnConfirmSubtractVino" style="flex: 1; background: #64748b; color: white; border: none;">
+                        <i data-lucide="minus"></i> Reducir
+                    </button>
+                    <button type="button" class="btn btn-primary" id="btnConfirmAddVino" style="flex: 1; background: #e11d48; color: white; border: none;">
+                        <i data-lucide="plus"></i> Agregar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Warning Vino -->
+    <div class="modal-backdrop" id="modalVinoWarning">
+        <div class="modal-card modal-sm" style="max-width: 400px; border-top: 4px solid #f59e0b;">
+            <div class="modal-header" style="border-bottom: none; padding-bottom: 0;">
+                <h3 style="color: #f59e0b; display: flex; align-items: center; gap: 8px;">
+                    <i data-lucide="alert-triangle"></i> Advertencia de Inventario
+                </h3>
+            </div>
+            <div class="modal-body" style="text-align: center; padding-top: 10px;">
+                <div style="background: rgba(245, 158, 11, 0.1); padding: 16px; border-radius: 8px; margin-bottom: 20px;">
+                    <p style="color: var(--text-primary); font-size: 14px; margin-bottom: 8px; line-height: 1.5;" id="vinoWarningText">
+                        El inventario actual de vinos es 0, pero estás solicitando 0. Falta(n) 0 vino(s).
+                    </p>
+                    <p style="color: var(--text-secondary); font-size: 13px; font-weight: 500;">
+                        ¿Deseas guardar la reserva de todas formas?
+                    </p>
+                </div>
+                <div class="modal-actions" style="display: flex; gap: 12px; justify-content: center; margin-top: 0;">
+                    <button type="button" class="btn btn-secondary" id="btnCancelVinoWarning" style="flex: 1;">
+                        Cancelar
+                    </button>
+                    <button type="button" class="btn btn-primary" id="btnProceedVinoWarning" style="flex: 1; background: #f59e0b; color: white; border: none;">
+                        Sí, continuar
+                    </button>
                 </div>
             </div>
         </div>

@@ -143,6 +143,56 @@ function setupEventListeners() {
     document.getElementById('btnCopyReservation').addEventListener('click', copyReservationDetails);
     document.getElementById('formStatsAuth').addEventListener('submit', handleStatsAuth);
 
+    // Inventorio de vino 
+    updateVinoInventoryDisplay();
+    const btnAddVino = document.getElementById('btnAddVino');
+    if (btnAddVino) {
+        btnAddVino.addEventListener('click', () => {
+            let currentInv = parseInt(localStorage.getItem('canchapro_inventory_vino_bungalows'));
+            if (isNaN(currentInv)) currentInv = 12;
+            document.getElementById('currentVinoCountDisplay').textContent = currentInv;
+            document.getElementById('addVinoAmount').value = 1;
+            openModal('modalAddVino');
+        });
+    }
+    
+    const btnCloseAddVino = document.getElementById('btnCloseAddVino');
+    if (btnCloseAddVino) {
+        btnCloseAddVino.addEventListener('click', () => closeModal('modalAddVino'));
+    }
+
+    const btnConfirmAddVino = document.getElementById('btnConfirmAddVino');
+    if (btnConfirmAddVino) {
+        btnConfirmAddVino.addEventListener('click', () => {
+            let currentInv = parseInt(localStorage.getItem('canchapro_inventory_vino_bungalows'));
+            if (isNaN(currentInv)) currentInv = 12;
+            
+            let addAmount = parseInt(document.getElementById('addVinoAmount').value) || 0;
+            if (addAmount > 0) {
+                currentInv += addAmount;
+                localStorage.setItem('canchapro_inventory_vino_bungalows', currentInv);
+                updateVinoInventoryDisplay();
+            }
+            closeModal('modalAddVino');
+        });
+    }
+
+    const btnConfirmSubtractVino = document.getElementById('btnConfirmSubtractVino');
+    if (btnConfirmSubtractVino) {
+        btnConfirmSubtractVino.addEventListener('click', () => {
+            let currentInv = parseInt(localStorage.getItem('canchapro_inventory_vino_bungalows'));
+            if (isNaN(currentInv)) currentInv = 12;
+            
+            let subAmount = parseInt(document.getElementById('addVinoAmount').value) || 0;
+            if (subAmount > 0) {
+                currentInv = Math.max(0, currentInv - subAmount);
+                localStorage.setItem('canchapro_inventory_vino_bungalows', currentInv);
+                updateVinoInventoryDisplay();
+            }
+            closeModal('modalAddVino');
+        });
+    }
+
     // Profile Edit
     document.getElementById('btnEditUser').addEventListener('click', () => {
         const currentName = localStorage.getItem('canchapro_user_name') || '';
@@ -410,6 +460,12 @@ function setupEventListeners() {
     const chkList = document.querySelectorAll('input[name="bungalowSelect"]');
     chkList.forEach(chk => {
         chk.addEventListener('change', function () {
+            const errorEl = document.getElementById('bookingError');
+            if (errorEl) {
+                errorEl.textContent = '';
+                errorEl.style.display = 'none';
+            }
+            
             // Obtener todos los seleccionados
             const selected = Array.from(document.querySelectorAll('input[name="bungalowSelect"]:checked')).map(c => c.value);
             // Sincronizar el select oculto con el primer valor seleccionado (o vacío si ninguno)
@@ -553,6 +609,15 @@ function closeModal(id) {
     document.body.classList.remove('no-scroll');
 }
 
+function updateVinoInventoryDisplay() {
+    const el = document.getElementById('vinoInventoryCount');
+    if (el) {
+        let currentInv = parseInt(localStorage.getItem('canchapro_inventory_vino_bungalows'));
+        if (isNaN(currentInv)) currentInv = 12; // default
+        el.textContent = currentInv;
+    }
+}
+
 // Update limit for kids under 7 based on selected bungalows
 function updateNinosLimit() {
     const selectedCount = document.querySelectorAll('input[name="bungalowSelect"]:checked').length;
@@ -625,6 +690,14 @@ function openBookingModal(dateStr = null) {
     });
     document.getElementById('bookingBungalow').value = '';
     document.getElementById('bookingPendiente').value = '';
+
+    const vinoCantInput = document.getElementById('bookingVinoCant');
+    if (vinoCantInput) vinoCantInput.value = 0;
+    const tortaInput = document.getElementById('bookingTorta');
+    if (tortaInput) tortaInput.checked = false;
+    const cuatriInput = document.getElementById('bookingCuatrimoto');
+    if (cuatriInput) cuatriInput.checked = false;
+
     const personasInput = document.getElementById('bookingPersonas');
     if (personasInput) personasInput.value = 4;
     const ninosAdicInput = document.getElementById('bookingNinosAdicionales');
@@ -720,7 +793,7 @@ function openBookingEditModal(booking) {
     const groupBungalows = groupToLoad.map(b => b.bungalow_numero);
     window.currentEditGroupBungalows = groupBungalows;
     window.currentEditBungalow = booking.bungalow_numero;
-    
+
     const toggleContainer = document.getElementById('groupEditToggleContainer');
     const toggleCheck = document.getElementById('bookingEditGroupToggle');
     const countSpan = document.getElementById('groupEditCount');
@@ -765,7 +838,21 @@ function openBookingEditModal(booking) {
     document.getElementById('bookingHorasExtras').value = booking.horas_extras || 0;
 
     const notesValue = booking.notas || booking.observaciones || '';
-    document.getElementById('bookingComment').value = notesValue.replace(/[🍷🎂🏍️]/g, '').replace(/ - /g, '').trim();
+
+    const wineMatch = notesValue.match(/🍷\s*\(x(\d+)\)/);
+    if (wineMatch) {
+        document.getElementById('bookingVinoCant').value = parseInt(wineMatch[1]);
+    } else {
+        document.getElementById('bookingVinoCant').value = notesValue.includes('🍷') ? 1 : 0;
+    }
+    const tortaInput = document.getElementById('bookingTorta');
+    if (tortaInput) tortaInput.checked = notesValue.includes('🎂');
+    const cuatriInput = document.getElementById('bookingCuatrimoto');
+    if (cuatriInput) cuatriInput.checked = notesValue.includes('🏍️');
+
+    let cleanedNotes = notesValue.replace(/🍷\s*\(x\d+\)/g, '').replace(/[🍷🎂🏍️]/g, '').trim();
+    if (cleanedNotes.startsWith('- ')) cleanedNotes = cleanedNotes.substring(2).trim();
+    document.getElementById('bookingComment').value = cleanedNotes;
 
     // Handle divided payment
     if (booking.tipo_pago === 'Dividido') {
@@ -1335,6 +1422,45 @@ async function handleSaveBooking(e) {
     }
     if (source === ADD_MEDIO_VALUE) source = '';
 
+    // Verificación de inventario de vinos
+    const cantVino = parseInt(document.getElementById('bookingVinoCant').value) || 0;
+    if (cantVino > 0) {
+        let currentInv = parseInt(localStorage.getItem('canchapro_inventory_vino_bungalows'));
+        if (isNaN(currentInv)) currentInv = 12;
+        if (cantVino > currentInv) {
+            const missing = cantVino - currentInv;
+            const proceed = await new Promise((resolve) => {
+                document.getElementById('vinoWarningText').innerHTML = `El inventario actual de vinos es <strong>${currentInv}</strong>, pero estás solicitando <strong>${cantVino}</strong>. Falta(n) <strong>${missing}</strong> vino(s).`;
+                openModal('modalVinoWarning');
+                
+                const btnCancel = document.getElementById('btnCancelVinoWarning');
+                const btnProceed = document.getElementById('btnProceedVinoWarning');
+                
+                const onCancel = () => {
+                    closeModal('modalVinoWarning');
+                    cleanup();
+                    resolve(false);
+                };
+                
+                const onProceed = () => {
+                    closeModal('modalVinoWarning');
+                    cleanup();
+                    resolve(true);
+                };
+                
+                const cleanup = () => {
+                    btnCancel.removeEventListener('click', onCancel);
+                    btnProceed.removeEventListener('click', onProceed);
+                };
+                
+                btnCancel.addEventListener('click', onCancel);
+                btnProceed.addEventListener('click', onProceed);
+            });
+            
+            if (!proceed) return;
+        }
+    }
+
     let notes = document.getElementById('bookingNotes').value;
 
     const totalCalculado = parseFloat(document.getElementById('bookingTotal').value) || 0;
@@ -1362,7 +1488,8 @@ async function handleSaveBooking(e) {
             notas: (function () {
                 let finalNotes = document.getElementById('bookingComment').value.trim();
                 let icons = [];
-                if (document.getElementById('bookingVino') && document.getElementById('bookingVino').checked) icons.push('🍷');
+                const cantVino = parseInt(document.getElementById('bookingVinoCant').value) || 0;
+                if (cantVino > 0) icons.push(`🍷 (x${cantVino})`);
                 if (document.getElementById('bookingTorta') && document.getElementById('bookingTorta').checked) icons.push('🎂');
                 if (document.getElementById('bookingCuatrimoto') && document.getElementById('bookingCuatrimoto').checked) icons.push('🏍️');
                 if (icons.length > 0) {
@@ -1473,11 +1600,11 @@ async function handleSaveBooking(e) {
                         b.horario === oldBooking.horario &&
                         b.estado_reserva !== 'Bloqueo'
                     );
-                    
-                    const isGroupEditToggle = document.getElementById('groupEditToggleContainer').style.display !== 'none' 
-                        ? document.getElementById('bookingEditGroupToggle').checked 
+
+                    const isGroupEditToggle = document.getElementById('groupEditToggleContainer').style.display !== 'none'
+                        ? document.getElementById('bookingEditGroupToggle').checked
                         : false;
-                    
+
                     let groupIds = [];
                     if (isGroupEditToggle || groupBookings.length === 1) {
                         groupIds = groupBookings.map(b => b.id);
@@ -1530,8 +1657,8 @@ async function handleSaveBooking(e) {
             // Modo Edición Grupal:
             const oldBooking = bookings.find(b => b.id === id);
             if (oldBooking) {
-                const isGroupEditToggle = document.getElementById('groupEditToggleContainer').style.display !== 'none' 
-                    ? document.getElementById('bookingEditGroupToggle').checked 
+                const isGroupEditToggle = document.getElementById('groupEditToggleContainer').style.display !== 'none'
+                    ? document.getElementById('bookingEditGroupToggle').checked
                     : false;
 
                 if (isGroupEditToggle) {
@@ -1571,6 +1698,17 @@ async function handleSaveBooking(e) {
             logSessionActivity(`Nuevas reservas locales creadas para: ${selectedBungalows.join(', ')}`);
         }
         saveLocalBookingsFallback();
+    }
+
+    if (!id) {
+        const cantVino = parseInt(document.getElementById('bookingVinoCant').value) || 0;
+        if (cantVino > 0) {
+            let currentInv = parseInt(localStorage.getItem('canchapro_inventory_vino_bungalows'));
+            if (isNaN(currentInv)) currentInv = 12;
+            currentInv = Math.max(0, currentInv - cantVino);
+            localStorage.setItem('canchapro_inventory_vino_bungalows', currentInv);
+            if (typeof updateVinoInventoryDisplay === 'function') updateVinoInventoryDisplay();
+        }
     }
 
     closeModal('modalBooking');
