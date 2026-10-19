@@ -2708,3 +2708,21 @@ body {
     .add-medio-row .input-wrapper { flex-basis: 100%; }
     .add-medio-row .btn { flex: 1; }
 }
+
+/* ===== Bloqueo de horarios ===== */
+.btn-block-schedule {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: linear-gradient(135deg, #475569, #1e293b);
+    color: #fff; border: none; border-radius: var(--radius-sm, 8px);
+    padding: 8px 16px; font-weight: 600; font-size: 13px; cursor: pointer;
+    box-shadow: 0 2px 8px rgba(30, 41, 59, 0.25);
+    transition: transform .15s ease, box-shadow .15s ease;
+}
+.btn-block-schedule:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(30, 41, 59, 0.35); }
+.btn-block-schedule svg { width: 15px; height: 15px; }
+.block-bungalow-chip {
+    display: inline-flex; align-items: center; gap: 6px; cursor: pointer; user-select: none;
+    padding: 6px 14px; border: 1px solid var(--border-color, #cbd5e1); border-radius: 999px;
+    font-weight: 600; font-size: 13px; transition: background .15s, border-color .15s;
+}
+.block-bungalow-chip:has(input:checked) { background: rgba(71, 85, 105, 0.12); border-color: #475569; }

@@ -106,6 +106,10 @@ function setupEventListeners() {
 
     // Modal triggers
     document.getElementById('btnNewReservation').addEventListener('click', () => openBookingModal());
+    document.getElementById('btnOpenBlock').addEventListener('click', () => openBlockModal());
+    document.getElementById('btnCloseBlock').addEventListener('click', () => closeModal('modalBlock'));
+    document.getElementById('formBlock').addEventListener('submit', handleSaveBlock);
+    document.getElementById('btnDeleteBlock').addEventListener('click', handleDeleteBlock);
     document.getElementById('btnCloseBooking').addEventListener('click', () => closeModal('modalBooking'));
     document.getElementById('btnOpenSettings').addEventListener('click', () => openSettingsModal());
     document.getElementById('btnCloseSettings').addEventListener('click', () => closeModal('modalSettings'));
@@ -353,48 +357,7 @@ function setupEventListeners() {
         });
     }
 
-    // Block / Maintenance checkbox handler
-    document.getElementById('bookingIsBlock').addEventListener('change', (e) => {
-        const isBlock = e.target.checked;
-        const nameField = document.getElementById('bookingName');
-        const groupClientInfo = document.getElementById('groupClientInfo');
-        const rowClientDetails = document.getElementById('rowClientDetails');
-        const rowOccupancy = document.getElementById('rowOccupancy');
-        const rowExtras = document.getElementById('rowExtras');
-        const rowMedioPago = document.getElementById('rowMedioPago');
-        const splitPaymentRow = document.getElementById('splitPaymentRow');
-
-        if (isBlock) {
-            nameField.value = 'Mantenimiento / Fuera de Servicio';
-            nameField.required = false;
-            document.getElementById('bookingDni').required = false;
-            groupClientInfo.style.display = 'none';
-            rowClientDetails.style.display = 'none';
-            rowOccupancy.style.display = 'none';
-            rowExtras.style.display = 'none';
-            rowMedioPago.style.display = 'none';
-            splitPaymentRow.classList.add('hidden');
-
-            // Set prices to 0
-            document.getElementById('bookingTotal').value = 0;
-            document.getElementById('bookingAdelanto').value = 0;
-            document.getElementById('bookingPendiente').value = 0;
-        } else {
-            nameField.value = '';
-            nameField.required = true;
-            document.getElementById('bookingDni').required = true;
-            groupClientInfo.style.display = 'block';
-            rowClientDetails.style.display = 'flex';
-            rowOccupancy.style.display = 'grid';
-            rowExtras.style.display = 'flex';
-            rowMedioPago.style.display = 'flex';
-
-            if (document.getElementById('bookingPaymentType').value === 'Dividido') {
-                splitPaymentRow.classList.remove('hidden');
-            }
-        }
-        runDynamicCalculations();
-    });
+    // (El bloqueo de horarios ahora se gestiona desde el botón "Bloquear" del calendario)
 
     // Bungalow Navigation Tabs (B1 a B6 y Ver Todos)
     const bungalowTabButtons = document.querySelectorAll('.bungalow-tab');
@@ -670,7 +633,6 @@ function openBookingModal(dateStr = null) {
     document.getElementById('bookingId').value = '';
     document.getElementById('modalTitle').textContent = 'Nueva Reserva de Bungalow';
     document.getElementById('btnDeleteBooking').classList.add('hidden');
-    document.getElementById('bookingIsBlock').checked = false;
     document.getElementById('groupEditToggleContainer').style.display = 'none';
 
     // Reset custom checkboxes selection
@@ -756,12 +718,16 @@ function openBookingModal(dateStr = null) {
 
 // Open booking modal in EDIT mode
 function openBookingEditModal(booking) {
+    // Los bloqueos se editan desde su propio modal
+    if (booking.estado_reserva === 'Bloqueado') {
+        openBlockModal(booking);
+        return;
+    }
     document.getElementById('modalTitle').textContent = 'Editar Reserva';
     document.getElementById('bookingId').value = booking.id;
     document.getElementById('btnDeleteBooking').classList.remove('hidden');
 
-    const isBlock = booking.estado_reserva === 'Bloqueado';
-    document.getElementById('bookingIsBlock').checked = isBlock;
+    const isBlock = false;
 
     // Clear error
     const errorEl = document.getElementById('bookingError');
@@ -1007,7 +973,7 @@ function calculateBasePrice(checkInStr, checkOutStr, horario) {
 
 // Main Dynamic Calculation function
 function runDynamicCalculations() {
-    const isBlock = document.getElementById('bookingIsBlock').checked;
+    const isBlock = false;
 
     const breakdownBase = document.getElementById('breakdownBase');
     const breakdownGuests = document.getElementById('breakdownGuests');
@@ -1349,7 +1315,7 @@ async function handleSaveBooking(e) {
     errorEl.style.display = 'none';
 
     const id = document.getElementById('bookingId').value;
-    const isBlock = document.getElementById('bookingIsBlock').checked;
+    const isBlock = false;
     const checkIn = document.getElementById('bookingCheckIn').value;
     const checkOut = document.getElementById('bookingCheckOut').value;
     const horario = document.getElementById('bookingHorario').value;
@@ -1399,16 +1365,16 @@ async function handleSaveBooking(e) {
     }
 
     if (conflictingBooking) {
-        const clientName = conflictingBooking.estado_reserva === 'Bloqueado'
-            ? 'Mantenimiento / Bloqueado'
-            : conflictingBooking.nombre_cliente;
-
         const dateIn = new Date(conflictingBooking.fecha_ingreso + 'T00:00:00');
         const dateOut = new Date(conflictingBooking.fecha_salida + 'T00:00:00');
         const fechaInFormatted = dateIn.toLocaleDateString('es-PE', { day: 'numeric', month: 'short' });
         const fechaOutFormatted = dateOut.toLocaleDateString('es-PE', { day: 'numeric', month: 'short' });
 
-        errorEl.innerHTML = `⚠️ <strong>Conflicto de Reserva:</strong> El Bungalow ${conflictingBooking.bungalow_numero} ya está ocupado por <strong>${clientName}</strong> (${conflictingBooking.horario}) del ${fechaInFormatted} al ${fechaOutFormatted}.`;
+        if (conflictingBooking.estado_reserva === 'Bloqueado') {
+            errorEl.innerHTML = `🔒 <strong>Horario bloqueado:</strong> El Bungalow ${conflictingBooking.bungalow_numero} no está disponible en este horario por mantenimiento/bloqueo (${formatBlockRange(conflictingBooking)}).`;
+        } else {
+            errorEl.innerHTML = `⚠️ <strong>Conflicto de Reserva:</strong> El Bungalow ${conflictingBooking.bungalow_numero} ya está ocupado por <strong>${conflictingBooking.nombre_cliente}</strong> (${conflictingBooking.horario}) del ${fechaInFormatted} al ${fechaOutFormatted}.`;
+        }
         errorEl.style.display = 'block';
         return;
     }
@@ -1800,12 +1766,198 @@ function checkBookingCollision(id, bungalow, checkIn, checkOut, horario, extraHo
         // Only check same bungalow
         if (b.bungalow_numero !== bungalow) return false;
 
-        const oldInterval = getBookingInterval(b.fecha_ingreso, b.fecha_salida, b.horario, b.horas_extras || 0);
+        const oldInterval = getRecordInterval(b);
 
         // Date overlap check: (StartA < EndB) and (EndA > StartB)
         const overlaps = (newInterval.start < oldInterval.end) && (newInterval.end > oldInterval.start);
         return overlaps;
     });
+}
+
+// ----------------------------------------------------
+// Bloqueo de horarios personalizados (rango exacto fecha/hora)
+// ----------------------------------------------------
+// Intervalo real de un registro: si es un bloqueo con rango exacto lo usa tal cual;
+// de lo contrario calcula el intervalo según el turno de la reserva.
+function getRecordInterval(b) {
+    if (b.bloqueo_inicio && b.bloqueo_fin) {
+        return { start: new Date(b.bloqueo_inicio), end: new Date(b.bloqueo_fin) };
+    }
+    return getBookingInterval(b.fecha_ingreso, b.fecha_salida, b.horario, b.horas_extras || 0);
+}
+
+// Solapamiento genérico: (inicioA < finB) && (finA > inicioB)
+function checkIntervalCollision(excludeId, bungalow, start, end) {
+    return bookings.find(b => {
+        if (excludeId && String(b.id) === String(excludeId)) return false;
+        if (b.bungalow_numero !== bungalow) return false;
+        const iv = getRecordInterval(b);
+        return start < iv.end && end > iv.start;
+    });
+}
+
+function toDateTimeLocalValue(d) {
+    const p = n => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+function formatBlockRange(b) {
+    const iv = getRecordInterval(b);
+    const opts = { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true };
+    return `${iv.start.toLocaleString('es-PE', opts)} – ${iv.end.toLocaleString('es-PE', opts)}`;
+}
+
+function openBlockModal(block = null) {
+    const form = document.getElementById('formBlock');
+    form.reset();
+    const errorEl = document.getElementById('blockError');
+    errorEl.textContent = '';
+    errorEl.style.display = 'none';
+
+    const chks = document.querySelectorAll('input[name="blockBungalow"]');
+    chks.forEach(c => { c.checked = false; c.disabled = false; });
+
+    if (block) {
+        document.getElementById('blockModalTitle').textContent = '🔒 Editar Bloqueo';
+        document.getElementById('blockId').value = block.id;
+        document.getElementById('btnDeleteBlock').classList.remove('hidden');
+        chks.forEach(c => {
+            c.checked = parseInt(c.value) === block.bungalow_numero;
+            c.disabled = true; // un registro de bloqueo pertenece a un solo bungalow
+        });
+        const iv = getRecordInterval(block);
+        document.getElementById('blockStart').value = toDateTimeLocalValue(iv.start);
+        document.getElementById('blockEnd').value = toDateTimeLocalValue(iv.end);
+        const reason = (block.nombre_cliente || '').replace(/^🔒 Bloqueo:\s*/, '');
+        document.getElementById('blockReason').value = reason === 'Mantenimiento' ? '' : reason;
+    } else {
+        document.getElementById('blockModalTitle').textContent = '🔒 Bloquear Bungalow';
+        document.getElementById('blockId').value = '';
+        document.getElementById('btnDeleteBlock').classList.add('hidden');
+        if (currentBungalowTab !== 'all') {
+            const chk = document.querySelector(`input[name="blockBungalow"][value="${parseInt(currentBungalowTab)}"]`);
+            if (chk) chk.checked = true;
+        }
+        const base = new Date(selectedDate || new Date());
+        base.setHours(8, 0, 0, 0);
+        const end = new Date(base);
+        end.setHours(20, 0, 0, 0);
+        document.getElementById('blockStart').value = toDateTimeLocalValue(base);
+        document.getElementById('blockEnd').value = toDateTimeLocalValue(end);
+    }
+    openModal('modalBlock');
+}
+
+async function handleSaveBlock(e) {
+    e.preventDefault();
+    const errorEl = document.getElementById('blockError');
+    const showErr = (html) => { errorEl.innerHTML = html; errorEl.style.display = 'block'; };
+    errorEl.style.display = 'none';
+
+    const id = document.getElementById('blockId').value;
+    const startVal = document.getElementById('blockStart').value;
+    const endVal = document.getElementById('blockEnd').value;
+    const reason = document.getElementById('blockReason').value.trim();
+    const selected = Array.from(document.querySelectorAll('input[name="blockBungalow"]:checked')).map(c => parseInt(c.value));
+
+    if (selected.length === 0) return showErr('⚠️ Selecciona al menos un bungalow.');
+    if (!startVal || !endVal) return showErr('⚠️ La fecha y hora de inicio y de fin son obligatorias.');
+
+    const start = new Date(startVal);
+    const end = new Date(endVal);
+    if (isNaN(start) || isNaN(end)) return showErr('⚠️ Fechas inválidas.');
+    if (end <= start) return showErr('⚠️ La fecha/hora de fin debe ser posterior a la de inicio.');
+
+    // Validación de solapamiento contra reservas y otros bloqueos
+    for (const bNo of selected) {
+        const conflict = checkIntervalCollision(id, bNo, start, end);
+        if (conflict) {
+            const what = conflict.estado_reserva === 'Bloqueado'
+                ? `ya tiene otro bloqueo (${formatBlockRange(conflict)})`
+                : `tiene una reserva de <strong>${escapeHTML(conflict.nombre_cliente || '')}</strong> (${formatBlockRange(conflict)})`;
+            return showErr(`⚠️ El Bungalow ${bNo} ${what} que se cruza con este horario.`);
+        }
+    }
+
+    const pad = n => String(n).padStart(2, '0');
+    const dateOnly = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    const ts = d => `${dateOnly(d)}T${pad(d.getHours())}:${pad(d.getMinutes())}:00`;
+
+    const buildPayload = (bNo) => ({
+        bungalow_numero: bNo,
+        fecha_ingreso: dateOnly(start),
+        fecha_salida: dateOnly(end),
+        horario: 'Bloqueo Personalizado',
+        estado_reserva: 'Bloqueado',
+        bloqueo_inicio: ts(start),
+        bloqueo_fin: ts(end),
+        nombre_cliente: reason || 'Mantenimiento',
+        dni_cliente: '',
+        telefono_cliente: '',
+        notas: '',
+        asesor_registro: activeOperator || '',
+        tipo_pago: 'Efectivo',
+        medio_contacto: '',
+        adultos: 0, ninos_gratis: 0, ninos_pagantes: 0,
+        precio_base: 0, adicional_personas: 0, horas_extras: 0, adicional_horas: 0,
+        alquiler_cuatrimoto: 0, cuatrimoto_monto: 0,
+        monto_total: 0, monto_adelanto: 0, monto_efectivo: 0, monto_yape: 0
+    });
+
+    if (dbMode === 'supabase' && supabaseClient) {
+        try {
+            if (id) {
+                const { error } = await supabaseClient.from('reservas_bungalows')
+                    .update(buildPayload(selected[0])).eq('id', id);
+                if (error) throw error;
+            } else {
+                const { error } = await supabaseClient.from('reservas_bungalows')
+                    .insert(selected.map(buildPayload));
+                if (error) throw error;
+            }
+        } catch (err) {
+            console.error('Error al guardar bloqueo:', err);
+            return showErr('Error al sincronizar con el servidor: ' + err.message +
+                ' (¿ejecutaste el SQL de las columnas bloqueo_inicio / bloqueo_fin?)');
+        }
+    } else {
+        if (id) {
+            const idx = bookings.findIndex(b => String(b.id) === String(id));
+            if (idx >= 0) bookings[idx] = { ...bookings[idx], ...buildPayload(selected[0]) };
+        } else {
+            selected.forEach((bNo, i) => {
+                const p = buildPayload(bNo);
+                p.id = 'local_' + Date.now() + '_' + i;
+                p.created_at = new Date().toISOString();
+                bookings.push(p);
+            });
+        }
+        saveLocalBookingsFallback();
+    }
+
+    logSessionActivity(`Bloqueo ${id ? 'editado' : 'creado'} en bungalows [${selected.join(', ')}]: ${ts(start)} → ${ts(end)}`);
+    closeModal('modalBlock');
+    await fetchBookings();
+}
+
+async function handleDeleteBlock() {
+    const id = document.getElementById('blockId').value;
+    if (!id) return;
+    if (!confirm('¿Eliminar este bloqueo?')) return;
+
+    if (dbMode === 'supabase' && supabaseClient) {
+        const { error } = await supabaseClient.from('reservas_bungalows').delete().eq('id', id);
+        if (error) {
+            alert('No se pudo eliminar el bloqueo: ' + error.message);
+            return;
+        }
+    } else {
+        bookings = bookings.filter(b => String(b.id) !== String(id));
+        saveLocalBookingsFallback();
+    }
+    logSessionActivity(`Bloqueo ${id} eliminado.`);
+    closeModal('modalBlock');
+    await fetchBookings();
 }
 
 // ----------------------------------------------------
@@ -1846,10 +1998,11 @@ function initCalendar() {
             const isBlocked = b.estado_reserva === 'Bloqueado';
             if (isBlocked) {
                 const reason = (b.nombre_cliente && !b.nombre_cliente.startsWith('🔒')) ? b.nombre_cliente : 'Bloqueado';
+                const rangeLine = b.bloqueo_inicio ? `<div class="fc-event-line-3">🕒 ${formatBlockRange(b)}</div>` : '';
                 return {
                     html: `<div class="fc-event-custom-card multi-line">
                         <div class="fc-event-line-1">🔒 <strong>B${b.bungalow_numero} BLOQUEADO</strong></div>
-                        <div class="fc-event-line-2">${escapeHTML(reason)}</div>
+                        <div class="fc-event-line-2">${escapeHTML(reason)}</div>${rangeLine}
                     </div>`
                 };
             }
@@ -2225,7 +2378,7 @@ function updateAvailabilityGrid() {
             const dateEnd = new Date(new Date(D + 'T00:00:00').getTime() + 24 * 60 * 60 * 1000);
 
             const overlaps = relevantBookings.filter(b => {
-                const interval = getBookingInterval(b.fecha_ingreso, b.fecha_salida, b.horario, b.horas_extras || 0);
+                const interval = getRecordInterval(b);
                 return interval.start < dateEnd && interval.end > dateStart;
             });
 
@@ -2314,7 +2467,7 @@ function updateAvailabilityGrid() {
             const newCheckInEnd = new Date(nextDayStr + 'T12:00:00');
 
             const isOccupiedForCheckIn = relevantBookings.some(b => {
-                const oldInterval = getBookingInterval(b.fecha_ingreso, b.fecha_salida, b.horario, b.horas_extras || 0);
+                const oldInterval = getRecordInterval(b);
                 return newCheckInStart < oldInterval.end && newCheckInEnd > oldInterval.start;
             });
 
@@ -2715,7 +2868,7 @@ function updateDashboardStats() {
 // Share Booking Info / Copy Reservation
 // ----------------------------------------------------
 function copyReservationDetails() {
-    const isBlock = document.getElementById('bookingIsBlock').checked;
+    const isBlock = false;
     if (isBlock) {
         alert("No se pueden copiar los detalles de un bloqueo.");
         return;
