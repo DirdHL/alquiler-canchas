@@ -146,8 +146,9 @@
                                 <div class="lunch-check-text">
                                     <strong>🍴 ¿Almorzarás hoy?</strong>
                                     <small id="lunchHelpText">
-                                        Si está marcado, se descontará 1 hora de refrigerio de tu jornada. Si hoy
-                                        decides no almorzar para recuperar tiempo, desmarca esta casilla.
+                                        Si está marcado, se descontará 1 hora de refrigerio. Si tu horario incluye
+                                        almuerzo y hoy no lo tomas, desmarca la casilla: primero recuperarás las
+                                        horas debidas del mes y el sobrante será extra, hasta 1 hora por día.
                                     </small>
                                 </div>
                             </label>
@@ -197,7 +198,7 @@
                                 <span>Resumen mensual</span>
                                 <strong id="monthlySummaryPeriod">Mes actual</strong>
                             </div>
-                            <p>Las tardanzas y faltas se conservan aunque se justifiquen. Solo las horas debidas descuentan permisos y ajustes.</p>
+                            <p>Las tardanzas y faltas se conservan aunque se justifiquen o se recupere el tiempo. Las horas debidas descuentan permisos, ajustes y tiempo recuperado.</p>
                         </div>
 
                         <!-- 5 Distinct KPI Indicators with Required Colors -->
@@ -225,7 +226,7 @@
 
                             <!-- 4. Horas que se Deben (Tardanzas + Faltas + Salidas anticipadas) -->
                             <div class="metric-card metric-deuda"
-                                title="Saldo mensual por recuperar después de permisos y ajustes. El historial de tardanzas y ausencias se conserva.">
+                                title="Saldo mensual después de permisos, ajustes y tiempo recuperado. El historial de tardanzas y ausencias se conserva.">
                                 <div class="metric-icon">🟠</div>
                                 <div class="metric-val" id="metricOwedHours">0:00</div>
                                 <div class="metric-lbl">Horas Debidas</div>

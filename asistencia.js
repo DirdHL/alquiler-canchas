@@ -16,6 +16,7 @@ let isPunchInProgress = false;
 let autoCheckoutPromise = null;
 let lastAttendanceMinute = '';
 let automaticCheckoutRepairPromise = null;
+let lunchExtraRepairPromise = null;
 
 const ADMIN_PASSWORD = "Reservasupabase";
 
@@ -222,10 +223,54 @@ function isScheduledShiftDue(record, now = new Date()) {
         now.getHours() * 60 + now.getMinutes() >= timeStringToMinutes(schedule.out);
 }
 
-function calculateShiftAccounting(record, checkoutTime, schedule) {
+function getWorkedMinutesInsideSchedule(record, checkoutTime, schedule) {
+    if (!schedule?.active) return 0;
+    const start = Math.max(timeStringToMinutes(record.check_in), timeStringToMinutes(schedule.in));
+    const end = Math.min(timeStringToMinutes(checkoutTime), timeStringToMinutes(schedule.out));
+    return Math.max(0, end - start - (getRecordLunchChoice(record) ? 60 : 0));
+}
+
+function getEarlierDailyShifts(record, records) {
+    if (!record.employee_name || !record.date) return [];
+    return records.filter(previous => previous !== record &&
+        (!record.id || previous.id !== record.id) && previous.type === 'Trabajo' &&
+        previous.employee_name === record.employee_name && previous.date === record.date &&
+        previous.check_in && previous.check_out &&
+        timeStringToMinutes(previous.check_out) <= timeStringToMinutes(record.check_in));
+}
+
+function getMissedLunchExtraMinutes(record, checkoutTime, schedule, records = attendanceRecords) {
+    if (!schedule?.active || !schedule.lunch || getRecordLunchChoice(record)) return 0;
+    const scheduledMinutes = Math.max(0, timeStringToMinutes(schedule.out) - timeStringToMinutes(schedule.in));
+    const requiredMinutes = Math.max(0, scheduledMinutes - 60);
+    const previousMinutes = getEarlierDailyShifts(record, records).reduce((total, previous) =>
+        total + getWorkedMinutesInsideSchedule(previous, previous.check_out, schedule), 0);
+    const currentMinutes = getWorkedMinutesInsideSchedule(record, checkoutTime, schedule);
+    const bonus = minutes => Math.min(60, Math.max(0, minutes - requiredMinutes));
+    return Math.max(0, bonus(previousMinutes + currentMinutes) - bonus(previousMinutes));
+}
+
+function getMonthlyDebtAtCheckout(record, accounting, checkoutTime, records) {
+    if (!record.employee_name || !record.date) {
+        return Math.max(0, accounting.late_minutes + accounting.owed_minutes);
+    }
+    const month = record.date.slice(0, 7);
+    const earlier = records.filter(previous => previous !== record &&
+        (!record.id || previous.id !== record.id) && previous.date <= record.date &&
+        (previous.date !== record.date || previous.type !== 'Trabajo' ||
+            (previous.check_out && timeStringToMinutes(previous.check_out) <= timeStringToMinutes(record.check_in))));
+    const candidate = { ...record, ...accounting, type: 'Trabajo', check_out: checkoutTime };
+    const source = [...earlier, candidate];
+    const absences = getDetectedAbsences(month, record.employee_name, source)
+        .filter(absence => absence.date < record.date);
+    return calculateMonthlyAttendanceSummary(record.employee_name, month, [...source, ...absences],
+        new Date(record.date + 'T23:59:59')).owedMinutes;
+}
+
+function calculateShiftAccounting(record, checkoutTime, schedule, { deferLunchDeduction = false, records = attendanceRecords } = {}) {
     const checkIn = timeStringToMinutes(record.check_in);
     const checkOut = timeStringToMinutes(checkoutTime);
-    const netMinutes = Math.max(0, checkOut - checkIn - (getRecordLunchChoice(record) ? 60 : 0));
+    const netMinutes = Math.max(0, checkOut - checkIn - (!deferLunchDeduction && getRecordLunchChoice(record) ? 60 : 0));
     let extraMinutes = netMinutes;
     let owedMinutes = 0;
     let lateMinutes = 0;
@@ -234,11 +279,39 @@ function calculateShiftAccounting(record, checkoutTime, schedule) {
         const scheduledOut = timeStringToMinutes(schedule.out);
         const beforeSchedule = Math.max(0, Math.min(checkOut, scheduledIn) - checkIn);
         const afterSchedule = Math.max(0, checkOut - Math.max(checkIn, scheduledOut));
-        extraMinutes = Math.min(netMinutes, beforeSchedule + afterSchedule);
+        const lunchExtra = getMissedLunchExtraMinutes(record, checkoutTime, schedule, records);
+        extraMinutes = Math.min(netMinutes, beforeSchedule + afterSchedule + lunchExtra);
         if (checkIn < scheduledOut && checkOut > scheduledIn) {
             lateMinutes = Number(record.late_minutes) || 0;
             const isRecovery = /Turno de recuperación dentro del horario|Turno extra\/recuperación en el mismo día/i.test(record.notes || '');
             if (!isRecovery && scheduledOut - checkOut > 5) owedMinutes = scheduledOut - checkOut;
+            if (schedule.lunch && !getRecordLunchChoice(record)) {
+                const dailyCredits = records.filter(previous => previous.employee_name === record.employee_name &&
+                    previous.date === record.date).reduce((total, previous) => total + getJustificationMinutes(previous), 0);
+                if (isRecovery) {
+                    const previousDebt = getEarlierDailyShifts(record, records).reduce((total, previous) =>
+                        total + Math.max(0, Number(previous.late_minutes) || 0) + (Number(previous.owed_minutes) || 0), 0);
+                    const regularWorked = Math.max(0, getWorkedMinutesInsideSchedule(record, checkoutTime, schedule) - lunchExtra);
+                    owedMinutes = -Math.min(regularWorked, Math.max(0, previousDebt - dailyCredits));
+                } else {
+                    owedMinutes -= Math.min(60, Math.max(0, lateMinutes + Math.max(0, owedMinutes) - dailyCredits));
+                }
+                const debtAccounting = {
+                    late_minutes: lateMinutes, owed_minutes: owedMinutes, extra_minutes: 0, hours_credited: 0
+                };
+                const pendingDebt = getMonthlyDebtAtCheckout(record, debtAccounting, checkoutTime, records);
+                const recovered = Math.min(lunchExtra, pendingDebt);
+                if (recovered > 0 && owedMinutes > 0) {
+                    // Un permiso puede cubrir la salida anticipada; el crédito sobrante debe reducir el saldo mensual.
+                    const debtWithoutEarlyLeave = getMonthlyDebtAtCheckout(record,
+                        { ...debtAccounting, owed_minutes: 0 }, checkoutTime, records);
+                    const pendingEarlyLeave = Math.max(0, pendingDebt - debtWithoutEarlyLeave);
+                    owedMinutes = recovered > pendingEarlyLeave ? -(recovered - pendingEarlyLeave) : owedMinutes - recovered;
+                } else {
+                    owedMinutes -= recovered;
+                }
+                extraMinutes -= recovered;
+            }
         }
     }
     return {
@@ -255,7 +328,8 @@ async function autoCheckoutActiveShifts(reconcilePunch = false) {
     autoCheckoutPromise = (async () => {
         const now = new Date();
         const closedIds = [];
-        const dueShifts = attendanceRecords.filter(record => isScheduledShiftDue(record, now));
+        const dueShifts = attendanceRecords.filter(record => isScheduledShiftDue(record, now))
+            .sort((a, b) => a.date.localeCompare(b.date) || a.check_in.localeCompare(b.check_in));
         for (const shift of dueShifts) {
             const schedule = getRecordDaySchedule(shift);
             const checkout = schedule.out.substring(0, 5) + ':00';
@@ -299,6 +373,9 @@ async function autoCheckoutActiveShifts(reconcilePunch = false) {
 }
 
 function getRecordLunchChoice(record) {
+    const snapshot = (record.notes || '').match(/\[(Con|Sin) refrigerio\b/i) ||
+        (record.notes || '').match(/\((Con refrigerio -1h|Sin refrigerio)\)/i);
+    if (snapshot) return !/^sin/i.test(snapshot[1]);
     return typeof record.lunch === 'boolean'
         ? record.lunch
         : !/sin refrigerio/i.test(record.notes || '');
@@ -529,6 +606,7 @@ async function loadAttendanceRecords() {
     }
 
     await repairInvalidAutomaticCheckouts();
+    await repairMissingLunchExtras();
     populateMonthFilter();
     renderAttendanceTable();
     updateWorkerStats();
@@ -553,13 +631,13 @@ function getAutomaticCheckoutCorrection(record) {
     const grossMinutes = timeStringToMinutes(checkOut) - timeStringToMinutes(record.check_in);
     if (grossMinutes <= 0) return null;
     const tookLunch = getRecordLunchChoice(record);
-    const netMinutes = Math.max(0, grossMinutes - (tookLunch ? 60 : 0));
+    const accounting = calculateShiftAccounting(record, checkOut, schedule);
     return {
         check_out: checkOut,
-        hours_credited: Number((netMinutes / 60).toFixed(2)),
+        hours_credited: accounting.hours_credited,
         late_minutes: Number(record.late_minutes) || 0,
-        extra_minutes: Number(record.extra_minutes) || 0,
-        owed_minutes: 0,
+        extra_minutes: Math.max(Number(record.extra_minutes) || 0, accounting.extra_minutes),
+        owed_minutes: accounting.owed_minutes,
         notes: `${record.notes || ''} | Corrección de cierre automático inválido: salida anterior ${record.check_out}; recalculada a ${checkOut} según horario programado. ${tookLunch ? 'Refrigerio descontado (-1h).' : 'Sin descuento de refrigerio.'}`
     };
 }
@@ -604,6 +682,55 @@ async function repairInvalidAutomaticCheckouts() {
         await automaticCheckoutRepairPromise;
     } finally {
         automaticCheckoutRepairPromise = null;
+    }
+}
+
+async function repairMissingLunchExtras() {
+    if (lunchExtraRepairPromise) return lunchExtraRepairPromise;
+    lunchExtraRepairPromise = (async () => {
+        const candidates = attendanceRecords.filter(record => {
+            const schedule = getRecordDaySchedule(record);
+            return record.id && record.type === 'Trabajo' && record.date <= getTodayDateString() &&
+                record.check_in && record.check_out &&
+                timeStringToMinutes(record.check_out) > timeStringToMinutes(record.check_in) &&
+                schedule?.active && schedule.lunch && !getRecordLunchChoice(record) &&
+                hasScheduledWork(record, schedule);
+        }).sort((a, b) => a.date.localeCompare(b.date) || a.check_in.localeCompare(b.check_in));
+        for (const record of candidates) {
+            const accounting = calculateShiftAccounting(record, record.check_out, getRecordDaySchedule(record));
+            const update = {
+                hours_credited: Math.max(Number(record.hours_credited) || 0, accounting.hours_credited),
+                extra_minutes: accounting.extra_minutes,
+                owed_minutes: accounting.owed_minutes
+            };
+            if (Object.keys(update).every(field => Number(record[field] || 0) === update[field])) continue;
+            update.notes = `${record.notes || ''} | Corrección de jornada sin almuerzo: ${update.hours_credited} h trabajadas; primero se recupera la deuda mensual y el sobrante cuenta como extra. Se conserva la tardanza registrada.`;
+            const unchanged = current => current.id === record.id &&
+                ['check_out', 'hours_credited', 'extra_minutes', 'owed_minutes', 'notes'].every(field => current[field] === record[field]);
+            try {
+                if (dbMode === 'supabase' && supabaseClient) {
+                    let query = supabaseClient.from('asistencias_v2').update(update).eq('id', record.id);
+                    for (const field of ['check_out', 'hours_credited', 'extra_minutes', 'owed_minutes', 'notes']) {
+                        query = record[field] == null ? query.is(field, null) : query.eq(field, record[field]);
+                    }
+                    const { data, error } = await query.select('id');
+                    if (error) throw error;
+                    if (!data?.length) continue;
+                } else {
+                    const local = getLocalAttendance();
+                    if (!local.some(unchanged)) continue;
+                    saveLocalAttendance(local.map(current => unchanged(current) ? { ...current, ...update } : current));
+                }
+                attendanceRecords = attendanceRecords.map(current => unchanged(current) ? { ...current, ...update } : current);
+            } catch (error) {
+                console.warn('No se pudo corregir la jornada sin almuerzo:', error);
+            }
+        }
+    })();
+    try {
+        await lunchExtraRepairPromise;
+    } finally {
+        lunchExtraRepairPromise = null;
     }
 }
 
@@ -1176,7 +1303,7 @@ function getFilteredAttendanceRecords() {
     });
 }
 
-function getDetectedAbsences(forMonth = null, workerName = null) {
+function getDetectedAbsences(forMonth = null, workerName = null, sourceRecords = attendanceRecords) {
     const absences = [];
     const now = new Date();
     const currentYear = now.getFullYear();
@@ -1233,7 +1360,7 @@ function getDetectedAbsences(forMonth = null, workerName = null) {
             // If scheduled to work on this day
             if (daySched && daySched.active) {
                 // A permission credits the debt but does not remove the historical absence.
-                const hasRecord = attendanceRecords.some(record => {
+                const hasRecord = sourceRecords.some(record => {
                     if (record.employee_name !== worker.name || record.date !== dateStr || record.type === 'Ajuste' || record.type === 'Permiso') return false;
                     if (record.type !== 'Trabajo' || !record.check_in) return true;
                     return hasScheduledWork(record, daySched);
@@ -1420,7 +1547,7 @@ function calculateWeeklyGoal(worker, schedule, records, now = new Date()) {
             const elapsed = Math.max(0, endMinutes - timeStringToMinutes(record.check_in) - (deductLunch ? 60 : 0));
             liveMinutes += elapsed;
             const checkout = `${String(Math.floor(endMinutes / 60)).padStart(2, '0')}:${String(endMinutes % 60).padStart(2, '0')}:00`;
-            liveExtraMinutes += calculateShiftAccounting({ ...record, lunch: deductLunch }, checkout, daySchedule).extra_minutes;
+            liveExtraMinutes += calculateShiftAccounting(record, checkout, daySchedule, { deferLunchDeduction: !reachedEnd, records }).extra_minutes;
             if (reachedEnd) pendingScheduledClosures++;
             if (elapsed > 0 && !reachedEnd && getRecordLunchChoice(record)) lunchPending = true;
         } else {
@@ -2434,6 +2561,8 @@ function setupManualPunchModal() {
         const sched = (workerSchedules[workerName] && workerSchedules[workerName][dayKey]) || null;
 
         const accounting = calculateShiftAccounting({
+            employee_name: workerName,
+            date: dateVal,
             check_in: inVal,
             lunch: tookLunch,
             late_minutes: sched?.active && inMins > timeStringToMinutes(sched.in) && inMins < timeStringToMinutes(sched.out)

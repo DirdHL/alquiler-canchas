@@ -463,3 +463,235 @@ test('una falta automática justificada usa notas neutras y un estado explícito
     assert.ok(!absence.notes.includes('no justificada'));
     assert.equal(absence.is_fully_justified,true);
 });
+
+function setLunchSchedule(h) {
+    h.run('activeWorkers[0].created_at="2026-10-28"; workerSchedules.Ana.created_at="2026-10-28"; workerSchedules.Ana.miercoles={active:true,in:"08:00",out:"18:00",lunch:true,netMinutes:540};');
+}
+
+function lunchRecord(start = '08:00:00', lunch = false) {
+    return {id:'comida',employee_name:'Ana',date:'2026-10-28',type:'Trabajo',
+        check_in:start,check_out:null,hours_credited:0,late_minutes:0,extra_minutes:0,owed_minutes:0,
+        lunch,notes:lunch?'[Con refrigerio: -1h].':'[Sin refrigerio: jornada corrida].'};
+}
+
+function lunchAccounting(h, record, checkout = '18:00:00') {
+    return h.run('calculateShiftAccounting('+JSON.stringify(record)+','+JSON.stringify(checkout)+',workerSchedules.Ana.miercoles)');
+}
+
+test('sin almorzar de 08 a 18 suma diez horas reales y una extra', () => {
+    const h=harness(); setLunchSchedule(h);
+    const result=lunchAccounting(h,lunchRecord());
+    assert.equal(result.hours_credited,10);
+    assert.equal(result.extra_minutes,60);
+    assert.equal(result.owed_minutes,0);
+});
+
+test('almorzar descuenta una hora y no genera el extra del descanso', () => {
+    const h=harness(); setLunchSchedule(h);
+    const result=lunchAccounting(h,lunchRecord('08:00:00',true));
+    assert.equal(result.hours_credited,9);
+    assert.equal(result.extra_minutes,0);
+});
+
+test('un horario configurado sin almuerzo no regala una hora adicional', () => {
+    const h=harness(); setLunchSchedule(h);
+    h.run('workerSchedules.Ana.miercoles.lunch=false;');
+    const result=lunchAccounting(h,lunchRecord());
+    assert.equal(result.hours_credited,10);
+    assert.equal(result.extra_minutes,0);
+});
+
+test('el almuerzo omitido recupera la tardanza sin borrar su registro mensual', () => {
+    const h=harness(); setLunchSchedule(h);
+    const record={...lunchRecord('09:00:00'),late_minutes:60};
+    const result=lunchAccounting(h,record);
+    assert.equal(result.hours_credited,9);
+    assert.equal(result.extra_minutes,0);
+    assert.equal(result.owed_minutes,-60);
+    h.run('attendanceRecords=['+JSON.stringify({...record,...result,check_out:'18:00:00'})+'];');
+    const summary=h.run('calculateMonthlyAttendanceSummary("Ana","2026-10",attendanceRecords)');
+    assert.equal(summary.lateMinutes,60);
+    assert.equal(summary.owedMinutes,0);
+});
+
+test('treinta minutos tarde se recuperan y dejan treinta minutos extra', () => {
+    const h=harness(); setLunchSchedule(h);
+    const result=lunchAccounting(h,{...lunchRecord('08:30:00'),late_minutes:30});
+    assert.equal(result.hours_credited,9.5);
+    assert.equal(result.extra_minutes,30);
+    assert.equal(result.owed_minutes,-30);
+});
+
+test('deuda mensual anterior se recupera antes de asignar extras del almuerzo', () => {
+    const h=harness(); setLunchSchedule(h);
+    h.run('attendanceRecords=[{id:"falta",employee_name:"Ana",date:"2026-10-27",type:"Falta",owed_minutes:480}];');
+    const record=lunchRecord(), result=lunchAccounting(h,record);
+    assert.equal(result.hours_credited,10);
+    assert.equal(result.extra_minutes,0);
+    assert.equal(result.owed_minutes,-60);
+    h.run('attendanceRecords.push('+JSON.stringify({...record,...result,check_out:'18:00:00'})+');');
+    const summary=h.run('calculateMonthlyAttendanceSummary("Ana","2026-10",attendanceRecords)');
+    assert.equal(summary.owedMinutes,420);
+    assert.equal(summary.absenceCount,1);
+    assert.equal(summary.absenceMinutes,480);
+});
+
+test('tardanza de hoy y deuda anterior se recuperan con el mismo descanso', () => {
+    const h=harness(); setLunchSchedule(h);
+    h.run('attendanceRecords=[{employee_name:"Ana",date:"2026-10-27",type:"Trabajo",late_minutes:20,owed_minutes:0}];');
+    const result=lunchAccounting(h,{...lunchRecord('08:30:00'),late_minutes:30});
+    assert.equal(result.extra_minutes,10);
+    assert.equal(result.owed_minutes,-50);
+    assert.equal(result.late_minutes,30);
+});
+
+test('faltas virtuales también forman parte de la deuda que se recupera', () => {
+    const h=harness(); setLunchSchedule(h);
+    h.run('activeWorkers[0].created_at="2026-10-27"; workerSchedules.Ana.created_at="2026-10-27";');
+    const result=lunchAccounting(h,lunchRecord());
+    assert.equal(result.extra_minutes,0);
+    assert.equal(result.owed_minutes,-60);
+});
+
+test('permisos, ajustes y otros meses no se cobran otra vez al recuperar deuda', () => {
+    const h=harness(); setLunchSchedule(h);
+    h.run('attendanceRecords=[{employee_name:"Ana",date:"2026-10-27",type:"Falta",owed_minutes:480},{employee_name:"Ana",date:"2026-10-27",type:"Permiso",hours_credited:8},{employee_name:"Ana",date:"2026-10-28",type:"Ajuste",owed_minutes:-60},{employee_name:"Ana",date:"2026-09-27",type:"Falta",owed_minutes:480}];');
+    const result=lunchAccounting(h,lunchRecord());
+    assert.equal(result.extra_minutes,60);
+    assert.equal(result.owed_minutes,0);
+});
+
+test('una tardanza ya justificada no emite otro crédito contra la deuda anterior', () => {
+    const h=harness(); setLunchSchedule(h);
+    h.run('attendanceRecords=[{employee_name:"Ana",date:"2026-10-27",type:"Trabajo",late_minutes:60},{employee_name:"Ana",date:"2026-10-28",type:"Permiso",hours_credited:1}];');
+    const record={...lunchRecord('09:00:00'),late_minutes:60};
+    const result=lunchAccounting(h,record);
+    assert.equal(result.owed_minutes,0);
+    assert.equal(result.extra_minutes,0);
+    h.run('attendanceRecords.push('+JSON.stringify({...record,...result,check_out:'18:00:00'})+');');
+    const summary=h.run('calculateMonthlyAttendanceSummary("Ana","2026-10",attendanceRecords)');
+    assert.equal(summary.owedMinutes,60);
+    assert.equal(summary.lateMinutes,120);
+});
+
+test('el excedente recupera deuda anterior aunque la salida anticipada esté justificada', () => {
+    const h=harness(); setLunchSchedule(h);
+    h.run('attendanceRecords=[{employee_name:"Ana",date:"2026-10-27",type:"Trabajo",late_minutes:20},{employee_name:"Ana",date:"2026-10-28",type:"Permiso",hours_credited:1}];');
+    const record=lunchRecord(), result=lunchAccounting(h,record,'17:30:00');
+    assert.equal(result.extra_minutes,10);
+    assert.equal(result.owed_minutes,-20);
+    h.run('attendanceRecords.push('+JSON.stringify({...record,...result,check_out:'17:30:00'})+');');
+    assert.equal(h.run('calculateMonthlyAttendanceSummary("Ana","2026-10",attendanceRecords).owedMinutes'),0);
+});
+
+test('no almorzar no da extras por una jornada incompleta', () => {
+    const h=harness(); setLunchSchedule(h);
+    const short=lunchAccounting(h,lunchRecord(),'12:00:00');
+    assert.equal(short.hours_credited,4);
+    assert.equal(short.extra_minutes,0);
+    assert.equal(short.owed_minutes,300);
+    assert.equal(lunchAccounting(h,lunchRecord(),'17:00:00').extra_minutes,0);
+    assert.equal(lunchAccounting(h,lunchRecord(),'17:30:00').extra_minutes,30);
+});
+
+test('dos fragmentos recuperan la salida anticipada sin duplicar el extra del almuerzo', () => {
+    const h=harness(); setLunchSchedule(h);
+    const first=lunchRecord();
+    const closedFirst={...first,...lunchAccounting(h,first,'12:00:00'),check_out:'12:00:00'};
+    h.run('attendanceRecords=['+JSON.stringify(closedFirst)+'];');
+    const second={...lunchRecord('12:00:00'),id:'segunda',notes:'[Sin refrigerio: jornada corrida]. [Turno de recuperación dentro del horario].'};
+    const result=lunchAccounting(h,second);
+    assert.equal(result.hours_credited,6);
+    assert.equal(result.extra_minutes,60);
+    assert.equal(result.owed_minutes,-300);
+    h.run('attendanceRecords.push('+JSON.stringify({...second,...result,check_out:'18:00:00'})+');');
+    const summary=h.run('calculateMonthlyAttendanceSummary("Ana","2026-10",attendanceRecords)');
+    assert.equal(summary.owedMinutes,0);
+    assert.equal(summary.extraMinutes,60);
+    const extra=lunchAccounting(h,{...lunchRecord('18:10:00'),id:'extra'},'19:00:00');
+    assert.equal(extra.extra_minutes,50);
+    assert.equal(extra.hours_credited,0.83);
+});
+
+test('extras fuera del horario conservan su cálculo independiente de la deuda mensual', () => {
+    const h=harness(); setLunchSchedule(h);
+    h.run('attendanceRecords=[{employee_name:"Ana",date:"2026-10-27",type:"Falta",owed_minutes:480}];');
+    const result=lunchAccounting(h,lunchRecord('07:00:00'));
+    assert.equal(result.hours_credited,11);
+    assert.equal(result.extra_minutes,60);
+    assert.equal(result.owed_minutes,-60);
+});
+
+test('la vista provisional respeta la elección original de almuerzo', () => {
+    const h=harness([2026,9,28,17,30,0]); setLunchSchedule(h);
+    h.run('attendanceRecords=['+JSON.stringify(lunchRecord('08:00:00',true))+'];');
+    assert.equal(h.run('calculateWeeklyGoal(selectedWorker,workerSchedules.Ana,attendanceRecords).liveExtraMinutes'),0);
+    h.run('attendanceRecords=['+JSON.stringify(lunchRecord())+'];');
+    assert.equal(h.run('calculateWeeklyGoal(selectedWorker,workerSchedules.Ana,attendanceRecords).liveExtraMinutes'),30);
+});
+
+test('la elección anotada prevalece sobre un valor predeterminado remoto de almuerzo', () => {
+    const h=harness(); setLunchSchedule(h);
+    const record={...lunchRecord(),lunch:true};
+    assert.equal(h.run('getRecordLunchChoice('+JSON.stringify(record)+')'),false);
+    assert.equal(lunchAccounting(h,record).hours_credited,10);
+    assert.equal(h.run('getRecordLunchChoice({lunch:false,notes:"[Con refrigerio: -1h]."})'),true);
+    assert.equal(h.run('getRecordLunchChoice({lunch:true,notes:"Regularización (Sin refrigerio)."})'),false);
+});
+
+test('recargar corrige el registro anterior una sola vez sin sumar once horas', async () => {
+    const h=harness(); setLunchSchedule(h);
+    const record={...lunchRecord(),check_out:'18:00:00',hours_credited:10};
+    h.run('saveLocalAttendance(['+JSON.stringify(record)+']);');
+    await h.run('loadAttendanceRecords()');
+    assert.equal(h.run('attendanceRecords[0].hours_credited'),10);
+    assert.equal(h.run('attendanceRecords[0].extra_minutes'),60);
+    const first=h.run('JSON.stringify(attendanceRecords)');
+    await h.run('loadAttendanceRecords()');
+    assert.equal(h.run('JSON.stringify(attendanceRecords)'),first);
+});
+
+test('reparación local respeta deuda anterior y conserva la tardanza', async () => {
+    const h=harness(); setLunchSchedule(h);
+    const record={...lunchRecord('08:30:00'),late_minutes:30,check_out:'18:00:00',hours_credited:9.5};
+    h.run('saveLocalAttendance([{id:"anterior",employee_name:"Ana",date:"2026-10-27",type:"Trabajo",late_minutes:20},'+JSON.stringify(record)+']);');
+    await h.run('loadAttendanceRecords()');
+    const result=h.run('attendanceRecords.find(r=>r.id==="comida")');
+    assert.equal(result.extra_minutes,10);
+    assert.equal(result.owed_minutes,-50);
+    assert.equal(h.el('metricLateHours').textContent,'0:50');
+    assert.equal(h.el('metricOwedHours').textContent,'0:00');
+    assert.equal(h.el('metricExtraHours').textContent,'0:10');
+    assert.equal(h.run('getFilteredAttendanceRecords().find(r=>r.id==="comida").extra_minutes'),10);
+});
+
+test('un fallo remoto al corregir almuerzo conserva los datos originales', async () => {
+    const h=harness(); setLunchSchedule(h);
+    h.run('attendanceRecords=['+JSON.stringify({...lunchRecord(),check_out:'18:00:00',hours_credited:10})+']; dbMode="supabase"; supabaseClient={from:()=>{const q={update:()=>q,eq:()=>q,is:()=>q,select:async()=>({error:{message:"denegado"}})};return q;}};');
+    const original=h.run('JSON.stringify(attendanceRecords)');
+    await h.run('repairMissingLunchExtras()');
+    assert.equal(h.run('JSON.stringify(attendanceRecords)'),original);
+});
+
+test('la corrección remota verifica los valores previos y no se repite', async () => {
+    const h=harness(); setLunchSchedule(h);
+    h.run('attendanceRecords=['+JSON.stringify({...lunchRecord(),check_out:'18:00:00',hours_credited:10})+']; window.filters=[]; window.updates=0; dbMode="supabase"; supabaseClient={from:()=>{const q={update:()=>{window.updates++;return q;},eq:(...args)=>{window.filters.push(args);return q;},is:(...args)=>{window.filters.push(args);return q;},select:async()=>({data:[{id:"comida"}],error:null})};return q;}};');
+    await h.run('repairMissingLunchExtras()');
+    assert.equal(h.run('attendanceRecords[0].extra_minutes'),60);
+    assert.ok(h.run('window.filters.some(([field,value])=>field==="extra_minutes"&&value===0)'));
+    await h.run('repairMissingLunchExtras()');
+    assert.equal(h.run('window.updates'),1);
+});
+
+test('marcar sin almuerzo y autocerrar respeta la elección al recargar', async () => {
+    const h=harness([2026,9,28,8,0,0]); setLunchSchedule(h);
+    h.run('handleWorkerChange(); lunchCheckbox.checked=false;');
+    await h.run('handleAttendancePunch()');
+    moveClock(h,18);
+    await h.run('autoCheckoutActiveShifts()');
+    await h.run('loadAttendanceRecords()');
+    assert.equal(h.run('attendanceRecords.length'),1);
+    assert.equal(h.run('attendanceRecords[0].check_out'),'18:00:00');
+    assert.equal(h.run('attendanceRecords[0].hours_credited'),10);
+    assert.equal(h.run('attendanceRecords[0].extra_minutes'),60);
+});
