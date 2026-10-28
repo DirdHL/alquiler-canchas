@@ -328,3 +328,138 @@ test('un extra antes del inicio no elimina la tardanza de la primera entrada nor
     await h.run('handleAttendancePunch()');
     assert.equal(h.run('attendanceRecords.find(r=>r.id!=="temprano").late_minutes'),15);
 });
+
+test('justificar una falta conserva el día y sus horas históricas con deuda cero', () => {
+    const h=harness();
+    h.run('activeWorkers[0].created_at="2026-10-27"; workerSchedules.Ana.created_at="2026-10-27"; attendanceRecords=[{id:"permiso",employee_name:"Ana",date:"2026-10-27",type:"Permiso",hours_credited:8}]; updateWorkerStats();');
+    assert.equal(h.el('metricAbsenceHours').textContent,'1 (8:00)');
+    assert.equal(h.el('metricOwedHours').textContent,'0:00');
+    const item=h.el('absencesListContainer').children[0];
+    assert.ok(item.innerHTML.includes('Justificada · se conserva en el historial'));
+    assert.ok(item.innerHTML.includes('8h 00m de ausencia registrada'));
+    assert.ok(item.innerHTML.includes('disabled'));
+    assert.equal(h.run('getDetectedAbsences("2026-10").length'),1);
+});
+
+test('un permiso parcial reduce deuda y mantiene la ausencia original', () => {
+    const h=harness();
+    h.run('activeWorkers[0].created_at="2026-10-27"; workerSchedules.Ana.created_at="2026-10-27"; attendanceRecords=[{employee_name:"Ana",date:"2026-10-27",type:"Permiso",hours_credited:3}]; updateWorkerStats();');
+    assert.equal(h.el('metricAbsenceHours').textContent,'1 (8:00)');
+    assert.equal(h.el('metricOwedHours').textContent,'5:00');
+    assert.ok(h.el('absencesListContainer').children[0].innerHTML.includes('Justificada parcialmente'));
+    h.storage.set('canchapro_admin_auth','true');
+    h.run('window.quickJustifyAbsence("Ana","2026-10-27",getCombinedAttendanceRecords("2026-10").find(r=>r.type==="Falta").pending_absence_minutes);');
+    assert.equal(h.el('adminRegisterHours').value,'5');
+});
+
+test('ajustes y permisos no restan minutos de tardanza histórica', () => {
+    const h=harness();
+    h.run('attendanceRecords=[{employee_name:"Ana",date:"2026-10-28",type:"Trabajo",check_in:"08:15:00",check_out:"16:00:00",hours_credited:7.75,late_minutes:15,owed_minutes:0},{employee_name:"Ana",date:"2026-10-28",type:"Permiso",hours_credited:0.25},{employee_name:"Ana",date:"2026-10-28",type:"Ajuste",owed_minutes:-60}];');
+    const result=h.run('calculateMonthlyAttendanceSummary("Ana","2026-10",attendanceRecords)');
+    assert.equal(result.lateMinutes,15);
+    assert.equal(result.owedMinutes,0);
+    assert.equal(result.workedMinutes,465);
+});
+
+test('reducir deuda conserva el contador y los minutos de faltas manuales', () => {
+    const h=harness();
+    h.run('attendanceRecords=[{employee_name:"Ana",date:"2026-10-27",type:"Falta",owed_minutes:480},{employee_name:"Ana",date:"2026-10-28",type:"Ajuste",owed_minutes:-60}];');
+    const result=h.run('calculateMonthlyAttendanceSummary("Ana","2026-10",attendanceRecords)');
+    assert.equal(result.absenceCount,1);
+    assert.equal(result.absenceMinutes,480);
+    assert.equal(result.owedMinutes,420);
+    assert.equal(h.run('attendanceRecords[0].owed_minutes'),480);
+});
+
+test('permisos se limitan a la deuda de su propia fecha', () => {
+    const h=harness();
+    h.run('attendanceRecords=[{employee_name:"Ana",date:"2026-10-27",type:"Falta",owed_minutes:480},{employee_name:"Ana",date:"2026-10-28",type:"Trabajo",late_minutes:15,owed_minutes:30},{employee_name:"Ana",date:"2026-10-28",type:"Permiso",hours_credited:100}];');
+    const result=h.run('calculateMonthlyAttendanceSummary("Ana","2026-10",attendanceRecords)');
+    assert.equal(result.absenceCount,1);
+    assert.equal(result.lateMinutes,15);
+    assert.equal(result.owedMinutes,480);
+});
+
+test('permisos de tardanza conservan el atraso y descuentan solo ese saldo', () => {
+    const h=harness();
+    h.run('attendanceRecords=[{employee_name:"Ana",date:"2026-10-28",type:"Trabajo",late_minutes:15,owed_minutes:30},{employee_name:"Ana",date:"2026-10-28",type:"Permiso",hours_credited:0.25}];');
+    const result=h.run('calculateMonthlyAttendanceSummary("Ana","2026-10",attendanceRecords)');
+    assert.equal(result.lateMinutes,15);
+    assert.equal(result.owedMinutes,30);
+});
+
+test('una fecha de falta cuenta una vez y las justificaciones repetidas no crean deuda negativa', () => {
+    const h=harness();
+    h.run('attendanceRecords=[{id:"falta1",employee_name:"Ana",date:"2026-10-27",type:"Falta",owed_minutes:480},{id:"falta2",employee_name:"Ana",date:"2026-10-27",type:"Falta",owed_minutes:480},{employee_name:"Ana",date:"2026-10-27",type:"Permiso",hours_credited:8},{employee_name:"Ana",date:"2026-10-27",type:"Permiso",hours_credited:8},{employee_name:"Ana",date:"2026-10-28",type:"Trabajo",late_minutes:15}];');
+    const result=h.run('calculateMonthlyAttendanceSummary("Ana","2026-10",attendanceRecords)');
+    assert.equal(result.absenceCount,1);
+    assert.equal(result.absenceMinutes,480);
+    assert.equal(result.owedMinutes,15);
+    assert.equal(result.lateMinutes,15);
+});
+
+test('feriados no generan faltas automáticas y los permisos conservan la ausencia', () => {
+    const h=harness();
+    h.run('activeWorkers[0].created_at="2026-10-26"; workerSchedules.Ana.created_at="2026-10-26"; attendanceRecords=[{employee_name:"Ana",date:"2026-10-26",type:"Feriado",hours_credited:8},{employee_name:"Ana",date:"2026-10-27",type:"Permiso",hours_credited:8}];');
+    const absences=h.run('getDetectedAbsences("2026-10")');
+    assert.equal(absences.length,1);
+    assert.equal(absences[0].date,'2026-10-27');
+});
+
+test('el historial mensual excluye fechas futuras y otros meses', () => {
+    const h=harness();
+    h.run('attendanceRecords=[{employee_name:"Ana",date:"2026-10-27",type:"Falta",owed_minutes:480},{employee_name:"Ana",date:"2026-10-30",type:"Falta",owed_minutes:480},{employee_name:"Ana",date:"2026-09-28",type:"Trabajo",late_minutes:90}];');
+    const result=h.run('calculateMonthlyAttendanceSummary("Ana","2026-10",attendanceRecords)');
+    assert.equal(result.absenceCount,1);
+    assert.equal(result.lateMinutes,0);
+});
+
+test('el resumen mensual muestra el mes actual y no afirma puntualidad por tener cero faltas', () => {
+    const h=harness();
+    h.run('activeWorkers[0].created_at="2026-10-28"; workerSchedules.Ana.created_at="2026-10-28"; attendanceRecords=[{employee_name:"Ana",date:"2026-10-28",type:"Trabajo",late_minutes:12}]; updateWorkerStats();');
+    assert.ok(h.el('monthlySummaryPeriod').textContent.includes('2026'));
+    assert.ok(h.el('monthlySummaryPeriod').textContent.toLowerCase().includes('octubre'));
+    assert.equal(h.el('metricLateHours').textContent,'0:12');
+    assert.ok(h.el('absencesListContainer').innerHTML.includes('Las tardanzas se muestran por separado'));
+});
+
+test('justificar y después recargar mantiene falta mensual y saldo cero', async () => {
+    const h=harness();
+    h.run('activeWorkers[0].created_at="2026-10-27"; workerSchedules.Ana.created_at="2026-10-27"; saveLocalAttendance([{id:"permiso",employee_name:"Ana",date:"2026-10-27",type:"Permiso",hours_credited:8}]);');
+    await h.run('loadAttendanceRecords()');
+    assert.equal(h.el('metricAbsenceHours').textContent,'1 (8:00)');
+    assert.equal(h.el('metricOwedHours').textContent,'0:00');
+    await h.run('loadAttendanceRecords()');
+    assert.equal(h.el('metricAbsenceHours').textContent,'1 (8:00)');
+});
+
+test('una asistencia regularizada corrige la falta falsa sin confundirla con un permiso', () => {
+    const h=harness();
+    h.run('activeWorkers[0].created_at="2026-10-27"; workerSchedules.Ana.created_at="2026-10-27"; attendanceRecords=[{employee_name:"Ana",date:"2026-10-27",type:"Trabajo",check_in:"08:00:00",check_out:"16:00:00",hours_credited:8}]; updateWorkerStats();');
+    assert.equal(h.el('metricAbsenceHours').textContent,'0:00');
+});
+
+test('una ausencia totalmente justificada no vuelve a abrir justificación por cero minutos', () => {
+    const h=harness(); h.storage.set('canchapro_admin_auth','true');
+    h.run('window.quickJustifyAbsence("Ana","2026-10-27",0);');
+    assert.equal(h.el('modalAdminRegister').classList.contains('active'),false);
+});
+
+test('una falta manual de cero minutos conserva su conteo sin crear deuda', () => {
+    const h=harness();
+    h.run('attendanceRecords=[{employee_name:"Ana",date:"2026-10-27",type:"Falta",owed_minutes:0}];');
+    const result=h.run('calculateMonthlyAttendanceSummary("Ana","2026-10",attendanceRecords)');
+    assert.equal(result.absenceCount,1);
+    assert.equal(result.absenceMinutes,0);
+    assert.equal(result.owedMinutes,0);
+    assert.equal(h.run('getAbsenceRecordedMinutes({employee_name:"Ana",date:"2026-10-27",owed_minutes:"0"})'),0);
+});
+
+test('una falta automática justificada usa notas neutras y un estado explícito', () => {
+    const h=harness();
+    h.run('activeWorkers[0].created_at="2026-10-27"; workerSchedules.Ana.created_at="2026-10-27"; attendanceRecords=[{employee_name:"Ana",date:"2026-10-27",type:"Permiso",hours_credited:8}];');
+    const absence=h.run('getCombinedAttendanceRecords("2026-10").find(r=>r.type==="Falta")');
+    assert.ok(absence.notes.includes('Ausencia registrada'));
+    assert.ok(!absence.notes.includes('no justificada'));
+    assert.equal(absence.is_fully_justified,true);
+});

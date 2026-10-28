@@ -1652,3 +1652,37 @@ body {
     background: #ffe4e6;
     color: var(--primary);
 }
+/* Monthly history is separate from the weekly goal and the recoverable balance. */
+.monthly-summary-header {
+    border-top: 1px solid var(--border-color);
+    padding-top: 16px;
+}
+
+.monthly-summary-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+    color: var(--text-primary);
+    font-size: 14px;
+    font-weight: 800;
+}
+
+.monthly-summary-title strong {
+    font-size: 12px;
+    color: var(--primary);
+}
+
+.monthly-summary-header p,
+.monthly-debt-help {
+    margin: 6px 0 0;
+    color: var(--text-muted);
+    font-size: 11.5px;
+    line-height: 1.5;
+}
+
+.btn-action-justify:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}

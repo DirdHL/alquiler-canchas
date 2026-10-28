@@ -698,7 +698,7 @@ function renderTeamLiveStatus() {
     activeWorkers.forEach(worker => {
         const workerRecordsToday = attendanceRecords.filter(r => r.employee_name === worker.name && r.date === todayStr);
         const activeShift = workerRecordsToday.find(r => r.check_in && !r.check_out);
-        const completedShift = workerRecordsToday.find(r => r.check_in && r.check_out);
+        const completedShift = workerRecordsToday.find(r => r.type === 'Trabajo' && r.check_in && r.check_out);
         const justifiedRecord = workerRecordsToday.find(r => r.type === 'Permiso' || r.type === 'Feriado');
 
         const schedule = workerSchedules[worker.name] || {};
@@ -1232,9 +1232,9 @@ function getDetectedAbsences(forMonth = null, workerName = null) {
 
             // If scheduled to work on this day
             if (daySched && daySched.active) {
-                // Check if worker already has ANY attendance record (Trabajo, Feriado, Permiso, Falta manual)
+                // A permission credits the debt but does not remove the historical absence.
                 const hasRecord = attendanceRecords.some(record => {
-                    if (record.employee_name !== worker.name || record.date !== dateStr || record.type === 'Ajuste') return false;
+                    if (record.employee_name !== worker.name || record.date !== dateStr || record.type === 'Ajuste' || record.type === 'Permiso') return false;
                     if (record.type !== 'Trabajo' || !record.check_in) return true;
                     return hasScheduledWork(record, daySched);
                 });
@@ -1261,7 +1261,7 @@ function getDetectedAbsences(forMonth = null, workerName = null) {
                         scheduled_in: daySched.in || '08:00',
                         scheduled_out: daySched.out || '16:30',
                         scheduled_lunch: daySched.lunch !== false,
-                        notes: `Ausencia no justificada: no registró asistencia en su horario oficial (${formatTimeTo12H(daySched.in)} a ${formatTimeTo12H(daySched.out)} • ${minutesToHoursMinutes(netMins)} no laboradas).`,
+                        notes: `Ausencia registrada: no registró asistencia en su horario oficial (${formatTimeTo12H(daySched.in)} a ${formatTimeTo12H(daySched.out)} • ${minutesToHoursMinutes(netMins)} no laboradas).`,
                         is_auto_absence: true
                     });
                 }
@@ -1272,10 +1272,96 @@ function getDetectedAbsences(forMonth = null, workerName = null) {
     return absences;
 }
 
+function getAbsenceRecordedMinutes(record) {
+    const value = record.absence_minutes ?? record.owed_minutes;
+    const recorded = Number(value);
+    if (value != null && value !== '' && Number.isFinite(recorded) && recorded >= 0) return Math.round(recorded);
+    const schedule = getRecordDaySchedule(record);
+    if (!schedule?.active) return 0;
+    const netMinutes = schedule.netMinutes != null ? Number(schedule.netMinutes)
+        : timeStringToMinutes(schedule.out) - timeStringToMinutes(schedule.in) - (schedule.lunch ? 60 : 0);
+    return Math.max(0, Math.round(netMinutes) || 0);
+}
+
+function getJustificationMinutes(record) {
+    return record.type === 'Permiso' || record.type === 'Feriado'
+        ? Math.max(0, Math.round((Number(record.hours_credited) || 0) * 60)) : 0;
+}
+
+function attachAbsenceJustifications(records) {
+    const credits = new Map();
+    const keyFor = record => JSON.stringify([record.employee_name, record.date]);
+    records.forEach(record => {
+        const key = keyFor(record);
+        credits.set(key, (credits.get(key) || 0) + getJustificationMinutes(record));
+    });
+    return records.map(record => {
+        if (record.type !== 'Falta') return record;
+        const originalMinutes = getAbsenceRecordedMinutes(record);
+        const justifiedMinutes = Math.min(originalMinutes, credits.get(keyFor(record)) || 0);
+        const schedule = getRecordDaySchedule(record);
+        return {
+            ...record,
+            absence_minutes: originalMinutes,
+            justified_absence_minutes: justifiedMinutes,
+            pending_absence_minutes: Math.max(0, originalMinutes - justifiedMinutes),
+            is_fully_justified: originalMinutes > 0 && justifiedMinutes >= originalMinutes,
+            is_partially_justified: justifiedMinutes > 0 && justifiedMinutes < originalMinutes,
+            scheduled_in: record.scheduled_in || schedule?.in,
+            scheduled_out: record.scheduled_out || schedule?.out,
+            scheduled_lunch: record.scheduled_lunch ?? schedule?.lunch
+        };
+    });
+}
+
+function calculateMonthlyAttendanceSummary(workerName, month, records, now = new Date()) {
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const summary = {
+        workedMinutes: 0, lateMinutes: 0, absenceMinutes: 0, absenceCount: 0,
+        owedMinutes: 0, extraMinutes: 0, justifiedMinutes: 0, absences: []
+    };
+    const days = new Map();
+    let adjustments = 0;
+    for (const record of attachAbsenceJustifications(records)) {
+        if (record.employee_name !== workerName || !record.date?.startsWith(month) || record.date > today) continue;
+        if (!days.has(record.date)) days.set(record.date, { late: 0, earlyLeave: 0, absence: null, credits: 0 });
+        const day = days.get(record.date);
+        if (record.type === 'Ajuste') {
+            adjustments += Number(record.owed_minutes) || 0;
+        } else if (record.type === 'Permiso' || record.type === 'Feriado') {
+            const credit = getJustificationMinutes(record);
+            day.credits += credit;
+            summary.justifiedMinutes += credit;
+        } else if (record.type === 'Falta') {
+            if (!day.absence || record.absence_minutes > day.absence.absence_minutes) day.absence = record;
+        } else {
+            const late = Math.max(0, Number(record.late_minutes) || 0);
+            day.late += late;
+            summary.lateMinutes += late;
+            const earlyLeave = Number(record.owed_minutes) || 0;
+            day.earlyLeave += Math.max(0, earlyLeave);
+            adjustments += Math.min(0, earlyLeave);
+            summary.workedMinutes += Math.max(0, Math.round((Number(record.hours_credited) || 0) * 60));
+            summary.extraMinutes += Math.max(0, Number(record.extra_minutes) || 0);
+        }
+    }
+    for (const day of days.values()) {
+        const absentMinutes = day.absence?.absence_minutes || 0;
+        if (day.absence) {
+            summary.absenceCount++;
+            summary.absenceMinutes += absentMinutes;
+            summary.absences.push(day.absence);
+        }
+        summary.owedMinutes += Math.max(0, day.late + day.earlyLeave + absentMinutes - day.credits);
+    }
+    summary.owedMinutes = Math.max(0, summary.owedMinutes + adjustments);
+    return summary;
+}
+
 // Get all attendance records merged with automatically detected absences
 function getCombinedAttendanceRecords(month = null) {
     const autoAbsences = getDetectedAbsences(month);
-    const combined = [...attendanceRecords, ...autoAbsences];
+    const combined = attachAbsenceJustifications([...attendanceRecords, ...autoAbsences]);
     return combined.sort((a, b) => {
         if (a.date !== b.date) {
             return b.date.localeCompare(a.date);
@@ -1365,7 +1451,7 @@ function updateWeeklyGoalProgress(now = new Date()) {
     goalProgressBar.setAttribute('aria-valuenow', String(Math.round(percent)));
     const currentMonth = getTodayDateString().slice(0, 7);
     const confirmedExtraMinutes = attendanceRecords.filter(record =>
-        record.employee_name === selectedWorker.name && record.date?.startsWith(currentMonth) &&
+        record.employee_name === selectedWorker.name && record.date?.startsWith(currentMonth) && record.date <= getTodayDateString() &&
         (!record.check_in || record.check_out)
     ).reduce((total, record) => total + (Number(record.extra_minutes) || 0), 0);
     metricExtraHours.textContent = minutesToColonFormat(confirmedExtraMinutes + state.liveExtraMinutes);
@@ -1383,6 +1469,12 @@ function updateWeeklyGoalProgress(now = new Date()) {
 }
 
 function updateWorkerStats() {
+    const now = new Date();
+    const monthPeriod = document.getElementById('monthlySummaryPeriod');
+    if (monthPeriod) {
+        const label = now.toLocaleDateString('es-PE', { month: 'long', year: 'numeric' });
+        monthPeriod.textContent = label.charAt(0).toUpperCase() + label.slice(1);
+    }
     if (!selectedWorker) {
         progressEmployeeTitle.innerHTML = '<span>⭐ Resumen del Trabajador</span>';
         lblSelectedWorkerMeta.textContent = 'Selecciona a alguien para ver sus horas';
@@ -1404,7 +1496,6 @@ function updateWorkerStats() {
     // Schedule info
     const schedule = workerSchedules[selectedWorker.name] || {};
     
-    const now = new Date();
     const currentYear = now.getFullYear();
     const currentMonth = now.getMonth();
     const currentMonthStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
@@ -1415,39 +1506,17 @@ function updateWorkerStats() {
     const combinedMonthRecords = getCombinedAttendanceRecords(currentMonthStr);
     const workerRecords = combinedMonthRecords.filter(r => r.employee_name === selectedWorker.name);
 
-    let totalWorkedMinutes = 0;
-    let totalLateMinutes = 0;
-    let totalEarlyLeaveMinutes = 0;
-    let totalExtraMinutes = 0;
-    let totalJustifiedMinutes = 0;
-    let totalAbsenceMinutes = 0;
-    let totalAbsenceCount = 0;
-    const workerAbsencesList = [];
-
-    workerRecords.forEach(r => {
-        const recordDate = new Date(r.date + 'T00:00:00');
-
-        // Check if record is within current month
-        if (recordDate.getFullYear() === currentYear && recordDate.getMonth() === currentMonth) {
-            if (r.type === 'Feriado' || r.type === 'Permiso') {
-                totalJustifiedMinutes += (r.hours_credited || 8) * 60;
-            } else if (r.type === 'Falta') {
-                totalAbsenceMinutes += (r.owed_minutes || 0);
-                totalAbsenceCount++;
-                workerAbsencesList.push(r);
-            } else {
-                totalWorkedMinutes += (r.hours_credited || 0) * 60;
-                totalEarlyLeaveMinutes += (r.owed_minutes || 0);
-            }
-
-            totalLateMinutes += (r.late_minutes || 0);
-            totalExtraMinutes += (r.extra_minutes || 0);
-        }
-
-    });
-
-    // Horas Debidas Total = Tardanzas acumuladas + Faltas/Ausencias + Salidas antes de hora
-    const totalOwedMinutes = totalLateMinutes + totalAbsenceMinutes + totalEarlyLeaveMinutes;
+    const summary = calculateMonthlyAttendanceSummary(selectedWorker.name, currentMonthStr, workerRecords, now);
+    const {
+        workedMinutes: totalWorkedMinutes,
+        lateMinutes: totalLateMinutes,
+        absenceMinutes: totalAbsenceMinutes,
+        absenceCount: totalAbsenceCount,
+        owedMinutes: totalOwedMinutes,
+        extraMinutes: totalExtraMinutes,
+        justifiedMinutes: totalJustifiedMinutes,
+        absences: workerAbsencesList
+    } = summary;
 
     // 5 KPI Cards
     metricWorkedHours.textContent = minutesToColonFormat(totalWorkedMinutes);
@@ -1471,8 +1540,8 @@ function updateWorkerStats() {
             absencesListContainer.innerHTML = `
                 <div class="absence-item-empty">
                     <span>✨</span>
-                    <strong>¡Sin faltas ni ausencias este mes!</strong>
-                    <small>Has asistido puntualmente a todas tus jornadas programadas.</small>
+                    <strong>Sin faltas registradas este mes</strong>
+                    <small>Las tardanzas se muestran por separado en el resumen mensual.</small>
                 </div>
             `;
         } else {
@@ -1503,15 +1572,17 @@ function updateWorkerStats() {
                             <span style="font-size: 16px;">📅</span>
                             <strong>${relativeBadge} - ${formattedDate}</strong>
                         </div>
-                        <span class="badge-absence-hours">🚨 ${minutesToHoursMinutes(abs.owed_minutes)} falta / ausencia</span>
+                        <span class="badge-absence-hours">🚨 ${minutesToHoursMinutes(abs.absence_minutes)} de ausencia registrada</span>
                     </div>
                     <div class="absence-item-details">
                         <div>⏰ <strong>Horario programado:</strong> ${escapeAttendanceHtml(formatTimeTo12H(abs.scheduled_in || '08:00'))} a ${escapeAttendanceHtml(formatTimeTo12H(abs.scheduled_out || '16:30'))} (${abs.scheduled_lunch ? 'Con refrigerio' : 'Sin refrigerio'})</div>
-                        <div style="margin-top: 3px; color: #b91c1c; font-weight: 600;">🔴 No marcó asistencia (horas debidas acumuladas).</div>
+                        <div style="margin-top: 3px; font-weight: 600; color: ${abs.is_fully_justified ? '#7e22ce' : '#b91c1c'};">
+                            ${abs.is_fully_justified ? 'Justificada · se conserva en el historial.' : abs.is_partially_justified ? 'Justificada parcialmente · pendiente: ' + minutesToHoursMinutes(abs.pending_absence_minutes) + '.' : 'Sin justificar · se conserva en el historial del mes.'}
+                        </div>
                     </div>
                     <div class="absence-item-actions">
-                        <button type="button" class="btn btn-secondary btn-action-justify" data-action="justify">
-                            <i data-lucide="gift" style="width: 13px; height: 13px; vertical-align: middle;"></i> Justificar Permiso
+                        <button type="button" class="btn btn-secondary btn-action-justify" data-action="justify" ${abs.pending_absence_minutes <= 0 ? 'disabled' : ''}>
+                            <i data-lucide="gift" style="width: 13px; height: 13px; vertical-align: middle;"></i> ${abs.is_fully_justified ? 'Justificada' : abs.is_partially_justified ? 'Justificar pendiente' : 'Justificar Permiso'}
                         </button>
                         <button type="button" class="btn btn-secondary btn-action-regularize" data-action="regularize">
                             <i data-lucide="clock" style="width: 13px; height: 13px; vertical-align: middle;"></i> Regularizar Marcación
@@ -1519,7 +1590,7 @@ function updateWorkerStats() {
                     </div>
                 `;
                 item.querySelector('[data-action="justify"]').addEventListener('click', () => {
-                    window.quickJustifyAbsence(abs.employee_name, abs.date, Number(abs.owed_minutes) || 0);
+                    window.quickJustifyAbsence(abs.employee_name, abs.date, abs.pending_absence_minutes);
                 });
                 item.querySelector('[data-action="regularize"]').addEventListener('click', () => {
                     window.quickRegularizePunch(abs.employee_name, abs.date, abs.scheduled_in || '08:00', abs.scheduled_out || '16:30', abs.scheduled_lunch !== false);
@@ -1646,7 +1717,7 @@ function renderAttendanceTable() {
         if (record.is_auto_absence) {
             actionsCol = `
                 <div style="display: flex; gap: 4px; justify-content: center;">
-                    <button type="button" class="btn-row-action btn-action-justify" title="Justificar con Permiso" data-action="justify">
+                    <button type="button" class="btn-row-action btn-action-justify" title="${record.is_fully_justified ? 'Ausencia ya justificada' : 'Justificar con Permiso'}" data-action="justify" ${record.pending_absence_minutes <= 0 ? 'disabled' : ''}>
                         <i data-lucide="gift" style="width: 15px; height: 15px;"></i>
                     </button>
                     <button type="button" class="btn-row-action btn-action-regularize" title="Regularizar Marcación (si asistió)" data-action="regularize">
@@ -1673,7 +1744,7 @@ function renderAttendanceTable() {
             <td>${typeChip}</td>
             <td style="max-width: 260px; font-size: 12px; color: var(--text-secondary);">
                 ${escapeAttendanceHtml(record.notes || '-')}
-                ${record.type === 'Falta' ? `<br><span class="badge-owed-mini">Debidas: ${minutesToHoursMinutes(record.owed_minutes)}</span>` : ''}
+                ${record.type === 'Falta' ? `<br><span class="badge-owed-mini">Ausencia registrada: ${minutesToHoursMinutes(record.absence_minutes)}</span><br><span class="${record.is_fully_justified ? 'chip-permiso' : 'chip-absence'}">${record.is_fully_justified ? 'Justificada · conservada en el historial' : record.is_partially_justified ? 'Justificada parcialmente' : 'Sin justificar'}</span>` : ''}
             </td>
             <td style="text-align: center;">
                 ${actionsCol}
@@ -1681,7 +1752,7 @@ function renderAttendanceTable() {
         `;
 
         tr.querySelector('[data-action="justify"]')?.addEventListener('click', () => {
-            window.quickJustifyAbsence(record.employee_name, record.date, Number(record.owed_minutes) || 0);
+            window.quickJustifyAbsence(record.employee_name, record.date, record.pending_absence_minutes);
         });
         tr.querySelector('[data-action="regularize"]')?.addEventListener('click', () => {
             window.quickRegularizePunch(record.employee_name, record.date, record.scheduled_in || '08:00', record.scheduled_out || '16:30', record.scheduled_lunch !== false);
@@ -2414,14 +2485,16 @@ function setupManualPunchModal() {
 // Global Quick Action Triggers
 window.quickJustifyAbsence = function (workerName, dateStr, owedMinutes) {
     if (!modalAdminRegister) return;
+    const pendingMinutes = Math.max(0, Math.round(Number(owedMinutes) || 0));
+    if (pendingMinutes <= 0) return;
     requireAdmin(() => {
         adminRegisterType.value = 'Permiso';
         adminEmployeeSelectGroup.style.display = 'block';
         adminEmployeeSelect.value = workerName;
         adminRegisterDate.value = dateStr;
 
-        const hours = Math.floor((owedMinutes || 450) / 60);
-        const mins = Math.round((owedMinutes || 450) % 60);
+        const hours = Math.floor(pendingMinutes / 60);
+        const mins = pendingMinutes % 60;
         adminRegisterHours.value = String(hours);
         adminRegisterMinutes.value = String(mins);
         adminRegisterNotes.value = 'Permiso justificado por inasistencia';

@@ -192,6 +192,14 @@
                             <small id="weeklyGoalHelpText" class="weekly-goal-help" aria-live="polite">Horas confirmadas de esta semana, de lunes a domingo.</small>
                         </div>
 
+                        <div class="monthly-summary-header">
+                            <div class="monthly-summary-title">
+                                <span>Resumen mensual</span>
+                                <strong id="monthlySummaryPeriod">Mes actual</strong>
+                            </div>
+                            <p>Las tardanzas y faltas se conservan aunque se justifiquen. Solo las horas debidas descuentan permisos y ajustes.</p>
+                        </div>
+
                         <!-- 5 Distinct KPI Indicators with Required Colors -->
                         <div class="metrics-grid-five">
                             <!-- 1. Presenciales (Sol / Azul-Rosa) -->
@@ -205,11 +213,11 @@
                             <div class="metric-card metric-tardanza">
                                 <div class="metric-icon">🔴</div>
                                 <div class="metric-val" id="metricLateHours">0:00</div>
-                                <div class="metric-lbl">Tardanza Acum.</div>
+                                <div class="metric-lbl">Tardanzas del mes</div>
                             </div>
 
                             <!-- 3. Faltas / Ausencias (Rojo Alerta) -->
-                            <div class="metric-card metric-falta">
+                            <div class="metric-card metric-falta" title="Cantidad de días y horas de ausencia del mes, incluidos los justificados">
                                 <div class="metric-icon">🚨</div>
                                 <div class="metric-val" id="metricAbsenceHours">0:00</div>
                                 <div class="metric-lbl">Faltas / Ausencias</div>
@@ -217,7 +225,7 @@
 
                             <!-- 4. Horas que se Deben (Tardanzas + Faltas + Salidas anticipadas) -->
                             <div class="metric-card metric-deuda"
-                                title="Total de tiempo a recuperar: Tardanzas acumuladas + Faltas/Ausencias + Salidas antes de hora">
+                                title="Saldo mensual por recuperar después de permisos y ajustes. El historial de tardanzas y ausencias se conserva.">
                                 <div class="metric-icon">🟠</div>
                                 <div class="metric-val" id="metricOwedHours">0:00</div>
                                 <div class="metric-lbl">Horas Debidas</div>
@@ -238,9 +246,9 @@
                                     <span class="absences-badge-icon">🚨</span>
                                     <div>
                                         <strong style="color: #b91c1c; font-size: 13.5px;"
-                                            id="absencesCardTitle">Ausencias / Faltas Detectadas</strong>
-                                        <small style="color: #991b1b; display: block; font-size: 11px;">Días programados
-                                            en los que no se marcó asistencia</small>
+                                            id="absencesCardTitle">Faltas y ausencias del mes</strong>
+                                        <small style="color: #991b1b; display: block; font-size: 11px;">Historial de días ausentes,
+                                            incluidos los justificados</small>
                                     </div>
                                 </div>
                                 <span class="badge-absences-count" id="badgeAbsencesCount">0</span>
@@ -272,7 +280,7 @@
                                 <i data-lucide="calendar-cog"></i> Editar Horario
                             </button>
                             <button class="btn btn-secondary btn-sm" id="btnReduceDebt"
-                                style="flex: 1; border-color: #f59e0b; color: #f59e0b;" title="Reducir horas debidas">
+                                style="flex: 1; border-color: #f59e0b; color: #f59e0b;" title="Reducir el saldo mensual sin borrar tardanzas ni faltas">
                                 <i data-lucide="minus-circle"></i> Reducir Deuda
                             </button>
                             <button class="btn btn-secondary btn-sm" id="btnDeleteWorker"
@@ -923,6 +931,7 @@
                     <button class="btn-close" aria-label="Cerrar diálogo" id="btnCloseReduceDebt" type="button"><i data-lucide="x"></i></button>
                 </div>
                 <div class="modal-body">
+                    <p class="monthly-debt-help">Este ajuste reduce solo el saldo por recuperar. Las tardanzas y faltas del mes se conservan.</p>
                     <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 15px;">
                         Trabajador: <strong id="reduceDebtWorkerName" style="color: var(--text-primary);"></strong><br>
                         Deuda actual: <strong id="reduceDebtCurrentValue" style="color: #ef4444;"></strong>
