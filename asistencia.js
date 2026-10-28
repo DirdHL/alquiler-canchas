@@ -13,7 +13,7 @@ let workerSchedules = {}; // { 'Rogger': { lunes: { active: true, in: '08:00', o
 let attendanceRecords = []; // All attendance records loaded
 let selectedWorker = null; // Currently selected worker object
 let isPunchInProgress = false;
-let isAutoCheckoutInProgress = false;
+let autoCheckoutPromise = null;
 let lastAttendanceMinute = '';
 let automaticCheckoutRepairPromise = null;
 
@@ -199,77 +199,102 @@ function updateLiveClock() {
     }
 }
 
-async function autoCheckoutActiveShifts() {
-    if (isAutoCheckoutInProgress || isPunchInProgress || !attendanceRecords.length) return;
-    isAutoCheckoutInProgress = true;
-    let hasUpdates = false;
+function getRecordDaySchedule(record) {
+    const date = new Date(record.date + 'T12:00:00');
+    return workerSchedules[record.employee_name]?.[DAYS_ES[date.getDay()]];
+}
 
-    try {
-        const todayStr = getTodayDateString();
-        // Keep today's shifts open so the actual checkout can include overtime.
-        const pendingShifts = attendanceRecords.filter(r =>
-            r.date < todayStr && r.check_in && !r.check_out
-        );
+function hasScheduledWork(record, schedule) {
+    return schedule?.active && record.check_in &&
+        timeStringToMinutes(record.check_in) < timeStringToMinutes(schedule.out) &&
+        (!record.check_out || timeStringToMinutes(record.check_out) > timeStringToMinutes(schedule.in));
+}
 
-        for (const shift of pendingShifts) {
-            const shiftDate = new Date(shift.date + 'T12:00:00');
-            const shiftSchedule = workerSchedules[shift.employee_name]?.[DAYS_ES[shiftDate.getDay()]];
-            if (!shiftSchedule?.active || !shiftSchedule.out) continue;
+function isOutsideScheduledShift(record, schedule) {
+    return !schedule?.active || timeStringToMinutes(record.check_in) >= timeStringToMinutes(schedule.out);
+}
 
-            const checkoutTimeStr = shiftSchedule.out.substring(0, 5) + ':00';
-            const checkInMinutes = timeStringToMinutes(shift.check_in);
-            const finalOutMinutes = timeStringToMinutes(checkoutTimeStr);
-            // An extra shift starting after the scheduled exit needs manual regularization.
-            if (finalOutMinutes <= checkInMinutes) continue;
+function isScheduledShiftDue(record, now = new Date()) {
+    if (record.type !== 'Trabajo' || !record.check_in || record.check_out || record.date > getTodayDateString()) return false;
+    const schedule = getRecordDaySchedule(record);
+    if (!schedule?.active || !schedule.out || isOutsideScheduledShift(record, schedule)) return false;
+    return record.date < getTodayDateString() ||
+        now.getHours() * 60 + now.getMinutes() >= timeStringToMinutes(schedule.out);
+}
 
-            const tookLunch = shift.lunch !== undefined
-                ? Boolean(shift.lunch)
-                : !shift.notes?.includes('Sin refrigerio');
-            const netShiftMinutes = Math.max(0, finalOutMinutes - checkInMinutes - (tookLunch ? 60 : 0));
-            const updatedShift = {
-                ...shift,
-                check_out: checkoutTimeStr,
-                hours_credited: Number((netShiftMinutes / 60).toFixed(2)),
-                late_minutes: shift.late_minutes || 0,
-                extra_minutes: shift.extra_minutes || 0,
-                owed_minutes: 0,
-                lunch: tookLunch,
-                notes: `${shift.notes ? shift.notes + ' | ' : ''}Salida automática a la hora programada (${formatTimeTo12H(checkoutTimeStr)}). ${tookLunch ? 'Refrigerio descontado (-1h).' : 'Jornada corrida.'}`
+function calculateShiftAccounting(record, checkoutTime, schedule) {
+    const checkIn = timeStringToMinutes(record.check_in);
+    const checkOut = timeStringToMinutes(checkoutTime);
+    const netMinutes = Math.max(0, checkOut - checkIn - (getRecordLunchChoice(record) ? 60 : 0));
+    let extraMinutes = netMinutes;
+    let owedMinutes = 0;
+    let lateMinutes = 0;
+    if (schedule?.active) {
+        const scheduledIn = timeStringToMinutes(schedule.in);
+        const scheduledOut = timeStringToMinutes(schedule.out);
+        const beforeSchedule = Math.max(0, Math.min(checkOut, scheduledIn) - checkIn);
+        const afterSchedule = Math.max(0, checkOut - Math.max(checkIn, scheduledOut));
+        extraMinutes = Math.min(netMinutes, beforeSchedule + afterSchedule);
+        if (checkIn < scheduledOut && checkOut > scheduledIn) {
+            lateMinutes = Number(record.late_minutes) || 0;
+            const isRecovery = /Turno de recuperación dentro del horario|Turno extra\/recuperación en el mismo día/i.test(record.notes || '');
+            if (!isRecovery && scheduledOut - checkOut > 5) owedMinutes = scheduledOut - checkOut;
+        }
+    }
+    return {
+        hours_credited: Number((netMinutes / 60).toFixed(2)),
+        late_minutes: lateMinutes,
+        extra_minutes: extraMinutes,
+        owed_minutes: owedMinutes
+    };
+}
+
+async function autoCheckoutActiveShifts(reconcilePunch = false) {
+    if (autoCheckoutPromise) return autoCheckoutPromise;
+    if ((isPunchInProgress && !reconcilePunch) || !attendanceRecords.length) return [];
+    autoCheckoutPromise = (async () => {
+        const now = new Date();
+        const closedIds = [];
+        const dueShifts = attendanceRecords.filter(record => isScheduledShiftDue(record, now));
+        for (const shift of dueShifts) {
+            const schedule = getRecordDaySchedule(shift);
+            const checkout = schedule.out.substring(0, 5) + ':00';
+            const update = {
+                check_out: checkout,
+                ...calculateShiftAccounting(shift, checkout, schedule),
+                notes: `${shift.notes ? shift.notes + ' | ' : ''}Salida automática a la hora programada (${formatTimeTo12H(checkout)}). ${getRecordLunchChoice(shift) ? 'Refrigerio descontado (-1h).' : 'Jornada corrida.'}`
             };
-
             try {
                 if (dbMode === 'supabase' && supabaseClient) {
-                    const { error } = await supabaseClient
-                        .from('asistencias_v2')
-                        .update({
-                            check_out: updatedShift.check_out,
-                            hours_credited: updatedShift.hours_credited,
-                            late_minutes: updatedShift.late_minutes,
-                            extra_minutes: updatedShift.extra_minutes,
-                            owed_minutes: updatedShift.owed_minutes,
-                            notes: updatedShift.notes
-                        })
-                        .eq('id', shift.id);
+                    const { data, error } = await supabaseClient.from('asistencias_v2')
+                        .update(update).eq('id', shift.id).is('check_out', null).select('id');
                     if (error) throw error;
+                    if (!data?.length) continue;
                 } else {
-                    const localList = getLocalAttendance().map(r => r.id === shift.id ? updatedShift : r);
-                    saveLocalAttendance(localList);
+                    saveLocalAttendance(getLocalAttendance().map(record =>
+                        record.id === shift.id && !record.check_out ? { ...record, ...update } : record
+                    ));
                 }
-                Object.assign(shift, updatedShift);
-                hasUpdates = true;
+                attendanceRecords = attendanceRecords.map(record =>
+                    record.id === shift.id && !record.check_out ? { ...record, ...update } : record
+                );
+                closedIds.push(shift.id);
             } catch (error) {
-                console.warn('No se pudo cerrar el turno pendiente:', error);
+                console.warn('No se pudo cerrar el turno programado:', error);
             }
         }
-
-        if (hasUpdates) {
+        if (closedIds.length) {
             renderTeamLiveStatus();
             updatePunchButtonState();
             renderAttendanceTable();
             updateWorkerStats();
         }
+        return closedIds;
+    })();
+    try {
+        return await autoCheckoutPromise;
     } finally {
-        isAutoCheckoutInProgress = false;
+        autoCheckoutPromise = null;
     }
 }
 
@@ -787,7 +812,7 @@ function handleWorkerChange() {
         lunchCheckbox.checked = !!todaySchedule.lunch;
     } else {
         workerScheduleHours.textContent = 'Día libre (Sin horario oficial)';
-        workerScheduleLunchInfo.textContent = 'Cualquier turno hoy contará como horas laboradas';
+        workerScheduleLunchInfo.textContent = 'Los turnos de hoy cuentan como horas extras';
         lunchCheckbox.checked = true;
     }
 
@@ -804,9 +829,7 @@ function updatePunchButtonState() {
 
     if (activeShift) {
         // Active shift in progress - Marcar Salida directo sin opciones adicionales
-        const shiftTookLunch = (activeShift.lunch !== undefined)
-            ? Boolean(activeShift.lunch)
-            : (activeShift.notes && activeShift.notes.includes('Sin refrigerio') ? false : true);
+        const shiftTookLunch = getRecordLunchChoice(activeShift);
 
         employeeStatusBox.innerHTML = `
             <div class="status-active-shift">
@@ -821,7 +844,7 @@ function updatePunchButtonState() {
 
         btnToggleAttendance.disabled = false;
         btnToggleAttendance.className = 'btn btn-primary btn-punch-action in-shift';
-        btnPunchText.textContent = 'Marcar Salida';
+        btnPunchText.textContent = isOutsideScheduledShift(activeShift, getRecordDaySchedule(activeShift)) ? 'Marcar Salida Extra' : 'Marcar Salida';
 
         // Una vez que entras, ya no se muestran opciones adicionales (solo Marcar Salida directo)
         lunchToggleGroup.style.display = 'none';
@@ -865,22 +888,23 @@ function evaluateCheckInTiming() {
     const schedule = workerSchedules[selectedWorker.name] || {};
     const todaySchedule = schedule[todayDayKey];
 
-    const hasCompletedShiftToday = attendanceRecords.some(r =>
-        r.employee_name === selectedWorker.name &&
-        r.date === todayStr &&
-        r.check_in && Boolean(r.check_out)
+    const hasCompletedShiftToday = attendanceRecords.some(record =>
+        record.employee_name === selectedWorker.name && record.date === todayStr &&
+        record.type === 'Trabajo' && record.check_in && record.check_out && hasScheduledWork(record, todaySchedule)
     );
 
-    if (hasCompletedShiftToday) {
+    if (!todaySchedule?.active || nowMinutes >= timeStringToMinutes(todaySchedule.out)) {
         earlyCheckinCard.style.display = 'none';
-        employeeStatusBox.innerHTML = '<span class="status-title" style="color: #6366f1; font-weight: 700;">🟣 Turno Extra / Recuperación (Inicia sin tardanza)</span>';
+        lunchToggleGroup.style.display = 'none';
+        lunchCheckbox.checked = false;
+        btnPunchText.textContent = 'Marcar Entrada Extra';
+        employeeStatusBox.innerHTML = '<span class="status-title" style="color: #047857; font-weight: 700;">Turno extra fuera de horario. Cuenta desde esta nueva entrada hasta marcar salida.</span>';
         return;
     }
-
-    if (!todaySchedule || !todaySchedule.active) {
-        // No schedule today: standard entry
+    if (hasCompletedShiftToday) {
         earlyCheckinCard.style.display = 'none';
-        employeeStatusBox.innerHTML = '<span class="status-title" style="color: var(--primary);">Listo para iniciar turno</span>';
+        lunchCheckbox.checked = false;
+        employeeStatusBox.innerHTML = '<span class="status-title" style="color: #6366f1; font-weight: 700;">Recuperación dentro del horario (sin nueva tardanza).</span>';
         return;
     }
 
@@ -925,10 +949,26 @@ function evaluateCheckInTiming() {
 
 async function handleAttendancePunch() {
     if (!selectedWorker || isPunchInProgress) return;
+    const punchWorkerName = selectedWorker.name;
+    const previousShift = attendanceRecords.find(record =>
+        record.employee_name === punchWorkerName && record.date === getTodayDateString() && record.check_in && !record.check_out
+    );
+    const mustCloseScheduledShift = previousShift && isScheduledShiftDue(previousShift);
     isPunchInProgress = true;
     btnToggleAttendance.disabled = true;
 
     try {
+        const closedIds = await autoCheckoutActiveShifts(true);
+        if (selectedWorker?.name !== punchWorkerName) return;
+        if (previousShift && (closedIds.includes(previousShift.id) ||
+            !attendanceRecords.some(record => record.id === previousShift.id && !record.check_out))) {
+            handleWorkerChange();
+            return;
+        }
+        if (mustCloseScheduledShift || (previousShift && isScheduledShiftDue(previousShift))) {
+            alert('No se pudo cerrar la jornada programada. Reintenta antes de iniciar horas extras.');
+            return;
+        }
         const todayStr = getTodayDateString();
         const now = new Date();
         const currentTimeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:00`;
@@ -948,54 +988,14 @@ async function handleAttendancePunch() {
             // ==============================================================
             // CHECK-OUT OPERATION
             // ==============================================================
-            const checkInMinutes = timeStringToMinutes(activeShift.check_in);
-            const checkOutMinutes = currentMinutes;
-            const grossShiftMinutes = Math.max(0, checkOutMinutes - checkInMinutes);
-
-            // Lunch deduction logic: uses choice established at check-in
-            const tookLunch = (activeShift.lunch !== undefined)
-                ? Boolean(activeShift.lunch)
-                : (activeShift.notes && activeShift.notes.includes('Sin refrigerio') ? false : true);
-            const lunchDeductionMinutes = tookLunch ? 60 : 0;
-            const netShiftMinutes = Math.max(0, grossShiftMinutes - lunchDeductionMinutes);
-
-            let lateMinutes = activeShift.late_minutes || 0;
-            let extraMinutes = activeShift.extra_minutes || 0;
-            let owedMinutes = 0;
-
-            let notes = `${activeShift.notes ? activeShift.notes + ' | ' : ''}Salida a las ${formatTimeTo12H(currentTimeStr.substring(0, 5))}.`;
-            if (tookLunch) {
-                notes += ' Refrigerio descontado (-1h).';
-            } else {
-                notes += ' Jornada corrida (sin descuento de refrigerio).';
-            }
-
-            // Check if leaving before or after official scheduled exit
-            if (todaySchedule && todaySchedule.active) {
-                const scheduledOutMinutes = timeStringToMinutes(todaySchedule.out);
-                const diffOut = scheduledOutMinutes - checkOutMinutes;
-
-                if (diffOut > 5) {
-                    // Left earlier than scheduled
-                    owedMinutes = diffOut;
-                    notes += ` Salió ${minutesToHoursMinutes(diffOut)} antes de su hora oficial.`;
-                } else if (diffOut < -5) {
-                    // Left later than scheduled -> Overtime (in green)
-                    const stayLateMins = Math.abs(diffOut);
-                    extraMinutes += stayLateMins;
-                    notes += ` Horas extras trabajadas al final de la jornada: ${minutesToHoursMinutes(stayLateMins)}.`;
-                }
-            }
-
+            const tookLunch = getRecordLunchChoice(activeShift);
+            const accounting = calculateShiftAccounting(activeShift, currentTimeStr, todaySchedule);
             const updatedShift = {
                 ...activeShift,
                 check_out: currentTimeStr,
-                hours_credited: Number((netShiftMinutes / 60).toFixed(2)),
-                late_minutes: lateMinutes,
-                extra_minutes: extraMinutes,
-                owed_minutes: owedMinutes,
+                ...accounting,
                 lunch: tookLunch,
-                notes: notes
+                notes: `${activeShift.notes ? activeShift.notes + ' | ' : ''}Salida a las ${formatTimeTo12H(currentTimeStr)}. ${tookLunch ? 'Refrigerio descontado (-1h).' : 'Jornada corrida (sin descuento de refrigerio).'}${accounting.extra_minutes > 0 ? ' Tiempo extra trabajado: ' + minutesToHoursMinutes(accounting.extra_minutes) + '.' : ''}`
             };
 
             if (dbMode === 'supabase' && supabaseClient) {
@@ -1022,7 +1022,8 @@ async function handleAttendancePunch() {
             // ==============================================================
             // CHECK-IN OPERATION
             // ==============================================================
-            const tookLunch = lunchCheckbox ? lunchCheckbox.checked : true;
+            const isExtraEntry = !todaySchedule?.active || currentMinutes >= timeStringToMinutes(todaySchedule.out);
+            const tookLunch = !isExtraEntry && Boolean(lunchCheckbox?.checked);
             let officialInTime = currentTimeStr;
             let lateMinutes = 0;
             let extraMinutes = 0;
@@ -1036,11 +1037,13 @@ async function handleAttendancePunch() {
             const hasCompletedShiftToday = attendanceRecords.some(r =>
                 r.employee_name === selectedWorker.name &&
                 r.date === todayStr &&
-                r.check_in && Boolean(r.check_out)
+                r.type === 'Trabajo' && r.check_in && Boolean(r.check_out) && hasScheduledWork(r, todaySchedule)
             );
 
-            if (hasCompletedShiftToday) {
-                notes += ' [Turno extra/recuperación en el mismo día].';
+            if (isExtraEntry) {
+                notes += ' [Turno extra fuera de horario].';
+            } else if (hasCompletedShiftToday) {
+                notes += ' [Turno de recuperación dentro del horario].';
             } else if (todaySchedule && todaySchedule.active) {
                 const scheduledInMinutes = timeStringToMinutes(todaySchedule.in);
                 const diffMinutes = scheduledInMinutes - currentMinutes;
@@ -1053,8 +1056,7 @@ async function handleAttendancePunch() {
                         notes += ` Inicia a la hora oficial (${formatTimeTo12H(todaySchedule.in)}).`;
                     } else {
                         // User chose to start at actual early time -> extra minutes
-                        extraMinutes = diffMinutes;
-                        notes += ` Ingreso anticipado voluntario (+${diffMinutes} min extras en verde).`;
+                        notes += ` Ingreso anticipado voluntario; los minutos extras se calculan según el tiempo trabajado antes del horario.`;
                     }
                 } else if (diffMinutes < 0) {
                     // Arrived late
@@ -1112,7 +1114,7 @@ async function handleAttendancePunch() {
         alert("Ocurrió un error al registrar la marcación: " + err.message);
     } finally {
         isPunchInProgress = false;
-        btnToggleAttendance.disabled = false;
+        btnToggleAttendance.disabled = !selectedWorker;
     }
 }
 
@@ -1231,7 +1233,11 @@ function getDetectedAbsences(forMonth = null, workerName = null) {
             // If scheduled to work on this day
             if (daySched && daySched.active) {
                 // Check if worker already has ANY attendance record (Trabajo, Feriado, Permiso, Falta manual)
-                const hasRecord = attendanceRecords.some(r => r.employee_name === worker.name && r.date === dateStr && r.type !== 'Ajuste');
+                const hasRecord = attendanceRecords.some(record => {
+                    if (record.employee_name !== worker.name || record.date !== dateStr || record.type === 'Ajuste') return false;
+                    if (record.type !== 'Trabajo' || !record.check_in) return true;
+                    return hasScheduledWork(record, daySched);
+                });
                 if (!hasRecord) {
                     let netMins = daySched.netMinutes;
                     if (netMins === undefined || netMins === null || netMins === 0) {
@@ -1307,6 +1313,8 @@ function calculateWeeklyGoal(worker, schedule, records, now = new Date()) {
 
     let confirmedMinutes = 0;
     let liveMinutes = 0;
+    let liveExtraMinutes = 0;
+    let pendingScheduledClosures = 0;
     let lunchPending = false;
     let invalidClosures = 0;
     for (const record of records) {
@@ -1317,17 +1325,24 @@ function calculateWeeklyGoal(worker, schedule, records, now = new Date()) {
         if (record.type === 'Falta' || record.type === 'Ajuste') continue;
 
         if (record.type === 'Trabajo' && record.date === today && record.check_in && !record.check_out) {
-            const elapsed = Math.max(0, now.getHours() * 60 + now.getMinutes() - timeStringToMinutes(record.check_in));
+            const daySchedule = schedule[DAYS_ES[date.getDay()]];
+            const isScheduled = daySchedule?.active && !isOutsideScheduledShift(record, daySchedule);
+            const nowMinutes = now.getHours() * 60 + now.getMinutes();
+            const endMinutes = isScheduled ? Math.min(nowMinutes, timeStringToMinutes(daySchedule.out)) : nowMinutes;
+            const reachedEnd = isScheduled && nowMinutes >= timeStringToMinutes(daySchedule.out);
+            const deductLunch = reachedEnd && getRecordLunchChoice(record);
+            const elapsed = Math.max(0, endMinutes - timeStringToMinutes(record.check_in) - (deductLunch ? 60 : 0));
             liveMinutes += elapsed;
-            if (elapsed > 0 && getRecordLunchChoice(record)) {
-                lunchPending = true;
-            }
+            const checkout = `${String(Math.floor(endMinutes / 60)).padStart(2, '0')}:${String(endMinutes % 60).padStart(2, '0')}:00`;
+            liveExtraMinutes += calculateShiftAccounting({ ...record, lunch: deductLunch }, checkout, daySchedule).extra_minutes;
+            if (reachedEnd) pendingScheduledClosures++;
+            if (elapsed > 0 && !reachedEnd && getRecordLunchChoice(record)) lunchPending = true;
         } else {
             const creditedHours = Number(record.hours_credited);
             if (Number.isFinite(creditedHours) && creditedHours > 0) confirmedMinutes += creditedHours * 60;
         }
     }
-    return { targetHours, confirmedMinutes, liveMinutes, lunchPending, invalidClosures };
+    return { targetHours, confirmedMinutes, liveMinutes, liveExtraMinutes, pendingScheduledClosures, lunchPending, invalidClosures };
 }
 
 function updateWeeklyGoalProgress(now = new Date()) {
@@ -1348,10 +1363,19 @@ function updateWeeklyGoalProgress(now = new Date()) {
     weeklyGoalHoursText.textContent = `${hours.toFixed(1)} / ${state.targetHours.toFixed(1)} h`;
     goalProgressBar.style.width = `${percent.toFixed(2)}%`;
     goalProgressBar.setAttribute('aria-valuenow', String(Math.round(percent)));
+    const currentMonth = getTodayDateString().slice(0, 7);
+    const confirmedExtraMinutes = attendanceRecords.filter(record =>
+        record.employee_name === selectedWorker.name && record.date?.startsWith(currentMonth) &&
+        (!record.check_in || record.check_out)
+    ).reduce((total, record) => total + (Number(record.extra_minutes) || 0), 0);
+    metricExtraHours.textContent = minutesToColonFormat(confirmedExtraMinutes + state.liveExtraMinutes);
     if (help) {
         help.textContent = state.liveMinutes > 0
             ? `Incluye ${minutesToHoursMinutes(state.liveMinutes)} en curso${state.lunchPending ? '; el refrigerio se descontará al cerrar' : ''}.`
             : 'Horas confirmadas de esta semana, de lunes a domingo.';
+        if (state.pendingScheduledClosures > 0) {
+            help.textContent += ' La jornada está pendiente de cierre automático; no se suman horas fuera del horario sin una nueva entrada.';
+        }
         if (state.invalidClosures > 0) {
             help.textContent += ` Hay ${state.invalidClosures} cierre(s) automático(s) pendiente(s) de corregir.`;
         }
@@ -1425,8 +1449,6 @@ function updateWorkerStats() {
     // Horas Debidas Total = Tardanzas acumuladas + Faltas/Ausencias + Salidas antes de hora
     const totalOwedMinutes = totalLateMinutes + totalAbsenceMinutes + totalEarlyLeaveMinutes;
 
-    updateWeeklyGoalProgress(now);
-
     // 5 KPI Cards
     metricWorkedHours.textContent = minutesToColonFormat(totalWorkedMinutes);
     metricLateHours.textContent = minutesToColonFormat(totalLateMinutes);
@@ -1438,6 +1460,7 @@ function updateWorkerStats() {
     metricOwedHours.textContent = minutesToColonFormat(totalOwedMinutes);
     metricExtraHours.textContent = minutesToColonFormat(totalExtraMinutes);
     metricJustifiedHours.textContent = `${minutesToColonFormat(totalJustifiedMinutes)} h`;
+    updateWeeklyGoalProgress(now);
 
     // Render Dedicated Absences / Faltas Box ("Cuadro de Faltas")
     if (workerAbsencesCard && absencesListContainer) {
@@ -2339,22 +2362,16 @@ function setupManualPunchModal() {
         const dayKey = DAYS_ES[d.getDay()];
         const sched = (workerSchedules[workerName] && workerSchedules[workerName][dayKey]) || null;
 
-        let lateMins = 0;
-        let extraMins = 0;
-        let owedMins = 0;
-
-        if (sched && sched.active) {
-            const schedInMins = timeStringToMinutes(sched.in || '08:00');
-            const schedOutMins = timeStringToMinutes(sched.out || '16:30');
-            if (inMins > schedInMins) {
-                lateMins = inMins - schedInMins;
-            }
-            if (outMins < schedOutMins - 5) {
-                owedMins = schedOutMins - outMins;
-            } else if (outMins > schedOutMins + 5) {
-                extraMins = outMins - schedOutMins;
-            }
-        }
+        const accounting = calculateShiftAccounting({
+            check_in: inVal,
+            lunch: tookLunch,
+            late_minutes: sched?.active && inMins > timeStringToMinutes(sched.in) && inMins < timeStringToMinutes(sched.out)
+                ? inMins - timeStringToMinutes(sched.in) : 0,
+            notes: notesVal
+        }, outVal, sched);
+        const lateMins = accounting.late_minutes;
+        const extraMins = accounting.extra_minutes;
+        const owedMins = accounting.owed_minutes;
 
         const newShift = {
             id: generateUUID(),

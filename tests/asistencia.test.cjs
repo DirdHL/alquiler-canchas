@@ -12,6 +12,7 @@ function harness(date = [2026, 9, 28, 17, 0, 0]) {
     const observers = new Map();
     const exportedRows = [];
     let document;
+    let uuid = 0;
     class Element {
         constructor(id = '') {
             this.id = id; this.value = ''; this.checked = false; this.disabled = false;
@@ -84,6 +85,7 @@ function harness(date = [2026, 9, 28, 17, 0, 0]) {
         row.parts['.time-in'].value = '08:00'; row.parts['.time-out'].value = '16:00';
         return row;
     });
+    el('employeeSelect').value = 'Ana';
     el('filterEmployee').value = 'todos'; el('filterType').value = 'todos';
     el('filterMonth').value = '2026-10'; el('filterWeek').value = 'todas';
     class FakeDate extends Date {
@@ -92,7 +94,7 @@ function harness(date = [2026, 9, 28, 17, 0, 0]) {
     const env = {
         document, window: {URL:{createObjectURL:()=> 'blob:test',revokeObjectURL() {}}},
         localStorage: {getItem:key=>storage.get(key) || null, setItem:(key,value)=>storage.set(key,value),removeItem:key=>storage.delete(key)},
-        Date: FakeDate, crypto:{randomUUID:()=> 'test-id'}, alert:message=>alerts.push(message),
+        Date: FakeDate, crypto:{randomUUID:()=> 'test-' + (++uuid)}, alert:message=>alerts.push(message),
         prompt:()=>null, confirm:()=>true, console:{warn(){},error(){}},
         MutationObserver: class {constructor(callback) {this.callback=callback;} observe(element) {observers.set(element,this.callback);}},
         Blob: class {},
@@ -198,4 +200,131 @@ test('una fila modificada por otro cliente no se reemplaza con la reparación an
     h.run('dbMode="supabase"; supabaseClient={from:()=>({update:()=>({eq:()=>({eq:()=>({select:async()=>({data:[],error:null})})})})})}; attendanceRecords=[{id:"antiguo",employee_name:"Ana",date:"2026-10-27",type:"Trabajo",check_in:"08:00:00",check_out:"06:59:00",hours_credited:0,lunch:true,notes:"Salida automática del sistema a las 6:59 AM."}];');
     await h.run('repairInvalidAutomaticCheckouts()');
     assert.equal(h.run('attendanceRecords[0].check_out'),'06:59:00');
+});
+
+function moveClock(h, hour, minute = 0, day = 28) {
+    h.run('Date = class extends Date {constructor(...args){super(...(args.length ? args : [2026,9,' + day + ',' + hour + ',' + minute + ',0]));}};');
+}
+function seedScheduledShift(h) {
+    h.run('workerSchedules.Ana.miercoles.out="18:00"; attendanceRecords=[{id:"normal",employee_name:"Ana",date:"2026-10-28",type:"Trabajo",check_in:"08:00:00",check_out:null,lunch:true,hours_credited:0,notes:"[Con refrigerio: -1h]."}]; saveLocalAttendance(attendanceRecords);');
+}
+
+test('la jornada se cierra automáticamente a las 18 y abona 9h netas', async () => {
+    const h=harness([2026,9,28,17,59,59]); seedScheduledShift(h);
+    await h.run('autoCheckoutActiveShifts()');
+    assert.equal(h.run('attendanceRecords[0].check_out'),null);
+    moveClock(h,18);
+    await h.run('autoCheckoutActiveShifts()');
+    assert.equal(h.run('attendanceRecords[0].check_out'),'18:00:00');
+    assert.equal(h.run('attendanceRecords[0].hours_credited'),9);
+    assert.equal(h.run('attendanceRecords[0].extra_minutes'),0);
+    assert.equal(h.el('btnPunchText').textContent,'Marcar Entrada Extra');
+});
+
+test('al volver tarde se cierra a las 18 sin abonar extras de la jornada normal', async () => {
+    const h=harness([2026,9,28,20,0,0]); seedScheduledShift(h);
+    h.run('updateWeeklyGoalProgress()');
+    assert.equal(h.el('weeklyGoalHoursText').textContent,'9.0 / 40.0 h');
+    assert.equal(h.el('metricExtraHours').textContent,'0:00');
+    await h.run('autoCheckoutActiveShifts()');
+    assert.equal(h.run('attendanceRecords[0].check_out'),'18:00:00');
+    assert.equal(h.run('attendanceRecords[0].extra_minutes'),0);
+});
+
+test('el botón vencido cierra primero y requiere una nueva entrada explícita para extras', async () => {
+    const h=harness([2026,9,28,17,59,0]); seedScheduledShift(h);
+    h.run('updatePunchButtonState()');
+    moveClock(h,18,10);
+    await h.run('handleAttendancePunch()');
+    assert.equal(h.run('attendanceRecords.length'),1);
+    assert.equal(h.el('btnPunchText').textContent,'Marcar Entrada Extra');
+    await h.run('handleAttendancePunch()');
+    assert.equal(h.run('attendanceRecords.length'),2);
+    assert.equal(h.run('attendanceRecords.find(r=>r.id!=="normal").check_in'),'18:10:00');
+    assert.equal(h.run('attendanceRecords.find(r=>r.id!=="normal").lunch'),false);
+    moveClock(h,18,20);
+    await h.run('autoCheckoutActiveShifts()');
+    h.run('updateWeeklyGoalProgress()');
+    assert.equal(h.run('attendanceRecords.find(r=>r.id!=="normal").check_out'),null);
+    assert.equal(h.el('metricExtraHours').textContent,'0:10');
+    moveClock(h,19);
+    await h.run('handleAttendancePunch()');
+    assert.equal(h.run('attendanceRecords.find(r=>r.id!=="normal").extra_minutes'),50);
+    assert.equal(h.run('attendanceRecords.find(r=>r.id!=="normal").hours_credited'),0.83);
+    assert.equal(h.el('metricExtraHours').textContent,'0:50');
+});
+
+test('primera entrada fuera del horario es extra y no genera tardanza', async () => {
+    const h=harness([2026,9,28,18,10,0]);
+    h.run('workerSchedules.Ana.miercoles.out="18:00"; attendanceRecords=[];');
+    await h.run('handleAttendancePunch()');
+    assert.equal(h.run('attendanceRecords[0].late_minutes'),0);
+    assert.equal(h.run('attendanceRecords[0].lunch'),false);
+    moveClock(h,19);
+    await h.run('handleAttendancePunch()');
+    assert.equal(h.run('attendanceRecords[0].extra_minutes'),50);
+    assert.equal(h.run('attendanceRecords[0].owed_minutes'),0);
+    moveClock(h,10,0,29);
+    assert.ok(h.run('getDetectedAbsences("2026-10").some(r=>r.date==="2026-10-28")'));
+});
+
+test('recuperación dentro del horario se cierra a las 18 y no descuenta otro refrigerio', async () => {
+    const h=harness([2026,9,28,17,45,0]);
+    h.run('workerSchedules.Ana.miercoles.out="18:00"; attendanceRecords=[{id:"normal",employee_name:"Ana",date:"2026-10-28",type:"Trabajo",check_in:"08:00:00",check_out:"17:30:00",lunch:true,hours_credited:8.5,owed_minutes:30}]; saveLocalAttendance(attendanceRecords); handleWorkerChange();');
+    h.el('employeeSelect').value='Ana'; h.run('handleWorkerChange()');
+    await h.run('handleAttendancePunch()');
+    moveClock(h,18);
+    await h.run('autoCheckoutActiveShifts()');
+    assert.equal(h.run('attendanceRecords.find(r=>r.id!=="normal").hours_credited'),0.25);
+    assert.equal(h.run('attendanceRecords.find(r=>r.id!=="normal").extra_minutes'),0);
+    assert.equal(h.run('attendanceRecords.find(r=>r.id!=="normal").owed_minutes'),0);
+});
+
+test('fallo remoto impide abrir extras sobre una jornada que no pudo cerrarse', async () => {
+    const h=harness([2026,9,28,18,10,0]); seedScheduledShift(h);
+    h.run('dbMode="supabase"; supabaseClient={from:()=>({update:()=>({eq:()=>({is:()=>({select:async()=>({error:{message:"denegado"}})})})})})};');
+    await h.run('handleAttendancePunch()');
+    assert.equal(h.run('attendanceRecords.length'),1);
+    assert.equal(h.run('attendanceRecords[0].check_out'),null);
+    assert.ok(h.alerts.some(message=>message.includes('No se pudo cerrar')));
+});
+
+test('al abrir al día siguiente se concilia la jornada olvidada a su salida programada', async () => {
+    const h=harness([2026,9,29,7,8,0]); seedScheduledShift(h);
+    await h.run('autoCheckoutActiveShifts()');
+    assert.equal(h.run('attendanceRecords[0].check_out'),'18:00:00');
+    assert.equal(h.run('attendanceRecords[0].hours_credited'),9);
+});
+
+test('autocierre remoto exige que la jornada siga abierta y respeta rechazos sin filas', async () => {
+    const h=harness([2026,9,28,18,10,0]); seedScheduledShift(h);
+    h.run('window.filters=[]; dbMode="supabase"; supabaseClient={from:()=>({update:()=>({eq:(...args)=>{window.filters.push(args);return {is:(...next)=>{window.filters.push(next);return {select:async()=>({data:[],error:null})};}};}})})};');
+    await h.run('autoCheckoutActiveShifts()');
+    assert.equal(h.run('attendanceRecords[0].check_out'),null);
+    assert.equal(h.run('JSON.stringify(window.filters)'),'[["id","normal"],["check_out",null]]');
+});
+
+test('extras anticipadas se calculan por minutos trabajados y no por adelanto potencial', () => {
+    const h=harness();
+    const result=h.run('calculateShiftAccounting({check_in:"07:00:00",lunch:false},"07:30:00",workerSchedules.Ana.miercoles)');
+    assert.equal(result.hours_credited,0.5);
+    assert.equal(result.extra_minutes,30);
+    assert.equal(result.owed_minutes,0);
+});
+
+test('un clic justo antes del límite no crea extras si el autocierre ocurre durante la espera', async () => {
+    const h=harness([2026,9,28,17,59,59]); seedScheduledShift(h);
+    h.run('const originalAutoCheckout=autoCheckoutActiveShifts; autoCheckoutActiveShifts=async(...args)=>{Date=class extends Date {constructor(...values){super(...(values.length?values:[2026,9,28,18,0,0]));}};return originalAutoCheckout(...args);};');
+    await h.run('handleAttendancePunch()');
+    assert.equal(h.run('attendanceRecords.length'),1);
+    assert.equal(h.run('attendanceRecords[0].check_out'),'18:00:00');
+    assert.equal(h.el('btnPunchText').textContent,'Marcar Entrada Extra');
+});
+
+test('un extra antes del inicio no elimina la tardanza de la primera entrada normal', async () => {
+    const h=harness([2026,9,28,8,15,0]);
+    h.run('workerSchedules.Ana.miercoles.out="18:00"; attendanceRecords=[{id:"temprano",employee_name:"Ana",date:"2026-10-28",type:"Trabajo",check_in:"07:00:00",check_out:"07:30:00",hours_credited:0.5,extra_minutes:30,lunch:false}]; saveLocalAttendance(attendanceRecords); handleWorkerChange();');
+    assert.ok(h.el('employeeStatusBox').innerHTML.includes('Tardanza detectada'));
+    await h.run('handleAttendancePunch()');
+    assert.equal(h.run('attendanceRecords.find(r=>r.id!=="temprano").late_minutes'),15);
 });
