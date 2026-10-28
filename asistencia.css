@@ -789,6 +789,14 @@ body {
     transition: width 0.5s ease-out;
 }
 
+.weekly-goal-help {
+    display: block;
+    margin-top: 8px;
+    font-size: 11px;
+    line-height: 1.4;
+    color: var(--text-muted);
+}
+
 /* 4 and 5 Distinct KPI Indicators */
 .metrics-grid-four {
     display: grid;
@@ -1557,7 +1565,8 @@ body {
         font-size: 40px;
     }
 
-    .metrics-grid-four {
+    .metrics-grid-four,
+    .metrics-grid-five {
         grid-template-columns: 1fr;
     }
 
@@ -1575,8 +1584,13 @@ body {
 
 /* Modal Dialog Daylight Overrides */
 .modal-backdrop {
+    visibility: hidden;
     background: rgba(131, 11, 66, 0.28) !important;
     backdrop-filter: blur(6px) !important;
+}
+
+.modal-backdrop.active {
+    visibility: visible;
 }
 
 .modal-card {

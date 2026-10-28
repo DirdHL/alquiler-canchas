@@ -59,6 +59,8 @@
                 </div>
             </header>
 
+            <main>
+
             <!-- Dashboard Layout Grid -->
             <div class="attendance-layout" id="attendanceLayout">
                 <!-- Left Column: Clock & Attendance Puncher -->
@@ -184,8 +186,10 @@
                                     h</span>
                             </div>
                             <div class="goal-progress-container">
-                                <div class="goal-progress-bar" id="goalProgressBar" style="width: 0%;"></div>
+                                <div class="goal-progress-bar" id="goalProgressBar" style="width: 0%;" role="progressbar"
+                                    aria-label="Avance de la meta semanal" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></div>
                             </div>
+                            <small id="weeklyGoalHelpText" class="weekly-goal-help" aria-live="polite">Horas confirmadas de esta semana, de lunes a domingo.</small>
                         </div>
 
                         <!-- 5 Distinct KPI Indicators with Required Colors -->
@@ -402,8 +406,8 @@
         <!-- ========================================================================= -->
         <!-- MODAL: WIZARD DE AGREGAR NUEVO TRABAJADOR (3 PASOS)                       -->
         <!-- ========================================================================= -->
-        <div class="modal-backdrop" id="modalAddWorkerWizard">
-            <div class="modal-card modal-wizard">
+        <div class="modal-backdrop" id="modalAddWorkerWizard" aria-hidden="true" inert>
+            <div class="modal-card modal-wizard" role="dialog" aria-modal="true" aria-labelledby="wizardModalTitle" tabindex="-1">
                 <!-- Modal Header -->
                 <div class="modal-header">
                     <div style="display: flex; align-items: center; gap: 8px;">
@@ -416,7 +420,7 @@
                                 Semanal</small>
                         </div>
                     </div>
-                    <button class="btn-close" id="btnCloseAddWorkerWizard" type="button"><i
+                    <button class="btn-close" aria-label="Cerrar diálogo" id="btnCloseAddWorkerWizard" type="button"><i
                             data-lucide="x"></i></button>
                 </div>
 
@@ -547,7 +551,7 @@
                                     <div class="time-range-group">
                                         <input type="time" class="time-in" value="08:00" min="06:00" max="23:00">
                                         <span class="to-sep">a</span>
-                                        <input type="time" class="time-out" value="16:30" min="06:00" max="23:00">
+                                        <input type="time" class="time-out" value="18:00" min="06:00" max="23:00">
                                     </div>
                                     <label class="lunch-cb-label">
                                         <input type="checkbox" class="lunch-cb" checked>
@@ -555,7 +559,7 @@
                                     </label>
                                 </div>
                                 <div class="day-calc-col">
-                                    <span class="day-calc-hours">7h 30m</span>
+                                    <span class="day-calc-hours">9h 00m</span>
                                 </div>
                             </div>
 
@@ -572,7 +576,7 @@
                                     <div class="time-range-group">
                                         <input type="time" class="time-in" value="08:00" min="06:00" max="23:00">
                                         <span class="to-sep">a</span>
-                                        <input type="time" class="time-out" value="16:30" min="06:00" max="23:00">
+                                        <input type="time" class="time-out" value="18:00" min="06:00" max="23:00">
                                     </div>
                                     <label class="lunch-cb-label">
                                         <input type="checkbox" class="lunch-cb" checked>
@@ -580,7 +584,7 @@
                                     </label>
                                 </div>
                                 <div class="day-calc-col">
-                                    <span class="day-calc-hours">7h 30m</span>
+                                    <span class="day-calc-hours">9h 00m</span>
                                 </div>
                             </div>
 
@@ -597,7 +601,7 @@
                                     <div class="time-range-group">
                                         <input type="time" class="time-in" value="08:00" min="06:00" max="23:00">
                                         <span class="to-sep">a</span>
-                                        <input type="time" class="time-out" value="16:30" min="06:00" max="23:00">
+                                        <input type="time" class="time-out" value="18:00" min="06:00" max="23:00">
                                     </div>
                                     <label class="lunch-cb-label">
                                         <input type="checkbox" class="lunch-cb" checked>
@@ -605,7 +609,7 @@
                                     </label>
                                 </div>
                                 <div class="day-calc-col">
-                                    <span class="day-calc-hours">7h 30m</span>
+                                    <span class="day-calc-hours">9h 00m</span>
                                 </div>
                             </div>
 
@@ -622,7 +626,7 @@
                                     <div class="time-range-group">
                                         <input type="time" class="time-in" value="08:00" min="06:00" max="23:00">
                                         <span class="to-sep">a</span>
-                                        <input type="time" class="time-out" value="16:30" min="06:00" max="23:00">
+                                        <input type="time" class="time-out" value="18:00" min="06:00" max="23:00">
                                     </div>
                                     <label class="lunch-cb-label">
                                         <input type="checkbox" class="lunch-cb" checked>
@@ -630,7 +634,7 @@
                                     </label>
                                 </div>
                                 <div class="day-calc-col">
-                                    <span class="day-calc-hours">7h 30m</span>
+                                    <span class="day-calc-hours">9h 00m</span>
                                 </div>
                             </div>
 
@@ -647,7 +651,7 @@
                                     <div class="time-range-group">
                                         <input type="time" class="time-in" value="08:00" min="06:00" max="23:00">
                                         <span class="to-sep">a</span>
-                                        <input type="time" class="time-out" value="16:30" min="06:00" max="23:00">
+                                        <input type="time" class="time-out" value="18:00" min="06:00" max="23:00">
                                     </div>
                                     <label class="lunch-cb-label">
                                         <input type="checkbox" class="lunch-cb" checked>
@@ -655,7 +659,7 @@
                                     </label>
                                 </div>
                                 <div class="day-calc-col">
-                                    <span class="day-calc-hours">7h 30m</span>
+                                    <span class="day-calc-hours">9h 00m</span>
                                 </div>
                             </div>
 
@@ -672,7 +676,7 @@
                                     <div class="time-range-group">
                                         <input type="time" class="time-in" value="08:00" min="06:00" max="23:00">
                                         <span class="to-sep">a</span>
-                                        <input type="time" class="time-out" value="16:30" min="06:00" max="23:00">
+                                        <input type="time" class="time-out" value="18:00" min="06:00" max="23:00">
                                     </div>
                                     <label class="lunch-cb-label">
                                         <input type="checkbox" class="lunch-cb" checked>
@@ -680,7 +684,7 @@
                                     </label>
                                 </div>
                                 <div class="day-calc-col">
-                                    <span class="day-calc-hours">7h 30m</span>
+                                    <span class="day-calc-hours">9h 00m</span>
                                 </div>
                             </div>
                         </div>
@@ -692,7 +696,7 @@
                                 <small style="display: block; color: var(--text-muted); font-size: 11.5px;">Meta que el
                                     trabajador cumplirá cada semana</small>
                             </div>
-                            <div class="total-weekly-val" id="wizardTotalWeeklyHours">45h 00m</div>
+                            <div class="total-weekly-val" id="wizardTotalWeeklyHours">54h 00m</div>
                         </div>
 
                         <div class="modal-actions" style="margin-top: 18px; display: flex; gap: 10px;">
@@ -712,7 +716,7 @@
                             con Éxito!</h3>
                         <p style="font-size: 13.5px; color: var(--text-secondary); line-height: 1.4; margin-bottom: 20px;"
                             id="wizardSuccessMsg">
-                            El colaborador y su horario de 45.0 horas semanales han sido guardados correctamente.
+                            El colaborador y su horario de 54.0 horas semanales han sido guardados correctamente.
                         </p>
                         <button type="button" class="btn btn-primary" id="btnWizardFinish"
                             style="width: 100%; max-width: 250px; margin: 0 auto;">
@@ -726,14 +730,14 @@
         <!-- ========================================================================= -->
         <!-- MODAL: REGISTRAR FERIADO / PERMISO ESPECIAL (MORADO)                      -->
         <!-- ========================================================================= -->
-        <div class="modal-backdrop" id="modalAdminRegister">
-            <div class="modal-card modal-sm" style="max-width: 440px;">
+        <div class="modal-backdrop" id="modalAdminRegister" aria-hidden="true" inert>
+            <div class="modal-card modal-sm" style="max-width: 440px;" role="dialog" aria-modal="true" aria-labelledby="adminRegisterModalTitle" tabindex="-1">
                 <div class="modal-header">
-                    <h3 style="display: flex; align-items: center; gap: 8px; margin: 0; color: #7e22ce;">
+                    <h3 id="adminRegisterModalTitle" style="display: flex; align-items: center; gap: 8px; margin: 0; color: #7e22ce;">
                         <i data-lucide="gift" style="color: #a855f7;"></i>
                         Registrar Feriado / Permiso
                     </h3>
-                    <button class="btn-close" id="btnCloseAdminRegister" type="button"><i data-lucide="x"></i></button>
+                    <button class="btn-close" aria-label="Cerrar diálogo" id="btnCloseAdminRegister" type="button"><i data-lucide="x"></i></button>
                 </div>
                 <div class="modal-body">
                     <form id="formAdminRegister">
@@ -813,15 +817,15 @@
         <!-- ========================================================================= -->
         <!-- MODAL: REGULARIZAR MARCACIÓN OLVIDADA                                     -->
         <!-- ========================================================================= -->
-        <div class="modal-backdrop" id="modalManualPunch">
-            <div class="modal-card modal-sm" style="max-width: 440px;">
+        <div class="modal-backdrop" id="modalManualPunch" aria-hidden="true" inert>
+            <div class="modal-card modal-sm" style="max-width: 440px;" role="dialog" aria-modal="true" aria-labelledby="manualPunchModalTitle" tabindex="-1">
                 <div class="modal-header">
-                    <h3
+                    <h3 id="manualPunchModalTitle"
                         style="display: flex; align-items: center; gap: 8px; margin: 0; color: var(--primary); font-size: 17px;">
                         <i data-lucide="clock"></i>
                         Regularizar Marcación de Asistencia
                     </h3>
-                    <button class="btn-close" id="btnCloseManualPunch" type="button"><i data-lucide="x"></i></button>
+                    <button class="btn-close" aria-label="Cerrar diálogo" id="btnCloseManualPunch" type="button"><i data-lucide="x"></i></button>
                 </div>
                 <div class="modal-body">
                     <form id="formManualPunch">
@@ -890,8 +894,8 @@
         <!-- ========================================================================= -->
         <!-- MODAL: ELIMINAR / EDITAR CONFIRMACIÓN SIMPLE                             -->
         <!-- ========================================================================= -->
-        <div class="modal-backdrop" id="modalConfirmAction">
-            <div class="modal-card modal-sm" style="max-width: 380px; text-align: center;">
+        <div class="modal-backdrop" id="modalConfirmAction" aria-hidden="true" inert>
+            <div class="modal-card modal-sm" style="max-width: 380px; text-align: center;" role="dialog" aria-modal="true" aria-labelledby="confirmModalTitle" aria-describedby="confirmModalText" tabindex="-1">
                 <div style="font-size: 40px; margin-bottom: 8px;" id="confirmModalIcon">⚠️</div>
                 <h3 style="margin-bottom: 8px; color: var(--text-primary); font-size: 17px;" id="confirmModalTitle">
                     ¿Estás seguro?</h3>
@@ -909,14 +913,14 @@
         <!-- ========================================================================= -->
         <!-- MODAL: REDUCIR DEUDA                                                      -->
         <!-- ========================================================================= -->
-        <div class="modal-backdrop" id="modalReduceDebt">
-            <div class="modal-card modal-sm" style="max-width: 440px;">
+        <div class="modal-backdrop" id="modalReduceDebt" aria-hidden="true" inert>
+            <div class="modal-card modal-sm" style="max-width: 440px;" role="dialog" aria-modal="true" aria-labelledby="reduceDebtModalTitle" tabindex="-1">
                 <div class="modal-header">
-                    <h3 style="display: flex; align-items: center; gap: 8px; margin: 0; color: #f59e0b; font-size: 17px;">
+                    <h3 id="reduceDebtModalTitle" style="display: flex; align-items: center; gap: 8px; margin: 0; color: #f59e0b; font-size: 17px;">
                         <i data-lucide="minus-circle"></i>
                         Reducir Horas Debidas
                     </h3>
-                    <button class="btn-close" id="btnCloseReduceDebt" type="button"><i data-lucide="x"></i></button>
+                    <button class="btn-close" aria-label="Cerrar diálogo" id="btnCloseReduceDebt" type="button"><i data-lucide="x"></i></button>
                 </div>
                 <div class="modal-body">
                     <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 15px;">
@@ -957,6 +961,8 @@
                 </div>
             </div>
         </div>
+
+    </div>
 
         <!-- Main Javascript Logic -->
         <script src="asistencia.js"></script>

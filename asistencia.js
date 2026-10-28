@@ -13,6 +13,9 @@ let workerSchedules = {}; // { 'Rogger': { lunes: { active: true, in: '08:00', o
 let attendanceRecords = []; // All attendance records loaded
 let selectedWorker = null; // Currently selected worker object
 let isPunchInProgress = false;
+let isAutoCheckoutInProgress = false;
+let lastAttendanceMinute = '';
+let automaticCheckoutRepairPromise = null;
 
 const ADMIN_PASSWORD = "Reservasupabase";
 
@@ -179,115 +182,101 @@ function updateLiveClock() {
         liveDateEl.textContent = dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
     }
 
-    // Refresh live worker status board periodically (every 30s)
-    if (now.getSeconds() === 0 || now.getSeconds() === 30) {
+    const minuteKey = `${now.getFullYear()}-${now.getMonth()}-${now.getDate()} ${hours}:${minutes}`;
+    if (minuteKey !== lastAttendanceMinute) {
+        lastAttendanceMinute = minuteKey;
         renderTeamLiveStatus();
-    }
-
-    // Auto-checkout check every minute
-    if (now.getSeconds() === 0) {
+        if (selectedWorker) {
+            const activeShift = attendanceRecords.find(r =>
+                r.employee_name === selectedWorker.name && r.date === getTodayDateString() && r.check_in && !r.check_out
+            );
+            if (activeShift) updateShiftDurationTimer(activeShift.check_in);
+        }
+        updateWeeklyGoalProgress(now);
         autoCheckoutActiveShifts();
+    } else if (now.getSeconds() === 30) {
+        renderTeamLiveStatus();
     }
 }
 
 async function autoCheckoutActiveShifts() {
-    if (!attendanceRecords || attendanceRecords.length === 0) return;
-    
-    const now = new Date();
-    const currentMinutes = (now.getHours() * 60) + now.getMinutes();
-    const todayStr = getTodayDateString();
-
-    const activeShifts = attendanceRecords.filter(r => r.check_in && !r.check_out);
+    if (isAutoCheckoutInProgress || isPunchInProgress || !attendanceRecords.length) return;
+    isAutoCheckoutInProgress = true;
     let hasUpdates = false;
 
-    for (const shift of activeShifts) {
-        const workerName = shift.employee_name;
-        const schedule = workerSchedules[workerName] || {};
-        
-        let shiftDayKey = DAYS_ES[now.getDay()];
-        if (shift.date !== todayStr) {
-            const shiftDateObj = new Date(shift.date + 'T12:00:00');
-            if (!isNaN(shiftDateObj.getDay())) {
-                 shiftDayKey = DAYS_ES[shiftDateObj.getDay()];
-            }
-        }
-        
-        const shiftSchedule = schedule[shiftDayKey];
-        if (!shiftSchedule || !shiftSchedule.active) continue;
+    try {
+        const todayStr = getTodayDateString();
+        // Keep today's shifts open so the actual checkout can include overtime.
+        const pendingShifts = attendanceRecords.filter(r =>
+            r.date < todayStr && r.check_in && !r.check_out
+        );
 
-        const scheduledOutMinutes = timeStringToMinutes(shiftSchedule.out);
-        
-        let shouldClose = false;
-        if (shift.date === todayStr) {
-            if (currentMinutes >= scheduledOutMinutes) {
-                shouldClose = true;
-            }
-        } else {
-            shouldClose = true;
-        }
+        for (const shift of pendingShifts) {
+            const shiftDate = new Date(shift.date + 'T12:00:00');
+            const shiftSchedule = workerSchedules[shift.employee_name]?.[DAYS_ES[shiftDate.getDay()]];
+            if (!shiftSchedule?.active || !shiftSchedule.out) continue;
 
-        if (shouldClose) {
+            const checkoutTimeStr = shiftSchedule.out.substring(0, 5) + ':00';
             const checkInMinutes = timeStringToMinutes(shift.check_in);
-            
-            const checkoutTimeStr = (shift.date === todayStr && currentMinutes >= scheduledOutMinutes) 
-                                     ? shiftSchedule.out + ":00" 
-                                     : `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:00`;
-            
             const finalOutMinutes = timeStringToMinutes(checkoutTimeStr);
-            const grossShiftMinutes = Math.max(0, finalOutMinutes - checkInMinutes);
+            // An extra shift starting after the scheduled exit needs manual regularization.
+            if (finalOutMinutes <= checkInMinutes) continue;
 
-            const tookLunch = (shift.lunch !== undefined)
+            const tookLunch = shift.lunch !== undefined
                 ? Boolean(shift.lunch)
-                : (shift.notes && shift.notes.includes('Sin refrigerio') ? false : true);
-            const lunchDeductionMinutes = tookLunch ? 60 : 0;
-            const netShiftMinutes = Math.max(0, grossShiftMinutes - lunchDeductionMinutes);
-
-            let notes = `${shift.notes ? shift.notes + ' | ' : ''}Salida automática del sistema a las ${formatTimeTo12H(checkoutTimeStr.substring(0, 5))}.`;
-            if (tookLunch) {
-                notes += ' Refrigerio descontado (-1h).';
-            } else {
-                notes += ' Jornada corrida.';
-            }
-
+                : !shift.notes?.includes('Sin refrigerio');
+            const netShiftMinutes = Math.max(0, finalOutMinutes - checkInMinutes - (tookLunch ? 60 : 0));
             const updatedShift = {
                 ...shift,
                 check_out: checkoutTimeStr,
                 hours_credited: Number((netShiftMinutes / 60).toFixed(2)),
                 late_minutes: shift.late_minutes || 0,
-                extra_minutes: 0,
+                extra_minutes: shift.extra_minutes || 0,
                 owed_minutes: 0,
                 lunch: tookLunch,
-                notes: notes
+                notes: `${shift.notes ? shift.notes + ' | ' : ''}Salida automática a la hora programada (${formatTimeTo12H(checkoutTimeStr)}). ${tookLunch ? 'Refrigerio descontado (-1h).' : 'Jornada corrida.'}`
             };
 
-            if (dbMode === 'supabase' && typeof supabaseClient !== 'undefined' && supabaseClient) {
-                await supabaseClient
-                    .from('asistencias_v2')
-                    .update({
-                        check_out: updatedShift.check_out,
-                        hours_credited: updatedShift.hours_credited,
-                        late_minutes: updatedShift.late_minutes,
-                        extra_minutes: updatedShift.extra_minutes,
-                        owed_minutes: updatedShift.owed_minutes,
-                        notes: updatedShift.notes
-                    })
-                    .eq('id', shift.id);
-            } else {
-                let localList = getLocalAttendance();
-                localList = localList.map(r => r.id === shift.id ? updatedShift : r);
-                saveLocalAttendance(localList);
+            try {
+                if (dbMode === 'supabase' && supabaseClient) {
+                    const { error } = await supabaseClient
+                        .from('asistencias_v2')
+                        .update({
+                            check_out: updatedShift.check_out,
+                            hours_credited: updatedShift.hours_credited,
+                            late_minutes: updatedShift.late_minutes,
+                            extra_minutes: updatedShift.extra_minutes,
+                            owed_minutes: updatedShift.owed_minutes,
+                            notes: updatedShift.notes
+                        })
+                        .eq('id', shift.id);
+                    if (error) throw error;
+                } else {
+                    const localList = getLocalAttendance().map(r => r.id === shift.id ? updatedShift : r);
+                    saveLocalAttendance(localList);
+                }
+                Object.assign(shift, updatedShift);
+                hasUpdates = true;
+            } catch (error) {
+                console.warn('No se pudo cerrar el turno pendiente:', error);
             }
-            
-            Object.assign(shift, updatedShift);
-            hasUpdates = true;
         }
+
+        if (hasUpdates) {
+            renderTeamLiveStatus();
+            updatePunchButtonState();
+            renderAttendanceTable();
+            updateWorkerStats();
+        }
+    } finally {
+        isAutoCheckoutInProgress = false;
     }
-    
-    if (hasUpdates) {
-        if (typeof renderTeamLiveStatus === 'function') renderTeamLiveStatus();
-        if (typeof updatePunchButtonState === 'function') updatePunchButtonState();
-        if (typeof renderAttendanceTable === 'function') renderAttendanceTable();
-    }
+}
+
+function getRecordLunchChoice(record) {
+    return typeof record.lunch === 'boolean'
+        ? record.lunch
+        : !/sin refrigerio/i.test(record.notes || '');
 }
 
 function timeStringToMinutes(timeStr) {
@@ -408,6 +397,7 @@ function setupRealtimeSubscription() {
 async function loadAllData() {
     await loadWorkersAndSchedules();
     await loadAttendanceRecords();
+    await autoCheckoutActiveShifts();
 }
 
 async function loadWorkersAndSchedules() {
@@ -428,7 +418,8 @@ async function loadWorkersAndSchedules() {
                 activeWorkers = workerData.map(w => ({
                     name: w.name,
                     emoji: extractEmojiFromName(w.name) || w.emoji || '🌸',
-                    is_active: w.is_active
+                    is_active: w.is_active,
+                    created_at: typeof w.created_at === 'string' ? w.created_at.slice(0, 10) : undefined
                 }));
             }
 
@@ -500,7 +491,7 @@ async function loadAttendanceRecords() {
             if (!error && data) {
                 attendanceRecords = data.map(r => ({
                     ...r,
-                    lunch: r.lunch !== undefined ? r.lunch : !r.notes?.includes('Sin refrigerio')
+                    lunch: getRecordLunchChoice(r)
                 }));
             } else {
                 attendanceRecords = getLocalAttendance();
@@ -512,11 +503,83 @@ async function loadAttendanceRecords() {
         attendanceRecords = getLocalAttendance();
     }
 
+    await repairInvalidAutomaticCheckouts();
     populateMonthFilter();
     renderAttendanceTable();
     updateWorkerStats();
     updatePunchButtonState();
     renderTeamLiveStatus();
+}
+
+function isInvalidAutomaticCheckout(record) {
+    return record.type === 'Trabajo' && record.check_in && record.check_out &&
+        /Salida autom[aá]tica del sistema a las/i.test(record.notes || '') &&
+        Number(record.hours_credited || 0) === 0 &&
+        timeStringToMinutes(record.check_out) < timeStringToMinutes(record.check_in);
+}
+
+function getAutomaticCheckoutCorrection(record) {
+    if (!record.id || !isInvalidAutomaticCheckout(record) || record.date >= getTodayDateString()) return null;
+    const date = new Date(record.date + 'T12:00:00');
+    const schedule = workerSchedules[record.employee_name]?.[DAYS_ES[date.getDay()]];
+    if (!schedule?.active || !schedule.out) return null;
+
+    const checkOut = schedule.out.substring(0, 5) + ':00';
+    const grossMinutes = timeStringToMinutes(checkOut) - timeStringToMinutes(record.check_in);
+    if (grossMinutes <= 0) return null;
+    const tookLunch = getRecordLunchChoice(record);
+    const netMinutes = Math.max(0, grossMinutes - (tookLunch ? 60 : 0));
+    return {
+        check_out: checkOut,
+        hours_credited: Number((netMinutes / 60).toFixed(2)),
+        late_minutes: Number(record.late_minutes) || 0,
+        extra_minutes: Number(record.extra_minutes) || 0,
+        owed_minutes: 0,
+        notes: `${record.notes || ''} | Corrección de cierre automático inválido: salida anterior ${record.check_out}; recalculada a ${checkOut} según horario programado. ${tookLunch ? 'Refrigerio descontado (-1h).' : 'Sin descuento de refrigerio.'}`
+    };
+}
+
+async function repairInvalidAutomaticCheckouts() {
+    if (automaticCheckoutRepairPromise) return automaticCheckoutRepairPromise;
+    automaticCheckoutRepairPromise = (async () => {
+        const corrections = attendanceRecords.map(record => ({
+            record, update: getAutomaticCheckoutCorrection(record)
+        })).filter(item => item.update);
+        if (!corrections.length) return;
+
+        if (dbMode === 'supabase' && supabaseClient) {
+            for (const { record, update } of corrections) {
+                try {
+                    const { data, error } = await supabaseClient.from('asistencias_v2')
+                        .update(update).eq('id', record.id).eq('check_out', record.check_out).select('id');
+                    if (error) throw error;
+                    if (!data?.length) continue;
+                    attendanceRecords = attendanceRecords.map(current =>
+                        current.id === record.id && current.check_out === record.check_out
+                            ? { ...current, ...update } : current
+                    );
+                } catch (error) {
+                    console.warn('No se pudo corregir el cierre automático:', error);
+                }
+            }
+        } else {
+            const updates = new Map(corrections.map(({ record, update }) => [record.id, update]));
+            const repaired = attendanceRecords.map(record =>
+                updates.has(record.id) ? { ...record, ...updates.get(record.id) } : record
+            );
+            try {
+                saveLocalAttendance(repaired);
+                attendanceRecords = repaired;
+            } catch (error) {
+                console.warn('No se pudieron guardar los cierres corregidos:', error);
+            }
+        }
+    })();
+    try {
+        await automaticCheckoutRepairPromise;
+    } finally {
+        automaticCheckoutRepairPromise = null;
+    }
 }
 
 function getLocalAttendance() {
@@ -526,7 +589,7 @@ function getLocalAttendance() {
         const list = JSON.parse(saved);
         return list.map(r => ({
             ...r,
-            lunch: r.lunch !== undefined ? r.lunch : !r.notes?.includes('Sin refrigerio')
+            lunch: getRecordLunchChoice(r)
         }));
     } catch (e) {
         return [];
@@ -657,8 +720,8 @@ function renderTeamLiveStatus() {
         chip.innerHTML = `
             <span class="status-dot-indicator"></span>
             <div class="worker-chip-info">
-                <span class="worker-chip-name">${worker.emoji || '👤'} ${worker.name}</span>
-                <span class="worker-chip-state">${stateText}</span>
+                <span class="worker-chip-name">${escapeAttendanceHtml(worker.emoji || '👤')} ${escapeAttendanceHtml(worker.name)}</span>
+                <span class="worker-chip-state">${escapeAttendanceHtml(stateText)}</span>
             </div>
         `;
 
@@ -805,7 +868,7 @@ function evaluateCheckInTiming() {
     const hasCompletedShiftToday = attendanceRecords.some(r =>
         r.employee_name === selectedWorker.name &&
         r.date === todayStr &&
-        r.check_out !== null
+        r.check_in && Boolean(r.check_out)
     );
 
     if (hasCompletedShiftToday) {
@@ -973,7 +1036,7 @@ async function handleAttendancePunch() {
             const hasCompletedShiftToday = attendanceRecords.some(r =>
                 r.employee_name === selectedWorker.name &&
                 r.date === todayStr &&
-                r.check_out !== null
+                r.check_in && Boolean(r.check_out)
             );
 
             if (hasCompletedShiftToday) {
@@ -1058,6 +1121,59 @@ async function handleAttendancePunch() {
 // ==========================================================================
 
 // Detect missing scheduled workdays in the past for workers
+function escapeAttendanceHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, char => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    })[char]);
+}
+
+function populateWeekFilter() {
+    if (!filterWeek) return;
+    const previousValue = filterWeek.value;
+    const selectedMonth = filterMonth.value || getTodayDateString().slice(0, 7);
+    const [year, month] = selectedMonth.split('-').map(Number);
+    const daysInMonth = new Date(year, month, 0).getDate();
+    filterWeek.innerHTML = '';
+
+    const allWeeks = document.createElement('option');
+    allWeeks.value = 'todas';
+    allWeeks.textContent = 'Todas las semanas';
+    filterWeek.appendChild(allWeeks);
+    const validValues = ['todas'];
+    for (let week = 1; week <= Math.ceil(daysInMonth / 7); week++) {
+        const firstDay = (week - 1) * 7 + 1;
+        const lastDay = Math.min(week * 7, daysInMonth);
+        const option = document.createElement('option');
+        option.value = String(week);
+        option.textContent = `Semana ${week} (${firstDay}-${lastDay})`;
+        validValues.push(option.value);
+        filterWeek.appendChild(option);
+    }
+    filterWeek.value = validValues.includes(previousValue) ? previousValue : 'todas';
+}
+
+function getFilteredAttendanceRecords() {
+    const selEmp = filterEmployee.value;
+    const selMonth = filterMonth.value;
+    const selWeek = filterWeek.value;
+    const selType = filterType.value;
+    return getCombinedAttendanceRecords(selMonth).filter(record => {
+        if (selEmp !== 'todos' && record.employee_name !== selEmp) return false;
+        if (selMonth && record.date && !record.date.startsWith(selMonth)) return false;
+        if (selType === 'Tardanza') {
+            if (!(Number(record.late_minutes) > 0)) return false;
+        } else if (selType === 'Extra') {
+            if (!(Number(record.extra_minutes) > 0)) return false;
+        } else if (selType && selType !== 'todos' && record.type !== selType) {
+            return false;
+        }
+        if (selWeek !== 'todas' && record.date) {
+            if (String(Math.ceil(Number(record.date.split('-')[2]) / 7)) !== selWeek) return false;
+        }
+        return true;
+    });
+}
+
 function getDetectedAbsences(forMonth = null, workerName = null) {
     const absences = [];
     const now = new Date();
@@ -1115,7 +1231,7 @@ function getDetectedAbsences(forMonth = null, workerName = null) {
             // If scheduled to work on this day
             if (daySched && daySched.active) {
                 // Check if worker already has ANY attendance record (Trabajo, Feriado, Permiso, Falta manual)
-                const hasRecord = attendanceRecords.some(r => r.employee_name === worker.name && r.date === dateStr);
+                const hasRecord = attendanceRecords.some(r => r.employee_name === worker.name && r.date === dateStr && r.type !== 'Ajuste');
                 if (!hasRecord) {
                     let netMins = daySched.netMinutes;
                     if (netMins === undefined || netMins === null || netMins === 0) {
@@ -1162,6 +1278,86 @@ function getCombinedAttendanceRecords(month = null) {
     });
 }
 
+function calculateWeeklyGoal(worker, schedule, records, now = new Date()) {
+    const monday = new Date(now);
+    monday.setDate(now.getDate() - (now.getDay() === 0 ? 6 : now.getDay() - 1));
+    monday.setHours(0, 0, 0, 0);
+    const nextMonday = new Date(monday);
+    nextMonday.setDate(monday.getDate() + 7);
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+    let targetHours = schedule.weeklyTarget == null ? 48 : Number(schedule.weeklyTarget);
+    if (!Number.isFinite(targetHours) || targetHours < 0) targetHours = 48;
+    const createdAt = worker.created_at || schedule.created_at;
+    const created = createdAt ? new Date(String(createdAt).slice(0, 10) + 'T00:00:00') : null;
+    if (created && created >= monday && created <= now) {
+        let targetMinutes = 0;
+        for (let day = 0; day < 7; day++) {
+            const date = new Date(monday);
+            date.setDate(monday.getDate() + day);
+            const daySchedule = schedule[DAYS_ES[date.getDay()]];
+            if (date < created || !daySchedule?.active) continue;
+            const storedNetMinutes = Number(daySchedule.netMinutes);
+            targetMinutes += daySchedule.netMinutes != null && Number.isFinite(storedNetMinutes)
+                ? Math.max(0, storedNetMinutes)
+                : Math.max(0, timeStringToMinutes(daySchedule.out) - timeStringToMinutes(daySchedule.in) - (daySchedule.lunch ? 60 : 0));
+        }
+        targetHours = targetMinutes / 60;
+    }
+
+    let confirmedMinutes = 0;
+    let liveMinutes = 0;
+    let lunchPending = false;
+    let invalidClosures = 0;
+    for (const record of records) {
+        if (record.employee_name !== worker.name || !record.date || record.date > today) continue;
+        const date = new Date(record.date + 'T00:00:00');
+        if (!(date >= monday && date < nextMonday)) continue;
+        if (isInvalidAutomaticCheckout(record)) invalidClosures++;
+        if (record.type === 'Falta' || record.type === 'Ajuste') continue;
+
+        if (record.type === 'Trabajo' && record.date === today && record.check_in && !record.check_out) {
+            const elapsed = Math.max(0, now.getHours() * 60 + now.getMinutes() - timeStringToMinutes(record.check_in));
+            liveMinutes += elapsed;
+            if (elapsed > 0 && getRecordLunchChoice(record)) {
+                lunchPending = true;
+            }
+        } else {
+            const creditedHours = Number(record.hours_credited);
+            if (Number.isFinite(creditedHours) && creditedHours > 0) confirmedMinutes += creditedHours * 60;
+        }
+    }
+    return { targetHours, confirmedMinutes, liveMinutes, lunchPending, invalidClosures };
+}
+
+function updateWeeklyGoalProgress(now = new Date()) {
+    const help = document.getElementById('weeklyGoalHelpText');
+    if (!selectedWorker) {
+        progressPercentageText.textContent = '0%';
+        weeklyGoalHoursText.textContent = '0.0 / 48.0 h';
+        goalProgressBar.style.width = '0%';
+        goalProgressBar.setAttribute('aria-valuenow', '0');
+        if (help) help.textContent = 'Selecciona un colaborador para ver su avance de esta semana.';
+        return;
+    }
+    const state = calculateWeeklyGoal(selectedWorker, workerSchedules[selectedWorker.name] || {}, attendanceRecords, now);
+    const hours = (state.confirmedMinutes + state.liveMinutes) / 60;
+    const percent = state.targetHours > 0 ? Math.min(100, hours / state.targetHours * 100) : 0;
+    lblSelectedWorkerMeta.textContent = `Meta semanal fijada: ${state.targetHours.toFixed(1)} horas`;
+    progressPercentageText.textContent = `${Math.round(percent)}%`;
+    weeklyGoalHoursText.textContent = `${hours.toFixed(1)} / ${state.targetHours.toFixed(1)} h`;
+    goalProgressBar.style.width = `${percent.toFixed(2)}%`;
+    goalProgressBar.setAttribute('aria-valuenow', String(Math.round(percent)));
+    if (help) {
+        help.textContent = state.liveMinutes > 0
+            ? `Incluye ${minutesToHoursMinutes(state.liveMinutes)} en curso${state.lunchPending ? '; el refrigerio se descontará al cerrar' : ''}.`
+            : 'Horas confirmadas de esta semana, de lunes a domingo.';
+        if (state.invalidClosures > 0) {
+            help.textContent += ` Hay ${state.invalidClosures} cierre(s) automático(s) pendiente(s) de corregir.`;
+        }
+    }
+}
+
 function updateWorkerStats() {
     if (!selectedWorker) {
         progressEmployeeTitle.innerHTML = '<span>⭐ Resumen del Trabajador</span>';
@@ -1177,6 +1373,7 @@ function updateWorkerStats() {
         metricExtraHours.textContent = '0:00';
         metricJustifiedHours.textContent = '0:00 h';
         if (workerAbsencesCard) workerAbsencesCard.style.display = 'none';
+        updateWeeklyGoalProgress();
         return;
     }
 
@@ -1188,46 +1385,12 @@ function updateWorkerStats() {
     const currentMonth = now.getMonth();
     const currentMonthStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
 
-    // Calculate current Monday of the week
-    const dayOfWeek = now.getDay() === 0 ? 6 : now.getDay() - 1; // 0=Monday, 6=Sunday
-    const mondayDate = new Date(now);
-    mondayDate.setDate(now.getDate() - dayOfWeek);
-    mondayDate.setHours(0, 0, 0, 0);
-
-    // Dynamic Weekly Target Logic
-    let weeklyTarget = schedule.weeklyTarget || 48.0;
-    const workerCreatedAt = selectedWorker.created_at || schedule.created_at;
-    
-    if (workerCreatedAt) {
-        const createdDate = new Date(workerCreatedAt + 'T00:00:00');
-        // If worker was created this exact week, we adjust their goal to start from creation date
-        if (createdDate >= mondayDate && createdDate <= now) {
-            let dynamicTargetMinutes = 0;
-            // Iterate from Monday to Sunday of the current week
-            for (let i = 0; i < 7; i++) {
-                const iterDate = new Date(mondayDate);
-                iterDate.setDate(mondayDate.getDate() + i);
-                
-                // Only count days from their start date onwards
-                if (iterDate >= createdDate) {
-                    const dayName = DAYS_ES[i];
-                    if (schedule[dayName] && schedule[dayName].active) {
-                        dynamicTargetMinutes += (schedule[dayName].netMinutes || 0);
-                    }
-                }
-            }
-            weeklyTarget = Number((dynamicTargetMinutes / 60).toFixed(1));
-        }
-    }
-
-    progressEmployeeTitle.innerHTML = `<span>${selectedWorker.emoji} Resumen: ${selectedWorker.name}</span>`;
-    lblSelectedWorkerMeta.textContent = `Meta semanal fijada: ${weeklyTarget.toFixed(1)} horas`;
+    progressEmployeeTitle.innerHTML = `<span>${escapeAttendanceHtml(selectedWorker.emoji)} Resumen: ${escapeAttendanceHtml(selectedWorker.name)}</span>`;
 
     // Fetch combined records (actual records + detected unfulfilled scheduled days)
     const combinedMonthRecords = getCombinedAttendanceRecords(currentMonthStr);
     const workerRecords = combinedMonthRecords.filter(r => r.employee_name === selectedWorker.name);
 
-    let weeklyCreditedHours = 0;
     let totalWorkedMinutes = 0;
     let totalLateMinutes = 0;
     let totalEarlyLeaveMinutes = 0;
@@ -1257,20 +1420,12 @@ function updateWorkerStats() {
             totalExtraMinutes += (r.extra_minutes || 0);
         }
 
-        // Check if record is within current week
-        if (recordDate >= mondayDate) {
-            weeklyCreditedHours += (r.hours_credited || 0);
-        }
     });
 
     // Horas Debidas Total = Tardanzas acumuladas + Faltas/Ausencias + Salidas antes de hora
     const totalOwedMinutes = totalLateMinutes + totalAbsenceMinutes + totalEarlyLeaveMinutes;
 
-    // Update Progress Bar
-    const progressPct = weeklyTarget > 0 ? Math.min(100, Math.round((weeklyCreditedHours / weeklyTarget) * 100)) : 0;
-    progressPercentageText.textContent = `${progressPct}%`;
-    weeklyGoalHoursText.textContent = `${weeklyCreditedHours.toFixed(1)} / ${weeklyTarget.toFixed(1)} h`;
-    goalProgressBar.style.width = `${progressPct}%`;
+    updateWeeklyGoalProgress(now);
 
     // 5 KPI Cards
     metricWorkedHours.textContent = minutesToColonFormat(totalWorkedMinutes);
@@ -1328,18 +1483,24 @@ function updateWorkerStats() {
                         <span class="badge-absence-hours">🚨 ${minutesToHoursMinutes(abs.owed_minutes)} falta / ausencia</span>
                     </div>
                     <div class="absence-item-details">
-                        <div>⏰ <strong>Horario programado:</strong> ${formatTimeTo12H(abs.scheduled_in || '08:00')} a ${formatTimeTo12H(abs.scheduled_out || '16:30')} (${abs.scheduled_lunch ? 'Con refrigerio' : 'Sin refrigerio'})</div>
+                        <div>⏰ <strong>Horario programado:</strong> ${escapeAttendanceHtml(formatTimeTo12H(abs.scheduled_in || '08:00'))} a ${escapeAttendanceHtml(formatTimeTo12H(abs.scheduled_out || '16:30'))} (${abs.scheduled_lunch ? 'Con refrigerio' : 'Sin refrigerio'})</div>
                         <div style="margin-top: 3px; color: #b91c1c; font-weight: 600;">🔴 No marcó asistencia (horas debidas acumuladas).</div>
                     </div>
                     <div class="absence-item-actions">
-                        <button type="button" class="btn btn-secondary btn-action-justify" onclick="quickJustifyAbsence('${abs.employee_name}', '${abs.date}', ${abs.owed_minutes})">
+                        <button type="button" class="btn btn-secondary btn-action-justify" data-action="justify">
                             <i data-lucide="gift" style="width: 13px; height: 13px; vertical-align: middle;"></i> Justificar Permiso
                         </button>
-                        <button type="button" class="btn btn-secondary btn-action-regularize" onclick="quickRegularizePunch('${abs.employee_name}', '${abs.date}', '${abs.scheduled_in || '08:00'}', '${abs.scheduled_out || '16:30'}', ${abs.scheduled_lunch !== false})">
+                        <button type="button" class="btn btn-secondary btn-action-regularize" data-action="regularize">
                             <i data-lucide="clock" style="width: 13px; height: 13px; vertical-align: middle;"></i> Regularizar Marcación
                         </button>
                     </div>
                 `;
+                item.querySelector('[data-action="justify"]').addEventListener('click', () => {
+                    window.quickJustifyAbsence(abs.employee_name, abs.date, Number(abs.owed_minutes) || 0);
+                });
+                item.querySelector('[data-action="regularize"]').addEventListener('click', () => {
+                    window.quickRegularizePunch(abs.employee_name, abs.date, abs.scheduled_in || '08:00', abs.scheduled_out || '16:30', abs.scheduled_lunch !== false);
+                });
                 absencesListContainer.appendChild(item);
             });
 
@@ -1391,37 +1552,8 @@ function populateMonthFilter() {
 function renderAttendanceTable() {
     if (!attendanceTableBody) return;
 
-    const selEmp = filterEmployee.value;
-    const selMonth = filterMonth.value;
-    const selWeek = filterWeek.value;
-    const selType = filterType.value;
-
-    const allRecords = getCombinedAttendanceRecords(selMonth);
-
-    let filtered = allRecords.filter(r => {
-        // Employee filter
-        if (selEmp !== 'todos' && r.employee_name !== selEmp) return false;
-
-        // Month filter
-        if (selMonth && r.date && !r.date.startsWith(selMonth)) return false;
-
-        // Type filter
-        if (selType === 'Trabajo' && r.type !== 'Trabajo') return false;
-        if (selType === 'Tardanza' && (!r.late_minutes || r.late_minutes <= 0)) return false;
-        if (selType === 'Extra' && (!r.extra_minutes || r.extra_minutes <= 0)) return false;
-        if (selType === 'Falta' && r.type !== 'Falta') return false;
-        if (selType === 'Feriado' && r.type !== 'Feriado') return false;
-        if (selType === 'Permiso' && r.type !== 'Permiso') return false;
-
-        // Week filter
-        if (selWeek !== 'todas' && r.date) {
-            const dayNum = parseInt(r.date.split('-')[2], 10);
-            const weekNum = Math.ceil(dayNum / 7);
-            if (String(weekNum) !== selWeek) return false;
-        }
-
-        return true;
-    });
+    populateWeekFilter();
+    const filtered = getFilteredAttendanceRecords();
 
     if (filtered.length === 0) {
         attendanceTableBody.innerHTML = `
@@ -1450,7 +1582,7 @@ function renderAttendanceTable() {
 
         // Format dates
         const dateParts = record.date ? record.date.split('-') : ['2026', '01', '01'];
-        let formattedDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
+        let formattedDate = escapeAttendanceHtml(`${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`);
         if (isToday) {
             formattedDate = `<span style="font-weight: 700; color: #be185d;">${formattedDate}</span> <span class="badge-today-tag">HOY</span>`;
         }
@@ -1477,11 +1609,11 @@ function renderAttendanceTable() {
 
         const inDisplay = (record.type === 'Falta' || record.type === 'Ajuste')
             ? `<span class="chip-absence">-</span>`
-            : (record.check_in ? formatTimeTo12H(record.check_in.substring(0, 5)) : '-');
+            : (record.check_in ? escapeAttendanceHtml(formatTimeTo12H(record.check_in.substring(0, 5))) : '-');
 
         const outDisplay = (record.type === 'Falta' || record.type === 'Ajuste')
             ? `<span class="chip-absence">-</span>`
-            : (record.check_out ? formatTimeTo12H(record.check_out.substring(0, 5)) : '<span style="color: #059669; font-weight: 700;">En turno</span>');
+            : (record.check_out ? escapeAttendanceHtml(formatTimeTo12H(record.check_out.substring(0, 5))) : '<span style="color: #059669; font-weight: 700;">En turno</span>');
 
         const hoursDisplay = record.type === 'Falta'
             ? `<strong style="color: var(--text-muted); font-size: 13.5px;">0.0 h</strong>`
@@ -1491,24 +1623,24 @@ function renderAttendanceTable() {
         if (record.is_auto_absence) {
             actionsCol = `
                 <div style="display: flex; gap: 4px; justify-content: center;">
-                    <button type="button" class="btn-row-action btn-action-justify" title="Justificar con Permiso" onclick="quickJustifyAbsence('${record.employee_name}', '${record.date}', ${record.owed_minutes})">
+                    <button type="button" class="btn-row-action btn-action-justify" title="Justificar con Permiso" data-action="justify">
                         <i data-lucide="gift" style="width: 15px; height: 15px;"></i>
                     </button>
-                    <button type="button" class="btn-row-action btn-action-regularize" title="Regularizar Marcación (si asistió)" onclick="quickRegularizePunch('${record.employee_name}', '${record.date}', '${record.scheduled_in || '08:00'}', '${record.scheduled_out || '16:30'}', ${record.scheduled_lunch !== false})">
+                    <button type="button" class="btn-row-action btn-action-regularize" title="Regularizar Marcación (si asistió)" data-action="regularize">
                         <i data-lucide="clock" style="width: 15px; height: 15px;"></i>
                     </button>
                 </div>
             `;
         } else {
             actionsCol = `
-                <button type="button" class="btn-row-action" title="Eliminar marcación" onclick="confirmDeleteAttendanceRecord('${record.id}')">
+                <button type="button" class="btn-row-action" title="Eliminar marcación" data-action="delete">
                     <i data-lucide="trash-2" style="width: 15px; height: 15px;"></i>
                 </button>
             `;
         }
 
         tr.innerHTML = `
-            <td><strong>${emoji} ${record.employee_name}</strong></td>
+            <td><strong>${escapeAttendanceHtml(emoji)} ${escapeAttendanceHtml(record.employee_name)}</strong></td>
             <td>${formattedDate}</td>
             <td>${inDisplay}</td>
             <td>${outDisplay}</td>
@@ -1517,7 +1649,7 @@ function renderAttendanceTable() {
             <td>${extraChip}</td>
             <td>${typeChip}</td>
             <td style="max-width: 260px; font-size: 12px; color: var(--text-secondary);">
-                ${record.notes || '-'}
+                ${escapeAttendanceHtml(record.notes || '-')}
                 ${record.type === 'Falta' ? `<br><span class="badge-owed-mini">Debidas: ${minutesToHoursMinutes(record.owed_minutes)}</span>` : ''}
             </td>
             <td style="text-align: center;">
@@ -1525,6 +1657,15 @@ function renderAttendanceTable() {
             </td>
         `;
 
+        tr.querySelector('[data-action="justify"]')?.addEventListener('click', () => {
+            window.quickJustifyAbsence(record.employee_name, record.date, Number(record.owed_minutes) || 0);
+        });
+        tr.querySelector('[data-action="regularize"]')?.addEventListener('click', () => {
+            window.quickRegularizePunch(record.employee_name, record.date, record.scheduled_in || '08:00', record.scheduled_out || '16:30', record.scheduled_lunch !== false);
+        });
+        tr.querySelector('[data-action="delete"]')?.addEventListener('click', () => {
+            window.confirmDeleteAttendanceRecord(record.id);
+        });
         attendanceTableBody.appendChild(tr);
     });
 
@@ -1559,6 +1700,8 @@ window.confirmDeleteAttendanceRecord = function (recordId) {
 // ==========================================================================
 // 7. WIZARD: AGREGAR NUEVO TRABAJADOR (3 PASOS)
 // ==========================================================================
+
+let editingWorkerName = null;
 
 function setupAddWorkerWizard() {
     // Open Wizard
@@ -1609,7 +1752,7 @@ function setupAddWorkerWizard() {
         }
 
         // Check if name already exists
-        if (activeWorkers.some(w => w.name.toLowerCase() === name.toLowerCase())) {
+        if (activeWorkers.some(w => w.name.toLowerCase() === name.toLowerCase() && w.name !== editingWorkerName)) {
             alert('Ya existe un trabajador con ese nombre. Por favor, elige otro o agrega un apellido.');
             newWorkerNameInput.focus();
             return;
@@ -1649,23 +1792,34 @@ function setupAddWorkerWizard() {
 
     // Save Worker (Step 2 -> Step 3)
     btnWizardSave.addEventListener('click', async () => {
-        const name = newWorkerNameInput.value.trim();
+        const isEditing = editingWorkerName !== null;
+        const name = isEditing ? editingWorkerName : newWorkerNameInput.value.trim();
+        const existingWorker = activeWorkers.find(w => w.name.toLowerCase() === name.toLowerCase());
+        if (!name || (!isEditing && existingWorker)) {
+            alert('Ingresa un nombre nuevo para registrar un colaborador.');
+            return;
+        }
         const emoji = selectedWorkerEmojiInput.value || '🌸';
 
         // Extract schedule from wizard inputs
         const newSchedule = {};
         let totalNetWeeklyMinutes = 0;
 
-        scheduleRows.forEach(row => {
+        for (const row of scheduleRows) {
             const dayKey = row.getAttribute('data-day');
             const isActive = row.querySelector('.day-active-cb').checked;
             const inVal = row.querySelector('.time-in').value || '08:00';
-            const outVal = row.querySelector('.time-out').value || '16:30';
+            const outVal = row.querySelector('.time-out').value || '18:00';
             const hasLunch = row.querySelector('.lunch-cb').checked;
 
             const inMins = timeStringToMinutes(inVal);
             const outMins = timeStringToMinutes(outVal);
-            const grossMins = Math.max(0, outMins - inMins);
+            if (isActive && (!inVal || !outVal || outMins <= inMins)) {
+                alert('La hora de salida debe ser posterior a la entrada en cada día activo.');
+                row.querySelector('.time-out').focus();
+                return;
+            }
+            const grossMins = outMins - inMins;
             const netMins = isActive ? Math.max(0, grossMins - (hasLunch ? 60 : 0)) : 0;
 
             if (isActive) totalNetWeeklyMinutes += netMins;
@@ -1677,7 +1831,7 @@ function setupAddWorkerWizard() {
                 lunch: hasLunch,
                 netMinutes: netMins
             };
-        });
+        }
 
         const weeklyTargetHours = Number((totalNetWeeklyMinutes / 60).toFixed(1));
         newSchedule.weeklyTarget = weeklyTargetHours;
@@ -1687,8 +1841,9 @@ function setupAddWorkerWizard() {
 
         try {
             const todayStr = getTodayDateString();
-            const newWorkerObj = { name, emoji, is_active: true, created_at: todayStr };
-            newSchedule.created_at = todayStr;
+            const createdAt = existingWorker?.created_at || workerSchedules[name]?.created_at || todayStr;
+            const newWorkerObj = { ...existingWorker, name, emoji, is_active: true, created_at: createdAt };
+            newSchedule.created_at = createdAt;
 
             // 1. Save to Supabase or Local
             if (dbMode === 'supabase' && supabaseClient) {
@@ -1710,7 +1865,13 @@ function setupAddWorkerWizard() {
             }
 
             // Update in-memory and local storage
-            activeWorkers.push(newWorkerObj);
+            if (isEditing) {
+                const workerIndex = activeWorkers.findIndex(w => w.name === name);
+                activeWorkers = activeWorkers.filter(w => w.name !== name);
+                activeWorkers.splice(workerIndex < 0 ? activeWorkers.length : workerIndex, 0, newWorkerObj);
+            } else {
+                activeWorkers.push(newWorkerObj);
+            }
             workerSchedules[name] = newSchedule;
             saveLocalWorkersAndSchedules();
 
@@ -1744,6 +1905,8 @@ function setupAddWorkerWizard() {
 }
 
 function resetWizardForm() {
+    editingWorkerName = null;
+    newWorkerNameInput.readOnly = false;
     newWorkerNameInput.value = '';
     selectedWorkerEmojiInput.value = '🌸';
     workerPreviewText.textContent = '🌸 Nombre';
@@ -1766,7 +1929,7 @@ function resetWizardForm() {
     scheduleRows.forEach(row => {
         row.querySelector('.day-active-cb').checked = true;
         row.querySelector('.time-in').value = '08:00';
-        row.querySelector('.time-out').value = '16:30';
+        row.querySelector('.time-out').value = '18:00';
         row.querySelector('.lunch-cb').checked = true;
         recalculateDayCardHours(row);
     });
@@ -1777,7 +1940,7 @@ function resetWizardForm() {
 function recalculateDayCardHours(row) {
     const isActive = row.querySelector('.day-active-cb').checked;
     const inVal = row.querySelector('.time-in').value || '08:00';
-    const outVal = row.querySelector('.time-out').value || '16:30';
+    const outVal = row.querySelector('.time-out').value || '18:00';
     const hasLunch = row.querySelector('.lunch-cb').checked;
     const calcEl = row.querySelector('.day-calc-hours');
 
@@ -1806,7 +1969,7 @@ function recalculateWizardWeeklyHours() {
         const isActive = row.querySelector('.day-active-cb').checked;
         if (isActive) {
             const inVal = row.querySelector('.time-in').value || '08:00';
-            const outVal = row.querySelector('.time-out').value || '16:30';
+            const outVal = row.querySelector('.time-out').value || '18:00';
             const hasLunch = row.querySelector('.lunch-cb').checked;
 
             const inMins = timeStringToMinutes(inVal);
@@ -1829,6 +1992,8 @@ function setupEditWorkerSchedule() {
 
         requireAdmin(() => {
             resetWizardForm();
+            editingWorkerName = selectedWorker.name;
+            newWorkerNameInput.readOnly = true;
             newWorkerNameInput.value = selectedWorker.name;
             selectedWorkerEmojiInput.value = selectedWorker.emoji;
             workerPreviewText.textContent = `${selectedWorker.emoji} ${selectedWorker.name}`;
@@ -1975,10 +2140,11 @@ function setupDeleteWorker() {
             confirmActionCallback = async () => {
                 try {
                     if (dbMode === 'supabase' && supabaseClient) {
-                        await supabaseClient
+                        const { error } = await supabaseClient
                             .from('personal_asistencia_v2')
                             .update({ is_active: false })
                             .eq('name', selectedWorker.name);
+                        if (error) throw error;
                     }
 
                     activeWorkers = activeWorkers.filter(w => w.name !== selectedWorker.name);
@@ -2141,6 +2307,9 @@ function setupManualPunchModal() {
 
     formManualPunch.addEventListener('submit', async (e) => {
         e.preventDefault();
+        let authorized = false;
+        requireAdmin(() => { authorized = true; });
+        if (!authorized) return;
         const workerName = manualPunchWorker.value;
         const dateVal = manualPunchDate.value;
         const inVal = manualPunchIn.value;
@@ -2155,7 +2324,12 @@ function setupManualPunchModal() {
 
         const inMins = timeStringToMinutes(inVal);
         const outMins = timeStringToMinutes(outVal);
-        const grossMins = Math.max(0, outMins - inMins);
+        if (outMins <= inMins) {
+            alert('La hora de salida debe ser posterior a la entrada.');
+            manualPunchOut.focus();
+            return;
+        }
+        const grossMins = outMins - inMins;
         const lunchDeduction = tookLunch ? 60 : 0;
         const netMins = Math.max(0, grossMins - lunchDeduction);
         const credited = Number((netMins / 60).toFixed(2));
@@ -2240,13 +2414,15 @@ window.quickJustifyAbsence = function (workerName, dateStr, owedMinutes) {
 
 window.quickRegularizePunch = function (workerName, dateStr, schedIn, schedOut, schedLunch) {
     if (!modalManualPunch) return;
-    manualPunchWorker.value = workerName;
-    manualPunchDate.value = dateStr;
-    manualPunchIn.value = schedIn || '08:00';
-    manualPunchOut.value = schedOut || '16:30';
-    manualPunchLunch.checked = schedLunch !== false;
-    manualPunchNotes.value = 'Marcación regularizada por olvido en sistema';
-    modalManualPunch.classList.add('active');
+    requireAdmin(() => {
+        manualPunchWorker.value = workerName;
+        manualPunchDate.value = dateStr;
+        manualPunchIn.value = schedIn || '08:00';
+        manualPunchOut.value = schedOut || '16:30';
+        manualPunchLunch.checked = schedLunch !== false;
+        manualPunchNotes.value = 'Marcación regularizada por olvido en sistema';
+        modalManualPunch.classList.add('active');
+    });
 };
 
 // ==========================================================================
@@ -2288,16 +2464,8 @@ function setupExcelExport() {
                 fgColor: { argb: 'FFFF3385' }
             };
 
-            const selEmp = filterEmployee.value;
             const selMonth = filterMonth.value;
-
-            const allCombined = getCombinedAttendanceRecords(selMonth);
-
-            const recordsToExport = allCombined.filter(r => {
-                if (selEmp !== 'todos' && r.employee_name !== selEmp) return false;
-                if (selMonth && r.date && !r.date.startsWith(selMonth)) return false;
-                return true;
-            });
+            const recordsToExport = getFilteredAttendanceRecords();
 
             recordsToExport.forEach(r => {
                 let entradaVal = '';
@@ -2381,7 +2549,93 @@ function setupMobileSidebar() {
 // 11. INITIALIZATION ON DOM READY
 // ==========================================================================
 
+function setupAccessibleModals() {
+    const modals = Array.from(document.querySelectorAll('.modal-backdrop'));
+    const openModals = [];
+    const returnFocus = new WeakMap();
+    const topModal = () => openModals[openModals.length - 1];
+
+    const focusableElements = modal => Array.from(modal.querySelectorAll(
+        'a[href], button, input, select, textarea, [tabindex]'
+    )).filter(element =>
+        !element.disabled && element.type !== 'hidden' && element.tabIndex >= 0 &&
+        !element.closest('[inert]') && element.getClientRects().length > 0
+    );
+
+    function focusModal(modal) {
+        const elements = focusableElements(modal);
+        const target = elements.find(element => element.matches('input, select, textarea')) ||
+            elements[0] || modal.querySelector('.modal-card');
+        if (target) target.focus();
+    }
+
+    function syncModal(modal) {
+        const isOpen = modal.classList.contains('active');
+        const openIndex = openModals.indexOf(modal);
+        if (isOpen) {
+            modal.inert = false;
+            modal.setAttribute('aria-hidden', 'false');
+            if (openIndex === -1) {
+                returnFocus.set(modal, document.activeElement);
+                openModals.push(modal);
+                focusModal(modal);
+            }
+            return;
+        }
+
+        if (openIndex !== -1) openModals.splice(openIndex, 1);
+        if (modal.contains(document.activeElement)) {
+            const opener = returnFocus.get(modal);
+            if (topModal()) focusModal(topModal());
+            else if (opener && opener.isConnected) opener.focus();
+            if (modal.contains(document.activeElement)) document.activeElement.blur();
+        }
+        modal.inert = true;
+        modal.setAttribute('aria-hidden', 'true');
+    }
+
+    modals.forEach(modal => {
+        syncModal(modal);
+        new MutationObserver(() => syncModal(modal)).observe(modal, {
+            attributes: true, attributeFilter: ['class']
+        });
+    });
+
+    document.addEventListener('keydown', event => {
+        const modal = topModal();
+        if (!modal) return;
+        if (event.key === 'Escape') {
+            event.preventDefault();
+            const closeButton = modal.querySelector('.btn-close, #btnCancelConfirm');
+            if (closeButton) closeButton.click();
+            else modal.classList.remove('active');
+            return;
+        }
+        if (event.key !== 'Tab') return;
+        const elements = focusableElements(modal);
+        if (!elements.length) {
+            event.preventDefault();
+            focusModal(modal);
+            return;
+        }
+        const active = document.activeElement;
+        if (event.shiftKey && (active === elements[0] || !elements.includes(active))) {
+            event.preventDefault();
+            elements[elements.length - 1].focus();
+        } else if (!event.shiftKey && (active === elements[elements.length - 1] || !elements.includes(active))) {
+            event.preventDefault();
+            elements[0].focus();
+        }
+    });
+
+    document.addEventListener('focusin', event => {
+        const modal = topModal();
+        if (modal && !modal.contains(event.target)) focusModal(modal);
+    });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+    setupAccessibleModals();
     // 1. Start live clock
     updateLiveClock();
     setInterval(updateLiveClock, 1000);
