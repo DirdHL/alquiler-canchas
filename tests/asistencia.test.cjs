@@ -11,6 +11,7 @@ function harness(date = [2026, 9, 28, 17, 0, 0]) {
     const events = {};
     const observers = new Map();
     const exportedRows = [];
+    const workbooks = [];
     let document;
     let uuid = 0;
     class Element {
@@ -91,6 +92,139 @@ function harness(date = [2026, 9, 28, 17, 0, 0]) {
     class FakeDate extends Date {
         constructor(...args) { super(...(args.length ? args : date)); }
     }
+    const columnIndex = value => typeof value === 'number' ? value : String(value).toUpperCase()
+        .split('').reduce((total, letter) => total * 26 + letter.charCodeAt(0) - 64, 0);
+    const columnLetter = value => {
+        let result = '';
+        for (let current = value; current > 0; current = Math.floor((current - 1) / 26)) {
+            result = String.fromCharCode(65 + (current - 1) % 26) + result;
+        }
+        return result;
+    };
+    class ExcelCell {
+        constructor(row, column) {
+            this.row = row.number; this.col = column; this.address = columnLetter(column) + row.number;
+            this.value = null; this.style = {}; this._row = row;
+        }
+        get numFmt() { return this._numFmt ?? this._row.numFmt ?? this._row.worksheet.getColumn(this.col).numFmt; }
+        set numFmt(value) { this._numFmt = value; }
+        get text() {
+            if (this.value == null) return '';
+            if (typeof this.value === 'object' && 'result' in this.value) return String(this.value.result ?? '');
+            return String(this.value);
+        }
+    }
+    class ExcelRow {
+        constructor(worksheet, number) { this.worksheet = worksheet; this.number = number; this.cells = new Map(); }
+        getCell(column) {
+            const match = this.worksheet.columns.find(item => item.key === column);
+            const index = match?.number || columnIndex(column);
+            if (!this.cells.has(index)) this.cells.set(index, new ExcelCell(this, index));
+            return this.cells.get(index);
+        }
+        set values(values) {
+            this.cells.clear();
+            if (Array.isArray(values)) {
+                const start = 0 in values ? 0 : 1;
+                for (let index = start; index < values.length; index++) this.getCell(index - start + 1).value = values[index];
+            } else if (values && typeof values === 'object') {
+                this.worksheet.columns.forEach(column => {
+                    if (Object.hasOwn(values, column.key)) this.getCell(column.number).value = values[column.key];
+                });
+            }
+        }
+        get values() {
+            const values = [];
+            for (const [column, cell] of this.cells) if (cell.value != null) values[column] = cell.value;
+            return values;
+        }
+        get hasValues() { return [...this.cells.values()].some(cell => cell.value != null); }
+        get cellCount() { return Math.max(0, ...this.cells.keys()); }
+        eachCell(options, callback) {
+            if (typeof options === 'function') { callback = options; options = {}; }
+            const maximum = options?.includeEmpty ? Math.max(this.cellCount, this.worksheet.columnCount) : this.cellCount;
+            for (let column = 1; column <= maximum; column++) {
+                const cell = this.getCell(column);
+                if (options?.includeEmpty || cell.value != null) callback(cell, column);
+            }
+        }
+        commit() {}
+        addPageBreak() { (this.worksheet.pageBreaks ||= []).push(this.number); }
+    }
+    class ExcelWorksheet {
+        constructor(name, options = {}) {
+            this.name = name; this.rows = new Map(); this._columns = []; this.merges = [];
+            this.properties = { ...(options.properties || {}) }; this.views = options.views || [];
+            this.pageSetup = { ...(options.pageSetup || {}) }; this.headerFooter = { ...(options.headerFooter || {}) };
+            this.tables = []; this.conditionalFormattings = [];
+        }
+        set columns(columns) {
+            this._columns = columns.map((column, index) => ({ ...column, number: index + 1 }));
+            this._columns.forEach(column => {
+                if (column.header != null) {
+                    const headers = Array.isArray(column.header) ? column.header : [column.header];
+                    headers.forEach((header, index) => { this.getRow(index + 1).getCell(column.number).value = header; });
+                }
+            });
+        }
+        get columns() { return this._columns; }
+        getColumn(column) {
+            const match = this._columns.find(item => item.key === column);
+            const index = match?.number || columnIndex(column);
+            if (!this._columns[index - 1]) this._columns[index - 1] = { number: index };
+            return this._columns[index - 1];
+        }
+        getRow(number) {
+            if (!this.rows.has(number)) this.rows.set(number, new ExcelRow(this, number));
+            return this.rows.get(number);
+        }
+        getRows(start, length) { return Array.from({ length }, (_, index) => this.getRow(start + index)); }
+        getCell(row, column) {
+            if (column !== undefined) return this.getRow(row).getCell(column);
+            const [, letter, number] = String(row).match(/^([A-Z]+)(\d+)$/i);
+            return this.getRow(Number(number)).getCell(letter);
+        }
+        get rowCount() { return Math.max(0, ...this.rows.keys()); }
+        get columnCount() { return Math.max(this._columns.length, 0, ...[...this.rows.values()].map(row => row.cellCount)); }
+        get lastRow() { return this.rows.get(this.rowCount); }
+        addRow(values) {
+            const row = this.getRow(this.rowCount + 1); row.values = values; row.source = values;
+            exportedRows.push(values); return row;
+        }
+        addRows(values) { return values.map(value => this.addRow(value)); }
+        eachRow(options, callback) {
+            if (typeof options === 'function') { callback = options; options = {}; }
+            for (let number = 1; number <= this.rowCount; number++) {
+                const row = this.getRow(number);
+                if (options?.includeEmpty || row.hasValues) callback(row, number);
+            }
+        }
+        mergeCells(...args) { this.merges.push(args.length === 1 ? args[0] : args); }
+        addConditionalFormatting(config) { this.conditionalFormattings.push(config); }
+        addTable(config) {
+            this.tables.push(config);
+            const [, letter, number] = config.ref.match(/^([A-Z]+)(\d+)$/i);
+            const firstColumn = columnIndex(letter), firstRow = Number(number);
+            if (config.headerRow !== false) config.columns.forEach((column, index) => {
+                this.getRow(firstRow).getCell(firstColumn + index).value = column.name;
+            });
+            config.rows.forEach((values, index) => values.forEach((value, column) => {
+                this.getRow(firstRow + (config.headerRow === false ? 0 : 1) + index).getCell(firstColumn + column).value = value;
+            }));
+            return { ...config, commit() {} };
+        }
+    }
+    class ExcelWorkbook {
+        constructor() {
+            this.worksheets = []; workbooks.push(this);
+            this.xlsx = { writeBuffer: async () => { this.written = true; return []; } };
+        }
+        addWorksheet(name, options) {
+            const worksheet = new ExcelWorksheet(name, options); worksheet.id = this.worksheets.length + 1;
+            this.worksheets.push(worksheet); return worksheet;
+        }
+        getWorksheet(name) { return this.worksheets.find(sheet => typeof name === 'number' ? sheet.id === name : sheet.name === name); }
+    }
     const env = {
         document, window: {URL:{createObjectURL:()=> 'blob:test',revokeObjectURL() {}}},
         localStorage: {getItem:key=>storage.get(key) || null, setItem:(key,value)=>storage.set(key,value),removeItem:key=>storage.delete(key)},
@@ -98,14 +232,15 @@ function harness(date = [2026, 9, 28, 17, 0, 0]) {
         prompt:()=>null, confirm:()=>true, console:{warn(){},error(){}},
         MutationObserver: class {constructor(callback) {this.callback=callback;} observe(element) {observers.set(element,this.callback);}},
         Blob: class {},
-        ExcelJS:{Workbook:class {constructor() {this.xlsx={writeBuffer:async()=> []};} addWorksheet() {return {getRow:()=>({}),addRow:row=>exportedRows.push(row)};}}}
+        ExcelJS:{Workbook:ExcelWorkbook}
     };
     const api = new Function(...Object.keys(env), source + '\nreturn {run: code => eval(code)};')(...Object.values(env));
     const schedule = Object.fromEntries(days.map((day,index)=>[day,{active:index<5,in:'08:00',out:'16:00',lunch:false,netMinutes:index<5?480:0}]));
     schedule.created_at = '2026-10-01'; schedule.weeklyTarget = 40;
     api.run('activeWorkers = [{name:"Ana",emoji:"A",created_at:"2026-10-01",is_active:true}]; selectedWorker=activeWorkers[0];');
     api.run('workerSchedules = ' + JSON.stringify({Ana:schedule}));
-    return {...api,el,storage,alerts,events,observers,document,exportedRows,schedule};
+    return {...api,el,storage,alerts,events,observers,document,exportedRows,schedule,workbooks,
+        get exportedWorkbook() { return workbooks[workbooks.length - 1]; }};
 }
 
 
@@ -277,7 +412,8 @@ test('recuperación dentro del horario se cierra a las 18 y no descuenta otro re
     await h.run('autoCheckoutActiveShifts()');
     assert.equal(h.run('attendanceRecords.find(r=>r.id!=="normal").hours_credited'),0.25);
     assert.equal(h.run('attendanceRecords.find(r=>r.id!=="normal").extra_minutes'),0);
-    assert.equal(h.run('attendanceRecords.find(r=>r.id!=="normal").owed_minutes'),0);
+    assert.equal(h.run('attendanceRecords.find(r=>r.id!=="normal").owed_minutes'),-15);
+    assert.equal(h.run('calculateMonthlyAttendanceSummary("Ana","2026-10",attendanceRecords).owedMinutes'),15);
 });
 
 test('fallo remoto impide abrir extras sobre una jornada que no pudo cerrarse', async () => {

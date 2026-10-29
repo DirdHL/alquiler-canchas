@@ -17,6 +17,7 @@ let autoCheckoutPromise = null;
 let lastAttendanceMinute = '';
 let automaticCheckoutRepairPromise = null;
 let lunchExtraRepairPromise = null;
+let regularizedAbsenceRepairPromise = null;
 
 const ADMIN_PASSWORD = "Reservasupabase";
 
@@ -200,9 +201,131 @@ function updateLiveClock() {
     }
 }
 
+function getScheduleForDate(workerName, dateStr) {
+    const current = workerSchedules[workerName];
+    if (!current || !dateStr || !current.effective_from) return current;
+    const versions = [...(current.history || []), current]
+        .filter(version => version.effective_from && version.effective_from <= dateStr)
+        .sort((a, b) => a.effective_from.localeCompare(b.effective_from));
+    return versions[versions.length - 1] || current.history?.[0] || current;
+}
+
+function copyScheduleVersion(schedule, effectiveFrom) {
+    const version = { effective_from: effectiveFrom, weeklyTarget: schedule.weeklyTarget };
+    for (const day of DAYS_ES) {
+        if (schedule[day]) version[day] = { ...schedule[day] };
+    }
+    return version;
+}
+
+function mergeScheduleHistory(previous, next, effectiveDate) {
+    if (!previous) return { ...next, effective_from: effectiveDate, history: [] };
+    const history = new Map((previous.history || []).filter(version => version.effective_from < effectiveDate)
+        .map(version => [version.effective_from, copyScheduleVersion(version, version.effective_from)]));
+    const previousFrom = previous.effective_from || previous.created_at || '0001-01-01';
+    if (previousFrom < effectiveDate) history.set(previousFrom, copyScheduleVersion(previous, previousFrom));
+    return { ...next, effective_from: effectiveDate, history: [...history.values()]
+        .sort((a, b) => a.effective_from.localeCompare(b.effective_from)) };
+}
+
+function getRecordScheduleSnapshot(record) {
+    const match = (record.notes || '').match(/\[Horario de jornada: (\{[^\r\n]*?\})\]/);
+    if (!match) return null;
+    try {
+        const schedule = JSON.parse(match[1]);
+        if (typeof schedule.active !== 'boolean') return null;
+        if (schedule.active && (!/^\d{2}:\d{2}$/.test(schedule.in) || !/^\d{2}:\d{2}$/.test(schedule.out))) return null;
+        return schedule;
+    } catch (error) {
+        return null;
+    }
+}
+
 function getRecordDaySchedule(record) {
+    const snapshot = getRecordScheduleSnapshot(record);
+    if (snapshot) return snapshot;
     const date = new Date(record.date + 'T12:00:00');
-    return workerSchedules[record.employee_name]?.[DAYS_ES[date.getDay()]];
+    return getScheduleForDate(record.employee_name, record.date)?.[DAYS_ES[date.getDay()]];
+}
+
+function attachRecordScheduleSnapshot(record, schedule = getRecordDaySchedule(record)) {
+    if (getRecordScheduleSnapshot(record)) return record;
+    const snapshot = schedule ? {
+        active: !!schedule.active, in: schedule.in, out: schedule.out,
+        lunch: !!schedule.lunch, netMinutes: schedule.netMinutes
+    } : { active: false };
+    return { ...record, notes: `${record.notes ? record.notes + ' | ' : ''}[Horario de jornada: ${JSON.stringify(snapshot)}]` };
+}
+
+function getAttendanceDisplayNotes(record) {
+    return (record.notes || '').replace(/(?:\s*\|\s*)?\[Horario de jornada: \{[^\r\n]*?\}\]/g, '').trim();
+}
+
+function hasVerifiedAttendanceData() {
+    return dbMode !== 'supabase' || (loadWorkersAndSchedules.verified !== false && loadAttendanceRecords.verified !== false);
+}
+
+function isCorrectedAbsence(record) {
+    return record.type === 'Falta' && /\[Falta corregida por asistencia: [^\]\r\n]+\]/.test(record.notes || '');
+}
+
+async function repairRegularizedAbsences() {
+    if (!hasVerifiedAttendanceData()) return;
+    if (regularizedAbsenceRepairPromise) return regularizedAbsenceRepairPromise;
+    regularizedAbsenceRepairPromise = (async () => {
+        for (const absence of attendanceRecords.filter(record => record.type === 'Falta' && !isCorrectedAbsence(record))) {
+            const work = attendanceRecords.find(record => record.id && record.type === 'Trabajo' &&
+                record.employee_name === absence.employee_name && record.date === absence.date &&
+                record.check_in && record.check_out && /Marcación regularizada por olvido/i.test(record.notes || '') &&
+                hasScheduledWork(record, getRecordDaySchedule(record)));
+            if (!work || !absence.id) continue;
+            const notes = `${absence.notes ? absence.notes + ' | ' : ''}[Falta corregida por asistencia: ${work.id}]`;
+            const unchanged = current => current.id === absence.id && current.notes === absence.notes;
+            try {
+                if (dbMode === 'supabase' && supabaseClient) {
+                    let query = supabaseClient.from('asistencias_v2').update({ notes }).eq('id', absence.id);
+                    query = absence.notes == null ? query.is('notes', null) : query.eq('notes', absence.notes);
+                    const { data, error } = await query.select('id');
+                    if (error) throw error;
+                    if (!data?.length) continue;
+                } else {
+                    const local = getLocalAttendance();
+                    if (!local.some(unchanged)) continue;
+                    saveLocalAttendance(local.map(current => unchanged(current) ? { ...current, notes } : current));
+                }
+                attendanceRecords = attendanceRecords.map(current => unchanged(current) ? { ...current, notes } : current);
+            } catch (error) {
+                console.warn('No se pudo completar la corrección de una falta regularizada:', error);
+            }
+        }
+    })();
+    try {
+        await regularizedAbsenceRepairPromise;
+    } finally {
+        regularizedAbsenceRepairPromise = null;
+    }
+}
+
+async function preserveExistingShiftSchedules(workerName) {
+    const candidates = attendanceRecords.filter(record => record.employee_name === workerName &&
+        (record.type === 'Trabajo' || record.type === 'Falta') && !getRecordScheduleSnapshot(record));
+    for (const record of candidates) {
+        const frozen = attachRecordScheduleSnapshot(record);
+        if (dbMode === 'supabase' && supabaseClient) {
+            let query = supabaseClient.from('asistencias_v2').update({ notes: frozen.notes }).eq('id', record.id);
+            query = record.notes == null ? query.is('notes', null) : query.eq('notes', record.notes);
+            const { data, error } = await query.select('id');
+            if (error) throw error;
+            if (!data?.length) throw new Error('Una jornada cambió en otro dispositivo. Recarga antes de editar el horario.');
+        } else {
+            const local = getLocalAttendance();
+            const stored = local.find(current => current.id === record.id);
+            if (!stored || stored.notes !== record.notes) throw new Error('Los registros cambiaron. Recarga antes de editar el horario.');
+            saveLocalAttendance(local.map(current => current.id === record.id ? { ...current, notes: frozen.notes } : current));
+        }
+        attendanceRecords = attendanceRecords.map(current => current.id === record.id && current.notes === record.notes
+            ? { ...current, notes: frozen.notes } : current);
+    }
 }
 
 function hasScheduledWork(record, schedule) {
@@ -285,17 +408,17 @@ function calculateShiftAccounting(record, checkoutTime, schedule, { deferLunchDe
             lateMinutes = Number(record.late_minutes) || 0;
             const isRecovery = /Turno de recuperación dentro del horario|Turno extra\/recuperación en el mismo día/i.test(record.notes || '');
             if (!isRecovery && scheduledOut - checkOut > 5) owedMinutes = scheduledOut - checkOut;
+            const dailyCredits = records.filter(previous => previous.employee_name === record.employee_name &&
+                previous.date === record.date).reduce((total, previous) => total + getJustificationMinutes(previous), 0);
+            if (isRecovery) {
+                const previousDebt = getEarlierDailyShifts(record, records).reduce((total, previous) =>
+                    total + Math.max(0, Number(previous.late_minutes) || 0) + (Number(previous.owed_minutes) || 0), 0);
+                const regularWorked = Math.max(0, getWorkedMinutesInsideSchedule(record, checkoutTime, schedule) - lunchExtra);
+                owedMinutes = -Math.min(regularWorked, Math.max(0, previousDebt - dailyCredits));
+            } else if (schedule.lunch && !getRecordLunchChoice(record)) {
+                owedMinutes -= Math.min(60, Math.max(0, lateMinutes + Math.max(0, owedMinutes) - dailyCredits));
+            }
             if (schedule.lunch && !getRecordLunchChoice(record)) {
-                const dailyCredits = records.filter(previous => previous.employee_name === record.employee_name &&
-                    previous.date === record.date).reduce((total, previous) => total + getJustificationMinutes(previous), 0);
-                if (isRecovery) {
-                    const previousDebt = getEarlierDailyShifts(record, records).reduce((total, previous) =>
-                        total + Math.max(0, Number(previous.late_minutes) || 0) + (Number(previous.owed_minutes) || 0), 0);
-                    const regularWorked = Math.max(0, getWorkedMinutesInsideSchedule(record, checkoutTime, schedule) - lunchExtra);
-                    owedMinutes = -Math.min(regularWorked, Math.max(0, previousDebt - dailyCredits));
-                } else {
-                    owedMinutes -= Math.min(60, Math.max(0, lateMinutes + Math.max(0, owedMinutes) - dailyCredits));
-                }
                 const debtAccounting = {
                     late_minutes: lateMinutes, owed_minutes: owedMinutes, extra_minutes: 0, hours_credited: 0
                 };
@@ -323,6 +446,7 @@ function calculateShiftAccounting(record, checkoutTime, schedule, { deferLunchDe
 }
 
 async function autoCheckoutActiveShifts(reconcilePunch = false) {
+    if (!hasVerifiedAttendanceData()) return [];
     if (autoCheckoutPromise) return autoCheckoutPromise;
     if ((isPunchInProgress && !reconcilePunch) || !attendanceRecords.length) return [];
     autoCheckoutPromise = (async () => {
@@ -450,7 +574,9 @@ function initDatabase() {
         try {
             supabaseClient = window.supabase.createClient(url, key);
             dbMode = 'supabase';
-            updateConnectionStatus(true);
+            loadWorkersAndSchedules.verified = false;
+            loadAttendanceRecords.verified = false;
+            updateConnectionStatus(false);
             setupRealtimeSubscription();
             loadAllData();
             return;
@@ -471,8 +597,10 @@ function updateConnectionStatus(connected) {
             statusDescEl.textContent = 'Las asistencias están sincronizadas en tiempo real.';
         } else {
             statusDotEl.className = 'status-dot disconnected';
-            statusTextEl.textContent = 'Modo Local (Sin Conexión)';
-            statusDescEl.textContent = 'Los registros se guardan en este navegador.';
+            statusTextEl.textContent = dbMode === 'supabase' ? 'Nube pendiente de verificar' : 'Modo Local (Sin Conexión)';
+            statusDescEl.textContent = dbMode === 'supabase'
+                ? 'Se conservan los últimos datos disponibles. Reintenta la conexión antes de registrar cambios.'
+                : 'Los registros se guardan en este navegador.';
         }
     }
 }
@@ -487,24 +615,38 @@ function setupRealtimeSubscription() {
             loadAttendanceRecords();
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'personal_asistencia_v2' }, () => {
-            loadWorkersAndSchedules();
+            loadAllData();
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'horarios_personal_v2' }, () => {
-            loadWorkersAndSchedules();
+            loadAllData();
         })
-        .subscribe();
+        .subscribe(state => {
+            if (state === 'CHANNEL_ERROR' || state === 'TIMED_OUT' || state === 'CLOSED') {
+                loadAttendanceRecords.verified = false;
+                updateConnectionStatus(false);
+                btnToggleAttendance.disabled = true;
+            } else if (state === 'SUBSCRIBED') {
+                loadAllData();
+            }
+        });
 }
 
 // Load all data (Workers, Schedules, Attendance records)
 async function loadAllData() {
-    await loadWorkersAndSchedules();
-    await loadAttendanceRecords();
-    await autoCheckoutActiveShifts();
+    const workersLoaded = await loadWorkersAndSchedules();
+    const recordsLoaded = await loadAttendanceRecords();
+    if (workersLoaded && recordsLoaded) await autoCheckoutActiveShifts();
+    return Boolean(workersLoaded && recordsLoaded);
 }
 
 async function loadWorkersAndSchedules() {
+    const requestId = (loadWorkersAndSchedules.requestId || 0) + 1;
+    loadWorkersAndSchedules.requestId = requestId;
     // 1. Try to load from Supabase
     if (dbMode === 'supabase' && supabaseClient) {
+        loadWorkersAndSchedules.verified = false;
+        updateConnectionStatus(false);
+        btnToggleAttendance.disabled = true;
         try {
             const { data: workerData, error: wError } = await supabaseClient
                 .from('personal_asistencia_v2')
@@ -516,27 +658,52 @@ async function loadWorkersAndSchedules() {
                 .from('horarios_personal_v2')
                 .select('*');
 
-            if (!wError && workerData) {
-                activeWorkers = workerData.map(w => ({
-                    name: w.name,
-                    emoji: extractEmojiFromName(w.name) || w.emoji || '🌸',
-                    is_active: w.is_active,
-                    created_at: typeof w.created_at === 'string' ? w.created_at.slice(0, 10) : undefined
-                }));
+            if (wError || sError || !Array.isArray(workerData) || !Array.isArray(schedData)) {
+                throw wError || sError || new Error('Respuesta incompleta de personal u horarios.');
             }
-
-            if (!sError && schedData) {
-                workerSchedules = {};
-                schedData.forEach(row => {
-                    workerSchedules[row.employee_name] = row.schedule_data;
-                });
+            if (requestId !== loadWorkersAndSchedules.requestId) return false;
+            const schedules = Object.fromEntries(schedData.map(row => [row.employee_name, row.schedule_data]));
+            activeWorkers = workerData.map(w => ({
+                name: w.name,
+                emoji: extractEmojiFromName(w.name) || w.emoji || '🌸',
+                is_active: w.is_active,
+                created_at: schedules[w.name]?.created_at ||
+                    (typeof w.created_at === 'string' ? w.created_at.slice(0, 10) : undefined)
+            }));
+            workerSchedules = schedules;
+            loadWorkersAndSchedules.verified = true;
+            loadWorkersAndSchedules.hasLoaded = true;
+            try {
+                const cacheKey = 'canchapro_cloud_workers_v2:' + (localStorage.getItem('canchapro_supabase_url') || 'default');
+                localStorage.setItem(cacheKey, JSON.stringify({ workers: activeWorkers, schedules: workerSchedules,
+                    verifiedAt: new Date().toISOString() }));
+            } catch (error) {
+                console.warn('No se pudo actualizar la copia de consulta del personal:', error);
             }
         } catch (err) {
-            console.warn("Error fetching workers from Supabase, using local fallback:", err);
-            loadLocalWorkersAndSchedules();
+            if (requestId !== loadWorkersAndSchedules.requestId) return false;
+            console.warn('No se pudo verificar el personal y los horarios; se conserva la última lectura:', err);
+            if (!loadWorkersAndSchedules.hasLoaded && !activeWorkers.length) {
+                try {
+                    const cacheKey = 'canchapro_cloud_workers_v2:' + (localStorage.getItem('canchapro_supabase_url') || 'default');
+                    const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
+                    if (Array.isArray(cached?.workers) && cached.schedules && typeof cached.schedules === 'object') {
+                        activeWorkers = cached.workers;
+                        workerSchedules = cached.schedules;
+                        loadWorkersAndSchedules.hasLoaded = true;
+                        renderWorkerDropdowns();
+                    }
+                } catch (error) {
+                    console.warn('No hay una copia válida del personal en este dispositivo:', error);
+                }
+            }
+            updateConnectionStatus(false);
+            btnToggleAttendance.disabled = true;
+            return false;
         }
     } else {
         loadLocalWorkersAndSchedules();
+        loadWorkersAndSchedules.verified = true;
     }
 
     // Populate dropdowns & refresh UI
@@ -545,10 +712,20 @@ async function loadWorkersAndSchedules() {
     if (selectedWorker) {
         const found = activeWorkers.find(w => w.name === selectedWorker.name);
         if (found) {
+            selectedWorker = found;
             employeeSelect.value = found.name;
+            handleWorkerChange();
+        } else {
+            selectedWorker = null;
+            employeeSelect.value = '';
             handleWorkerChange();
         }
     }
+    if (dbMode === 'supabase') {
+        updateConnectionStatus(loadAttendanceRecords.verified !== false);
+        if (loadAttendanceRecords.verified === false) btnToggleAttendance.disabled = true;
+    }
+    return true;
 }
 
 function loadLocalWorkersAndSchedules() {
@@ -582,36 +759,98 @@ function saveLocalWorkersAndSchedules() {
 }
 
 async function loadAttendanceRecords() {
+    const requestId = (loadAttendanceRecords.requestId || 0) + 1;
+    loadAttendanceRecords.requestId = requestId;
     if (dbMode === 'supabase' && supabaseClient) {
+        loadAttendanceRecords.verified = false;
+        updateConnectionStatus(false);
+        btnToggleAttendance.disabled = true;
         try {
-            const { data, error } = await supabaseClient
-                .from('asistencias_v2')
-                .select('*')
-                .order('date', { ascending: false })
-                .order('check_in', { ascending: false });
-
-            if (!error && data) {
-                attendanceRecords = data.map(r => ({
-                    ...r,
-                    lunch: getRecordLunchChoice(r)
-                }));
-            } else {
-                attendanceRecords = getLocalAttendance();
+            const rows = [];
+            const pageSize = 500;
+            let offset = 0;
+            const seenIds = new Set();
+            let expectedCount;
+            for (;;) {
+                let query = supabaseClient.from('asistencias_v2').select('*', { count: 'exact' })
+                    .order('date', { ascending: false }).order('check_in', { ascending: false });
+                const paginated = typeof query.range === 'function';
+                if (paginated) query = query.order('id', { ascending: true }).range(offset, offset + pageSize - 1);
+                const { data, error, count } = await query;
+                if (error || !Array.isArray(data)) throw error || new Error('Respuesta incompleta de asistencias.');
+                if (requestId !== loadAttendanceRecords.requestId) return false;
+                if (Number.isFinite(count)) {
+                    if (expectedCount !== undefined && count !== expectedCount) throw new Error('Las asistencias cambiaron durante la lectura. Reintenta la carga.');
+                    expectedCount = count;
+                }
+                for (const row of data) {
+                    if (row.id && seenIds.has(row.id)) throw new Error('La lectura encontró registros repetidos. Reintenta la carga.');
+                    if (row.id) seenIds.add(row.id);
+                }
+                rows.push(...data);
+                offset += data.length;
+                if (!paginated || (Number.isFinite(count) ? offset >= count : data.length < pageSize)) break;
+                if (!data.length) throw new Error('La lectura paginada no pudo completarse.');
             }
+            if (loadWorkersAndSchedules.verified === false) {
+                throw new Error('No se pudieron verificar los horarios y el personal de esta lectura.');
+            }
+            attendanceRecords = rows.map(r => ({ ...r, lunch: getRecordLunchChoice(r) }));
+            loadAttendanceRecords.verified = true;
+            loadAttendanceRecords.hasLoaded = true;
+            loadAttendanceRecords.verifiedAt = new Date().toISOString();
         } catch (e) {
-            attendanceRecords = getLocalAttendance();
+            if (requestId !== loadAttendanceRecords.requestId) return false;
+            console.warn('No se pudieron verificar las asistencias; se conserva la última lectura:', e);
+            if (!loadAttendanceRecords.hasLoaded && !attendanceRecords.length) {
+                try {
+                    const cacheKey = 'canchapro_cloud_attendance_v2:' + (localStorage.getItem('canchapro_supabase_url') || 'default');
+                    const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
+                    if (Array.isArray(cached?.records) && Number.isFinite(new Date(cached.verifiedAt).getTime())) {
+                        attendanceRecords = cached.records.map(record => ({ ...record, lunch: getRecordLunchChoice(record) }));
+                        loadAttendanceRecords.hasLoaded = true;
+                        loadAttendanceRecords.verifiedAt = cached.verifiedAt;
+                        populateMonthFilter();
+                        renderAttendanceTable();
+                        updateWorkerStats();
+                        updatePunchButtonState();
+                        renderTeamLiveStatus();
+                    }
+                } catch (error) {
+                    console.warn('No hay una copia válida de asistencias en este dispositivo:', error);
+                }
+            }
+            updateConnectionStatus(false);
+            btnToggleAttendance.disabled = true;
+            return false;
         }
     } else {
         attendanceRecords = getLocalAttendance();
+        loadAttendanceRecords.verified = true;
     }
 
-    await repairInvalidAutomaticCheckouts();
-    await repairMissingLunchExtras();
+    if (dbMode !== 'supabase' || loadWorkersAndSchedules.verified !== false) {
+        await repairInvalidAutomaticCheckouts();
+        await repairRegularizedAbsences();
+        await repairMissingLunchExtras();
+    }
+    if (requestId !== loadAttendanceRecords.requestId) return false;
+    if (dbMode === 'supabase') {
+        try {
+            const cacheKey = 'canchapro_cloud_attendance_v2:' + (localStorage.getItem('canchapro_supabase_url') || 'default');
+            localStorage.setItem(cacheKey, JSON.stringify({ records: attendanceRecords, verifiedAt: loadAttendanceRecords.verifiedAt }));
+        } catch (error) {
+            console.warn('No se pudo actualizar la copia de consulta de asistencias:', error);
+        }
+        updateConnectionStatus(loadWorkersAndSchedules.verified !== false);
+    }
     populateMonthFilter();
     renderAttendanceTable();
     updateWorkerStats();
     updatePunchButtonState();
     renderTeamLiveStatus();
+    if (dbMode === 'supabase' && loadWorkersAndSchedules.verified === false) btnToggleAttendance.disabled = true;
+    return true;
 }
 
 function isInvalidAutomaticCheckout(record) {
@@ -623,8 +862,7 @@ function isInvalidAutomaticCheckout(record) {
 
 function getAutomaticCheckoutCorrection(record) {
     if (!record.id || !isInvalidAutomaticCheckout(record) || record.date >= getTodayDateString()) return null;
-    const date = new Date(record.date + 'T12:00:00');
-    const schedule = workerSchedules[record.employee_name]?.[DAYS_ES[date.getDay()]];
+    const schedule = getRecordDaySchedule(record);
     if (!schedule?.active || !schedule.out) return null;
 
     const checkOut = schedule.out.substring(0, 5) + ':00';
@@ -643,6 +881,7 @@ function getAutomaticCheckoutCorrection(record) {
 }
 
 async function repairInvalidAutomaticCheckouts() {
+    if (!hasVerifiedAttendanceData()) return;
     if (automaticCheckoutRepairPromise) return automaticCheckoutRepairPromise;
     automaticCheckoutRepairPromise = (async () => {
         const corrections = attendanceRecords.map(record => ({
@@ -686,6 +925,7 @@ async function repairInvalidAutomaticCheckouts() {
 }
 
 async function repairMissingLunchExtras() {
+    if (!hasVerifiedAttendanceData()) return;
     if (lunchExtraRepairPromise) return lunchExtraRepairPromise;
     lunchExtraRepairPromise = (async () => {
         const candidates = attendanceRecords.filter(record => {
@@ -693,7 +933,8 @@ async function repairMissingLunchExtras() {
             return record.id && record.type === 'Trabajo' && record.date <= getTodayDateString() &&
                 record.check_in && record.check_out &&
                 timeStringToMinutes(record.check_out) > timeStringToMinutes(record.check_in) &&
-                schedule?.active && schedule.lunch && !getRecordLunchChoice(record) &&
+                schedule?.active && ((schedule.lunch && !getRecordLunchChoice(record)) ||
+                    /Turno de recuperación dentro del horario|Turno extra\/recuperación en el mismo día/i.test(record.notes || '')) &&
                 hasScheduledWork(record, schedule);
         }).sort((a, b) => a.date.localeCompare(b.date) || a.check_in.localeCompare(b.check_in));
         for (const record of candidates) {
@@ -704,7 +945,7 @@ async function repairMissingLunchExtras() {
                 owed_minutes: accounting.owed_minutes
             };
             if (Object.keys(update).every(field => Number(record[field] || 0) === update[field])) continue;
-            update.notes = `${record.notes || ''} | Corrección de jornada sin almuerzo: ${update.hours_credited} h trabajadas; primero se recupera la deuda mensual y el sobrante cuenta como extra. Se conserva la tardanza registrada.`;
+            update.notes = `${record.notes || ''} | Corrección de jornada y recuperación: ${update.hours_credited} h trabajadas; el tiempo recuperado reduce la deuda y se conserva la tardanza registrada.`;
             const unchanged = current => current.id === record.id &&
                 ['check_out', 'hours_credited', 'extra_minutes', 'owed_minutes', 'notes'].every(field => current[field] === record[field]);
             try {
@@ -895,9 +1136,140 @@ function renderTeamLiveStatus() {
     }
 }
 
+function getForgottenExtraShifts(workerName) {
+    return attendanceRecords.filter(record => record.employee_name === workerName && record.type === 'Trabajo' &&
+        record.date < getTodayDateString() && record.check_in && !record.check_out &&
+        isOutsideScheduledShift(record, getRecordDaySchedule(record)))
+        .sort((a, b) => a.date.localeCompare(b.date) || a.check_in.localeCompare(b.check_in));
+}
+
+function renderForgottenExtraNotice() {
+    const notice = document.getElementById('forgottenExtraNotice');
+    if (!notice) return;
+    notice.innerHTML = '';
+    const pending = selectedWorker ? getForgottenExtraShifts(selectedWorker.name) : [];
+    notice.hidden = pending.length === 0;
+    if (!pending.length) return;
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
+    for (const shift of pending) {
+        const dateLabel = shift.date === yesterdayStr ? 'Ayer olvidaste registrar la salida de tu turno extra.'
+            : `Olvidaste registrar la salida de tu turno extra del ${shift.date.split('-').reverse().join('/')}.`;
+        const confirmedMinutes = attendanceRecords.filter(record => record.employee_name === shift.employee_name &&
+            record.date === shift.date && record.type === 'Trabajo' && record.check_out)
+            .reduce((sum, record) => sum + Math.round((Number(record.hours_credited) || 0) * 60), 0);
+        const item = document.createElement('div');
+        item.className = 'forgotten-extra-item';
+        item.innerHTML = `<strong>${escapeAttendanceHtml(dateLabel)}</strong>
+            <p>Entrada extra: ${escapeAttendanceHtml(formatTimeTo12H(shift.check_in))}. Horas confirmadas de ese día: ${minutesToHoursMinutes(confirmedMinutes)}.
+            Las horas de este turno extra están pendientes de confirmar.</p>
+            <button type="button" class="btn btn-secondary" data-action="close-extra">Corregir salida con contraseña</button>`;
+        const button = item.querySelector('[data-action="close-extra"]');
+        button.disabled = !hasVerifiedAttendanceData();
+        button.addEventListener('click', () => {
+            requireAdmin(() => {
+                if (!hasVerifiedAttendanceData()) return;
+                setupForgottenExtraModal.shiftId = shift.id;
+                document.getElementById('forgottenExtraInfo').textContent = `${shift.employee_name}. ${shift.date.split('-').reverse().join('/')}. Entrada: ${formatTimeTo12H(shift.check_in)}.`;
+                document.getElementById('forgottenExtraOut').value = '';
+                document.getElementById('forgottenExtraNotes').value = '';
+                document.getElementById('forgottenExtraDuration').textContent = 'Indica la salida real para calcular las horas extra.';
+                document.getElementById('modalForgottenExtra').classList.add('active');
+            });
+        });
+        notice.appendChild(item);
+    }
+}
+
+async function confirmForgottenExtra(shiftId, outTime, reason = '') {
+    let authorized = false;
+    requireAdmin(() => { authorized = true; });
+    if (!authorized) return null;
+    if (!hasVerifiedAttendanceData()) throw new Error('Recupera la conexión antes de confirmar la salida.');
+    if (dbMode === 'supabase') {
+        if (!await loadAllData()) throw new Error('No se pudo verificar la jornada en la nube.');
+    } else {
+        attendanceRecords = getLocalAttendance();
+    }
+    const shift = attendanceRecords.find(record => record.id === shiftId);
+    if (!shift || !getForgottenExtraShifts(shift.employee_name).some(record => record.id === shiftId)) {
+        renderForgottenExtraNotice();
+        throw new Error('El turno ya fue cerrado o modificado. Revisa los registros actualizados.');
+    }
+    if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(outTime) || timeStringToMinutes(outTime) <= timeStringToMinutes(shift.check_in)) {
+        throw new Error('La salida debe ser posterior a la entrada y corresponder al mismo día del turno.');
+    }
+    const overlaps = attendanceRecords.some(record => record.id !== shiftId && record.type === 'Trabajo' &&
+        record.employee_name === shift.employee_name && record.date === shift.date && record.check_in &&
+        timeStringToMinutes(shift.check_in) < (record.check_out ? timeStringToMinutes(record.check_out) : Infinity) &&
+        timeStringToMinutes(outTime) > timeStringToMinutes(record.check_in));
+    if (overlaps) throw new Error('La salida indicada se superpone con otra jornada. Revisa las horas registradas.');
+    const checkout = outTime + ':00';
+    const accounting = calculateShiftAccounting(shift, checkout, getRecordDaySchedule(shift));
+    const update = { check_out: checkout, ...accounting,
+        notes: `${shift.notes || ''} | Salida extra regularizada por administrador a las ${formatTimeTo12H(checkout)} del ${shift.date}. Tiempo extra confirmado: ${minutesToHoursMinutes(accounting.extra_minutes)}. Motivo: ${reason.trim() || 'Olvido de marcación de salida'}.` };
+    if (dbMode === 'supabase' && supabaseClient) {
+        let query = supabaseClient.from('asistencias_v2').update(update).eq('id', shiftId)
+            .is('check_out', null).eq('check_in', shift.check_in);
+        query = shift.notes == null ? query.is('notes', null) : query.eq('notes', shift.notes);
+        const { data, error } = await query.select('id');
+        if (error) throw error;
+        if (!data?.length) {
+            await loadAttendanceRecords();
+            throw new Error('Otro dispositivo modificó este turno. Se actualizaron los registros.');
+        }
+    } else {
+        saveLocalAttendance(getLocalAttendance().map(record => record.id === shiftId && !record.check_out ? { ...record, ...update } : record));
+    }
+    attendanceRecords = attendanceRecords.map(record => record.id === shiftId ? { ...record, ...update } : record);
+    renderForgottenExtraNotice();
+    updateWorkerStats();
+    renderAttendanceTable();
+    return { ...shift, ...update };
+}
+
+function setupForgottenExtraModal() {
+    const form = document.getElementById('formForgottenExtra');
+    const modal = document.getElementById('modalForgottenExtra');
+    const out = document.getElementById('forgottenExtraOut');
+    const preview = document.getElementById('forgottenExtraDuration');
+    if (!form || !modal || !out) return;
+    let saving = false;
+    document.getElementById('btnCloseForgottenExtra').addEventListener('click', () => modal.classList.remove('active'));
+    out.addEventListener('input', () => {
+        const shift = attendanceRecords.find(record => record.id === setupForgottenExtraModal.shiftId);
+        if (!shift || !out.value || timeStringToMinutes(out.value) <= timeStringToMinutes(shift.check_in)) {
+            preview.textContent = 'Indica una salida posterior a la entrada, del mismo día.';
+            return;
+        }
+        const accounting = calculateShiftAccounting(shift, out.value, getRecordDaySchedule(shift));
+        preview.textContent = `Tiempo trabajado en este turno: ${minutesToHoursMinutes(Math.round(accounting.hours_credited * 60))}. Horas extra a confirmar: ${minutesToHoursMinutes(accounting.extra_minutes)}.`;
+    });
+    form.addEventListener('submit', async event => {
+        event.preventDefault();
+        if (saving) return;
+        saving = true;
+        const button = document.getElementById('btnSaveForgottenExtra');
+        button.disabled = true;
+        try {
+            const saved = await confirmForgottenExtra(setupForgottenExtraModal.shiftId, out.value, document.getElementById('forgottenExtraNotes').value);
+            if (!saved) return;
+            modal.classList.remove('active');
+            alert(`Salida corregida. Horas extra confirmadas: ${minutesToHoursMinutes(saved.extra_minutes)}.`);
+        } catch (error) {
+            alert('No se pudo confirmar la salida: ' + error.message);
+        } finally {
+            saving = false;
+            button.disabled = false;
+        }
+    });
+}
+
 function handleWorkerChange() {
     const workerName = employeeSelect.value;
     selectedWorker = activeWorkers.find(w => w.name === workerName) || null;
+    renderForgottenExtraNotice();
 
     // Highlight selected worker in real-time board
     document.querySelectorAll('.worker-status-chip').forEach(c => {
@@ -948,7 +1320,16 @@ function handleWorkerChange() {
 }
 
 function updatePunchButtonState() {
+    renderForgottenExtraNotice();
     if (!selectedWorker) return;
+    if (!hasVerifiedAttendanceData()) {
+        btnToggleAttendance.disabled = true;
+        btnPunchText.textContent = 'Esperando conexión';
+        employeeStatusBox.textContent = 'Se conservan los últimos datos. Reconecta para registrar una marcación.';
+        lunchToggleGroup.style.display = 'none';
+        earlyCheckinCard.style.display = 'none';
+        return;
+    }
 
     const todayStr = getTodayDateString();
     const workerRecordsToday = attendanceRecords.filter(r => r.employee_name === selectedWorker.name && r.date === todayStr);
@@ -1076,6 +1457,18 @@ function evaluateCheckInTiming() {
 
 async function handleAttendancePunch() {
     if (!selectedWorker || isPunchInProgress) return;
+    if (dbMode === 'supabase' && (loadWorkersAndSchedules.verified === false || loadAttendanceRecords.verified === false)) {
+        btnToggleAttendance.disabled = true;
+        alert('No se han podido verificar los datos de la nube. Recarga la página antes de registrar una marcación.');
+        return;
+    }
+    if (!activeWorkers.some(worker => worker.name === selectedWorker.name && worker.is_active !== false)) {
+        selectedWorker = null;
+        employeeSelect.value = '';
+        handleWorkerChange();
+        alert('El trabajador ya no está activo. Actualiza la lista antes de marcar.');
+        return;
+    }
     const punchWorkerName = selectedWorker.name;
     const previousShift = attendanceRecords.find(record =>
         record.employee_name === punchWorkerName && record.date === getTodayDateString() && record.check_in && !record.check_out
@@ -1085,6 +1478,18 @@ async function handleAttendancePunch() {
     btnToggleAttendance.disabled = true;
 
     try {
+        if (dbMode === 'supabase' && loadWorkersAndSchedules.verified === true && loadAttendanceRecords.verified === true) {
+            const lunchChoice = lunchCheckbox.checked;
+            const earlyChoice = earlyCheckinCheckbox.checked;
+            if (!await loadAllData()) {
+                alert('No se pudo confirmar el estado actual de la jornada. Recarga la página y reintenta.');
+                return;
+            }
+            if (selectedWorker?.name === punchWorkerName) {
+                lunchCheckbox.checked = lunchChoice;
+                earlyCheckinCheckbox.checked = earlyChoice;
+            }
+        }
         const closedIds = await autoCheckoutActiveShifts(true);
         if (selectedWorker?.name !== punchWorkerName) return;
         if (previousShift && (closedIds.includes(previousShift.id) ||
@@ -1101,9 +1506,7 @@ async function handleAttendancePunch() {
         const currentTimeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:00`;
         const currentMinutes = (now.getHours() * 60) + now.getMinutes();
 
-        const todayDayKey = DAYS_ES[now.getDay()];
-        const schedule = workerSchedules[selectedWorker.name] || {};
-        const todaySchedule = schedule[todayDayKey];
+        const todaySchedule = getRecordDaySchedule({ employee_name: selectedWorker.name, date: todayStr });
 
         const activeShift = attendanceRecords.find(r =>
             r.employee_name === selectedWorker.name &&
@@ -1116,17 +1519,18 @@ async function handleAttendancePunch() {
             // CHECK-OUT OPERATION
             // ==============================================================
             const tookLunch = getRecordLunchChoice(activeShift);
-            const accounting = calculateShiftAccounting(activeShift, currentTimeStr, todaySchedule);
-            const updatedShift = {
+            const shiftSchedule = getRecordDaySchedule(activeShift);
+            const accounting = calculateShiftAccounting(activeShift, currentTimeStr, shiftSchedule);
+            const updatedShift = attachRecordScheduleSnapshot({
                 ...activeShift,
                 check_out: currentTimeStr,
                 ...accounting,
                 lunch: tookLunch,
                 notes: `${activeShift.notes ? activeShift.notes + ' | ' : ''}Salida a las ${formatTimeTo12H(currentTimeStr)}. ${tookLunch ? 'Refrigerio descontado (-1h).' : 'Jornada corrida (sin descuento de refrigerio).'}${accounting.extra_minutes > 0 ? ' Tiempo extra trabajado: ' + minutesToHoursMinutes(accounting.extra_minutes) + '.' : ''}`
-            };
+            }, shiftSchedule);
 
             if (dbMode === 'supabase' && supabaseClient) {
-                const { error } = await supabaseClient
+                const { data, error } = await supabaseClient
                     .from('asistencias_v2')
                     .update({
                         check_out: updatedShift.check_out,
@@ -1136,12 +1540,24 @@ async function handleAttendancePunch() {
                         owed_minutes: updatedShift.owed_minutes,
                         notes: updatedShift.notes
                     })
-                    .eq('id', activeShift.id);
+                    .eq('id', activeShift.id).is('check_out', null).select('id');
 
                 if (error) throw error;
+                if (!data?.length) {
+                    await loadAttendanceRecords();
+                    handleWorkerChange();
+                    alert('Esta salida ya fue registrada o modificada desde otro dispositivo. Se actualizó la pantalla.');
+                    return;
+                }
             } else {
                 let localList = getLocalAttendance();
-                localList = localList.map(r => r.id === activeShift.id ? updatedShift : r);
+                if (!localList.some(record => record.id === activeShift.id && !record.check_out)) {
+                    await loadAttendanceRecords();
+                    handleWorkerChange();
+                    alert('La jornada ya no está abierta. Se actualizó la pantalla.');
+                    return;
+                }
+                localList = localList.map(r => r.id === activeShift.id && !r.check_out ? updatedShift : r);
                 saveLocalAttendance(localList);
             }
 
@@ -1192,7 +1608,7 @@ async function handleAttendancePunch() {
                 }
             }
 
-            const newShift = {
+            const newShift = attachRecordScheduleSnapshot({
                 id: generateUUID(),
                 employee_name: selectedWorker.name,
                 date: todayStr,
@@ -1205,7 +1621,7 @@ async function handleAttendancePunch() {
                 owed_minutes: 0,
                 lunch: tookLunch,
                 notes: notes
-            };
+            }, todaySchedule);
 
             if (dbMode === 'supabase' && supabaseClient) {
                 const { error } = await supabaseClient
@@ -1241,7 +1657,8 @@ async function handleAttendancePunch() {
         alert("Ocurrió un error al registrar la marcación: " + err.message);
     } finally {
         isPunchInProgress = false;
-        btnToggleAttendance.disabled = !selectedWorker;
+        btnToggleAttendance.disabled = !selectedWorker || (dbMode === 'supabase' &&
+            (loadWorkersAndSchedules.verified === false || loadAttendanceRecords.verified === false));
     }
 }
 
@@ -1305,7 +1722,10 @@ function getFilteredAttendanceRecords() {
 
 function getDetectedAbsences(forMonth = null, workerName = null, sourceRecords = attendanceRecords) {
     const absences = [];
-    const now = new Date();
+    const staleRemote = dbMode === 'supabase' && loadAttendanceRecords.verified === false;
+    if (staleRemote && !loadAttendanceRecords.hasLoaded) return absences;
+    const now = staleRemote && loadAttendanceRecords.verifiedAt
+        ? new Date(loadAttendanceRecords.verifiedAt) : new Date();
     const currentYear = now.getFullYear();
     const currentMonth = now.getMonth();
 
@@ -1355,13 +1775,13 @@ function getDetectedAbsences(forMonth = null, workerName = null, sourceRecords =
             const dateStr = `${targetYear}-${String(targetMonthIdx + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
             const dateObj = new Date(targetYear, targetMonthIdx, day);
             const dayKey = DAYS_ES[dateObj.getDay()];
-            const daySched = schedule[dayKey];
+            const daySched = getScheduleForDate(worker.name, dateStr)?.[dayKey];
 
             // If scheduled to work on this day
             if (daySched && daySched.active) {
                 // A permission credits the debt but does not remove the historical absence.
                 const hasRecord = sourceRecords.some(record => {
-                    if (record.employee_name !== worker.name || record.date !== dateStr || record.type === 'Ajuste' || record.type === 'Permiso') return false;
+                    if (record.employee_name !== worker.name || record.date !== dateStr || record.type === 'Ajuste' || record.type === 'Permiso' || isCorrectedAbsence(record)) return false;
                     if (record.type !== 'Trabajo' || !record.check_in) return true;
                     return hasScheduledWork(record, daySched);
                 });
@@ -1416,6 +1836,7 @@ function getJustificationMinutes(record) {
 }
 
 function attachAbsenceJustifications(records) {
+    records = records.filter(record => !isCorrectedAbsence(record));
     const credits = new Map();
     const keyFor = record => JSON.stringify([record.employee_name, record.date]);
     records.forEach(record => {
@@ -1509,13 +1930,14 @@ function calculateWeeklyGoal(worker, schedule, records, now = new Date()) {
     if (!Number.isFinite(targetHours) || targetHours < 0) targetHours = 48;
     const createdAt = worker.created_at || schedule.created_at;
     const created = createdAt ? new Date(String(createdAt).slice(0, 10) + 'T00:00:00') : null;
-    if (created && created >= monday && created <= now) {
+    if ((created && created >= monday && created <= now) || schedule.history?.length) {
         let targetMinutes = 0;
         for (let day = 0; day < 7; day++) {
             const date = new Date(monday);
             date.setDate(monday.getDate() + day);
-            const daySchedule = schedule[DAYS_ES[date.getDay()]];
-            if (date < created || !daySchedule?.active) continue;
+            const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+            const daySchedule = (getScheduleForDate(worker.name, dateStr) || schedule)[DAYS_ES[date.getDay()]];
+            if ((created && date < created) || !daySchedule?.active) continue;
             const storedNetMinutes = Number(daySchedule.netMinutes);
             targetMinutes += daySchedule.netMinutes != null && Number.isFinite(storedNetMinutes)
                 ? Math.max(0, storedNetMinutes)
@@ -1538,7 +1960,7 @@ function calculateWeeklyGoal(worker, schedule, records, now = new Date()) {
         if (record.type === 'Falta' || record.type === 'Ajuste') continue;
 
         if (record.type === 'Trabajo' && record.date === today && record.check_in && !record.check_out) {
-            const daySchedule = schedule[DAYS_ES[date.getDay()]];
+            const daySchedule = getRecordDaySchedule(record) || schedule[DAYS_ES[date.getDay()]];
             const isScheduled = daySchedule?.active && !isOutsideScheduledShift(record, daySchedule);
             const nowMinutes = now.getHours() * 60 + now.getMinutes();
             const endMinutes = isScheduled ? Math.min(nowMinutes, timeStringToMinutes(daySchedule.out)) : nowMinutes;
@@ -1750,6 +2172,17 @@ function populateMonthFilter() {
         }
     });
 
+    activeWorkers.forEach(worker => {
+        const joined = worker.created_at || workerSchedules[worker.name]?.created_at;
+        if (!/^\d{4}-\d{2}-\d{2}/.test(joined || '')) return;
+        const [year, month] = joined.slice(0, 7).split('-').map(Number);
+        const cursor = new Date(year, month - 1, 1);
+        const current = new Date(now.getFullYear(), now.getMonth(), 1);
+        for (; cursor <= current; cursor.setMonth(cursor.getMonth() + 1)) {
+            monthsSet.add(`${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}`);
+        }
+    });
+
     const sortedMonths = Array.from(monthsSet).sort().reverse();
     sortedMonths.forEach(mStr => {
         const [year, month] = mStr.split('-');
@@ -1838,7 +2271,7 @@ function renderAttendanceTable() {
 
         const hoursDisplay = record.type === 'Falta'
             ? `<strong style="color: var(--text-muted); font-size: 13.5px;">0.0 h</strong>`
-            : `<strong style="color: var(--primary); font-size: 14px;">${record.hours_credited ? record.hours_credited.toFixed(1) + ' h' : '0.0 h'}</strong>`;
+            : `<strong style="color: var(--primary); font-size: 14px;">${(Number(record.hours_credited) || 0).toFixed(1)} h</strong>`;
 
         let actionsCol = '';
         if (record.is_auto_absence) {
@@ -1870,7 +2303,7 @@ function renderAttendanceTable() {
             <td>${extraChip}</td>
             <td>${typeChip}</td>
             <td style="max-width: 260px; font-size: 12px; color: var(--text-secondary);">
-                ${escapeAttendanceHtml(record.notes || '-')}
+                ${escapeAttendanceHtml(getAttendanceDisplayNotes(record) || '-')}
                 ${record.type === 'Falta' ? `<br><span class="badge-owed-mini">Ausencia registrada: ${minutesToHoursMinutes(record.absence_minutes)}</span><br><span class="${record.is_fully_justified ? 'chip-permiso' : 'chip-absence'}">${record.is_fully_justified ? 'Justificada · conservada en el historial' : record.is_partially_justified ? 'Justificada parcialmente' : 'Sin justificar'}</span>` : ''}
             </td>
             <td style="text-align: center;">
@@ -2013,6 +2446,11 @@ function setupAddWorkerWizard() {
 
     // Save Worker (Step 2 -> Step 3)
     btnWizardSave.addEventListener('click', async () => {
+        if (btnWizardSave.disabled) return;
+        if (!hasVerifiedAttendanceData()) {
+            alert('Espera a que se restablezca la conexión antes de modificar trabajadores u horarios.');
+            return;
+        }
         const isEditing = editingWorkerName !== null;
         const name = isEditing ? editingWorkerName : newWorkerNameInput.value.trim();
         const existingWorker = activeWorkers.find(w => w.name.toLowerCase() === name.toLowerCase());
@@ -2023,7 +2461,7 @@ function setupAddWorkerWizard() {
         const emoji = selectedWorkerEmojiInput.value || '🌸';
 
         // Extract schedule from wizard inputs
-        const newSchedule = {};
+        let newSchedule = {};
         let totalNetWeeklyMinutes = 0;
 
         for (const row of scheduleRows) {
@@ -2065,6 +2503,8 @@ function setupAddWorkerWizard() {
             const createdAt = existingWorker?.created_at || workerSchedules[name]?.created_at || todayStr;
             const newWorkerObj = { ...existingWorker, name, emoji, is_active: true, created_at: createdAt };
             newSchedule.created_at = createdAt;
+            if (isEditing) await preserveExistingShiftSchedules(name);
+            newSchedule = mergeScheduleHistory(workerSchedules[name], newSchedule, todayStr);
 
             // 1. Save to Supabase or Local
             if (dbMode === 'supabase' && supabaseClient) {
@@ -2257,6 +2697,7 @@ function setupEditWorkerSchedule() {
 // Reduce Debt
 function setupReduceDebt() {
     if (!btnReduceDebt) return;
+    let isSaving = false;
 
     const modalReduceDebt = document.getElementById('modalReduceDebt');
     const btnCloseReduceDebt = document.getElementById('btnCloseReduceDebt');
@@ -2292,13 +2733,17 @@ function setupReduceDebt() {
     if (formReduceDebt) {
         formReduceDebt.addEventListener('submit', async (e) => {
             e.preventDefault();
-            if (!selectedWorker) return;
+            if (!selectedWorker || isSaving) return;
+            if (!hasVerifiedAttendanceData()) {
+                alert('Espera a recuperar la conexión antes de modificar la deuda.');
+                return;
+            }
 
             const h = parseInt(reduceDebtHours.value, 10) || 0;
             const m = parseInt(reduceDebtMinutes.value, 10) || 0;
             const mins = (h * 60) + m;
 
-            if (mins <= 0) {
+            if (mins <= 0 || h < 0 || m < 0 || m > 59) {
                 alert("Por favor ingresa un tiempo mayor a 0.");
                 return;
             }
@@ -2323,6 +2768,11 @@ function setupReduceDebt() {
                 notes: notesVal
             };
 
+            isSaving = true;
+            const submitButton = formReduceDebt.querySelector('button[type="submit"]');
+            const buttonText = submitButton?.textContent;
+            if (submitButton) { submitButton.disabled = true; submitButton.textContent = 'Guardando...'; }
+            let persisted = false;
             try {
                 if (dbMode === 'supabase' && supabaseClient) {
                     const { error } = await supabaseClient
@@ -2334,13 +2784,22 @@ function setupReduceDebt() {
                     localList.unshift(newRecord);
                     saveLocalAttendance(localList);
                 }
+                persisted = true;
+                attendanceRecords = [newRecord, ...attendanceRecords.filter(record => record.id !== newRecord.id)];
 
                 modalReduceDebt.classList.remove('active');
-                await loadAttendanceRecords();
+                if (await loadAttendanceRecords() === false) {
+                    alert('El ajuste quedó guardado. La lista se actualizará cuando vuelva la conexión.');
+                    return;
+                }
                 handleWorkerChange(); // Refresh UI for the worker
                 alert('Deuda reducida con éxito.');
             } catch (err) {
-                alert('Error al reducir deuda: ' + err.message);
+                alert(persisted ? 'El ajuste quedó guardado, pero no se pudo actualizar la lista. Recarga cuando vuelva la conexión.'
+                    : 'Error al reducir deuda: ' + err.message);
+            } finally {
+                isSaving = false;
+                if (submitButton) { submitButton.disabled = false; submitButton.textContent = buttonText; }
             }
         });
     }
@@ -2389,6 +2848,7 @@ function setupDeleteWorker() {
 // ==========================================================================
 
 function setupAdminRegisterModal() {
+    let isSaving = false;
     if (btnAdminActions) {
         btnAdminActions.addEventListener('click', () => {
             requireAdmin(() => {
@@ -2420,6 +2880,11 @@ function setupAdminRegisterModal() {
 
     formAdminRegister.addEventListener('submit', async (e) => {
         e.preventDefault();
+        if (isSaving) return;
+        if (!hasVerifiedAttendanceData()) {
+            alert('Espera a recuperar la conexión antes de guardar registros.');
+            return;
+        }
 
         const type = adminRegisterType.value;
         const dateVal = adminRegisterDate.value;
@@ -2430,6 +2895,10 @@ function setupAdminRegisterModal() {
 
         if (!dateVal) {
             alert('Por favor selecciona una fecha.');
+            return;
+        }
+        if (!['Feriado', 'Permiso', 'Falta'].includes(type) || hours < 0 || hours > 24 || mins < 0 || mins > 59) {
+            alert('Revisa el tipo de registro y las horas y minutos ingresados.');
             return;
         }
 
@@ -2459,7 +2928,7 @@ function setupAdminRegisterModal() {
             checkOut = null;
         }
 
-        const recordsToInsert = workersToCredit.map(workerName => ({
+        const recordsToInsert = workersToCredit.map(workerName => attachRecordScheduleSnapshot({
             id: generateUUID(),
             employee_name: workerName,
             date: dateVal,
@@ -2471,8 +2940,13 @@ function setupAdminRegisterModal() {
             extra_minutes: 0,
             owed_minutes: owedMins,
             notes: notes
-        }));
+        }, getRecordDaySchedule({ employee_name: workerName, date: dateVal })));
 
+        isSaving = true;
+        const submitButton = formAdminRegister.querySelector('button[type="submit"]');
+        const buttonText = submitButton?.textContent;
+        if (submitButton) { submitButton.disabled = true; submitButton.textContent = 'Guardando...'; }
+        let persisted = false;
         try {
             if (dbMode === 'supabase' && supabaseClient) {
                 const { error } = await supabaseClient
@@ -2484,15 +2958,25 @@ function setupAdminRegisterModal() {
                 recordsToInsert.forEach(r => localList.unshift(r));
                 saveLocalAttendance(localList);
             }
+            persisted = true;
+            const insertedIds = new Set(recordsToInsert.map(record => record.id));
+            attendanceRecords = [...recordsToInsert, ...attendanceRecords.filter(record => !insertedIds.has(record.id))];
 
             modalAdminRegister.classList.remove('active');
-            await loadAttendanceRecords();
+            if (await loadAttendanceRecords() === false) {
+                alert('El registro quedó guardado. La lista se actualizará cuando vuelva la conexión.');
+                return;
+            }
             if (selectedWorker) {
                 updateWorkerStats();
             }
 
         } catch (err) {
-            alert('Error al registrar feriado/permiso: ' + err.message);
+            alert(persisted ? 'El registro quedó guardado, pero no se pudo actualizar la lista. Recarga cuando vuelva la conexión.'
+                : 'Error al registrar feriado/permiso: ' + err.message);
+        } finally {
+            isSaving = false;
+            if (submitButton) { submitButton.disabled = false; submitButton.textContent = buttonText; }
         }
     });
 }
@@ -2519,6 +3003,7 @@ function setupConfirmModal() {
 
 function setupManualPunchModal() {
     if (!formManualPunch) return;
+    let isSaving = false;
 
     if (btnCloseManualPunch) {
         btnCloseManualPunch.addEventListener('click', () => {
@@ -2528,6 +3013,11 @@ function setupManualPunchModal() {
 
     formManualPunch.addEventListener('submit', async (e) => {
         e.preventDefault();
+        if (isSaving) return;
+        if (!hasVerifiedAttendanceData()) {
+            alert('Espera a recuperar la conexión antes de regularizar una marcación.');
+            return;
+        }
         let authorized = false;
         requireAdmin(() => { authorized = true; });
         if (!authorized) return;
@@ -2555,58 +3045,100 @@ function setupManualPunchModal() {
         const netMins = Math.max(0, grossMins - lunchDeduction);
         const credited = Number((netMins / 60).toFixed(2));
 
-        // Evaluate against worker schedule
-        const d = new Date(dateVal + 'T00:00:00');
-        const dayKey = DAYS_ES[d.getDay()];
-        const sched = (workerSchedules[workerName] && workerSchedules[workerName][dayKey]) || null;
-
-        const accounting = calculateShiftAccounting({
-            employee_name: workerName,
-            date: dateVal,
-            check_in: inVal,
-            lunch: tookLunch,
-            late_minutes: sched?.active && inMins > timeStringToMinutes(sched.in) && inMins < timeStringToMinutes(sched.out)
-                ? inMins - timeStringToMinutes(sched.in) : 0,
-            notes: notesVal
-        }, outVal, sched);
-        const lateMins = accounting.late_minutes;
-        const extraMins = accounting.extra_minutes;
-        const owedMins = accounting.owed_minutes;
-
-        const newShift = {
-            id: generateUUID(),
-            employee_name: workerName,
-            date: dateVal,
-            check_in: `${inVal}:00`,
-            check_out: `${outVal}:00`,
-            type: 'Trabajo',
-            hours_credited: credited,
-            late_minutes: lateMins,
-            extra_minutes: extraMins,
-            owed_minutes: owedMins,
-            notes: `${notesVal} (${tookLunch ? 'Con refrigerio -1h' : 'Sin refrigerio'}).`
-        };
-
+        isSaving = true;
+        const submitButton = formManualPunch.querySelector('button[type="submit"]');
+        const buttonText = submitButton?.textContent;
+        if (submitButton) { submitButton.disabled = true; submitButton.textContent = 'Guardando...'; }
+        let workSaved = false;
+        let correctionsComplete = false;
         try {
-            if (dbMode === 'supabase' && supabaseClient) {
-                const { error } = await supabaseClient
-                    .from('asistencias_v2')
-                    .insert([newShift]);
-                if (error) throw error;
-            } else {
-                const localList = getLocalAttendance();
-                localList.unshift(newShift);
-                saveLocalAttendance(localList);
+            if (await loadAttendanceRecords() === false) {
+                throw new Error('No se pudieron verificar las marcaciones existentes. Reintenta cuando vuelva la conexión.');
             }
+            const dailyRecords = attendanceRecords.filter(record => record.employee_name === workerName && record.date === dateVal);
+            const workRecords = dailyRecords.filter(record => record.type === 'Trabajo' && record.check_in);
+            const exact = workRecords.find(record => record.check_out &&
+                timeStringToMinutes(record.check_in) === inMins && timeStringToMinutes(record.check_out) === outMins);
+            const overlap = workRecords.find(record => record !== exact &&
+                inMins < (record.check_out ? timeStringToMinutes(record.check_out) : Infinity) &&
+                outMins > timeStringToMinutes(record.check_in));
+            if (overlap) {
+                throw new Error('Ese horario se superpone con una marcación existente. Revisa la jornada antes de guardarla.');
+            }
+            if (exact && getRecordLunchChoice(exact) !== tookLunch) {
+                throw new Error('Esa jornada ya está registrada con otra elección de almuerzo. Revisa el registro existente.');
+            }
+            const absences = dailyRecords.filter(record => record.type === 'Falta' && !isCorrectedAbsence(record));
+            if (exact && !absences.length) {
+                alert('La jornada ya está registrada. No se creó otra marcación.');
+                return;
+            }
+            let savedShift = exact;
+            if (!savedShift) {
+                const sched = getRecordDaySchedule({ employee_name: workerName, date: dateVal });
+                const isRecovery = workRecords.some(record => record.check_out &&
+                    timeStringToMinutes(record.check_out) <= inMins && hasScheduledWork(record, sched));
+                const shiftNotes = notesVal + (isRecovery ? ' [Turno de recuperación dentro del horario].' : '');
+                const accounting = calculateShiftAccounting({
+                    employee_name: workerName,
+                    date: dateVal,
+                    check_in: inVal,
+                    lunch: tookLunch,
+                    late_minutes: !isRecovery && sched?.active && inMins > timeStringToMinutes(sched.in) && inMins < timeStringToMinutes(sched.out)
+                        ? inMins - timeStringToMinutes(sched.in) : 0,
+                    notes: shiftNotes
+                }, outVal, sched, {
+                    records: attendanceRecords.filter(record => !(record.employee_name === workerName && record.date === dateVal && record.type === 'Falta'))
+                });
+                savedShift = attachRecordScheduleSnapshot({
+                    id: generateUUID(), employee_name: workerName, date: dateVal,
+                    check_in: `${inVal}:00`, check_out: `${outVal}:00`, type: 'Trabajo',
+                    ...accounting, hours_credited: credited,
+                    notes: `${shiftNotes} (${tookLunch ? 'Con refrigerio -1h' : 'Sin refrigerio'}).`
+                }, sched);
+                if (dbMode === 'supabase' && supabaseClient) {
+                    const { error } = await supabaseClient.from('asistencias_v2').insert([savedShift]);
+                    if (error) throw error;
+                } else {
+                    saveLocalAttendance([savedShift, ...getLocalAttendance()]);
+                }
+                attendanceRecords = [savedShift, ...attendanceRecords];
+            }
+            workSaved = true;
+            const correctableAbsences = hasScheduledWork(savedShift, getRecordDaySchedule(savedShift)) ? absences : [];
+            for (const absence of correctableAbsences) {
+                const notes = `${absence.notes || ''} | [Falta corregida por asistencia: ${savedShift.id}]`;
+                if (dbMode === 'supabase' && supabaseClient) {
+                    let query = supabaseClient.from('asistencias_v2').update({ notes })
+                        .eq('id', absence.id).eq('type', 'Falta');
+                    query = absence.notes == null ? query.is('notes', null) : query.eq('notes', absence.notes);
+                    const { data, error } = await query.select('id');
+                    if (error) throw error;
+                    if (!data?.length) throw new Error('La falta cambió desde otro dispositivo. Vuelve a cargar los datos y reintenta.');
+                } else {
+                    saveLocalAttendance(getLocalAttendance().map(record => record.id === absence.id ? { ...record, notes } : record));
+                }
+                attendanceRecords = attendanceRecords.map(record => record.id === absence.id ? { ...record, notes } : record);
+            }
+            correctionsComplete = true;
 
             modalManualPunch.classList.remove('active');
-            await loadAttendanceRecords();
+            if (await loadAttendanceRecords() === false) throw new Error('No se pudo actualizar la lista.');
             if (selectedWorker && selectedWorker.name === workerName) {
                 updateWorkerStats();
             }
             alert('¡Marcación regularizada guardada con éxito! La jornada ha sido contabilizada.');
         } catch (err) {
-            alert('Error al guardar marcación: ' + err.message);
+            if (workSaved) {
+                alert(correctionsComplete
+                    ? 'La asistencia quedó guardada, pero no se pudo actualizar la lista. Recarga cuando vuelva la conexión.'
+                    : 'La asistencia quedó guardada, pero la corrección de la falta sigue pendiente. Vuelve a guardar el mismo horario para completarla sin duplicar horas. ' + err.message);
+            } else {
+                alert('Error al guardar marcación: ' + err.message);
+            }
+        } finally {
+            isSaving = false;
+            if (submitButton) { submitButton.disabled = false; submitButton.textContent = buttonText; }
         }
     });
 }
@@ -2648,81 +3180,292 @@ window.quickRegularizePunch = function (workerName, dateStr, schedIn, schedOut, 
 // 10. EXCEL EXPORT (ExcelJS)
 // ==========================================================================
 
+function createAttendanceExcelWorkbook(records, options = {}) {
+    const { month = filterMonth.value, employee = filterEmployee.value,
+        week = filterWeek.value, type = filterType.value, now = new Date(),
+        monthlyRecords = getCombinedAttendanceRecords(month) } = options;
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'Nuevo Horizonte';
+    workbook.title = 'Control de asistencias';
+    workbook.subject = 'Resumen y detalle de asistencias del personal';
+    workbook.created = now;
+    workbook.modified = now;
+    workbook.calcProperties = { fullCalcOnLoad: true };
+    workbook.views = [{ activeTab: 0 }];
+
+    const colors = { ink: 'FF263343', accent: 'FF9D174D', light: 'FFFDF2F8',
+        stripe: 'FFF7F8FA', line: 'FFE3E7ED', muted: 'FF64748B', white: 'FFFFFFFF',
+        red: 'FFB42318', green: 'FF087F5B', amber: 'FF9A6700' };
+    const hoursFormat = '#,##0.00;[Red](#,##0.00);"—"';
+    const countFormat = '#,##0;[Red](#,##0);"—"';
+    const monthIsValid = /^\d{4}-(0[1-9]|1[0-2])$/.test(month || '');
+    const period = monthIsValid
+        ? new Date(Number(month.slice(0, 4)), Number(month.slice(5, 7)) - 1, 1)
+            .toLocaleDateString('es-PE', { month: 'long', year: 'numeric' }) : 'Todos los meses';
+    const monthDays = monthIsValid ? new Date(Number(month.slice(0, 4)), Number(month.slice(5, 7)), 0).getDate() : 31;
+    const weekText = week && week !== 'todas'
+        ? `Días ${(Number(week) - 1) * 7 + 1}–${Math.min(Number(week) * 7, monthDays)}` : 'Todos los días';
+    const typeNames = { todos: 'Todos los movimientos', Trabajo: 'Trabajo', Tardanza: 'Tardanzas',
+        Extra: 'Horas extras', Falta: 'Faltas', Permiso: 'Permisos', Feriado: 'Feriados', Ajuste: 'Ajustes' };
+    const scope = `Personal: ${!employee || employee === 'todos' ? 'Todos' : employee}. ${weekText}. ${typeNames[type] || type || 'Todos los movimientos'}.`;
+    const issued = now.toLocaleString('es-PE', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
+    const sorted = records.filter(record => !isCorrectedAbsence(record)).slice().sort((a, b) =>
+        (a.date || '').localeCompare(b.date || '') || (a.employee_name || '').localeCompare(b.employee_name || '', 'es') ||
+        (a.check_in || '').localeCompare(b.check_in || '') || String(a.id || '').localeCompare(String(b.id || '')));
+    const closedWork = record => record.type === 'Trabajo' && record.check_in && record.check_out &&
+        timeStringToMinutes(record.check_out) >= timeStringToMinutes(record.check_in);
+    const openCount = sorted.filter(record => record.type === 'Trabajo' && !record.check_out).length;
+    const invalidCount = sorted.filter(record => record.type === 'Trabajo' && record.check_out && !closedWork(record)).length;
+    const number = value => Number.isFinite(Number(value)) ? Number(value) : 0;
+    const numericHours = record => record.hours_credited != null && record.hours_credited !== '' &&
+        Number.isFinite(Number(record.hours_credited)) ? Number(record.hours_credited) : null;
+    const total = (rows, key) => rows.reduce((sum, row) => sum + number(row[key]), 0);
+    const fill = color => ({ type: 'pattern', pattern: 'solid', fgColor: { argb: color } });
+
+    function configureSheet(name, columns, headerRow) {
+        const sheet = workbook.addWorksheet(name, { properties: { tabColor: { argb: name === 'Resumen' ? colors.accent : colors.muted } } });
+        sheet.columns = columns;
+        sheet.properties.defaultRowHeight = 21;
+        sheet.views = [{ state: 'frozen', xSplit: name === 'Detalle' ? 3 : 1, ySplit: headerRow,
+            topLeftCell: `${name === 'Detalle' ? 'D' : 'B'}${headerRow + 1}`, showGridLines: false, zoomScale: 90 }];
+        sheet.pageSetup = { paperSize: 9, orientation: 'landscape', fitToPage: true,
+            fitToWidth: 1, fitToHeight: 0, horizontalCentered: true,
+            margins: { left: 0.25, right: 0.25, top: 0.45, bottom: 0.45, header: 0.2, footer: 0.2 },
+            printTitlesRow: `${headerRow}:${headerRow}` };
+        sheet.headerFooter = {
+            oddHeader: '&L&"Arial,Bold"&9Nuevo Horizonte&C&"Arial,Regular"&9Control de asistencias',
+            oddFooter: `&L&"Arial,Regular"&8${period.replace(/&/g, '&&')}&C${name}&RPágina &P de &N`
+        };
+        const lastColumn = String.fromCharCode(64 + columns.length);
+        sheet.mergeCells(`A2:${lastColumn}2`);
+        const title = sheet.getCell('A2');
+        title.value = name === 'Resumen' ? 'NUEVO HORIZONTE · RESUMEN DE ASISTENCIAS' : 'NUEVO HORIZONTE · DETALLE DE ASISTENCIAS';
+        title.font = { name: 'Arial', size: 16, bold: true, color: { argb: colors.ink } };
+        title.border = { bottom: { style: 'medium', color: { argb: colors.accent } } };
+        sheet.getRow(2).height = 31;
+        for (const [row, text] of [[3, `${period.charAt(0).toUpperCase() + period.slice(1)}. Emitido: ${issued}`], [4, scope]]) {
+            sheet.mergeCells(`A${row}:${lastColumn}${row}`);
+            sheet.getCell(`A${row}`).value = text;
+            sheet.getCell(`A${row}`).font = { name: 'Arial', size: 10, color: { argb: colors.muted } };
+            sheet.getRow(row).height = 21;
+        }
+        sheet.getRow(headerRow).values = columns.map(column => column.label);
+        sheet.getRow(headerRow).height = 32;
+        sheet.getRow(headerRow).eachCell(cell => {
+            cell.fill = fill(colors.ink);
+            cell.font = { name: 'Arial', size: 10, bold: true, color: { argb: colors.white } };
+            cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+            cell.border = { right: { style: 'thin', color: { argb: colors.white } } };
+        });
+        return sheet;
+    }
+
+    function styleDataRow(row, index, textColumns = []) {
+        row.height = 24;
+        row.eachCell({ includeEmpty: true }, (cell, col) => {
+            cell.font = { name: 'Arial', size: 10, color: { argb: colors.ink } };
+            cell.alignment = { vertical: 'middle', horizontal: textColumns.includes(col) ? 'left' : 'right' };
+            if (index % 2) cell.fill = fill(colors.stripe);
+        });
+    }
+
+    function addTotal(sheet, rows, first, keys, columns) {
+        const last = first + rows.length - 1;
+        const values = { [columns[0].key]: 'TOTAL' };
+        for (const key of keys) {
+            const col = String.fromCharCode(65 + columns.findIndex(column => column.key === key));
+            values[key] = { formula: `SUBTOTAL(109,${col}${first}:${col}${last})`, result: total(rows, key) };
+        }
+        const row = sheet.addRow(values);
+        row.height = 27;
+        row.eachCell({ includeEmpty: true }, cell => {
+            cell.font = { name: 'Arial', size: 10, bold: true, color: { argb: colors.accent } };
+            cell.fill = fill(colors.light);
+            cell.border = { top: { style: 'thin', color: { argb: colors.accent } } };
+            cell.alignment = { vertical: 'middle', horizontal: typeof cell.value === 'string' ? 'left' : 'right' };
+        });
+        return row.number;
+    }
+
+    const summaryColumns = [
+        { key: 'colaborador', label: 'Colaborador', width: 23 },
+        { key: 'presenciales', label: 'Presenciales (h)', width: 12, style: { numFmt: hoursFormat } },
+        { key: 'tardanzas', label: 'Tardanzas (veces)', width: 11, style: { numFmt: countFormat } },
+        { key: 'minutos', label: 'Tardanza (min)', width: 11, style: { numFmt: countFormat } },
+        { key: 'faltas', label: 'Faltas (días)', width: 10, style: { numFmt: countFormat } },
+        { key: 'ausencias', label: 'Ausencias (h)', width: 11, style: { numFmt: hoursFormat } },
+        { key: 'justificadas', label: 'Permisos y feriados (h)', width: 13, style: { numFmt: hoursFormat } },
+        { key: 'recuperadas', label: 'Recuperadas (h)', width: 12, style: { numFmt: hoursFormat } },
+        { key: 'ajustes', label: 'Ajustes de deuda (h)', width: 12, style: { numFmt: hoursFormat } },
+        { key: 'saldo', label: 'Saldo mensual (h)', width: 12, style: { numFmt: hoursFormat } },
+        { key: 'extras', label: 'Extras (h)', width: 11, style: { numFmt: hoursFormat } }
+    ];
+    const summary = configureSheet('Resumen', summaryColumns, 12);
+    summary.mergeCells('A5:K5');
+    summary.getCell('A5').value = `El saldo mensual considera todos los registros del mes. Los demás indicadores corresponden a los filtros elegidos. ${openCount} turno(s) en curso.${invalidCount ? ` ${invalidCount} registro(s) requieren revisar su horario.` : ''}`;
+    summary.getCell('A5').font = { name: 'Arial', size: 10, color: { argb: colors.muted } };
+    summary.getCell('A5').alignment = { wrapText: true, vertical: 'middle' };
+    summary.getRow(5).height = 32;
+    const names = [...new Set(sorted.map(record => record.employee_name))].sort((a, b) => a.localeCompare(b, 'es'));
+    const summaryRows = names.map(name => {
+        const own = sorted.filter(record => record.employee_name === name);
+        const work = own.filter(closedWork);
+        const absentDates = new Map();
+        own.filter(record => record.type === 'Falta').forEach(record => absentDates.set(record.date,
+            Math.max(absentDates.get(record.date) || 0, getAbsenceRecordedMinutes(record))));
+        return { colaborador: name,
+            presenciales: work.reduce((sum, record) => sum + number(numericHours(record)), 0),
+            tardanzas: own.filter(record => record.type === 'Trabajo' && number(record.late_minutes) > 0).length,
+            minutos: own.filter(record => record.type === 'Trabajo').reduce((sum, record) => sum + Math.max(0, number(record.late_minutes)), 0),
+            faltas: absentDates.size,
+            ausencias: [...absentDates.values()].reduce((sum, value) => sum + value, 0) / 60,
+            justificadas: own.reduce((sum, record) => sum + getJustificationMinutes(record), 0) / 60,
+            recuperadas: work.reduce((sum, record) => sum + Math.max(0, -number(record.owed_minutes)), 0) / 60,
+            ajustes: own.filter(record => record.type === 'Ajuste').reduce((sum, record) => sum - number(record.owed_minutes), 0) / 60,
+            saldo: monthIsValid ? calculateMonthlyAttendanceSummary(name, month, monthlyRecords, now).owedMinutes / 60 : null,
+            extras: work.reduce((sum, record) => sum + Math.max(0, number(record.extra_minutes)), 0) / 60 };
+    });
+    const cards = [ ['A7:C7', 'A8:C9', 'Presenciales (h)', 'presenciales'],
+        ['D7:F7', 'D8:F9', 'Tardanza acumulada (min)', 'minutos'],
+        ['G7:H7', 'G8:H9', 'Faltas registradas (días)', 'faltas'], ['I7:K7', 'I8:K9', 'Extras (h)', 'extras'] ];
+    for (const [labelRange, valueRange, label, key] of cards) {
+        summary.mergeCells(labelRange);
+        summary.mergeCells(valueRange);
+        const labelCell = summary.getCell(labelRange.split(':')[0]);
+        labelCell.value = label;
+        labelCell.fill = fill(colors.light);
+        labelCell.font = { name: 'Arial', size: 10, color: { argb: colors.accent } };
+        const valueCell = summary.getCell(valueRange.split(':')[0]);
+        const col = String.fromCharCode(65 + summaryColumns.findIndex(column => column.key === key));
+        valueCell.value = summaryRows.length
+            ? { formula: `SUM(${col}13:${col}${12 + summaryRows.length})`, result: total(summaryRows, key) } : 0;
+        valueCell.numFmt = key === 'faltas' || key === 'minutos' ? countFormat : hoursFormat;
+        valueCell.font = { name: 'Arial', size: 16, bold: true, color: { argb: colors.accent } };
+        valueCell.fill = fill(colors.light);
+        valueCell.alignment = { vertical: 'middle', horizontal: 'left' };
+    }
+    summaryRows.forEach((values, index) => {
+        const row = summary.addRow(values);
+        styleDataRow(row, index, [1]);
+        row.getCell(1).alignment = { horizontal: 'left', vertical: 'middle', wrapText: true };
+        row.height = Math.max(24, Math.ceil(values.colaborador.length / 26) * 13 + 6);
+    });
+    let summaryEnd = 13;
+    if (summaryRows.length) {
+        summaryEnd = addTotal(summary, summaryRows, 13,
+            summaryColumns.slice(1).map(column => column.key).filter(key => key !== 'saldo' || monthIsValid), summaryColumns);
+        summary.autoFilter = { from: 'A12', to: `K${12 + summaryRows.length}` };
+        for (const col of ['D', 'F', 'J']) summary.addConditionalFormatting({ ref: `${col}13:${col}${12 + summaryRows.length}`,
+            rules: [{ type: 'cellIs', operator: 'greaterThan', formulae: [0], style: { font: { color: { argb: colors.red }, bold: true } } }] });
+    } else {
+        summary.mergeCells('A13:K13');
+        summary.getCell('A13').value = 'Sin registros para los filtros elegidos.';
+        summary.getCell('A13').font = { name: 'Arial', size: 10, color: { argb: colors.muted } };
+    }
+    summary.pageSetup.printArea = `A1:K${summaryEnd}`;
+
+    const detailColumns = [
+        { key: 'numero', label: 'N.º', width: 5, style: { numFmt: '0' } },
+        { key: 'fecha', label: 'Fecha', width: 12, style: { numFmt: 'dd/mm/yyyy' } },
+        { key: 'colaborador', label: 'Colaborador', width: 21 },
+        { key: 'entrada', label: 'Entrada', width: 10, style: { numFmt: 'hh:mm AM/PM' } },
+        { key: 'salida', label: 'Salida', width: 10, style: { numFmt: 'hh:mm AM/PM' } },
+        { key: 'horas', label: 'Horas abonadas (h)', width: 12, style: { numFmt: hoursFormat } },
+        { key: 'tardanza', label: 'Tardanza (min)', width: 11, style: { numFmt: countFormat } },
+        { key: 'extras', label: 'Extras (h)', width: 11, style: { numFmt: hoursFormat } },
+        { key: 'tipo', label: 'Tipo de registro', width: 22 },
+        { key: 'notas', label: 'Observaciones', width: 45 }
+    ];
+    const detail = configureSheet('Detalle', detailColumns, 8);
+    detail.mergeCells('A5:J5');
+    detail.getCell('A5').value = 'Horas abonadas incluyen permisos y feriados. Los turnos en curso tienen horas pendientes. Las tardanzas y faltas conservan su historial aunque se justifiquen o recuperen.';
+    detail.getCell('A5').font = { name: 'Arial', size: 10, color: { argb: colors.muted } };
+    detail.getCell('A5').alignment = { wrapText: true, vertical: 'middle' };
+    detail.getRow(5).height = 31;
+    const detailRows = sorted.map((record, index) => {
+        const isWork = record.type === 'Trabajo';
+        const validWork = closedWork(record);
+        const dateParts = (record.date || '').split('-').map(Number);
+        let notes = getAttendanceDisplayNotes(record);
+        if (record.type === 'Falta') notes += `${notes ? ' ' : ''}Ausencia: ${(getAbsenceRecordedMinutes(record) / 60).toFixed(2)} h. ${record.is_fully_justified ? 'Justificada.' : record.is_partially_justified ? 'Justificada parcialmente.' : 'Sin justificar.'}`;
+        if (isWork && number(record.owed_minutes) < 0) notes += ` Tiempo recuperado: ${(-number(record.owed_minutes) / 60).toFixed(2)} h.`;
+        if (record.type === 'Ajuste') notes += ` Ajuste de deuda: ${(-number(record.owed_minutes) / 60).toFixed(2)} h.`;
+        return { numero: index + 1,
+            fecha: dateParts.length === 3 && dateParts.every(Number.isFinite) ? new Date(Date.UTC(dateParts[0], dateParts[1] - 1, dateParts[2])) : null,
+            colaborador: record.employee_name,
+            entrada: isWork && record.check_in ? timeStringToMinutes(record.check_in) / 1440 : null,
+            salida: isWork && record.check_out ? timeStringToMinutes(record.check_out) / 1440 : null,
+            horas: isWork && !validWork ? null : numericHours(record),
+            tardanza: Math.max(0, number(record.late_minutes)),
+            extras: validWork ? Math.max(0, number(record.extra_minutes)) / 60 : null,
+            tipo: isWork ? (!record.check_out ? 'Trabajo en curso' : !validWork ? 'Revisar horario' : 'Trabajo')
+                : record.type === 'Falta' ? 'Inasistencia (Falta)' : record.type,
+            notas: notes.trim() };
+    });
+    detailRows.forEach((values, index) => {
+        const row = detail.addRow(values);
+        styleDataRow(row, index, [3, 9, 10]);
+        row.getCell(2).alignment = { horizontal: 'center', vertical: 'middle' };
+        row.getCell(3).alignment = { horizontal: 'left', vertical: 'middle', wrapText: true };
+        row.getCell(4).alignment = row.getCell(5).alignment = { horizontal: 'center', vertical: 'middle' };
+        row.getCell(9).alignment = { wrapText: true, vertical: 'middle', horizontal: 'left' };
+        row.getCell(10).alignment = { wrapText: true, vertical: 'top', horizontal: 'left' };
+        const noteLines = values.notas.split(/\r?\n/).reduce((sum, line) => sum + Math.max(1, Math.ceil(line.length / 55)), 0);
+        const nameLines = Math.ceil(values.colaborador.length / 24);
+        row.height = Math.max(30, Math.min(409, Math.max(noteLines, nameLines) * 13 + 8));
+        if (values.tipo === 'Trabajo en curso') row.getCell(9).font = { name: 'Arial', size: 10, bold: true, color: { argb: colors.amber } };
+    });
+    let detailEnd = 9;
+    if (detailRows.length) {
+        detailEnd = addTotal(detail, detailRows, 9, ['horas', 'tardanza', 'extras'], detailColumns);
+        detail.mergeCells(`A${detailEnd}:E${detailEnd}`);
+        detail.autoFilter = { from: 'A8', to: `J${8 + detailRows.length}` };
+        detail.addConditionalFormatting({ ref: `G9:G${8 + detailRows.length}`,
+            rules: [{ type: 'cellIs', operator: 'greaterThan', formulae: [0], style: { font: { color: { argb: colors.red }, bold: true } } }] });
+        detail.addConditionalFormatting({ ref: `H9:H${8 + detailRows.length}`,
+            rules: [{ type: 'cellIs', operator: 'greaterThan', formulae: [0], style: { font: { color: { argb: colors.green }, bold: true } } }] });
+    } else {
+        detail.mergeCells('C9:J9');
+        detail.getCell('C9').value = 'Sin registros para los filtros elegidos.';
+        detail.getCell('C9').font = { name: 'Arial', size: 10, color: { argb: colors.muted } };
+    }
+    detail.pageSetup.printArea = `A1:J${detailEnd}`;
+    return workbook;
+}
+
 function setupExcelExport() {
     const excelButtons = document.querySelectorAll('#btnExportExcel, .btn-excel');
     if (!excelButtons || excelButtons.length === 0) return;
-
+    let exporting = false;
     excelButtons.forEach(btn => {
         btn.addEventListener('click', async () => {
+            if (exporting) return;
             if (typeof ExcelJS === 'undefined') {
                 alert("Librería ExcelJS no disponible. Verifica tu conexión a internet.");
                 return;
             }
-
-        try {
-            const workbook = new ExcelJS.Workbook();
-            const worksheet = workbook.addWorksheet('Control de Asistencias');
-
-            worksheet.columns = [
-                { header: 'Colaborador', key: 'colaborador', width: 22 },
-                { header: 'Fecha', key: 'fecha', width: 14 },
-                { header: 'Entrada', key: 'entrada', width: 12 },
-                { header: 'Salida', key: 'salida', width: 12 },
-                { header: 'Horas Abonadas', key: 'horas', width: 16 },
-                { header: 'Tardanza (min)', key: 'tardanza', width: 16 },
-                { header: 'Horas Extras', key: 'extras', width: 16 },
-                { header: 'Tipo', key: 'tipo', width: 20 },
-                { header: 'Observaciones', key: 'notas', width: 40 }
-            ];
-
-            // Title styling
-            worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
-            worksheet.getRow(1).fill = {
-                type: 'pattern',
-                pattern: 'solid',
-                fgColor: { argb: 'FFFF3385' }
-            };
-
-            const selMonth = filterMonth.value;
-            const recordsToExport = getFilteredAttendanceRecords();
-
-            recordsToExport.forEach(r => {
-                let entradaVal = '';
-                let salidaVal = '';
-                if (r.type === 'Falta') {
-                    entradaVal = 'Sin marcar';
-                    salidaVal = 'Sin marcar';
-                } else {
-                    entradaVal = r.check_in ? formatTimeTo12H(r.check_in.substring(0, 5)) : '-';
-                    salidaVal = r.check_out ? formatTimeTo12H(r.check_out.substring(0, 5)) : 'En turno';
-                }
-
-                worksheet.addRow({
-                    colaborador: r.employee_name,
-                    fecha: r.date,
-                    entrada: entradaVal,
-                    salida: salidaVal,
-                    horas: r.hours_credited || 0,
-                    tardanza: r.late_minutes || 0,
-                    extras: r.extra_minutes || 0,
-                    tipo: r.type === 'Falta' ? 'Inasistencia (Falta)' : r.type,
-                    notas: r.notes || ''
-                });
-            });
-
-            const buffer = await workbook.xlsx.writeBuffer();
-            const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `Asistencias_NuevoHorizonte_${selMonth || 'Reporte'}.xlsx`;
-            a.click();
-            window.URL.revokeObjectURL(url);
-
-        } catch (err) {
-            console.error("Error exporting Excel:", err);
-            alert("Error al generar el archivo Excel: " + err.message);
-        }
+            exporting = true;
+            const previousStates = Array.from(excelButtons, button => button.disabled);
+            excelButtons.forEach(button => { button.disabled = true; });
+            try {
+                const recordsToExport = getFilteredAttendanceRecords();
+                const workbook = createAttendanceExcelWorkbook(recordsToExport);
+                const buffer = await workbook.xlsx.writeBuffer();
+                const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                const workerPart = filterEmployee.value !== 'todos' ? '_' + filterEmployee.value.replace(/[^\p{L}\p{N}_-]/gu, '_') : '';
+                a.download = `Asistencias_NuevoHorizonte_${filterMonth.value || 'Reporte'}${workerPart}.xlsx`;
+                a.click();
+                setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+            } catch (err) {
+                console.error("Error exporting Excel:", err);
+                alert("Error al generar el archivo Excel: " + err.message);
+            } finally {
+                exporting = false;
+                excelButtons.forEach((button, index) => { button.disabled = previousStates[index]; });
+            }
         });
     });
 }
@@ -2883,6 +3626,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupDeleteWorker();
     setupAdminRegisterModal();
     setupManualPunchModal();
+    setupForgottenExtraModal();
     setupConfirmModal();
     setupExcelExport();
 

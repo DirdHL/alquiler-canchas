@@ -1539,6 +1539,21 @@ body {
     font-weight: 700;
 }
 
+.forgotten-extra-notice {
+    margin: 14px 0;
+    padding: 16px;
+    border: 1px solid #fbbf24;
+    border-radius: 12px;
+    background: #fffbeb;
+    color: #78350f;
+    text-align: left;
+}
+.forgotten-extra-notice[hidden] { display: none; }
+.forgotten-extra-item { padding-top: 12px; }
+.forgotten-extra-item + .forgotten-extra-item { margin-top: 12px; border-top: 1px solid #fde68a; }
+.forgotten-extra-item p { margin: 5px 0 10px; font-size: 13px; line-height: 1.5; }
+.forgotten-extra-duration { padding: 12px; border-radius: 8px; background: #ecfdf5; color: #065f46; font-weight: 600; }
+
 /* Responsive adjustments */
 @media (max-width: 980px) {
     .attendance-layout {
