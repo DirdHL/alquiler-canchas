@@ -8,6 +8,46 @@ let currentClientsFilter = '';
 let statsCountdownInterval = null;
 let bookingModalIsAdmin = false;
 let availabilityTimeFilter = 'pico';
+const BRISAS_COURTS = ['Cancha 1 (10 jug)', 'Cancha 2 (12 jug)', 'Cancha 3 (16 jug)', 'Cancha Vóley 1', 'Cancha Vóley 2'];
+const BRISAS_ALL_COURTS = 'Brisas Ambas';
+const BRISAS_RATE_DEFAULTS = {
+    cancha3: 25, canchas12: 25, voley: 25, pelota: 5, chaleco: 5,
+    viedom_36_cancha3: 50, viedom_36_canchas12: 40,
+    viedom_612_cancha3: 60, viedom_612_canchas12: 50
+};
+const BRISAS_RATE_INPUTS = {
+    rateGrande: 'cancha3', ratePequena: 'canchas12', rateVoley: 'voley',
+    ratePelota: 'pelota', rateChaleco: 'chaleco',
+    rateVieDom36Grande: 'viedom_36_cancha3', rateVieDom36Pequena: 'viedom_36_canchas12',
+    rateVieDom612Grande: 'viedom_612_cancha3', rateVieDom612Pequena: 'viedom_612_canchas12'
+};
+
+function getBrisasRate(key) {
+    const stored = localStorage.getItem(`canchapro_brisas_rate_${key}`);
+    const rate = stored === null || stored.trim() === '' ? NaN : Number(stored);
+    return Number.isFinite(rate) && rate >= 0 ? rate : BRISAS_RATE_DEFAULTS[key];
+}
+
+function updateBrisasTarifario() {
+    document.querySelectorAll('[data-brisas-rate]').forEach(element => {
+        element.textContent = getBrisasRate(element.getAttribute('data-brisas-rate')).toFixed(2);
+    });
+}
+
+function enableAmOption(select, checkboxId) {
+    if (!select) return;
+    const checkbox = document.getElementById(checkboxId);
+    if (checkbox) checkbox.checked = true;
+    const ids = checkboxId === 'checkEnableAm' ? ['startAmpmSelect', 'endAmpmSelect'] : ['checkCourtStartAmpm', 'checkCourtEndAmpm'];
+    ids.forEach(id => {
+        const input = document.getElementById(id);
+        if (!input || input.querySelector('option[value="am"]')) return;
+        const option = document.createElement('option');
+        option.value = 'am';
+        option.textContent = 'AM';
+        input.appendChild(option);
+    });
+}
 
 // DOM Elementos
 const sidebar = document.getElementById('sidebar');
@@ -34,6 +74,7 @@ const bookingStartTimeInput = {
         const m = document.getElementById('startMinSelect').value;
         const ampm = document.getElementById('startAmpmSelect').value;
         if (!h || !m || !ampm) return "";
+        if (!/^\d{1,2}$/.test(h) || !/^\d{1,2}$/.test(m) || Number(h) < 1 || Number(h) > 12 || Number(m) > 59) return "";
         let hour = parseInt(h, 10);
         if (ampm === 'pm' && hour < 12) hour += 12;
         if (ampm === 'am' && hour === 12) hour = 0;
@@ -54,9 +95,7 @@ const bookingStartTimeInput = {
         if (h12 === 0) h12 = 12;
 
         const startAmpmSelect = document.getElementById('startAmpmSelect');
-        if (ampm === 'am' && startAmpmSelect && !startAmpmSelect.querySelector('option[value="am"]')) {
-            ampm = 'pm';
-        }
+        if (ampm === 'am') enableAmOption(startAmpmSelect, 'checkEnableAm');
 
         document.getElementById('startHourSelect').value = String(h12);
         document.getElementById('startMinSelect').value = String(m).padStart(2, '0');
@@ -102,6 +141,7 @@ const bookingEndTimeInput = {
         const m = document.getElementById('endMinSelect').value;
         const ampm = document.getElementById('endAmpmSelect').value;
         if (!h || !m || !ampm) return "";
+        if (!/^\d{1,2}$/.test(h) || !/^\d{1,2}$/.test(m) || Number(h) < 1 || Number(h) > 12 || Number(m) > 59) return "";
         let hour = parseInt(h, 10);
         if (ampm === 'pm' && hour < 12) hour += 12;
         if (ampm === 'am' && hour === 12) hour = 0;
@@ -122,9 +162,7 @@ const bookingEndTimeInput = {
         if (h12 === 0) h12 = 12;
 
         const endAmpmSelect = document.getElementById('endAmpmSelect');
-        if (ampm === 'am' && endAmpmSelect && !endAmpmSelect.querySelector('option[value="am"]')) {
-            ampm = 'pm';
-        }
+        if (ampm === 'am') enableAmOption(endAmpmSelect, 'checkEnableAm');
 
         document.getElementById('endHourSelect').value = String(h12);
         document.getElementById('endMinSelect').value = String(m).padStart(2, '0');
@@ -410,7 +448,7 @@ function initCalendar() {
                         title: isBlock ? b.name : `${b.name} (${b.sport})${b.pelota === true || b.pelota === 'true' ? (b.sport === 'Vóley' ? ' 🏐' : ' ⚽') : ''}${b.chaleco === true || b.chaleco === 'true' ? ' 🎽' : ''}`,
                         start: formatISOString(start),
                         end: formatISOString(end),
-                        className: isBlock ? 'event-sport-bloqueo' : `${b.court === 'Brisas Grande' ? 'event-cancha-grande' : 'event-cancha-pequena'} ${b.sport === 'Fútbol' ? 'event-sport-futbol' : 'event-sport-voley'}`,
+                        className: isBlock ? 'event-sport-bloqueo' : `${String(b.court).includes('Vóley') ? 'event-cancha-pequena' : 'event-cancha-grande'} ${b.sport === 'Fútbol' ? 'event-sport-futbol' : 'event-sport-voley'}`,
                         extendedProps: b // Keep original data
                     };
                 });
@@ -598,6 +636,7 @@ function setupEventListeners() {
     if (btnOpenTarifario && modalTarifario) {
         btnOpenTarifario.addEventListener('click', () => {
             closeSidebarDrawer();
+            updateBrisasTarifario();
             openModal(modalTarifario);
         });
     }
@@ -667,6 +706,7 @@ function setupEventListeners() {
 
             endHourSelect.value = String(endHour12);
             endMinSelect.value = String(endMin).padStart(2, '0');
+            if (endAmpm === 'am') enableAmOption(endAmpmSelect, 'checkEnableAm');
             endAmpmSelect.value = endAmpm;
             triggerEndChange();
         };
@@ -969,20 +1009,17 @@ function setupEventListeners() {
                     setToggleValue('pelota', true);
                     setToggleValue('chaleco', false);
                 } else {
-                    const dateVal = bookingDateInput.value;
-                    let isWeekend = false;
-                    if (dateVal) {
-                        const dateObj = new Date(dateVal + 'T12:00:00');
-                        const day = dateObj.getDay();
-                        isWeekend = (day === 0 || day === 5 || day === 6);
-                    }
-                    if (isWeekend) {
-                        setToggleValue('pelota', true);
-                        setToggleValue('chaleco', true);
-                    } else {
-                        setToggleValue('pelota', false);
-                        setToggleValue('chaleco', false);
-                    }
+                    const income = calculateBookingIncome({
+                        date: bookingDateInput.value,
+                        startTime: bookingStartTimeInput.value,
+                        endTime: bookingEndTimeInput.value,
+                        court: this.value,
+                        sport: targetSport,
+                        pelota: false,
+                        chaleco: false
+                    });
+                    setToggleValue('pelota', income.equipmentIncluded);
+                    setToggleValue('chaleco', income.equipmentIncluded);
                 }
             }
         });
@@ -1066,11 +1103,11 @@ function toggleBlockFields(isBlock) {
         if (bookingSourceCustomInput) bookingSourceCustomInput.required = false;
 
         // Add "Ambas Canchas" option if not already present, and set it as selected
-        let ambasOption = bookingCourtInput.querySelector('option[value="Ambas"]');
+        let ambasOption = bookingCourtInput.querySelector('option[value="Brisas Ambas"]');
         if (!ambasOption) {
             ambasOption = document.createElement('option');
             ambasOption.value = 'Brisas Ambas';
-            ambasOption.textContent = 'Ambas Canchas';
+            ambasOption.textContent = 'Todas las canchas';
             bookingCourtInput.insertBefore(ambasOption, bookingCourtInput.firstChild);
         }
         bookingCourtInput.value = 'Brisas Ambas';
@@ -1094,7 +1131,7 @@ function toggleBlockFields(isBlock) {
         if (bookingPaymentTypeInput) bookingPaymentTypeInput.required = true;
 
         // Remove "Ambas Canchas" option if present, and fallback to "Grande"
-        const ambasOption = bookingCourtInput.querySelector('option[value="Ambas"]');
+        const ambasOption = bookingCourtInput.querySelector('option[value="Brisas Ambas"]');
         if (ambasOption) {
             ambasOption.remove();
         }
@@ -1625,30 +1662,24 @@ async function fetchBookings() {
     }
 
     // Filter to only include Las Brisas courts to prevent data contamination from other complexes
-    const lasBrisasCourts = ['Cancha 1 (10 jug)', 'Cancha 2 (12 jug)', 'Cancha 3 (16 jug)', 'Cancha Vóley 1', 'Cancha Vóley 2'];
-    return bookings.filter(b => lasBrisasCourts.includes(b.court));
-}
-
-// Local Storage Helper: Get
-function getLocalBookings() {
-    const data = localStorage.getItem('canchapro_reservas_brisas_v2');
-    return data ? JSON.parse(data) : [];
-}
-
-// Local Storage Helper: Save Complete Array
-function saveBookings(bookings) {
-    localStorage.setItem('canchapro_reservas_brisas_v2', JSON.stringify(bookings));
+    return bookings.filter(b => BRISAS_COURTS.includes(b.court) || b.court === BRISAS_ALL_COURTS);
 }
 
 // Local Storage Helper: Get
 function getLocalBookings() {
     const data = localStorage.getItem('canchapro_reservas_brisas');
-    return data ? JSON.parse(data) : [];
+    const previousData = localStorage.getItem('canchapro_reservas_brisas_v2');
+    const current = data ? JSON.parse(data) : [];
+    const previous = previousData ? JSON.parse(previousData) : [];
+    // Preserve reservations written by either version; the current copy wins by ID.
+    return [...previous.filter(b => !current.some(item => item.id === b.id)), ...current];
 }
 
 // Local Storage Helper: Save
 function saveLocalBookings(bookings) {
-    localStorage.setItem('canchapro_reservas_brisas', JSON.stringify(bookings));
+    const data = JSON.stringify(bookings);
+    localStorage.setItem('canchapro_reservas_brisas', data);
+    localStorage.setItem('canchapro_reservas_brisas_v2', data);
 }
 
 // Filter bookings based on UI checkboxes
@@ -1658,7 +1689,8 @@ function filterEvents(bookings) {
         const isVoleyCourt = String(b.court).includes('Cancha Vóley');
 
         const courtMatch = (isFutbol && filterCanchaFutbol.checked) ||
-            (isVoleyCourt && filterCanchaVoley.checked);
+            (isVoleyCourt && filterCanchaVoley.checked) ||
+            (b.court === BRISAS_ALL_COURTS && (filterCanchaFutbol.checked || filterCanchaVoley.checked));
 
         if (b.sport === 'Bloqueo') {
             return courtMatch;
@@ -1668,11 +1700,10 @@ function filterEvents(bookings) {
     });
 }
 
-// Check overlapping bookings
-function checkOverlaps(id, court, date, startTime, endTime) {
+function getCourtScheduleError(date, startTime, endTime) {
     const { start: newStart, end: newEnd } = getStartAndEndDates(date, startTime, endTime);
 
-    if (newStart >= newEnd) {
+    if (!Number.isFinite(newStart.getTime()) || !Number.isFinite(newEnd.getTime()) || newStart >= newEnd) {
         return "La hora de inicio debe ser anterior a la hora de fin.";
     }
 
@@ -1698,6 +1729,15 @@ function checkOverlaps(id, court, date, startTime, endTime) {
     if (isOverlap(newStart, newEnd, closedStartNext, closedEndNext)) {
         return "El local está cerrado de 01:00 AM a 06:00 AM. Por favor elige otro horario.";
     }
+    return null;
+}
+
+// Check overlapping bookings
+function checkOverlaps(id, court, date, startTime, endTime) {
+    const scheduleError = getCourtScheduleError(date, startTime, endTime);
+    if (scheduleError) return scheduleError;
+    const { start: newStart, end: newEnd } = getStartAndEndDates(date, startTime, endTime);
+    const isOverlap = (startA, endA, startB, endB) => startA < endB && endA > startB;
 
     // Check conflicts on the same court (considering midnight crossing)
     for (const event of allEvents) {
@@ -1709,15 +1749,8 @@ function checkOverlaps(id, court, date, startTime, endTime) {
 
             // Overlap check formula: (StartA < EndB) AND (EndA > StartB)
             if (isOverlap(newStart, newEnd, existStart, existEnd)) {
-                let courtName = '';
-                if (court === 'Brisas Ambas') courtName = 'Ambas Canchas';
-                else if (court === 'Brisas Grande') courtName = 'Cancha Grande';
-                else if (court === 'Brisas Pequeña') courtName = 'Cancha Pequeña';
-
-                let eventCourtName = '';
-                if (event.court === 'Brisas Ambas') eventCourtName = 'Ambas Canchas';
-                else if (event.court === 'Brisas Grande') eventCourtName = 'Cancha Grande';
-                else if (event.court === 'Brisas Pequeña') eventCourtName = 'Cancha Pequeña';
+                const courtName = court === BRISAS_ALL_COURTS ? 'Todas las canchas' : court;
+                const eventCourtName = event.court === BRISAS_ALL_COURTS ? 'Todas las canchas' : event.court;
 
                 return `Conflicto de horario: Hay un bloqueo o reserva activa (${event.name} en ${eventCourtName}) que interfiere con este horario en ${courtName} (${event.date} ${event.start_time} - ${event.end_time}).`;
             }
@@ -1784,7 +1817,7 @@ function calculateBookingIncome(params) {
     // Determine day of week
     let isWeekendTier = false; // Friday (5), Saturday (6), Sunday (0)
     if (date) {
-        const parts = String(date).split('-');
+        const parts = getBusinessDate(String(date), cleanStart).split('-');
         if (parts.length === 3) {
             const year = parseInt(parts[0], 10);
             const month = parseInt(parts[1], 10) - 1;
@@ -1805,44 +1838,38 @@ function calculateBookingIncome(params) {
     let equipmentIncluded = false;
 
     if (isVoley) {
-        // Vóley: 25 soles flat rate
-        courtIncome = durationHours * 25;
+        courtIncome = durationHours * getBrisasRate('voley');
         equipmentIncluded = true; // Pelota incluida por defecto
     } else if (isWeekendTier) {
         // Fin de semana (Viernes a Domingo) - Fútbol
         let sumRateMins = 0;
+        const rateCourt = isCancha3 ? 'cancha3' : 'canchas12';
+        const baseRate = getBrisasRate(rateCourt);
+        const afternoonRate = getBrisasRate(`viedom_36_${rateCourt}`);
+        const nightRate = getBrisasRate(`viedom_612_${rateCourt}`);
 
         for (let m = start; m < end; m++) {
             const mMod = m % 1440;
-            let minuteRate = 0;
+            let minuteRate = baseRate;
 
-            if (isCancha3) {
-                // Cancha 3: 50 (6am-6pm) y 60 (6pm-1am)
-                if (mMod >= 360 && mMod < 1080) {
-                    minuteRate = 50;
-                } else {
-                    minuteRate = 60;
-                }
-            } else {
-                // Cancha 1 y 2: 40 (6am-6pm) y 50 (6pm-1am)
-                if (mMod >= 360 && mMod < 1080) {
-                    minuteRate = 40;
-                } else {
-                    minuteRate = 50;
-                }
+            if (mMod >= 900 && mMod < 1080) { // 3:00 PM to 6:00 PM
+                minuteRate = afternoonRate;
+                equipmentIncluded = true;
+            } else if (mMod >= 1080 || mMod < 360) { // Night, including the continuation after midnight
+                minuteRate = nightRate;
+                equipmentIncluded = true;
             }
             sumRateMins += minuteRate;
         }
 
         courtIncome = sumRateMins / 60;
-        equipmentIncluded = true; // Promo incluye pelota y chaleco
     } else {
         // Lunes a Jueves - Fútbol
-        courtIncome = durationHours * 25;
+        courtIncome = durationHours * getBrisasRate(isCancha3 ? 'cancha3' : 'canchas12');
     }
 
-    const pelotaRate = 5;
-    const chalecoRate = 5;
+    const pelotaRate = getBrisasRate('pelota');
+    const chalecoRate = getBrisasRate('chaleco');
 
     const pelotaVal = pelota === true || pelota === 'true';
     const chalecoVal = chaleco === true || chaleco === 'true';
@@ -2711,7 +2738,7 @@ function updateDailySummary() {
                 <div class="summary-item-card event-sport-bloqueo" onclick="openEditFromSummary('${e.id}')" style="cursor: pointer; border-left: 5px solid #ef4444 !important;">
                     <div class="summary-item-header">
                         <span class="summary-item-time" style="color: #e5e7eb;">${formatTimeHHMM(e.start_time)} - ${formatTimeHHMM(e.end_time)}</span>
-                        <span class="summary-item-court court-badge-bloqueo" style="background: #ef4444; color: white; padding: 2px 6px; border-radius: 4px; font-size: 11px;">Bloqueo: ${e.court === 'Brisas Ambas' ? 'Ambas Canchas' : 'Cancha ' + e.court}</span>
+                        <span class="summary-item-court court-badge-bloqueo" style="background: #ef4444; color: white; padding: 2px 6px; border-radius: 4px; font-size: 11px;">Bloqueo: ${e.court === BRISAS_ALL_COURTS ? 'Todas las canchas' : escapeHTML(e.court)}</span>
                     </div>
                     <div class="summary-item-client" style="color: #ffffff; font-weight: bold;">${escapeHTML(e.name)}</div>
                     <div class="summary-item-details" style="color: #d1d5db;">
@@ -2723,7 +2750,7 @@ function updateDailySummary() {
             let badgeClass = 'court-badge-grande';
             let cardClass = 'card-grande';
             const courtStr = String(e.court || '');
-            if (courtStr.includes('Brisas Pequeña')) {
+            if (courtStr.includes('Vóley')) {
                 badgeClass = 'court-badge-pequena';
                 cardClass = 'card-pequena';
             }
@@ -2735,7 +2762,7 @@ function updateDailySummary() {
                 <div class="summary-item-card ${cardClass}" onclick="openEditFromSummary('${e.id}')" style="cursor: pointer;">
                     <div class="summary-item-header">
                         <span class="summary-item-time">${formatTimeHHMM(e.start_time)} - ${formatTimeHHMM(e.end_time)}</span>
-                        <span class="summary-item-court ${badgeClass}">Cancha ${e.court}</span>
+                        <span class="summary-item-court ${badgeClass}">${escapeHTML(e.court)}</span>
                     </div>
                     <div class="summary-item-client">${escapeHTML(e.name)}</div>
                     ${(pelotaVal || chalecoVal) ? `
@@ -2780,6 +2807,7 @@ function getCheckerCourtStartTime() {
     const m = document.getElementById('checkCourtStartMin')?.value?.trim();
     const ampm = document.getElementById('checkCourtStartAmpm')?.value;
     if (!h || !m || !ampm) return "";
+    if (!/^\d{1,2}$/.test(h) || !/^\d{1,2}$/.test(m) || Number(h) < 1 || Number(h) > 12 || Number(m) > 59) return "";
     let hour = parseInt(h, 10);
     let min = parseInt(m, 10);
     if (isNaN(hour) || isNaN(min)) return "";
@@ -2803,9 +2831,7 @@ function setCheckerCourtStartTime(val) {
     if (h12 === 0) h12 = 12;
 
     const startAmpmSelect = document.getElementById('checkCourtStartAmpm');
-    if (ampm === 'am' && startAmpmSelect && !startAmpmSelect.querySelector('option[value="am"]')) {
-        ampm = 'pm';
-    }
+    if (ampm === 'am') enableAmOption(startAmpmSelect, 'checkEnableAmChecker');
 
     if (document.getElementById('checkCourtStartHour')) document.getElementById('checkCourtStartHour').value = String(h12);
     if (document.getElementById('checkCourtStartMin')) document.getElementById('checkCourtStartMin').value = String(m).padStart(2, '0');
@@ -2817,6 +2843,7 @@ function getCheckerCourtEndTime() {
     const m = document.getElementById('checkCourtEndMin')?.value?.trim();
     const ampm = document.getElementById('checkCourtEndAmpm')?.value;
     if (!h || !m || !ampm) return "";
+    if (!/^\d{1,2}$/.test(h) || !/^\d{1,2}$/.test(m) || Number(h) < 1 || Number(h) > 12 || Number(m) > 59) return "";
     let hour = parseInt(h, 10);
     let min = parseInt(m, 10);
     if (isNaN(hour) || isNaN(min)) return "";
@@ -2840,9 +2867,7 @@ function setCheckerCourtEndTime(val) {
     if (h12 === 0) h12 = 12;
 
     const endAmpmSelect = document.getElementById('checkCourtEndAmpm');
-    if (ampm === 'am' && endAmpmSelect && !endAmpmSelect.querySelector('option[value="am"]')) {
-        ampm = 'pm';
-    }
+    if (ampm === 'am') enableAmOption(endAmpmSelect, 'checkEnableAmChecker');
 
     if (document.getElementById('checkCourtEndHour')) document.getElementById('checkCourtEndHour').value = String(h12);
     if (document.getElementById('checkCourtEndMin')) document.getElementById('checkCourtEndMin').value = String(m).padStart(2, '0');
@@ -2870,12 +2895,12 @@ function initCourtAvailabilityChecker() {
     const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
     checkDate.value = todayStr;
 
-    // Smart default hour: if between 6 AM and 10 PM, select next full hour; otherwise select 19:00 (7:00 PM)
-    const currentHour = today.getHours();
-    let defaultStart = '19:00';
-    if (currentHour >= 6 && currentHour < 23) {
-        defaultStart = String(currentHour + 1).padStart(2, '0') + ':00';
-    }
+    // Start in the afternoon even when the operator opens the page in the morning.
+    const checkEnableAmChecker = document.getElementById('checkEnableAmChecker');
+    if (checkEnableAmChecker) checkEnableAmChecker.checked = false;
+    startAmpm.querySelector('option[value="am"]')?.remove();
+    endAmpm.querySelector('option[value="am"]')?.remove();
+    const defaultStart = '14:00';
     setCheckerCourtStartTime(defaultStart);
 
     // Default End Time is 1 hour after default Start Time
@@ -3028,6 +3053,12 @@ function updateCourtAvailabilityChecker() {
         return;
     }
 
+    const scheduleError = getCourtScheduleError(dateStr, startTime, endTime);
+    if (scheduleError) {
+        resultsEl.innerHTML = `<div class="checker-court-card occupied" style="grid-column: 1/-1;">${escapeHTML(scheduleError)}</div>`;
+        return;
+    }
+
     let startMins = parseTimeToMinutes(startTime);
     let endMins = parseTimeToMinutes(endTime);
     if (endMins <= startMins && startTime && endTime) {
@@ -3079,11 +3110,12 @@ function updateCourtAvailabilityChecker() {
 
         if (!collision) {
             // Court is FREE
-            const inc = calculateBookingIncome({ date: dateStr, startTime, endTime, court: c.id, sport, pelota: false, chaleco: false });
+            const courtSport = c.id.includes('Vóley') ? 'Vóley' : 'Fútbol';
+            const inc = calculateBookingIncome({ date: dateStr, startTime, endTime, court: c.id, sport: courtSport, pelota: false, chaleco: false });
             const estIncome = inc ? inc.total : 0;
 
             html += `
-            <div class="checker-court-card available" onclick="quickBookCourtFromChecker('${c.id}', '${dateStr}', '${startTime}', '${endTime}', '${sport}')" title="Clic para reservar ${c.name}">
+            <div class="checker-court-card available" onclick="quickBookCourtFromChecker('${c.id}', '${dateStr}', '${startTime}', '${endTime}', '${courtSport}')" title="Clic para reservar ${c.name}">
                 <div class="checker-card-header">
                     <div class="checker-card-name">
                         <span class="court-dot ${c.dotClass}"></span>
@@ -3229,7 +3261,7 @@ function updateAvailabilityGrid() {
 
         courts.forEach(court => {
             const booking = allEvents.find(e => {
-                if (e.court === court) {
+                if (e.court === court || e.court === BRISAS_ALL_COURTS) {
                     const { start: existStart, end: existEnd } = getStartAndEndDates(e.date, e.start_time, e.end_time);
                     return existStart < slot.endDate && existEnd > slot.startDate;
                 }
@@ -4014,19 +4046,16 @@ async function exportAllDataToExcel() {
             sr++;
 
             const activeEvents = events.filter(e => e.sport !== 'Bloqueo');
-            const courtsMap = {
-                'Brisas Grande': { count: 0, income: 0 },
-                'Brisas Pequeña': { count: 0, income: 0 }
-            };
+            const courtsMap = Object.fromEntries(BRISAS_COURTS.map(court => [court, { count: 0, income: 0 }]));
             activeEvents.forEach(e => {
-                const cType = e.court === 'Brisas Grande' ? 'Brisas Grande' : 'Brisas Pequeña';
+                const cType = e.court;
                 const inc = getEventIncome(e);
+                if (!courtsMap[cType]) return;
                 courtsMap[cType].count++;
                 courtsMap[cType].income += inc.courtIncome;
             });
 
-            [['Cancha Grande', courtsMap['Brisas Grande'].count, courtsMap['Brisas Grande'].income],
-            ['Cancha Pequeña', courtsMap['Brisas Pequeña'].count, courtsMap['Brisas Pequeña'].income]].forEach(([courtLabel, cnt, inc], rIdx) => {
+            BRISAS_COURTS.map(court => [court, courtsMap[court].count, courtsMap[court].income]).forEach(([courtLabel, cnt, inc], rIdx) => {
                 const bg = monthColorsS[rIdx % 2];
 
                 const cellCourt = summaryWs.getCell(sr, 1);
@@ -4572,36 +4601,43 @@ function buildRatesForm() {
     ratesFormRow.innerHTML = `
         <div style="grid-column: 1 / -1; margin-bottom: 8px;">
             <h4 style="margin: 0 0 4px 0; color: var(--primary); display: flex; align-items: center; gap: 6px; font-size: 15px;">
-                <i data-lucide="calendar"></i> Tarifas Lunes a Jueves (y General)
+                <i data-lucide="calendar"></i> Tarifas Base de Las Brisas
             </h4>
-            <p style="margin: 0; font-size: 12px; color: var(--text-muted);">Precios base por hora y equipamiento extra.</p>
+            <p style="margin: 0; font-size: 12px; color: var(--text-muted);">Fútbol: lunes a jueves y viernes a domingo antes de las 3:00 PM. Vóley: todos los días.</p>
         </div>
         <div class="form-group">
-            <label for="rateGrande">Hora Cancha Grande (S/.) *</label>
+            <label for="rateGrande">Hora Cancha 3 (16 jug) (S/.) *</label>
             <div class="input-wrapper">
                 <i data-lucide="dollar-sign"></i>
-                <input type="number" id="rateGrande" required min="0" step="0.5" value="${localStorage.getItem('canchapro_rate_grande') || '25'}">
+                <input type="number" id="rateGrande" required min="0" step="0.5" value="${getBrisasRate('cancha3')}">
             </div>
         </div>
         <div class="form-group">
-            <label for="ratePequena">Hora Cancha Pequeña (S/.) *</label>
+            <label for="ratePequena">Hora Canchas 1 y 2 (S/.) *</label>
             <div class="input-wrapper">
                 <i data-lucide="dollar-sign"></i>
-                <input type="number" id="ratePequena" required min="0" step="0.5" value="${localStorage.getItem('canchapro_rate_pequena') || '25'}">
+                <input type="number" id="ratePequena" required min="0" step="0.5" value="${getBrisasRate('canchas12')}">
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="rateVoley">Hora Canchas Vóley 1 y 2 (S/.) *</label>
+            <div class="input-wrapper">
+                <i data-lucide="dollar-sign"></i>
+                <input type="number" id="rateVoley" required min="0" step="0.5" value="${getBrisasRate('voley')}">
             </div>
         </div>
         <div class="form-group">
             <label for="ratePelota">Alquiler de Pelota (S/.) *</label>
             <div class="input-wrapper">
                 <i data-lucide="dollar-sign"></i>
-                <input type="number" id="ratePelota" required min="0" step="0.5" value="${localStorage.getItem('canchapro_rate_pelota') || '5'}">
+                <input type="number" id="ratePelota" required min="0" step="0.5" value="${getBrisasRate('pelota')}">
             </div>
         </div>
         <div class="form-group">
             <label for="rateChaleco">Alquiler de Chalecos (S/.) *</label>
             <div class="input-wrapper">
                 <i data-lucide="dollar-sign"></i>
-                <input type="number" id="rateChaleco" required min="0" step="0.5" value="${localStorage.getItem('canchapro_rate_chaleco') || '5'}">
+                <input type="number" id="rateChaleco" required min="0" step="0.5" value="${getBrisasRate('chaleco')}">
             </div>
         </div>
 
@@ -4612,38 +4648,38 @@ function buildRatesForm() {
             <p style="margin: 0; font-size: 12px; color: var(--text-muted);">Incluye pelota y chalecos sin costo adicional.</p>
         </div>
         <div class="form-group">
-            <label for="rateVieDom36Grande">Cancha Grande (S/.) *</label>
+            <label for="rateVieDom36Grande">Cancha 3 (16 jug) (S/.) *</label>
             <div class="input-wrapper">
                 <i data-lucide="dollar-sign"></i>
-                <input type="number" id="rateVieDom36Grande" required min="0" step="0.5" value="${localStorage.getItem('canchapro_rate_viedom_36_grande') || '50'}">
+                <input type="number" id="rateVieDom36Grande" required min="0" step="0.5" value="${getBrisasRate('viedom_36_cancha3')}">
             </div>
         </div>
         <div class="form-group">
-            <label for="rateVieDom36Pequena">Cancha Pequeña (S/.) *</label>
+            <label for="rateVieDom36Pequena">Canchas 1 y 2 (S/.) *</label>
             <div class="input-wrapper">
                 <i data-lucide="dollar-sign"></i>
-                <input type="number" id="rateVieDom36Pequena" required min="0" step="0.5" value="${localStorage.getItem('canchapro_rate_viedom_36_pequena') || '40'}">
+                <input type="number" id="rateVieDom36Pequena" required min="0" step="0.5" value="${getBrisasRate('viedom_36_canchas12')}">
             </div>
         </div>
 
         <div style="grid-column: 1 / -1; margin-top: 16px; margin-bottom: 8px;">
             <h4 style="margin: 0 0 4px 0; color: #ec4899; display: flex; align-items: center; gap: 6px; font-size: 15px;">
-                <i data-lucide="moon"></i> Tarifas Viernes a Domingo (6:00 PM a 12:00 AM)
+                <i data-lucide="moon"></i> Tarifas Viernes a Domingo (6:00 PM hasta el cierre)
             </h4>
             <p style="margin: 0; font-size: 12px; color: var(--text-muted);">Incluye pelota y chalecos sin costo adicional.</p>
         </div>
         <div class="form-group">
-            <label for="rateVieDom612Grande">Cancha Grande (S/.) *</label>
+            <label for="rateVieDom612Grande">Cancha 3 (16 jug) (S/.) *</label>
             <div class="input-wrapper">
                 <i data-lucide="dollar-sign"></i>
-                <input type="number" id="rateVieDom612Grande" required min="0" step="0.5" value="${localStorage.getItem('canchapro_rate_viedom_612_grande') || '60'}">
+                <input type="number" id="rateVieDom612Grande" required min="0" step="0.5" value="${getBrisasRate('viedom_612_cancha3')}">
             </div>
         </div>
         <div class="form-group">
-            <label for="rateVieDom612Pequena">Cancha Pequeña (S/.) *</label>
+            <label for="rateVieDom612Pequena">Canchas 1 y 2 (S/.) *</label>
             <div class="input-wrapper">
                 <i data-lucide="dollar-sign"></i>
-                <input type="number" id="rateVieDom612Pequena" required min="0" step="0.5" value="${localStorage.getItem('canchapro_rate_viedom_612_pequena') || '50'}">
+                <input type="number" id="rateVieDom612Pequena" required min="0" step="0.5" value="${getBrisasRate('viedom_612_canchas12')}">
             </div>
         </div>
     `;
@@ -4652,25 +4688,18 @@ function buildRatesForm() {
 
 function handleStatsRatesSave(e) {
     e.preventDefault();
-    const rGrande = document.getElementById('rateGrande').value;
-    const rPequena = document.getElementById('ratePequena').value;
-    const rPelota = document.getElementById('ratePelota').value;
-    const rChaleco = document.getElementById('rateChaleco').value;
-
-    const r36Grande = document.getElementById('rateVieDom36Grande').value;
-    const r36Pequena = document.getElementById('rateVieDom36Pequena').value;
-    const r612Grande = document.getElementById('rateVieDom612Grande').value;
-    const r612Pequena = document.getElementById('rateVieDom612Pequena').value;
-
-    localStorage.setItem('canchapro_rate_grande', rGrande);
-    localStorage.setItem('canchapro_rate_pequena', rPequena);
-    localStorage.setItem('canchapro_rate_pelota', rPelota);
-    localStorage.setItem('canchapro_rate_chaleco', rChaleco);
-
-    localStorage.setItem('canchapro_rate_viedom_36_grande', r36Grande);
-    localStorage.setItem('canchapro_rate_viedom_36_pequena', r36Pequena);
-    localStorage.setItem('canchapro_rate_viedom_612_grande', r612Grande);
-    localStorage.setItem('canchapro_rate_viedom_612_pequena', r612Pequena);
+    const rates = Object.entries(BRISAS_RATE_INPUTS).map(([id, key]) => {
+        const value = document.getElementById(id).value;
+        return { key, value: value.trim() === '' ? NaN : Number(value) };
+    });
+    if (rates.some(rate => !Number.isFinite(rate.value) || rate.value < 0)) {
+        statsRatesFeedback.className = 'settings-feedback error';
+        statsRatesFeedback.textContent = 'Ingresa importes válidos, mayores o iguales a cero.';
+        statsRatesFeedback.style.display = 'block';
+        return;
+    }
+    rates.forEach(({ key, value }) => localStorage.setItem(`canchapro_brisas_rate_${key}`, value));
+    updateBrisasTarifario();
 
     statsRatesFeedback.className = 'settings-feedback success';
     statsRatesFeedback.textContent = '¡Tarifas guardadas y aplicadas con éxito! ✅';
@@ -4678,6 +4707,8 @@ function handleStatsRatesSave(e) {
 
     // Recalculate dashboard immediately
     updateStatsDashboard();
+    updateCourtAvailabilityChecker();
+    if (modalBooking.classList.contains('active')) updateModalCalculatedTotal();
 
     setTimeout(() => {
         statsRatesFeedback.style.display = 'none';
@@ -4830,11 +4861,11 @@ function updateStatsDashboard() {
             metrics.Efectivo.today.income += inc.total;
         }
 
-        if (e.court === 'Brisas Grande') {
+        if (BRISAS_COURTS.includes(e.court) && !e.court.includes('Vóley')) {
             metrics.Grande.today.count++;
             metrics.Grande.today.hours += inc.durationHours;
             metrics.Grande.today.income += inc.courtIncome;
-        } else if (e.court === 'Brisas Pequeña') {
+        } else if (BRISAS_COURTS.includes(e.court) && e.court.includes('Vóley')) {
             metrics.Pequena.today.count++;
             metrics.Pequena.today.hours += inc.durationHours;
             metrics.Pequena.today.income += inc.courtIncome;
@@ -4875,11 +4906,11 @@ function updateStatsDashboard() {
             metrics.Efectivo.week.income += inc.total;
         }
 
-        if (e.court === 'Brisas Grande') {
+        if (BRISAS_COURTS.includes(e.court) && !e.court.includes('Vóley')) {
             metrics.Grande.week.count++;
             metrics.Grande.week.hours += inc.durationHours;
             metrics.Grande.week.income += inc.courtIncome;
-        } else if (e.court === 'Brisas Pequeña') {
+        } else if (BRISAS_COURTS.includes(e.court) && e.court.includes('Vóley')) {
             metrics.Pequena.week.count++;
             metrics.Pequena.week.hours += inc.durationHours;
             metrics.Pequena.week.income += inc.courtIncome;
@@ -4920,11 +4951,11 @@ function updateStatsDashboard() {
             metrics.Efectivo.month.income += inc.total;
         }
 
-        if (e.court === 'Brisas Grande') {
+        if (BRISAS_COURTS.includes(e.court) && !e.court.includes('Vóley')) {
             metrics.Grande.month.count++;
             metrics.Grande.month.hours += inc.durationHours;
             metrics.Grande.month.income += inc.courtIncome;
-        } else if (e.court === 'Brisas Pequeña') {
+        } else if (BRISAS_COURTS.includes(e.court) && e.court.includes('Vóley')) {
             metrics.Pequena.month.count++;
             metrics.Pequena.month.hours += inc.durationHours;
             metrics.Pequena.month.income += inc.courtIncome;
@@ -4972,8 +5003,8 @@ function updateStatsDashboard() {
     document.getElementById('statsCompareMonth').innerHTML = renderCompareBadge(metrics.Total.month.income, prevMonthIncome);
 
 
-    const numberCourts = 2; // Cancha Grande, Cancha Pequeña
-    const hoursPerDay = 17; // e.g. 7 AM to 12 AM
+    const numberCourts = BRISAS_COURTS.length;
+    const hoursPerDay = 19; // 06:00 AM to 01:00 AM
     const dailyCapacity = numberCourts * hoursPerDay;
     const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
     const monthlyCapacity = dailyCapacity * daysInMonth;
@@ -4993,7 +5024,7 @@ function updateStatsDashboard() {
         tbody.innerHTML = `
             <tr>
                 <td>
-                    <strong style="color: var(--text-primary);">Cancha Grande</strong><br>
+                    <strong style="color: var(--text-primary);">Canchas Fútbol</strong><br>
                     <span style="font-size: 11px; color: var(--text-muted);">Alquileres / Horas</span>
                 </td>
                 <td style="text-align: right;">
@@ -5011,7 +5042,7 @@ function updateStatsDashboard() {
             </tr>
             <tr>
                 <td>
-                    <strong style="color: var(--text-primary);">Cancha Pequeña</strong><br>
+                    <strong style="color: var(--text-primary);">Canchas Vóley</strong><br>
                     <span style="font-size: 11px; color: var(--text-muted);">Alquileres / Horas</span>
                 </td>
                 <td style="text-align: right;">

@@ -31,6 +31,18 @@ const bookingNameInput = document.getElementById('bookingName');
 const bookingCourtInput = document.getElementById('bookingCourt');
 const bookingSportInput = document.getElementById('bookingSport');
 const bookingDateInput = document.getElementById('bookingDate');
+// Keep AM values representable when a booking crosses midnight or starts in the morning.
+function enableAmTimeOptions(checkboxId, selectIds) {
+    const checkbox = document.getElementById(checkboxId);
+    if (checkbox) checkbox.checked = true;
+    selectIds.forEach(id => {
+        const select = document.getElementById(id);
+        if (select && !select.querySelector('option[value="am"]')) {
+            select.insertAdjacentHTML('beforeend', '<option value="am">AM</option>');
+        }
+    });
+}
+
 const bookingStartTimeInput = {
     _changeListeners: new Set(),
     get value() {
@@ -38,7 +50,9 @@ const bookingStartTimeInput = {
         const m = document.getElementById('startMinSelect').value;
         const ampm = document.getElementById('startAmpmSelect').value;
         if (!h || !m || !ampm) return "";
-        let hour = parseInt(h, 10);
+        let hour = Number(h);
+        const minute = Number(m);
+        if (!Number.isInteger(hour) || hour < 1 || hour > 12 || !Number.isInteger(minute) || minute < 0 || minute > 59) return "";
         if (ampm === 'pm' && hour < 12) hour += 12;
         if (ampm === 'am' && hour === 12) hour = 0;
         return `${String(hour).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
@@ -57,9 +71,8 @@ const bookingStartTimeInput = {
         let h12 = h % 12;
         if (h12 === 0) h12 = 12;
 
-        const startAmpmSelect = document.getElementById('startAmpmSelect');
-        if (ampm === 'am' && startAmpmSelect && !startAmpmSelect.querySelector('option[value="am"]')) {
-            ampm = 'pm';
+        if (ampm === 'am') {
+            enableAmTimeOptions('checkEnableAm', ['startAmpmSelect', 'endAmpmSelect']);
         }
 
         document.getElementById('startHourSelect').value = String(h12);
@@ -106,7 +119,9 @@ const bookingEndTimeInput = {
         const m = document.getElementById('endMinSelect').value;
         const ampm = document.getElementById('endAmpmSelect').value;
         if (!h || !m || !ampm) return "";
-        let hour = parseInt(h, 10);
+        let hour = Number(h);
+        const minute = Number(m);
+        if (!Number.isInteger(hour) || hour < 1 || hour > 12 || !Number.isInteger(minute) || minute < 0 || minute > 59) return "";
         if (ampm === 'pm' && hour < 12) hour += 12;
         if (ampm === 'am' && hour === 12) hour = 0;
         return `${String(hour).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
@@ -125,9 +140,8 @@ const bookingEndTimeInput = {
         let h12 = h % 12;
         if (h12 === 0) h12 = 12;
 
-        const endAmpmSelect = document.getElementById('endAmpmSelect');
-        if (ampm === 'am' && endAmpmSelect && !endAmpmSelect.querySelector('option[value="am"]')) {
-            ampm = 'pm';
+        if (ampm === 'am') {
+            enableAmTimeOptions('checkEnableAm', ['startAmpmSelect', 'endAmpmSelect']);
         }
 
         document.getElementById('endHourSelect').value = String(h12);
@@ -662,13 +676,11 @@ function setupEventListeners() {
 
             let endHour24 = Math.floor(endMins / 60);
             let endMin = endMins % 60;
-            let endAmpm = endHour24 >= 12 ? 'pm' : 'am';
-            let endHour12 = endHour24 % 12;
-            if (endHour12 === 0) endHour12 = 12;
-
-            endHourSelect.value = String(endHour12);
-            endMinSelect.value = String(endMin).padStart(2, '0');
-            endAmpmSelect.value = endAmpm;
+            if (endHour24 > 1 && endHour24 < 6) {
+                endHour24 = 1;
+                endMin = 0;
+            }
+            bookingEndTimeInput.value = `${String(endHour24).padStart(2, '0')}:${String(endMin).padStart(2, '0')}`;
             triggerEndChange();
         };
 
@@ -789,6 +801,7 @@ function setupEventListeners() {
                 startSelect.value = 'pm';
                 endSelect.value = 'pm';
             }
+            updateModalCalculatedTotal();
         });
     }
 
@@ -813,6 +826,7 @@ function setupEventListeners() {
                     endSelect.value = 'pm';
                 }
             }
+            updateCourtAvailabilityChecker();
         });
     }
 
@@ -1429,6 +1443,10 @@ function openBookingModal(booking = null, defaults = null) {
             if (defaults.court) {
                 bookingCourtInput.value = defaults.court;
             }
+            if (defaults.sport) {
+                bookingSportInput.value = defaults.sport;
+                if (defaults.sport === 'Vóley') setToggleValue('pelota', true);
+            }
         } else {
             // Standard defaults
             const today = getLocalDateString(new Date());
@@ -1629,36 +1647,41 @@ function filterEvents(bookings) {
     });
 }
 
-// Check overlapping bookings
-function checkOverlaps(id, court, date, startTime, endTime) {
+// Validate the same operating hours for saving and checking availability.
+function getBookingTimeError(date, startTime, endTime) {
+    const validTime = value => /^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/.test(value || '');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date || '') || !validTime(startTime) || !validTime(endTime)) {
+        return "Por favor ingresa una fecha y horarios válidos.";
+    }
     const { start: newStart, end: newEnd } = getStartAndEndDates(date, startTime, endTime);
-
-    if (newStart >= newEnd) {
-        return "La hora de inicio debe ser anterior a la hora de fin.";
+    if (!Number.isFinite(newStart.getTime()) || getLocalDateString(newStart) !== date || !Number.isFinite(newEnd.getTime())) {
+        return "Por favor ingresa una fecha y horarios válidos.";
+    }
+    if (parseTimeToMinutes(startTime) === parseTimeToMinutes(endTime)) {
+        return "La hora de inicio y fin deben ser diferentes.";
     }
 
-    // Operating hours check: Closed from 01:00 AM to 06:00 AM
+    // Closed from 01:00 AM to 06:00 AM, including the day after midnight.
     const closedStart = new Date(newStart);
     closedStart.setHours(1, 0, 0, 0);
-
     const closedEnd = new Date(newStart);
     closedEnd.setHours(6, 0, 0, 0);
+    for (let day = 0; day < 2; day++) {
+        if (newStart < closedEnd && newEnd > closedStart) {
+            return "El local está cerrado de 01:00 AM a 06:00 AM. Por favor elige otro horario.";
+        }
+        closedStart.setDate(closedStart.getDate() + 1);
+        closedEnd.setDate(closedEnd.getDate() + 1);
+    }
+    return null;
+}
 
+// Check overlapping bookings
+function checkOverlaps(id, court, date, startTime, endTime) {
+    const timeError = getBookingTimeError(date, startTime, endTime);
+    if (timeError) return timeError;
+    const { start: newStart, end: newEnd } = getStartAndEndDates(date, startTime, endTime);
     const isOverlap = (startA, endA, startB, endB) => startA < endB && endA > startB;
-
-    if (isOverlap(newStart, newEnd, closedStart, closedEnd)) {
-        return "El local está cerrado de 01:00 AM a 06:00 AM. Por favor elige otro horario.";
-    }
-
-    // Also check next day closed window in case it crosses midnight
-    const closedStartNext = new Date(closedStart);
-    closedStartNext.setDate(closedStartNext.getDate() + 1);
-    const closedEndNext = new Date(closedEnd);
-    closedEndNext.setDate(closedEndNext.getDate() + 1);
-
-    if (isOverlap(newStart, newEnd, closedStartNext, closedEndNext)) {
-        return "El local está cerrado de 01:00 AM a 06:00 AM. Por favor elige otro horario.";
-    }
 
     // Check conflicts on the same court (considering midnight crossing)
     for (const event of allEvents) {
@@ -1745,7 +1768,7 @@ function calculateBookingIncome(params) {
     // Determine day of week
     let isWeekendTier = false; // Friday (5), Saturday (6), Sunday (0)
     if (date) {
-        const parts = String(date).split('-');
+        const parts = getBusinessDate(String(date), cleanStart).split('-');
         if (parts.length === 3) {
             const year = parseInt(parts[0], 10);
             const month = parseInt(parts[1], 10) - 1;
@@ -1791,7 +1814,7 @@ function calculateBookingIncome(params) {
             } else if (mMod >= 1080 && mMod < 1440) { // 6:00 pm to 12:00 am
                 minuteRate = isGrande ? rateVieDom612Grande : rateVieDom612Pequena;
                 includedMinsCount++;
-            } else if (mMod >= 0 && mMod < 360 && start >= 900) { // Late night continuation
+            } else if (mMod >= 0 && mMod < 360) { // Continuation of the previous business day
                 minuteRate = isGrande ? rateVieDom612Grande : rateVieDom612Pequena;
                 includedMinsCount++;
             }
@@ -2749,9 +2772,9 @@ function getCheckerCourtStartTime() {
     const m = document.getElementById('checkCourtStartMin')?.value?.trim();
     const ampm = document.getElementById('checkCourtStartAmpm')?.value;
     if (!h || !m || !ampm) return "";
-    let hour = parseInt(h, 10);
-    let min = parseInt(m, 10);
-    if (isNaN(hour) || isNaN(min)) return "";
+    let hour = Number(h);
+    let min = Number(m);
+    if (!Number.isInteger(hour) || hour < 1 || hour > 12 || !Number.isInteger(min) || min < 0 || min > 59) return "";
     if (ampm === 'pm' && hour < 12) hour += 12;
     if (ampm === 'am' && hour === 12) hour = 0;
     return `${String(hour).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
@@ -2771,9 +2794,8 @@ function setCheckerCourtStartTime(val) {
     let h12 = h % 12;
     if (h12 === 0) h12 = 12;
 
-    const startAmpmSelect = document.getElementById('checkCourtStartAmpm');
-    if (ampm === 'am' && startAmpmSelect && !startAmpmSelect.querySelector('option[value="am"]')) {
-        ampm = 'pm';
+    if (ampm === 'am') {
+        enableAmTimeOptions('checkEnableAmChecker', ['checkCourtStartAmpm', 'checkCourtEndAmpm']);
     }
 
     if (document.getElementById('checkCourtStartHour')) document.getElementById('checkCourtStartHour').value = String(h12);
@@ -2786,9 +2808,9 @@ function getCheckerCourtEndTime() {
     const m = document.getElementById('checkCourtEndMin')?.value?.trim();
     const ampm = document.getElementById('checkCourtEndAmpm')?.value;
     if (!h || !m || !ampm) return "";
-    let hour = parseInt(h, 10);
-    let min = parseInt(m, 10);
-    if (isNaN(hour) || isNaN(min)) return "";
+    let hour = Number(h);
+    let min = Number(m);
+    if (!Number.isInteger(hour) || hour < 1 || hour > 12 || !Number.isInteger(min) || min < 0 || min > 59) return "";
     if (ampm === 'pm' && hour < 12) hour += 12;
     if (ampm === 'am' && hour === 12) hour = 0;
     return `${String(hour).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
@@ -2808,9 +2830,8 @@ function setCheckerCourtEndTime(val) {
     let h12 = h % 12;
     if (h12 === 0) h12 = 12;
 
-    const endAmpmSelect = document.getElementById('checkCourtEndAmpm');
-    if (ampm === 'am' && endAmpmSelect && !endAmpmSelect.querySelector('option[value="am"]')) {
-        ampm = 'pm';
+    if (ampm === 'am') {
+        enableAmTimeOptions('checkEnableAmChecker', ['checkCourtStartAmpm', 'checkCourtEndAmpm']);
     }
 
     if (document.getElementById('checkCourtEndHour')) document.getElementById('checkCourtEndHour').value = String(h12);
@@ -2839,12 +2860,12 @@ function initCourtAvailabilityChecker() {
     const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
     checkDate.value = todayStr;
 
-    // Smart default hour: if between 6 AM and 10 PM, select next full hour; otherwise select 19:00 (7:00 PM)
-    const currentHour = today.getHours();
-    let defaultStart = '19:00';
-    if (currentHour >= 6 && currentHour < 23) {
-        defaultStart = String(currentHour + 1).padStart(2, '0') + ':00';
-    }
+    // Start in the afternoon even when the operator opens the page in the morning.
+    const checkEnableAmChecker = document.getElementById('checkEnableAmChecker');
+    if (checkEnableAmChecker) checkEnableAmChecker.checked = false;
+    startAmpm.querySelector('option[value="am"]')?.remove();
+    endAmpm.querySelector('option[value="am"]')?.remove();
+    const defaultStart = '14:00';
     setCheckerCourtStartTime(defaultStart);
 
     // Default End Time is 1 hour after default Start Time
@@ -2994,6 +3015,12 @@ function updateCourtAvailabilityChecker() {
     if (!dateStr || !startTime || !endTime) {
         resultsEl.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 14px; background: rgba(255,255,255,0.02); border: 1px dashed rgba(255,255,255,0.1); border-radius: var(--radius-sm);"><i data-lucide="clock" style="width: 18px; height: 18px; vertical-align: middle; margin-right: 6px; color: var(--primary);"></i> Ingrese la fecha, hora de inicio y salida para ver la disponibilidad en vivo.</div>';
         if (window.lucide) lucide.createIcons();
+        return;
+    }
+
+    const timeError = getBookingTimeError(dateStr, startTime, endTime);
+    if (timeError) {
+        resultsEl.innerHTML = `<div class="checker-time-error" style="grid-column: 1/-1; text-align: center; padding: 14px; color: #f87171;">${escapeHTML(timeError)}</div>`;
         return;
     }
 

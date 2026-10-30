@@ -13,6 +13,20 @@ let statsCountdownInterval = null;
 let bookingModalIsAdmin = false;
 let availabilityTimeFilter = 'pico';
 
+function enableAmTimeOptions(checkboxId, selectIds) {
+    const checkbox = document.getElementById(checkboxId);
+    if (checkbox) checkbox.checked = true;
+    selectIds.forEach(id => {
+        const select = document.getElementById(id);
+        if (select && !select.querySelector('option[value="am"]')) {
+            const option = document.createElement('option');
+            option.value = 'am';
+            option.textContent = 'AM';
+            select.appendChild(option);
+        }
+    });
+}
+
 // DOM Elements
 const sidebar = document.getElementById('sidebar');
 const sidebarBackdrop = document.getElementById('sidebarBackdrop');
@@ -38,7 +52,9 @@ const bookingStartTimeInput = {
         const m = document.getElementById('startMinSelect').value;
         const ampm = document.getElementById('startAmpmSelect').value;
         if (!h || !m || !ampm) return "";
-        let hour = parseInt(h, 10);
+        let hour = Number(h);
+        const minute = Number(m);
+        if (!Number.isInteger(hour) || hour < 1 || hour > 12 || !Number.isInteger(minute) || minute < 0 || minute > 59 || !['am', 'pm'].includes(ampm)) return '';
         if (ampm === 'pm' && hour < 12) hour += 12;
         if (ampm === 'am' && hour === 12) hour = 0;
         return `${String(hour).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
@@ -59,7 +75,7 @@ const bookingStartTimeInput = {
         
         const startAmpmSelect = document.getElementById('startAmpmSelect');
         if (ampm === 'am' && startAmpmSelect && !startAmpmSelect.querySelector('option[value="am"]')) {
-            ampm = 'pm';
+            enableAmTimeOptions('checkEnableAm', ['startAmpmSelect', 'endAmpmSelect']);
         }
 
         document.getElementById('startHourSelect').value = String(h12);
@@ -106,7 +122,9 @@ const bookingEndTimeInput = {
         const m = document.getElementById('endMinSelect').value;
         const ampm = document.getElementById('endAmpmSelect').value;
         if (!h || !m || !ampm) return "";
-        let hour = parseInt(h, 10);
+        let hour = Number(h);
+        const minute = Number(m);
+        if (!Number.isInteger(hour) || hour < 1 || hour > 12 || !Number.isInteger(minute) || minute < 0 || minute > 59 || !['am', 'pm'].includes(ampm)) return '';
         if (ampm === 'pm' && hour < 12) hour += 12;
         if (ampm === 'am' && hour === 12) hour = 0;
         return `${String(hour).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
@@ -127,7 +145,7 @@ const bookingEndTimeInput = {
 
         const endAmpmSelect = document.getElementById('endAmpmSelect');
         if (ampm === 'am' && endAmpmSelect && !endAmpmSelect.querySelector('option[value="am"]')) {
-            ampm = 'pm';
+            enableAmTimeOptions('checkEnableAm', ['startAmpmSelect', 'endAmpmSelect']);
         }
 
         document.getElementById('endHourSelect').value = String(h12);
@@ -674,15 +692,9 @@ function setupEventListeners() {
             const startMins = hour * 60 + minute;
             const endMins = (startMins + 60) % 1440;
 
-            let endHour24 = Math.floor(endMins / 60);
-            let endMin = endMins % 60;
-            let endAmpm = endHour24 >= 12 ? 'pm' : 'am';
-            let endHour12 = endHour24 % 12;
-            if (endHour12 === 0) endHour12 = 12;
-
-            endHourSelect.value = String(endHour12);
-            endMinSelect.value = String(endMin).padStart(2, '0');
-            endAmpmSelect.value = endAmpm;
+            const endHour24 = Math.floor(endMins / 60);
+            const endMin = endMins % 60;
+            bookingEndTimeInput.value = `${String(endHour24).padStart(2, '0')}:${String(endMin).padStart(2, '0')}`;
             triggerEndChange();
         };
 
@@ -1072,7 +1084,6 @@ function toggleBlockFields(isBlock) {
         if (bookingSportInput) {
             bookingSportInput.disabled = false;
         }
-        handleCourtSportDependency();
 
         // Restore required attributes for normal bookings (DNI is optional now)
         if (bookingDniInput) bookingDniInput.required = false;
@@ -1085,9 +1096,10 @@ function toggleBlockFields(isBlock) {
         if (todasOption) {
             todasOption.remove();
         }
-        if (bookingCourtInput.value === 'Todas') {
-            bookingCourtInput.value = 'Cancha Grande';
+        if (!bookingCourtInput.value || bookingCourtInput.value === 'Todas') {
+            bookingCourtInput.value = 'Cancha Grande 1';
         }
+        handleCourtSportDependency();
 
         if (groupAllDay) groupAllDay.style.display = 'none';
         if (bookingIsAllDayInput) {
@@ -1268,6 +1280,7 @@ function openBookingModal(booking = null, defaults = null) {
         return; // Prevent duplicate triggers if already open for new booking
     }
     formBooking.reset();
+    bookingCourtInput.querySelectorAll('option[data-legacy-court]').forEach(option => option.remove());
     bookingError.style.display = 'none';
 
     const btnSave = document.getElementById('btnSaveBooking');
@@ -1300,6 +1313,13 @@ function openBookingModal(booking = null, defaults = null) {
         }
         bookingNameInput.value = cleanName;
         if (bookingDniInput) bookingDniInput.value = isBlock ? '' : (booking.dni || '');
+        if (Object.hasOwn(polideportivoCourtCategories, booking.court)) {
+            const option = document.createElement('option');
+            option.value = booking.court;
+            option.textContent = `${booking.court} (reserva anterior)`;
+            option.dataset.legacyCourt = 'true';
+            bookingCourtInput.appendChild(option);
+        }
         bookingCourtInput.value = booking.court;
         bookingSportInput.value = isBlock ? 'Fútbol' : booking.sport;
         bookingDateInput.value = booking.date;
@@ -1649,14 +1669,8 @@ async function fetchBookings() {
         bookings = getLocalBookings();
     }
 
-    // Filter to only include Polideportivo courts to prevent data contamination from other complexes
-    const polideportivoCourts = [
-        'Cancha Grande 1', 'Cancha Grande 2', 'Cancha Grande 3', 'Cancha Grande',
-        'Cancha Pequeña 1', 'Cancha Pequeña 2', 'Cancha Pequeña 3', 'Cancha Pequeña 4', 'Cancha Pequeña',
-        'Cancha de Vóley 1', 'Cancha de Vóley 2', 'Cancha de Vóley 3', 'Cancha de Vóley 4', 'Cancha de Vóley',
-        'Todas'
-    ];
-    return bookings.filter(b => polideportivoCourts.some(c => b.court === c || (b.court && b.court.startsWith(c))));
+    // Match complete court names so unrelated venues never appear here.
+    return bookings.filter(b => getPolideportivoCourtOptions(b.court).length > 0);
 }
 
 // Local Storage Helper: Get (Polideportivo isolated namespace)
@@ -1691,108 +1705,126 @@ function filterEvents(bookings) {
     });
 }
 
-// Check overlapping bookings taking physical court capacity into account
+// Legacy reservations used category names; newer reservations identify a numbered court.
+const polideportivoCourtCategories = {
+    'Cancha Grande': ['Cancha Grande 1', 'Cancha Grande 2', 'Cancha Grande 3'],
+    'Cancha Pequeña': ['Cancha Pequeña 1', 'Cancha Pequeña 2', 'Cancha Pequeña 3', 'Cancha Pequeña 4'],
+    'Cancha de Vóley': ['Cancha de Vóley 1', 'Cancha de Vóley 2', 'Cancha de Vóley 3', 'Cancha de Vóley 4']
+};
+
+function getPolideportivoCourtOptions(court) {
+    const allCourts = Object.values(polideportivoCourtCategories).flat();
+    if (court === 'Todas') return allCourts;
+    if (Object.hasOwn(polideportivoCourtCategories, court)) return polideportivoCourtCategories[court];
+    return allCourts.includes(court) ? [court] : [];
+}
+
+function getBookingTimeError(date, startTime, endTime) {
+    const validTime = value => /^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/.test(value || '');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date || '') || !validTime(startTime) || !validTime(endTime)) {
+        return 'Ingresa una fecha y horarios válidos.';
+    }
+    const { start, end } = getStartAndEndDates(date, startTime, endTime);
+    if (!Number.isFinite(start.getTime()) || getLocalDateString(start) !== date || !Number.isFinite(end.getTime())) {
+        return 'Ingresa una fecha y horarios válidos.';
+    }
+    for (let offset = 0; offset <= 1; offset++) {
+        const closedStart = new Date(start);
+        closedStart.setDate(closedStart.getDate() + offset);
+        closedStart.setHours(1, 0, 0, 0);
+        const closedEnd = new Date(closedStart);
+        closedEnd.setHours(6, 0, 0, 0);
+        if (start < closedEnd && end > closedStart) {
+            return 'El polideportivo está cerrado de 01:00 AM a 06:00 AM. Por favor elige otro horario.';
+        }
+    }
+    return null;
+}
+
+function assignPolideportivoCourtComponent(component, courts) {
+    // Sweep starts/ends, retaining every distinct assignment of the active bookings.
+    // A category has at most four courts, so there are at most 4! active states.
+    const points = [];
+    component.forEach((record, index) => {
+        points.push({ time: record.start.getTime(), isStart: true, record, index });
+        points.push({ time: record.end.getTime(), isStart: false, record, index });
+    });
+    points.sort((a, b) => a.time - b.time || Number(a.isStart) - Number(b.isStart) || a.index - b.index);
+    let states = [{ occupied: courts.map(() => null), path: null }];
+    for (const point of points) {
+        const next = new Map();
+        const saveState = state => {
+            const key = state.occupied.map(index => index === null ? '-' : index).join(',');
+            if (!next.has(key)) next.set(key, state);
+        };
+        for (const state of states) {
+            if (!point.isStart) {
+                saveState({ occupied: state.occupied.map(index => index === point.index ? null : index), path: state.path });
+                continue;
+            }
+            if (Object.hasOwn(polideportivoCourtCategories, point.record.event.court)) {
+                courts.forEach((court, index) => {
+                    if (state.occupied[index] !== null) return;
+                    const occupied = state.occupied.slice();
+                    occupied[index] = point.index;
+                    saveState({ occupied, path: { previous: state.path, record: point.record, court } });
+                });
+            } else {
+                const indexes = courts.map((court, index) => point.record.courts.includes(court) ? index : -1).filter(index => index >= 0);
+                if (indexes.some(index => state.occupied[index] !== null)) continue;
+                const occupied = state.occupied.slice();
+                indexes.forEach(index => { occupied[index] = point.index; });
+                saveState({ occupied, path: state.path });
+            }
+        }
+        states = Array.from(next.values());
+        // Inconsistent historical data stays occupied rather than offering an unsafe slot.
+        if (!states.length) return;
+    }
+    for (let choice = states[0].path; choice; choice = choice.previous) {
+        choice.record.courts = [choice.court];
+    }
+}
+
+function getPolideportivoCourtAssignments(events = allEvents) {
+    const records = events.map(event => {
+        const courts = getPolideportivoCourtOptions(event.court);
+        const { start, end } = getStartAndEndDates(event.date, event.start_time, event.end_time);
+        return { event, start, end, courts };
+    }).filter(record => record.courts.length && Number.isFinite(record.start.getTime()) && Number.isFinite(record.end.getTime()));
+
+    Object.entries(polideportivoCourtCategories).forEach(([category, courts]) => {
+        const categoryRecords = records.filter(record => record.event.court === category || record.courts.some(court => courts.includes(court)))
+            .sort((a, b) => a.start - b.start || a.end - b.end || String(a.event.id).localeCompare(String(b.event.id)));
+        let component = [];
+        let componentEnd = -Infinity;
+        const assignComponent = () => {
+            if (component.some(record => record.event.court === category)) assignPolideportivoCourtComponent(component, courts);
+        };
+        categoryRecords.forEach(record => {
+            if (record.start.getTime() >= componentEnd) {
+                assignComponent();
+                component = [];
+            }
+            component.push(record);
+            componentEnd = Math.max(componentEnd, record.end.getTime());
+        });
+        assignComponent();
+    });
+    return records;
+}
+
 function checkOverlaps(id, court, date, startTime, endTime) {
-    const { start: newStart, end: newEnd } = getStartAndEndDates(date, startTime, endTime);
-
-    if (newStart >= newEnd) {
-        return "La hora de inicio debe ser anterior a la hora de fin.";
-    }
-
-    // Operating hours check: Closed from 01:00 AM to 06:00 AM
-    const closedStart = new Date(newStart);
-    closedStart.setHours(1, 0, 0, 0);
-
-    const closedEnd = new Date(newStart);
-    closedEnd.setHours(6, 0, 0, 0);
-
-    const isOverlap = (startA, endA, startB, endB) => startA < endB && endA > startB;
-
-    if (isOverlap(newStart, newEnd, closedStart, closedEnd)) {
-        return "El polideportivo está cerrado de 01:00 AM a 06:00 AM. Por favor elige otro horario.";
-    }
-
-    // Also check next day closed window in case it crosses midnight
-    const closedStartNext = new Date(closedStart);
-    closedStartNext.setDate(closedStartNext.getDate() + 1);
-    const closedEndNext = new Date(closedEnd);
-    closedEndNext.setDate(closedEndNext.getDate() + 1);
-
-    if (isOverlap(newStart, newEnd, closedStartNext, closedEndNext)) {
-        return "El polideportivo está cerrado de 01:00 AM a 06:00 AM. Por favor elige otro horario.";
-    }
-
-    // Determine the physical capacity of this type of court
-    let capacity = 1;
-    if (court === 'Cancha Grande') {
-        capacity = 3;
-    } else if (court === 'Cancha Pequeña') {
-        capacity = 4;
-    } else if (court === 'Cancha de Vóley') {
-        capacity = 4;
-    }
-
-    // Collect overlapping bookings for the same court category
-    const overlappingEvents = [];
-
-    for (const event of allEvents) {
-        // Skip current event if editing
-        if (event.id === id) continue;
-
-        if (court === 'Todas' || event.court === 'Todas' || event.court === court) {
-            const { start: existStart, end: existEnd } = getStartAndEndDates(event.date, event.start_time, event.end_time);
-
-            // Overlap check formula: (StartA < EndB) AND (EndA > StartB)
-            if (isOverlap(newStart, newEnd, existStart, existEnd)) {
-                if (court === 'Todas' || event.court === 'Todas') {
-                    let eventCourtName = event.court === 'Todas' ? 'Todas las Canchas' : event.court;
-                    let targetCourtName = court === 'Todas' ? 'Todas las Canchas' : court;
-                    return `Conflicto de horario: Hay un bloqueo o reserva activa (${event.name} en ${eventCourtName}) que interfiere con este bloqueo/reserva total en ${targetCourtName} (${event.date} ${event.start_time} - ${event.end_time}).`;
-                }
-                overlappingEvents.push({ event, start: existStart, end: existEnd });
-            }
-        }
-    }
-
-    // If total overlapping events is less than capacity, it's physically impossible to exceed capacity at any point.
-    if (overlappingEvents.length >= capacity) {
-        // Find all critical points (instants of time when bookings start or end)
-        // within the new booking's interval [newStart, newEnd]
-        const timePointsMap = new Map();
-        timePointsMap.set(newStart.getTime(), newStart);
-        timePointsMap.set(newEnd.getTime(), newEnd);
-
-        for (const e of overlappingEvents) {
-            if (e.start > newStart && e.start < newEnd) {
-                timePointsMap.set(e.start.getTime(), e.start);
-            }
-            if (e.end > newStart && e.end < newEnd) {
-                timePointsMap.set(e.end.getTime(), e.end);
-            }
-        }
-
-        // Sort unique time points chronologically
-        const sortedTimes = Array.from(timePointsMap.values()).sort((a, b) => a - b);
-
-        // Check each sub-interval
-        for (let i = 0; i < sortedTimes.length - 1; i++) {
-            const tStart = sortedTimes[i];
-            const tEnd = sortedTimes[i + 1];
-            // Get midpoint of this sub-interval
-            const tMid = new Date((tStart.getTime() + tEnd.getTime()) / 2);
-
-            // Find all events active at tMid
-            const activeAtMid = overlappingEvents.filter(e => e.start <= tMid && tMid < e.end);
-
-            if (activeAtMid.length >= capacity) {
-                const overlappingDetails = activeAtMid.map(e => `${e.event.name} (${e.event.date} ${e.event.start_time} - ${e.event.end_time})`);
-                return `Conflicto de horario: Las ${capacity} canchas del tipo "${court}" ya están reservadas en este horario por:\n` +
-                    overlappingDetails.join(', ');
-            }
-        }
-    }
-
-    return null; // No conflict, capacity is not exceeded!
+    const timeError = getBookingTimeError(date, startTime, endTime);
+    if (timeError) return timeError;
+    const courts = getPolideportivoCourtOptions(court);
+    if (!courts.length) return 'Selecciona una cancha válida.';
+    const { start, end } = getStartAndEndDates(date, startTime, endTime);
+    const overlaps = getPolideportivoCourtAssignments(allEvents.filter(event => event.id !== id))
+        .filter(record => start < record.end && end > record.start);
+    const isFree = candidate => !overlaps.some(record => record.courts.includes(candidate));
+    if (court === 'Todas' ? courts.every(isFree) : courts.some(isFree)) return null;
+    return `Conflicto de horario: La cancha "${court}" ya está ocupada o bloqueada en este horario.`;
 }
 
 function parseTimeToMinutes(timeStr) {
@@ -2823,7 +2855,7 @@ function getCheckerCourtStartTime() {
     if (!h || !m || !ampm) return "";
     let hour = parseInt(h, 10);
     let min = parseInt(m, 10);
-    if (isNaN(hour) || isNaN(min)) return "";
+    if (!Number.isInteger(hour) || hour < 1 || hour > 12 || !Number.isInteger(min) || min < 0 || min > 59 || !['am', 'pm'].includes(ampm)) return "";
     if (ampm === 'pm' && hour < 12) hour += 12;
     if (ampm === 'am' && hour === 12) hour = 0;
     return `${String(hour).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
@@ -2845,7 +2877,7 @@ function setCheckerCourtStartTime(val) {
     
     const startAmpmSelect = document.getElementById('checkCourtStartAmpm');
     if (ampm === 'am' && startAmpmSelect && !startAmpmSelect.querySelector('option[value="am"]')) {
-        ampm = 'pm';
+        enableAmTimeOptions('checkEnableAmChecker', ['checkCourtStartAmpm', 'checkCourtEndAmpm']);
     }
 
     if (document.getElementById('checkCourtStartHour')) document.getElementById('checkCourtStartHour').value = String(h12);
@@ -2860,7 +2892,7 @@ function getCheckerCourtEndTime() {
     if (!h || !m || !ampm) return "";
     let hour = parseInt(h, 10);
     let min = parseInt(m, 10);
-    if (isNaN(hour) || isNaN(min)) return "";
+    if (!Number.isInteger(hour) || hour < 1 || hour > 12 || !Number.isInteger(min) || min < 0 || min > 59 || !['am', 'pm'].includes(ampm)) return "";
     if (ampm === 'pm' && hour < 12) hour += 12;
     if (ampm === 'am' && hour === 12) hour = 0;
     return `${String(hour).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
@@ -2882,7 +2914,7 @@ function setCheckerCourtEndTime(val) {
 
     const endAmpmSelect = document.getElementById('checkCourtEndAmpm');
     if (ampm === 'am' && endAmpmSelect && !endAmpmSelect.querySelector('option[value="am"]')) {
-        ampm = 'pm';
+        enableAmTimeOptions('checkEnableAmChecker', ['checkCourtStartAmpm', 'checkCourtEndAmpm']);
     }
 
     if (document.getElementById('checkCourtEndHour')) document.getElementById('checkCourtEndHour').value = String(h12);
@@ -2911,12 +2943,12 @@ function initCourtAvailabilityChecker() {
     const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
     checkDate.value = todayStr;
 
-    // Smart default hour: if between 6 AM and 10 PM, select next full hour; otherwise select 19:00 (7:00 PM)
-    const currentHour = today.getHours();
-    let defaultStart = '19:00';
-    if (currentHour >= 6 && currentHour < 23) {
-        defaultStart = String(currentHour + 1).padStart(2, '0') + ':00';
-    }
+    // Start in the afternoon even when the operator opens the page in the morning.
+    const checkEnableAmChecker = document.getElementById('checkEnableAmChecker');
+    if (checkEnableAmChecker) checkEnableAmChecker.checked = false;
+    startAmpm.querySelector('option[value="am"]')?.remove();
+    endAmpm.querySelector('option[value="am"]')?.remove();
+    const defaultStart = '14:00';
     setCheckerCourtStartTime(defaultStart);
 
     // Default End Time is 1 hour after default Start Time
@@ -3069,6 +3101,12 @@ function updateCourtAvailabilityChecker() {
         return;
     }
 
+    const timeError = getBookingTimeError(dateStr, startTime, endTime);
+    if (timeError) {
+        resultsEl.innerHTML = `<div style="grid-column: 1/-1; padding: 14px; color: var(--text-muted);">${escapeHTML(timeError)}</div>`;
+        return;
+    }
+
     let startMins = parseTimeToMinutes(startTime);
     let endMins = parseTimeToMinutes(endTime);
     if (endMins <= startMins && startTime && endTime) {
@@ -3129,54 +3167,23 @@ function updateCourtAvailabilityChecker() {
     ];
 
     let fullHtml = '<div class="checker-groups-container">';
+    const assignments = getPolideportivoCourtAssignments();
 
     courtGroups.forEach((group, index) => {
         const groupId = `checkerGroup-${index}`;
         const isExpanded = openCheckerGroups.has(groupId);
 
-        // Collect all active overlapping events for this group
-        const groupOverlappingEvents = [];
-        for (const event of allEvents) {
-            const eventCourt = event.court || '';
-            const matchesGroup = (eventCourt === 'Todas') || eventCourt.includes(group.groupKeyword);
-            if (matchesGroup) {
-                const { start: existStart, end: existEnd } = getStartAndEndDates(event.date, event.start_time, event.end_time);
-                if (queryStart < existEnd && queryEnd > existStart) {
-                    groupOverlappingEvents.push(event);
-                }
+        // Numbered bookings keep their court; consecutive bookings reuse the same slot.
+        const courtOccupant = {};
+        assignments.forEach(record => {
+            if (queryStart < record.end && queryEnd > record.start) {
+                record.courts.forEach(court => {
+                    if (group.courts.some(candidate => candidate.id === court) && !courtOccupant[court]) {
+                        courtOccupant[court] = record.event;
+                    }
+                });
             }
-        }
-
-        // Assign events to court slots
-        const courtOccupant = {}; // courtId -> event
-
-        // 1. Check for 'Todas' (occupies all courts in group)
-        const todasEvent = groupOverlappingEvents.find(e => e.court === 'Todas');
-        if (todasEvent) {
-            group.courts.forEach(c => {
-                courtOccupant[c.id] = todasEvent;
-            });
-        } else {
-            // 2. Specific numbered court assignments first
-            const unassignedGenericEvents = [];
-            groupOverlappingEvents.forEach(event => {
-                const exactCourt = group.courts.find(c => c.id === event.court);
-                if (exactCourt && !courtOccupant[exactCourt.id]) {
-                    courtOccupant[exactCourt.id] = event;
-                } else {
-                    unassignedGenericEvents.push(event);
-                }
-            });
-
-            // 3. Generic events (e.g. 'Cancha Grande', 'Cancha Pequeña', 'Cancha de Vóley')
-            // sequentially fill first available unassigned court slots
-            unassignedGenericEvents.forEach(event => {
-                const freeSlot = group.courts.find(c => !courtOccupant[c.id]);
-                if (freeSlot) {
-                    courtOccupant[freeSlot.id] = event;
-                }
-            });
-        }
+        });
 
         let groupCardsHtml = '';
         let freeCount = 0;
@@ -3403,6 +3410,7 @@ function updateAvailabilityGrid() {
     }
 
     let html = '';
+    const courtAssignments = getPolideportivoCourtAssignments();
 
     slots.forEach(slot => {
         html += `<tr>`;
@@ -3458,7 +3466,8 @@ function updateAvailabilityGrid() {
                 });
 
                 // Display quick booking button if there is remaining capacity
-                const freeCount = Math.max(0, cat.capacity - activeBookings.length);
+                const freeCount = cat.courts.filter(court => !courtAssignments.some(record =>
+                    record.courts.includes(court) && record.start < slot.endDate && record.end > slot.startDate)).length;
                 if (freeCount > 0) {
                     let buttonText = `+ Reservar (${freeCount} Libres)`;
 
@@ -3494,21 +3503,13 @@ window.openBookingFromGrid = function (dateStr, startTime, endTime, categoryName
     const courts = courtCategories[categoryName] || [categoryName];
     const { start: qStart, end: qEnd } = getStartAndEndDates(dateStr, startTime, endTime);
 
-    // Find occupied courts in this category
-    const occupiedCourts = new Set();
-    allEvents.forEach(e => {
-        const { start: existStart, end: existEnd } = getStartAndEndDates(e.date, e.start_time, e.end_time);
-        if (existStart < qEnd && existEnd > qStart) {
-            if (e.court === 'Todas') {
-                courts.forEach(c => occupiedCourts.add(c));
-            } else if (e.court) {
-                occupiedCourts.add(e.court);
-            }
-        }
-    });
-
-    // Select the first available specific court
-    const selectedCourt = courts.find(c => !occupiedCourts.has(c)) || courts[0];
+    const assignments = getPolideportivoCourtAssignments();
+    const selectedCourt = courts.find(court => !assignments.some(record =>
+        record.courts.includes(court) && record.start < qEnd && record.end > qStart));
+    if (!selectedCourt) {
+        alert('No hay canchas libres en este horario. Actualiza la disponibilidad.');
+        return;
+    }
 
     // Determine sport
     let sport = 'Fútbol';
@@ -5223,8 +5224,8 @@ function updateStatsDashboard() {
     document.getElementById('statsCompareMonth').innerHTML = renderCompareBadge(metrics.Total.month.income, prevMonthIncome);
 
     // Calculate Month efficiency (Capacity & Duration)
-    const numberCourts = 3; // Cancha Grande, Cancha Pequeña, Cancha de Vóley
-    const hoursPerDay = 17; // e.g. 7 AM to 12 AM
+    const numberCourts = Object.values(polideportivoCourtCategories).flat().length;
+    const hoursPerDay = 19; // 06:00 AM to 01:00 AM the following day
     const dailyCapacity = numberCourts * hoursPerDay;
     const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
     const monthlyCapacity = dailyCapacity * daysInMonth;

@@ -784,13 +784,14 @@ ALTER PUBLICATION supabase_realtime ADD TABLE reservas, historial;
                     style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px; margin-bottom: 16px;">
                     <h4
                         style="margin: 0 0 10px 0; color: var(--primary); font-size: 15px; display: flex; align-items: center; gap: 6px;">
-                        <i data-lucide="calendar" style="width: 16px; height: 16px;"></i> 🗓️ Lunes a Jueves
+                        <i data-lucide="calendar" style="width: 16px; height: 16px;"></i> 🗓️ Tarifas Base
                     </h4>
                     <ul
                         style="margin: 0; padding-left: 20px; font-size: 13px; color: var(--text-secondary); line-height: 1.6;">
-                        <li><strong>S/ 25 por hora</strong></li>
-                        <li><strong>Pelota:</strong> S/ 5</li>
-                        <li><strong>Chalecos:</strong> S/ 5</li>
+                        <li><strong>Fútbol, lunes a jueves y viernes a domingo antes de las 3:00 p. m.:</strong> Cancha 3 S/ <span data-brisas-rate="cancha3">25</span> por hora; canchas 1 y 2 S/ <span data-brisas-rate="canchas12">25</span> por hora.</li>
+                        <li><strong>Vóley 1 y 2, todos los días:</strong> S/ <span data-brisas-rate="voley">25</span> por hora (incluye pelota).</li>
+                        <li><strong>Pelota:</strong> S/ <span data-brisas-rate="pelota">5</span></li>
+                        <li><strong>Chalecos:</strong> S/ <span data-brisas-rate="chaleco">5</span></li>
                     </ul>
                 </div>
 
@@ -805,20 +806,20 @@ ALTER PUBLICATION supabase_realtime ADD TABLE reservas, historial;
                         <strong style="color: #fbbf24; font-size: 13px;">🕒 De 3:00 p. m. a 6:00 p. m.</strong>
                         <ul
                             style="margin: 6px 0 0 0; padding-left: 20px; font-size: 13px; color: var(--text-secondary); line-height: 1.5;">
-                            <li><strong>Cancha grande:</strong> S/ 50 por hora <span
+                            <li><strong>Cancha 3 (16 jug):</strong> S/ <span data-brisas-rate="viedom_36_cancha3">50</span> por hora <span
                                     style="color: #34d399; font-size: 11px;">*(incluye pelota y chalecos)*</span></li>
-                            <li><strong>Cancha pequeña:</strong> S/ 40 por hora <span
+                            <li><strong>Canchas 1 y 2:</strong> S/ <span data-brisas-rate="viedom_36_canchas12">40</span> por hora <span
                                     style="color: #34d399; font-size: 11px;">*(incluye pelota y chalecos)*</span></li>
                         </ul>
                     </div>
 
                     <div style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 6px;">
-                        <strong style="color: #f472b6; font-size: 13px;">🌙 De 6:00 p. m. a 12:00 a. m.</strong>
+                        <strong style="color: #f472b6; font-size: 13px;">🌙 De 6:00 p. m. hasta el cierre (1:00 a. m.)</strong>
                         <ul
                             style="margin: 6px 0 0 0; padding-left: 20px; font-size: 13px; color: var(--text-secondary); line-height: 1.5;">
-                            <li><strong>Cancha grande:</strong> S/ 60 por hora <span
+                            <li><strong>Cancha 3 (16 jug):</strong> S/ <span data-brisas-rate="viedom_612_cancha3">60</span> por hora <span
                                     style="color: #34d399; font-size: 11px;">*(incluye pelota y chalecos)*</span></li>
-                            <li><strong>Cancha pequeña:</strong> S/ 50 por hora <span
+                            <li><strong>Canchas 1 y 2:</strong> S/ <span data-brisas-rate="viedom_612_canchas12">50</span> por hora <span
                                     style="color: #34d399; font-size: 11px;">*(incluye pelota y chalecos)*</span></li>
                         </ul>
                     </div>
@@ -1232,7 +1233,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE reservas, historial;
     </div>
 
     <!-- Custom JS -->
-    <script src="brisas.js?v=3"></script>
+    <script src="brisas.js?v=5"></script>
     <script src="medios-contacto.js"></script>
 </body>
 
