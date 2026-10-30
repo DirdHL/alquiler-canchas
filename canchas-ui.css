@@ -1,0 +1,420 @@
+/* Shared visual layer for the three sports venues. Booking behaviour stays in the existing scripts. */
+body.courts-ui {
+    --venue-accent: #60a5fa;
+    --venue-solid: #2563eb;
+    --venue-rgb: 59, 130, 246;
+    --venue-surface: #0b1425;
+    --calendar-label: "SPORT VICTORIA · LOS PINOS";
+    --calendar-surface: #0e1c39;
+    --calendar-grid: #10234a;
+    --calendar-head: #1a3970;
+    --calendar-axis: #142e58;
+    --calendar-line: #31527c;
+    --calendar-minor: #203b62;
+    /* Shared reservation colours contrast with every venue's calendar. */
+    --court-large: #7c3aed;
+    --court-large-end: #5b21b6;
+    --court-large-ink: #ffffff;
+    --court-small: #be185d;
+    --court-small-end: #9d174d;
+    --court-small-ink: #ffffff;
+    --court-volley: #fbbf24;
+    --court-volley-end: #f59e0b;
+    --court-volley-ink: #422006;
+    --accent-grande: var(--court-large);
+    --accent-pequena: var(--court-small);
+    --bg-primary: #080e19;
+    --bg-secondary: #111d2f;
+    --bg-card: #111c2e;
+    --border-color: rgba(164, 189, 222, .15);
+    --text-primary: #f3f7fd;
+    --text-secondary: #b1bed1;
+    --text-muted: #8d9eb5;
+    --primary: var(--venue-accent);
+    --primary-hover: var(--venue-solid);
+    --primary-glow: rgba(var(--venue-rgb), .18);
+    background: #080e19 !important;
+    color: var(--text-primary);
+    color-scheme: dark;
+}
+
+body.courts-ui[data-venue="brisas"] {
+    --venue-accent: #67d7f5;
+    --venue-solid: #0369a1;
+    --venue-rgb: 56, 189, 248;
+    --venue-surface: #0a1b29;
+    --calendar-label: "SPORT VICTORIA · LAS BRISAS";
+    --calendar-surface: #082b37;
+    --calendar-grid: #0a3442;
+    --calendar-head: #105569;
+    --calendar-axis: #0d4352;
+    --calendar-line: #2c6978;
+    --calendar-minor: #1a4a59;
+}
+
+body.courts-ui[data-venue="poli"] {
+    --venue-accent: #6ee7b7;
+    --venue-solid: #047857;
+    --venue-rgb: 52, 211, 153;
+    --venue-surface: #0a1d1b;
+    --calendar-label: "POLIDEPORTIVO · HUARAL-HUANDO";
+    --calendar-surface: #092b22;
+    --calendar-grid: #0b3528;
+    --calendar-head: #16583e;
+    --calendar-axis: #104632;
+    --calendar-line: #2f7055;
+    --calendar-minor: #1c503b;
+}
+
+body.courts-ui .main-content {
+    min-width: 0;
+    gap: 20px;
+    padding: 28px clamp(18px, 2.6vw, 44px) 44px;
+    background: radial-gradient(ellipse at 88% 0, rgba(var(--venue-rgb), .075), transparent 650px), #080e19 !important;
+}
+
+body.courts-ui .sidebar {
+    background: #0c1523 !important;
+    border-right: 1px solid var(--border-color) !important;
+    gap: 25px;
+    padding: 28px 20px;
+}
+
+body.courts-ui .logo-title { gap: 10px; }
+body.courts-ui .logo-icon { color: var(--venue-accent); }
+body.courts-ui .logo-title h2 { font-size: 23px; letter-spacing: -.8px; }
+body.courts-ui .logo-title h2 > span:not(.logo-subtitle) { color: var(--venue-accent); }
+body.courts-ui .logo-subtitle { color: var(--text-secondary); font-size: 11px; letter-spacing: 1.2px; }
+body.courts-ui .sidebar .stats-card,
+body.courts-ui .sidebar .status-indicator-card {
+    background: #111d2d !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: 14px;
+    box-shadow: none;
+}
+body.courts-ui .sidebar .stats-card h3,
+body.courts-ui .sidebar .status-desc { color: var(--text-secondary) !important; }
+body.courts-ui .stat-item { padding: 10px 0; }
+body.courts-ui .stat-item .stat-value { font-variant-numeric: tabular-nums; color: #f4f8ff !important; }
+body.courts-ui .nav-filters > h3 { color: #8d9eb5; text-transform: uppercase; letter-spacing: 1.6px; font-size: 10px; }
+body.courts-ui .sidebar .btn-sidebar-action { border-radius: 10px; padding: 11px 12px; font-size: 12px; }
+body.courts-ui #btnOpenStats,
+body.courts-ui #btnOpenTarifario {
+    color: var(--venue-accent) !important;
+    border-color: rgba(var(--venue-rgb), .28) !important;
+    background: rgba(var(--venue-rgb), .075) !important;
+}
+body.courts-ui .user-profile-card { border-radius: 14px; background: rgba(var(--venue-rgb), .05); }
+body.courts-ui .user-avatar { background: rgba(var(--venue-rgb), .13); color: var(--venue-accent); }
+body.courts-ui .sidebar-footer { color: #8d9eb5; }
+
+body.courts-ui .app-header {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 260px auto;
+    min-height: 190px;
+    padding: 26px 30px;
+    gap: 22px;
+    align-items: center;
+    isolation: isolate;
+    border: 1px solid rgba(var(--venue-rgb), .2);
+    border-radius: 24px;
+    background: radial-gradient(ellipse at 75% 45%, rgba(var(--venue-rgb), .14), transparent 50%), var(--venue-surface);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .035), 0 15px 45px rgba(0, 0, 0, .1);
+}
+
+body.courts-ui .app-header::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    opacity: .16;
+    background-image: linear-gradient(125deg, transparent 60%, rgba(var(--venue-rgb), .25) 60%, transparent 61%),
+        linear-gradient(125deg, transparent 70%, rgba(var(--venue-rgb), .18) 70%, transparent 71%);
+    z-index: -1;
+}
+
+body.courts-ui .header-left { align-items: flex-start; gap: 18px; min-width: 0; }
+body.courts-ui .btn.btn-menu { flex-shrink: 0; min-width: 44px; height: 44px; border-radius: 12px; margin-top: 3px; background: rgba(255, 255, 255, .04); }
+body.courts-ui .header-title { min-width: 0; }
+body.courts-ui .venue-eyebrow { display: flex; align-items: center; gap: 8px; color: var(--venue-accent); font-size: 11px; font-weight: 600; letter-spacing: 1.8px; text-transform: uppercase; margin-bottom: 10px; }
+body.courts-ui .venue-dot { display: inline-block; width: 6px; height: 6px; background: var(--venue-accent); border-radius: 50%; box-shadow: 0 0 12px rgba(var(--venue-rgb), .55); flex-shrink: 0; }
+body.courts-ui .header-title h1 { font-size: clamp(27px, 2.7vw, 38px); line-height: 1.1; font-weight: 700; letter-spacing: -1.3px; margin-bottom: 10px; }
+body.courts-ui .header-title p { font-size: 13px; color: var(--text-secondary); line-height: 1.55; max-width: 520px; }
+body.courts-ui .venue-sports { display: flex; align-items: center; flex-wrap: wrap; gap: 7px; margin-top: 15px; }
+body.courts-ui .venue-sports > span { display: inline-flex; align-items: center; gap: 6px; border: 1px solid rgba(var(--venue-rgb), .18); color: #d7e5f6; background: rgba(var(--venue-rgb), .045); font-size: 11px; padding: 5px 10px; border-radius: 100px; }
+body.courts-ui .venue-sports svg { width: 13px; height: 13px; color: var(--venue-accent); }
+body.courts-ui .venue-art { width: 260px; height: 160px; display: grid; place-items: center; color: var(--venue-accent); pointer-events: none; }
+body.courts-ui .arena-illustration { width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 12px 23px rgba(var(--venue-rgb), .12)); animation: courts-arena-float 7s ease-in-out infinite; }
+body.courts-ui #btnNewReservation { min-height: 46px; white-space: nowrap; padding: 13px 20px; box-shadow: 0 6px 22px rgba(var(--venue-rgb), .2) !important; }
+
+body.courts-ui .venue-switcher { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+body.courts-ui .venue-switcher-label { color: #8d9eb5; font-size: 10px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; margin-right: 8px; }
+body.courts-ui .venue-switcher a { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; border-radius: 10px; border: 1px solid var(--border-color); background: #0e1929; padding: 9px 14px; color: var(--text-secondary); font-size: 12px; font-weight: 500; transition: border-color .2s, background-color .2s, color .2s; }
+body.courts-ui .venue-switcher a > svg { width: 17px; height: 17px; flex-shrink: 0; }
+body.courts-ui .venue-switcher a > span:not(.venue-link-arrow) { display: flex; flex-direction: column; gap: 2px; line-height: 1.25; }
+body.courts-ui .venue-switcher a small { font-size: 10px; color: #8d9eb5; font-weight: 400; }
+body.courts-ui .venue-switcher a .venue-link-arrow { color: #8398b5; margin-left: 16px; }
+body.courts-ui .venue-switcher a::before { content: ""; width: 6px; height: 6px; background: #60a5fa; border-radius: 50%; }
+body.courts-ui .venue-switcher a[data-venue="brisas"]::before { background: #67d7f5; }
+body.courts-ui .venue-switcher a[data-venue="poli"]::before { background: #6ee7b7; }
+body.courts-ui .venue-switcher a:hover { border-color: rgba(var(--venue-rgb), .5); color: #fff; }
+body.courts-ui .venue-switcher a[aria-current="page"],
+body.courts-ui .venue-switcher a.active { color: var(--venue-accent); background: rgba(var(--venue-rgb), .1); border-color: rgba(var(--venue-rgb), .36); }
+
+body.courts-ui .btn { transition: background-color .18s, color .18s, border-color .18s, box-shadow .18s, transform .18s; }
+body.courts-ui .btn-primary { background: var(--venue-solid) !important; color: #fff !important; box-shadow: 0 4px 16px rgba(var(--venue-rgb), .14) !important; border-radius: 11px; }
+body.courts-ui .btn-primary:hover { background: var(--venue-solid) !important; filter: brightness(1.13); box-shadow: 0 6px 22px rgba(var(--venue-rgb), .22) !important; }
+body.courts-ui .btn-secondary { background: #182437; border-color: rgba(164, 189, 222, .18); color: #e0e9f5; }
+body.courts-ui .btn-secondary:hover { background: #23334a; border-color: rgba(var(--venue-rgb), .4); }
+body.courts-ui :is(button, a, input, select, textarea):focus-visible { outline: 2px solid var(--venue-accent) !important; outline-offset: 3px; }
+body.courts-ui input[type="checkbox"] { accent-color: var(--venue-solid); }
+
+body.courts-ui .availability-checker-card {
+    position: relative;
+    background: #111c2d;
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    box-shadow: 0 6px 30px rgba(0, 0, 0, .1);
+    padding: 22px 24px;
+    margin-bottom: 0;
+    animation: courts-reveal .45s ease both;
+}
+body.courts-ui .checker-header { padding-bottom: 16px; margin-bottom: 16px; border-color: var(--border-color); }
+body.courts-ui .checker-title { font-size: 17px; letter-spacing: -.35px; }
+body.courts-ui .checker-subtitle { color: var(--text-secondary); font-size: 12px; margin-top: 5px; }
+body.courts-ui .availability-checker-card .checkbox-container span { color: var(--venue-accent) !important; }
+body.courts-ui .checker-icon-badge { width: 42px; height: 42px; color: var(--venue-accent); background: rgba(var(--venue-rgb), .1); border-color: rgba(var(--venue-rgb), .25); box-shadow: none; border-radius: 13px; }
+body.courts-ui .checker-badge-pill { color: #75e9bb; background: rgba(52, 211, 153, .08); border: 1px solid rgba(52, 211, 153, .25); font-size: 9px; border-radius: 100px; letter-spacing: .8px; padding: 3px 8px; }
+body.courts-ui .checker-quick-buttons { padding: 4px; border: 1px solid var(--border-color); border-radius: 11px; background: #0c1523; gap: 3px; }
+body.courts-ui .checker-quick-buttons .btn { padding: 7px 12px; font-size: 11px; border-color: transparent; background: transparent; border-radius: 7px; }
+body.courts-ui .checker-quick-buttons .btn:hover,
+body.courts-ui .checker-quick-buttons .btn.active { color: var(--venue-accent); background: rgba(var(--venue-rgb), .12); border-color: transparent; }
+body.courts-ui .checker-form-grid { gap: 16px; margin-bottom: 20px; }
+body.courts-ui .checker-field label { color: #aabbd1; font-size: 11px; margin-bottom: 8px; }
+body.courts-ui .checker-field label svg { color: var(--venue-accent); }
+body.courts-ui .checker-field > input,
+body.courts-ui .checker-field > select,
+body.courts-ui .time-input-group { background: #0a1423; border-color: #2b3b51; border-radius: 10px; }
+body.courts-ui .checker-field > input,
+body.courts-ui .checker-field > select { color: #f4f8ff; height: 44px; }
+body.courts-ui .checker-field > input:focus,
+body.courts-ui .checker-field > select:focus,
+body.courts-ui .time-input-group:focus-within { border-color: var(--venue-accent); box-shadow: 0 0 0 3px rgba(var(--venue-rgb), .12); }
+body.courts-ui .time-unit-input { background: #172539; border-color: #31415a; color: #f3f7fd; }
+body.courts-ui .time-ampm-select { background: rgba(var(--venue-rgb), .1); border-color: rgba(var(--venue-rgb), .25); color: var(--venue-accent); }
+body.courts-ui .time-input-group > .time-icon { color: var(--venue-accent); }
+body.courts-ui .checker-results-grid { gap: 14px; }
+body.courts-ui .checker-cards-subgrid { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+body.courts-ui .checker-court-card { padding: 17px; border-radius: 13px; transition: border-color .2s, box-shadow .2s, background-color .2s; }
+body.courts-ui .checker-court-card.available { border-color: rgba(52, 211, 153, .28); background: linear-gradient(120deg, #12282c, #10202b); }
+body.courts-ui .checker-court-card.available:hover { border-color: #52dba7; box-shadow: 0 6px 22px rgba(16, 185, 129, .09); transform: none; }
+body.courts-ui .checker-court-card.occupied { border-color: rgba(248, 113, 113, .28); background: linear-gradient(120deg, #29202a, #17202d); }
+body.courts-ui .checker-court-card.occupied:hover { transform: none; box-shadow: 0 6px 22px rgba(248, 113, 113, .08); }
+body.courts-ui .checker-card-name { font-size: 14px; }
+body.courts-ui .court-dot { width: 8px; height: 8px; }
+body.courts-ui .checker-status-badge { border-radius: 7px; padding: 5px 8px; font-size: 10px; }
+body.courts-ui .checker-status-badge.free { color: #75e9bb; border-color: rgba(52, 211, 153, .24); background: rgba(52, 211, 153, .08); }
+body.courts-ui .checker-price-value { font-size: 19px; letter-spacing: -.5px; color: #75e9bb; }
+body.courts-ui .checker-price-label,
+body.courts-ui .checker-time-info { color: #afc1d3; }
+body.courts-ui .checker-card-action { padding-top: 12px; margin-top: 7px; border-color: rgba(255, 255, 255, .07); }
+body.courts-ui .checker-card-action .btn-book { background: #087e60; border: 1px solid rgba(52, 211, 153, .25); color: #f0fff8; border-radius: 8px; padding: 9px; }
+body.courts-ui .checker-card-action .btn-book:hover { background: #09966f; }
+
+body.courts-ui .top-filters-card { background: #101a2a; border-color: var(--border-color); border-radius: 14px; margin-bottom: 0; padding: 13px 18px; box-shadow: none; }
+body.courts-ui .top-filter-label { color: #8398b5; font-size: 11px; }
+body.courts-ui .top-filter-items .filter-item { color: #cbd7e7; font-size: 12px; }
+body.courts-ui .top-filters-group { gap: 24px; }
+body.courts-ui .custom-checkbox { width: 17px; height: 17px; border-radius: 5px; }
+
+body.courts-ui .calendar-card { background: var(--calendar-surface) !important; border: 1px solid var(--calendar-line) !important; border-top: 3px solid var(--venue-accent) !important; padding: 20px; border-radius: 18px; box-shadow: 0 5px 25px rgba(0, 0, 0, .12); backdrop-filter: none; }
+body.courts-ui .fc { --fc-border-color: var(--calendar-line) !important; --fc-today-bg-color: rgba(var(--venue-rgb), .13) !important; --fc-neutral-bg-color: var(--calendar-head); }
+body.courts-ui .fc-theme-standard td,
+body.courts-ui .fc-theme-standard th { border-color: var(--calendar-line) !important; }
+body.courts-ui .fc .fc-scrollgrid { border-radius: 11px; border-color: var(--calendar-line) !important; background: var(--calendar-grid); }
+body.courts-ui .fc th { background: var(--calendar-head) !important; padding: 10px 0 !important; font-size: 11px !important; letter-spacing: .4px; color: #e4f3ff !important; }
+body.courts-ui .fc .fc-col-header-cell-cushion { padding: 5px 4px; }
+body.courts-ui .fc .fc-col-header-cell.fc-day-today { background: var(--venue-solid) !important; border-bottom: 2px solid var(--venue-accent) !important; }
+body.courts-ui .fc .fc-col-header-cell.fc-day-today a,
+body.courts-ui .fc .fc-col-header-cell.fc-day-today.fc-day-selected a { color: #ffffff !important; }
+body.courts-ui .fc .fc-col-header-cell.fc-day-selected { background: rgba(var(--venue-rgb), .09) !important; border-bottom-color: var(--venue-accent) !important; }
+body.courts-ui .fc .fc-col-header-cell.fc-day-today.fc-day-selected { background: var(--venue-solid) !important; }
+body.courts-ui .fc .fc-timegrid-col.fc-day-selected,
+body.courts-ui .fc .fc-daygrid-day.fc-day-selected { background: rgba(var(--venue-rgb), .1) !important; }
+body.courts-ui .fc .fc-toolbar { margin-bottom: 18px; gap: 12px; }
+body.courts-ui .fc .fc-toolbar-title { font-size: 20px; letter-spacing: -.6px; }
+body.courts-ui .fc .fc-toolbar-title::before { content: var(--calendar-label); display: block; margin-bottom: 5px; color: var(--venue-accent); font-size: 10px; font-weight: 600; letter-spacing: 1.3px; }
+body.courts-ui .fc .fc-button-primary { background: var(--calendar-head) !important; border-color: var(--calendar-line) !important; font-size: 12px; font-weight: 500 !important; padding: 9px 12px; box-shadow: none !important; }
+body.courts-ui .fc .fc-button-primary:hover { background: var(--venue-solid) !important; border-color: var(--venue-accent) !important; }
+body.courts-ui .fc .fc-button-primary:not(:disabled).fc-button-active { background: var(--venue-solid) !important; border-color: var(--venue-solid) !important; color: #fff !important; }
+body.courts-ui .fc .fc-timegrid-slot-label { color: #e0efff !important; font-size: 11px !important; font-weight: 500 !important; background: var(--calendar-axis); }
+body.courts-ui .fc .fc-timegrid-slot-label-cushion { padding: 0 9px; }
+body.courts-ui .fc .fc-timegrid-slot-minor { border-top-style: dotted !important; border-top-color: var(--calendar-minor) !important; }
+body.courts-ui .fc .fc-timegrid-slot { height: 29px; }
+body.courts-ui .fc .fc-daygrid-day-number { font-size: 12px !important; color: #cfdbed !important; }
+body.courts-ui .fc .fc-event { border-radius: 7px !important; padding: 3px 5px !important; box-shadow: 0 2px 7px rgba(0, 0, 0, .25) !important; transition: box-shadow .16s; }
+body.courts-ui .fc .fc-event:hover { transform: none; box-shadow: 0 3px 14px rgba(0, 0, 0, .45) !important; }
+body.courts-ui .fc .fc-event-main { font-size: 11px !important; font-weight: 500 !important; }
+body.courts-ui .fc .fc-event-time { font-size: 10px; font-weight: 600; }
+body.courts-ui .fc .fc-event-title { line-height: 1.25; }
+
+/* Reservations and their legends share distinct colours, independent of venue backgrounds. */
+body.courts-ui .event-cancha-grande,
+body.courts-ui .availability-booked-badge.court-grande {
+    background: linear-gradient(135deg, var(--court-large), var(--court-large-end)) !important;
+    color: var(--court-large-ink) !important;
+}
+body.courts-ui .event-cancha-pequena,
+body.courts-ui .availability-booked-badge.court-pequena {
+    background: linear-gradient(135deg, var(--court-small), var(--court-small-end)) !important;
+    color: var(--court-small-ink) !important;
+}
+body.courts-ui .event-cancha-voley,
+body.courts-ui .availability-booked-badge.court-voley {
+    background: linear-gradient(135deg, var(--court-volley), var(--court-volley-end)) !important;
+    color: var(--court-volley-ink) !important;
+}
+body.courts-ui .event-cancha-grande :is(.fc-event-main, .fc-event-title, .fc-event-time),
+body.courts-ui .event-cancha-grande .fc-event-main * { color: var(--court-large-ink) !important; }
+body.courts-ui .event-cancha-pequena :is(.fc-event-main, .fc-event-title, .fc-event-time),
+body.courts-ui .event-cancha-pequena .fc-event-main * { color: var(--court-small-ink) !important; }
+body.courts-ui .event-cancha-voley :is(.fc-event-main, .fc-event-title, .fc-event-time),
+body.courts-ui .event-cancha-voley .fc-event-main * { color: var(--court-volley-ink) !important; }
+body.courts-ui .event-cancha-grande .fc-daygrid-event-dot { border-color: var(--court-large) !important; }
+body.courts-ui .event-cancha-pequena .fc-daygrid-event-dot { border-color: var(--court-small) !important; }
+body.courts-ui .event-cancha-voley .fc-daygrid-event-dot { border-color: var(--court-volley) !important; }
+
+body.courts-ui .filter-item input:checked + .custom-checkbox.color-grande,
+body.courts-ui #filterCanchaFutbol:checked + .custom-checkbox {
+    background: var(--court-large) !important; border-color: var(--court-large) !important;
+}
+body.courts-ui .filter-item input:checked + .custom-checkbox.color-pequena,
+body.courts-ui[data-venue="brisas"] #filterCanchaVoley:checked + .custom-checkbox {
+    background: var(--court-small) !important; border-color: var(--court-small) !important;
+}
+body.courts-ui .filter-item input:checked + .custom-checkbox.color-pequena::after,
+body.courts-ui[data-venue="brisas"] #filterCanchaVoley:checked + .custom-checkbox::after { border-color: var(--court-small-ink) !important; }
+body.courts-ui[data-venue="poli"] #filterCanchaVoley:checked + .custom-checkbox {
+    background: var(--court-volley) !important; border-color: var(--court-volley) !important;
+}
+body.courts-ui[data-venue="poli"] #filterCanchaVoley:checked + .custom-checkbox::after { border-color: var(--court-volley-ink) !important; }
+body.courts-ui .court-dot.dot-grande { background: var(--court-large); box-shadow: 0 0 7px var(--court-large); }
+body.courts-ui .court-dot.dot-pequena { background: var(--court-small); box-shadow: 0 0 7px var(--court-small); }
+body.courts-ui .court-dot.dot-voley { background: var(--court-volley); box-shadow: 0 0 7px var(--court-volley); }
+body.courts-ui .court-badge-grande,
+body.courts-ui .court-badge-futbol { background: var(--court-large) !important; color: var(--court-large-ink) !important; border-color: var(--court-large) !important; }
+body.courts-ui .court-badge-pequena { background: var(--court-small) !important; color: var(--court-small-ink) !important; border-color: var(--court-small) !important; }
+body.courts-ui .court-badge-voley { background: var(--court-volley) !important; color: var(--court-volley-ink) !important; border-color: var(--court-volley) !important; }
+body.courts-ui .summary-item-card.card-grande { border-left-color: var(--court-large) !important; }
+body.courts-ui .summary-item-card.card-pequena { border-left-color: var(--court-small) !important; }
+body.courts-ui .summary-item-card.card-voley { border-left-color: var(--court-volley) !important; }
+
+body.courts-ui .calendar-hours-toggle-footer { border-top-color: var(--border-color); padding-top: 14px; }
+body.courts-ui .btn-calendar-hours-toggle { color: var(--venue-accent); background: rgba(var(--venue-rgb), .065); border-color: rgba(var(--venue-rgb), .2); border-radius: 9px; }
+
+body.courts-ui .summary-item-card { background: #132033; border-color: var(--border-color); border-radius: 13px; }
+body.courts-ui .summary-item-card:hover { border-color: rgba(var(--venue-rgb), .32); background: #17263b; box-shadow: 0 5px 18px rgba(0, 0, 0, .14); }
+body.courts-ui .summary-item-time { color: var(--venue-accent); }
+body.courts-ui .summary-item-client { color: #eef5ff; }
+body.courts-ui .summary-item-details { color: #afc1d6; }
+body.courts-ui .summary-tabs { border-radius: 10px !important; }
+body.courts-ui .tab-btn.active { color: var(--venue-accent); background: rgba(var(--venue-rgb), .1); }
+body.courts-ui .availability-table th { background: #142136; }
+body.courts-ui .availability-slot-btn { background: rgba(52, 211, 153, .09); border-color: rgba(52, 211, 153, .25); color: #75e9bb; }
+body.courts-ui .availability-slot-btn:hover { background: rgba(52, 211, 153, .18); }
+
+body.courts-ui .modal-card { background: #111d2e; border: 1px solid #314159; box-shadow: 0 30px 100px rgba(0, 0, 0, .5); border-radius: 20px; }
+body.courts-ui .modal-header { background: #142135; border-color: var(--border-color); }
+body.courts-ui .modal-header h3 { letter-spacing: -.4px; }
+body.courts-ui .modal-card .input-wrapper,
+body.courts-ui .modal-card .form-control { background: #0b1423; border-color: #2f4058; }
+body.courts-ui .modal-card input,
+body.courts-ui .modal-card textarea,
+body.courts-ui .modal-card select { color: #eef5ff; }
+body.courts-ui .modal-backdrop { background: rgba(3, 8, 17, .75); }
+
+@keyframes courts-arena-float {
+    0%, 100% { transform: translateY(0) rotate(-1deg); }
+    50% { transform: translateY(-6px) rotate(1deg); }
+}
+@keyframes courts-reveal {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@media (max-width: 1250px) {
+    body.courts-ui .app-header { grid-template-columns: minmax(0, 1fr) 200px auto; padding: 24px; gap: 12px; }
+    body.courts-ui .venue-art { width: 200px; }
+    body.courts-ui #btnNewReservation { padding: 12px 16px; font-size: 12px; }
+}
+@media (max-width: 1100px) {
+    body.courts-ui .app-header { grid-template-columns: minmax(0, 1fr) auto; min-height: 185px; }
+    body.courts-ui .venue-art { position: absolute; width: 210px; right: 170px; top: 20px; opacity: .18; z-index: -1; }
+    body.courts-ui .header-title p { max-width: 430px; }
+}
+@media (max-width: 768px) {
+    body.courts-ui .main-content { padding: 16px; gap: 16px; }
+    body.courts-ui .app-header { border-radius: 18px; padding: 21px 18px; min-height: 175px; }
+    body.courts-ui #btnNewReservation { position: static; height: auto; z-index: auto; animation: none; border-radius: 11px; }
+    body.courts-ui #btnNewReservation .btn-text { text-transform: none; letter-spacing: 0; font-size: 12px; }
+    body.courts-ui .header-left { gap: 12px; }
+    body.courts-ui .header-title h1 { font-size: 28px; }
+    body.courts-ui .venue-eyebrow { font-size: 9px; letter-spacing: 1.1px; }
+    body.courts-ui .header-title p { font-size: 12px; }
+    body.courts-ui .venue-sports { margin-top: 12px; }
+    body.courts-ui .venue-art { right: 120px; opacity: .12; }
+    body.courts-ui .availability-checker-card { padding: 18px; border-radius: 16px; }
+    body.courts-ui .checker-header-left { align-items: flex-start; gap: 10px; }
+    body.courts-ui .checker-title { font-size: 15px; }
+    body.courts-ui .checker-subtitle { line-height: 1.45; }
+    body.courts-ui .checker-form-grid { gap: 12px; }
+    body.courts-ui .checker-field { min-width: 0; }
+    body.courts-ui .checker-results-grid { grid-template-columns: 1fr; }
+    body.courts-ui .calendar-card { padding: 14px; border-radius: 15px; }
+    body.courts-ui .fc .fc-toolbar-title { font-size: 17px; }
+    body.courts-ui .fc .fc-toolbar { flex-wrap: wrap; }
+    body.courts-ui .fc .fc-button-primary { padding: 8px 9px; font-size: 11px; }
+    body.courts-ui .top-filters-group { gap: 12px; }
+    body.courts-ui .venue-switcher a { padding: 8px 11px; font-size: 11px; }
+}
+@media (max-width: 540px) {
+    body.courts-ui .app-header { grid-template-columns: 1fr; gap: 18px; }
+    body.courts-ui .venue-art { display: none; }
+    body.courts-ui .header-title h1 { font-size: 28px; letter-spacing: -.9px; }
+    body.courts-ui #btnNewReservation { width: 100%; font-size: 13px; min-height: 43px; }
+    body.courts-ui .venue-sports > span { font-size: 10px; padding: 4px 8px; }
+    body.courts-ui .venue-switcher { gap: 6px; }
+    body.courts-ui .venue-switcher-label { width: 100%; margin-bottom: 3px; }
+    body.courts-ui .venue-switcher a { flex: 1; justify-content: center; padding: 9px 6px; }
+    body.courts-ui .venue-switcher a small { font-size: 9px; }
+    body.courts-ui .venue-switcher a .venue-link-arrow { display: none; }
+    body.courts-ui .venue-switcher a::before { display: none; }
+    body.courts-ui .checker-quick-buttons { width: 100%; }
+    body.courts-ui .checker-quick-buttons .btn { flex: 1; }
+    body.courts-ui .checker-icon-badge { width: 34px; height: 34px; border-radius: 10px; }
+    body.courts-ui .checker-form-grid { display: flex; }
+    body.courts-ui .checker-field,
+    body.courts-ui .checker-field:has(#checkCourtDate),
+    body.courts-ui .checker-field:has(#groupCourtStartTime),
+    body.courts-ui .checker-field:has(#groupCourtEndTime),
+    body.courts-ui .checker-field:has(#checkCourtSport) { width: 100%; }
+    body.courts-ui .time-input-group { width: 100%; }
+    body.courts-ui .fc .fc-toolbar { gap: 10px; }
+    body.courts-ui .fc .fc-toolbar-chunk:nth-child(2) { order: -1; width: 100%; text-align: center; }
+    body.courts-ui .fc th { font-size: 9px !important; letter-spacing: 0; }
+    body.courts-ui .fc .fc-timegrid-slot-label { font-size: 10px !important; }
+    body.courts-ui .fc .fc-timegrid-slot-label-cushion { padding: 0 4px; }
+    body.courts-ui .fc .fc-event { padding: 2px 3px !important; }
+    body.courts-ui .fc .fc-event-main { font-size: 10px !important; }
+    body.courts-ui .fc .fc-event-time { font-size: 9px; }
+    body.courts-ui .top-filter-section { gap: 8px; }
+}
+@media (prefers-reduced-motion: reduce) {
+    body.courts-ui *, body.courts-ui *::before, body.courts-ui *::after {
+        animation: none !important;
+        transition-duration: .01ms !important;
+        scroll-behavior: auto !important;
+    }
+}

@@ -21,6 +21,7 @@
     <!-- Custom CSS -->
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="polideportivo.css">
+    <link rel="stylesheet" href="canchas-ui.css">
     <script>
         window.addEventListener('error', function (e) {
             alert('⛔ ERROR JS EN LA PÁGINA ⛔\nArchivo: ' + e.filename + '\nLínea: ' + e.lineno + '\nMensaje: ' + e.message);
@@ -31,7 +32,7 @@
     </script>
 </head>
 
-<body>
+<body class="courts-ui" data-venue="poli">
     <div class="app-container sidebar-collapsed">
         <!-- Sidebar Backdrop for Mobile -->
         <div class="sidebar-backdrop-overlay" id="sidebarBackdrop"></div>
@@ -155,14 +156,54 @@
                         <span style="font-size: 13px; font-weight: 600; margin-left: 4px;">Menú</span>
                     </button>
                     <div class="header-title">
+                        <div class="venue-eyebrow"><span class="venue-dot"></span>Polideportivo <span class="venue-eyebrow-location">Huaral-Huando</span></div>
                         <h1>Calendario de Reservas</h1>
-                        <p>Gestiona, programa y actualiza los alquileres de tus canchas en tiempo real.</p>
+                        <p>Tu espacio para el fútbol y el vóley. Encuentra cancha y organiza el próximo partido.</p>
+                        <div class="venue-sports"><span><i data-lucide="goal" aria-hidden="true"></i> Fútbol</span><span><i data-lucide="volleyball" aria-hidden="true"></i> Vóley</span></div>
                     </div>
+                </div>
+                <div class="venue-art" aria-hidden="true">
+                    <svg class="arena-illustration" viewBox="0 0 350 205" fill="none" focusable="false">
+                        <ellipse cx="181" cy="171" rx="134" ry="23" fill="currentColor" opacity=".08"/>
+                        <g class="arena-pitch">
+                            <path d="M29 119 218 61 324 126 132 186Z" fill="#07182a" stroke="currentColor" stroke-width="1.5"/>
+                            <path d="m29 119 103 67v8l192-59v-9l-192 60Z" fill="currentColor" opacity=".16"/>
+                            <path d="m45 118 171-52 91 57-174 53Z" fill="currentColor" opacity=".16"/>
+                            <path d="m47 119 169-51 89 55-172 53-86-57Z" stroke="currentColor" stroke-width="1.4" opacity=".7"/>
+                            <path d="m131 93 88 57m-143-40 18 11-18 6m203-21-18 6 19 12" stroke="#deefff" opacity=".6"/>
+                            <ellipse cx="176" cy="122" rx="25" ry="14" transform="rotate(-17 176 122)" stroke="#deefff" opacity=".65"/>
+                            <path d="m63 114 31 21-17 5m208-20-30 9 16 10" stroke="#deefff" opacity=".7"/>
+                            <path d="m50 116-9-22 26-8 8 22m222 15 26-8 9 22-25 8" stroke="currentColor" opacity=".55"/>
+                            <circle cx="117" cy="122" r="4" fill="currentColor"/><circle cx="233" cy="125" r="4" fill="#ffcd6a"/>
+                            <circle cx="173" cy="123" r="2" fill="#f1f8ff"/>
+                        </g>
+                        <g class="arena-football">
+                            <circle cx="89" cy="72" r="33" fill="#edf5ff"/>
+                            <path d="m85 53 16 8-2 18-17 5-10-14 13-17Z" fill="#162a42"/>
+                            <path d="m85 53-2-13m18 21 16-4M99 79l11 14M82 84l-7 18M72 70l-16-1" stroke="#162a42" stroke-width="2"/>
+                            <path d="m63 51 20-11 17 6m17 11 5 18-12 18m-35 9-17-17-2-16" stroke="#162a42" stroke-width="3"/>
+                            <circle cx="89" cy="72" r="32" stroke="#c5d5e9" stroke-width="2"/>
+                        </g>
+                        <g class="arena-volleyball">
+                            <circle cx="264" cy="56" r="27" fill="#ffcf70"/>
+                            <path d="M245 37c19-1 28 11 26 27m-28 10c3-18 16-26 32-24m5 28c-17-5-24-15-22-30m-19 2c8-2 15-1 20 3m-4-22c-1 7 0 13 4 19m-17 17c7 3 13 3 19 1m26-12c-7-2-12-6-16-11m6 33c-2-7-2-13 0-19" stroke="#775125" stroke-width="1.8" stroke-linecap="round"/>
+                            <circle cx="264" cy="56" r="26" stroke="#ffe8b8" stroke-width="2"/>
+                        </g>
+                        <path d="m174 35 3-8 3 8 8 3-8 3-3 8-3-8-8-3 8-3Z" fill="currentColor" opacity=".8"/>
+                        <circle cx="314" cy="64" r="3" fill="currentColor" opacity=".7"/><circle cx="36" cy="45" r="2" fill="currentColor" opacity=".6"/>
+                    </svg>
                 </div>
                 <button class="btn btn-primary" id="btnNewReservation">
                     <i data-lucide="plus"></i> <span class="btn-text">Nueva Reserva</span>
                 </button>
             </header>
+            <nav class="venue-switcher" aria-label="Cambiar sede deportiva">
+                <span class="venue-switcher-label">Elige tu sede</span>
+                <a class="venue-link venue-link-sport" data-venue="sport" href="index.html"><i data-lucide="trees" aria-hidden="true"></i><span>Sport Victoria<small>Los Pinos</small></span><span class="venue-link-arrow" aria-hidden="true">↗</span></a>
+                <a class="venue-link venue-link-brisas" data-venue="brisas" href="brisas.html"><i data-lucide="waves" aria-hidden="true"></i><span>Sport Victoria<small>Las Brisas</small></span><span class="venue-link-arrow" aria-hidden="true">↗</span></a>
+                <a class="venue-link venue-link-poli" data-venue="poli" href="polideportivo.html" aria-current="page"><i data-lucide="building-2" aria-hidden="true"></i><span>Polideportivo<small>Huaral-Huando</small></span><span class="venue-link-arrow" aria-hidden="true">↗</span></a>
+            </nav>
+
 
             <!-- Smart Availability Quick Checker Card ("¿Qué canchas están disponibles?") -->
             <div class="availability-checker-card">
