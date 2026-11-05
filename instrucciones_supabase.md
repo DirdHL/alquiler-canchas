@@ -247,6 +247,50 @@ ALTER PUBLICATION supabase_realtime ADD TABLE medios_contacto;
 
 ---
 
+## 🍷 Paso Extra: Inventario de Vinos compartido (Bungalows)
+
+Hace que el contador de vinos (🍷) de Bungalows sea el mismo para todos los asesores. Sin esta tabla, cada navegador lleva su propio conteo.
+
+```sql
+-- 1. Tabla de inventario (una fila por producto)
+CREATE TABLE IF NOT EXISTS inventario (
+  clave TEXT PRIMARY KEY,                  -- ej. 'vino_bungalows'
+  cantidad INT NOT NULL DEFAULT 0 CHECK (cantidad >= 0),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- 2. Suma o resta de forma atómica (si dos asesores guardan a la vez, no se pisan el conteo)
+CREATE OR REPLACE FUNCTION ajustar_inventario(p_clave TEXT, p_delta INT)
+RETURNS INT
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  nueva_cantidad INT;
+BEGIN
+  INSERT INTO inventario (clave, cantidad)
+  VALUES (p_clave, GREATEST(0, p_delta))
+  ON CONFLICT (clave) DO UPDATE
+    SET cantidad = GREATEST(0, inventario.cantidad + p_delta),
+        updated_at = now()
+  RETURNING cantidad INTO nueva_cantidad;
+  RETURN nueva_cantidad;
+END;
+$$;
+
+-- Habilitar RLS (Row Level Security) obligatorio en Supabase
+ALTER TABLE inventario ENABLE ROW LEVEL SECURITY;
+
+-- Crear regla de acceso público
+CREATE POLICY "Acceso publico inventario" ON inventario FOR ALL USING (true) WITH CHECK (true);
+
+-- Habilitar tiempo real
+ALTER PUBLICATION supabase_realtime ADD TABLE inventario;
+```
+
+> La primera vez que alguien abra Bungalows después de crear la tabla, se sube el conteo que tenía su navegador. Si no es el real, corrígelo con el botón **+** del contador de vino (Agregar / Reducir).
+
+---
+
 ## 🏢 Paso Especial: Configurar Base de Datos para Alquiler de Locales
 
 Para activar el nuevo sistema de reservas de **Locales**, debes crear la tabla correspondiente en tu base de datos de Supabase.

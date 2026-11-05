@@ -17,7 +17,10 @@ const ADD_MEDIO_VALUE = '_add_medio_';
 const DEFAULT_MEDIOS = ['Facebook', 'TikTok', 'Instagram', 'Estado WSP', 'Msg masivo', 'Cliente frecuente', 'Recomendación', 'Afiche'];
 let isTotalManuallyEdited = false;
 let selectedDate = new Date();
-let currentBungalowTab = 'all'; // Cada 15 segundos 
+let currentBungalowTab = 'all'; // Pestaña activa: '1'..'6' o 'all'
+let editState = null; // Reserva en edición: { id, groupIds } (null si es una reserva nueva)
+let isSavingBooking = false; // Evita guardar o eliminar dos veces con doble clic
+let fetchBookingsSeq = 0; // Descarta respuestas viejas cuando se cruzan dos descargas
 
 // Utility to format Date object to YYYY-MM-DD local date string
 function getLocalDateString(date = new Date()) {
@@ -33,6 +36,125 @@ const PRICE_WEEKDAY = 160.00; // Tarifa diaria Lun-Jue (Día y Noche / Full Day 
 const PRICE_WEEKEND = 180.00; // Tarifa diaria Vie-Dom (Día y Noche / Full Day / Por día de Horario Extendido)
 const EXTRA_GUEST_FEE = 30.00; // Costo por persona adicional (actualizado a S/. 30)
 const EXTRA_CHILD_FEE = 25.00; // Costo por niño adicional (S/. 25)
+
+// Desde cambios-229 (2026-10-06) "adicional_horas" guarda el PRECIO por hora en cada fila.
+// Antes guardaba el MONTO total de las horas extra, solo en la fila principal del grupo.
+const EXTRA_HOURS_PRICE_SINCE = '2026-10-06';
+// Desde cambios-223 (2026-09-30) el total negociado se reparte entre las filas del grupo.
+const SPLIT_TOTALS_SINCE = '2026-09-30';
+
+function addDaysToDateString(dateStr, days) {
+    const d = new Date(dateStr + 'T00:00:00');
+    d.setDate(d.getDate() + days);
+    return getLocalDateString(d);
+}
+
+// ----------------------------------------------------
+// Grupos de reserva: una reserva de varios bungalows se guarda como una fila por bungalow
+// con el mismo cliente, fechas y horario.
+// ----------------------------------------------------
+function isSameBookingGroup(a, b) {
+    return a.estado_reserva !== 'Bloqueado' && b.estado_reserva !== 'Bloqueado' &&
+        a.dni_cliente === b.dni_cliente &&
+        a.nombre_cliente === b.nombre_cliente &&
+        a.fecha_ingreso === b.fecha_ingreso &&
+        a.fecha_salida === b.fecha_salida &&
+        a.horario === b.horario;
+}
+
+function getBookingGroup(booking) {
+    const rows = bookings.filter(b => isSameBookingGroup(b, booking));
+    if (rows.length === 0) rows.push(booking);
+    return rows.sort((a, b) => a.bungalow_numero - b.bungalow_numero);
+}
+
+function getBookingGroupKey(b) {
+    return [b.dni_cliente, b.nombre_cliente, b.fecha_ingreso, b.fecha_salida, b.horario, b.estado_reserva]
+        .map(v => String(v === null || v === undefined ? '' : v).trim()).join('|');
+}
+
+function isGroupEditMode() {
+    const container = document.getElementById('groupEditToggleContainer');
+    const toggle = document.getElementById('bookingEditGroupToggle');
+    return !!(container && container.style.display !== 'none' && toggle && toggle.checked);
+}
+
+// Filas que se modificarán al guardar/eliminar desde el formulario (vacío si es una reserva nueva).
+// Se usan los ids capturados al abrir el modal para no tocar filas que otro asesor agregó después.
+function getEditTargetRows() {
+    if (!editState) return [];
+    const ids = isGroupEditMode() ? editState.groupIds : [editState.id];
+    return bookings
+        .filter(b => ids.some(id => String(id) === String(b.id)))
+        .sort((a, b) => a.bungalow_numero - b.bungalow_numero);
+}
+
+// Monto cobrado por horas extra en una fila (ver EXTRA_HOURS_PRICE_SINCE)
+function isLegacyExtraHoursRow(row) {
+    return !!(row && row.created_at && String(row.created_at) < EXTRA_HOURS_PRICE_SINCE);
+}
+
+function getExtraHoursAmount(row) {
+    const value = parseFloat(row && row.adicional_horas) || 0;
+    if (isLegacyExtraHoursRow(row)) return value;
+    return (parseInt(row && row.horas_extras) || 0) * value;
+}
+
+// ----------------------------------------------------
+// Servicios especiales guardados al inicio de las notas: "🍷 (x2) 🎂 🏍️ - comentario"
+// ----------------------------------------------------
+const SERVICE_TOKEN_SRC = '(?:🍷\\s*\\(x\\d+\\)|🍷|🎂|🏍\\uFE0F?)';
+const SERVICE_NOTES_RE = new RegExp(`^(${SERVICE_TOKEN_SRC}(?:\\s+${SERVICE_TOKEN_SRC})*)(?:\\s+-\\s+([\\s\\S]*)|\\s*)$`, 'u');
+
+function parseServiceNotes(notes) {
+    const text = (notes || '').trim();
+    const match = text.match(SERVICE_NOTES_RE);
+    if (!match) return { vino: 0, torta: false, cuatrimoto: false, comment: text };
+    const icons = match[1];
+    const wineCount = icons.match(/🍷\s*\(x(\d+)\)/u);
+    return {
+        vino: wineCount ? parseInt(wineCount[1]) : (icons.includes('🍷') ? 1 : 0),
+        torta: icons.includes('🎂'),
+        cuatrimoto: icons.includes('🏍'),
+        comment: (match[2] || '').trim()
+    };
+}
+
+function buildServiceNotes({ vino, torta, cuatrimoto, comment }) {
+    const icons = [];
+    if (vino > 0) icons.push(`🍷 (x${vino})`);
+    if (torta) icons.push('🎂');
+    if (cuatrimoto) icons.push('🏍️');
+    const text = (comment || '').trim();
+    if (icons.length === 0) return text;
+    return icons.join(' ') + (text ? ' - ' + text : '');
+}
+
+function getServiceIcons(notes) {
+    const s = parseServiceNotes(notes);
+    return (s.vino > 0 ? '🍷' : '') + (s.torta ? '🎂' : '') + (s.cuatrimoto ? '🏍️' : '');
+}
+
+// Horas de ingreso y salida para mostrar (incluye las horas extra en cualquier turno)
+function formatHour12(hour24, lowercase = false) {
+    const h = ((hour24 % 24) + 24) % 24;
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const text = `${h % 12 || 12}:00 ${ampm}`;
+    return lowercase ? text.toLowerCase() : text;
+}
+
+function getScheduleHours(horario, extraHours = 0, lowercase = false) {
+    let startHour = 15, endHour = 12; // Día y Noche
+    if (horario === 'Full Day' || horario === 'Horario Extendido') {
+        startHour = 9; endHour = 18;
+    } else if (horario === '9am a 12pm') {
+        startHour = 9; endHour = 12;
+    }
+    return {
+        start: formatHour12(startHour, lowercase),
+        end: formatHour12(endHour + (parseInt(extraHours) || 0), lowercase)
+    };
+}
 
 // Initialize Page
 document.addEventListener('DOMContentLoaded', async () => {
@@ -147,55 +269,38 @@ function setupEventListeners() {
     document.getElementById('btnCopyReservation').addEventListener('click', copyReservationDetails);
     document.getElementById('formStatsAuth').addEventListener('submit', handleStatsAuth);
 
-    // Inventorio de vino 
+    // Inventario de vino (compartido en Supabase si existe la tabla "inventario")
     updateVinoInventoryDisplay();
     const btnAddVino = document.getElementById('btnAddVino');
     if (btnAddVino) {
-        btnAddVino.addEventListener('click', () => {
-            let currentInv = parseInt(localStorage.getItem('canchapro_inventory_vino_bungalows'));
-            if (isNaN(currentInv)) currentInv = 12;
-            document.getElementById('currentVinoCountDisplay').textContent = currentInv;
+        btnAddVino.addEventListener('click', async () => {
+            const display = document.getElementById('currentVinoCountDisplay');
+            display.textContent = getVinoInventory();
             document.getElementById('addVinoAmount').value = 1;
             openModal('modalAddVino');
+            display.textContent = await fetchVinoInventory();
         });
     }
-    
+
     const btnCloseAddVino = document.getElementById('btnCloseAddVino');
     if (btnCloseAddVino) {
         btnCloseAddVino.addEventListener('click', () => closeModal('modalAddVino'));
     }
 
+    const changeVinoInventory = async (sign) => {
+        const amount = parseInt(document.getElementById('addVinoAmount').value) || 0;
+        if (amount > 0) {
+            const remaining = await adjustVinoInventory(sign * amount);
+            if (remaining !== null) {
+                logSessionActivity(`Inventario de vino ${sign > 0 ? 'aumentado' : 'reducido'} en ${amount} (quedan ${remaining}).`);
+            }
+        }
+        closeModal('modalAddVino');
+    };
     const btnConfirmAddVino = document.getElementById('btnConfirmAddVino');
-    if (btnConfirmAddVino) {
-        btnConfirmAddVino.addEventListener('click', () => {
-            let currentInv = parseInt(localStorage.getItem('canchapro_inventory_vino_bungalows'));
-            if (isNaN(currentInv)) currentInv = 12;
-            
-            let addAmount = parseInt(document.getElementById('addVinoAmount').value) || 0;
-            if (addAmount > 0) {
-                currentInv += addAmount;
-                localStorage.setItem('canchapro_inventory_vino_bungalows', currentInv);
-                updateVinoInventoryDisplay();
-            }
-            closeModal('modalAddVino');
-        });
-    }
-
+    if (btnConfirmAddVino) btnConfirmAddVino.addEventListener('click', () => changeVinoInventory(1));
     const btnConfirmSubtractVino = document.getElementById('btnConfirmSubtractVino');
-    if (btnConfirmSubtractVino) {
-        btnConfirmSubtractVino.addEventListener('click', () => {
-            let currentInv = parseInt(localStorage.getItem('canchapro_inventory_vino_bungalows'));
-            if (isNaN(currentInv)) currentInv = 12;
-            
-            let subAmount = parseInt(document.getElementById('addVinoAmount').value) || 0;
-            if (subAmount > 0) {
-                currentInv = Math.max(0, currentInv - subAmount);
-                localStorage.setItem('canchapro_inventory_vino_bungalows', currentInv);
-                updateVinoInventoryDisplay();
-            }
-            closeModal('modalAddVino');
-        });
-    }
+    if (btnConfirmSubtractVino) btnConfirmSubtractVino.addEventListener('click', () => changeVinoInventory(-1));
 
     // Profile Edit
     document.getElementById('btnEditUser').addEventListener('click', () => {
@@ -212,6 +317,19 @@ function setupEventListeners() {
         });
     }
 
+    // Si cambian fechas, horario o bungalows, el total vuelve a calcularse solo.
+    // Se registra ANTES que los recálculos para que estos ya vean el cambio.
+    ['bookingCheckIn', 'bookingCheckOut', 'bookingHorario'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('change', () => { isTotalManuallyEdited = false; });
+    });
+    document.querySelectorAll('input[name="bungalowSelect"]').forEach(chk => {
+        chk.addEventListener('change', () => { isTotalManuallyEdited = false; });
+    });
+
+    // Handle extra hours input to toggle price field
+    document.getElementById('bookingHorasExtras').addEventListener('input', syncExtraHoursPriceState);
+
     // Dynamic field change triggers for calculations
     const calcFields = [
         'bookingCheckIn', 'bookingCheckOut', 'bookingHorario',
@@ -227,37 +345,23 @@ function setupEventListeners() {
         }
     });
 
-    // Handle bungalow selection change for calculations
-    document.querySelectorAll('input[name="bungalowSelect"]').forEach(checkbox => {
-        checkbox.addEventListener('change', runDynamicCalculations);
-    });
+    // Pago dividido: al escribir un monto, el otro se completa con lo que falta del total
+    const splitEfectivoInput = document.getElementById('splitEfectivo');
+    const splitYapeInput = document.getElementById('splitYape');
+    const balanceSplit = (changed, other) => {
+        const total = parseFloat(document.getElementById('bookingTotal').value) || 0;
+        const value = parseFloat(changed.value) || 0;
+        other.value = Math.max(0, total - value).toFixed(2);
+    };
+    splitEfectivoInput.addEventListener('input', () => balanceSplit(splitEfectivoInput, splitYapeInput));
+    splitYapeInput.addEventListener('input', () => balanceSplit(splitYapeInput, splitEfectivoInput));
 
-    // Handle extra hours input to toggle price field
-    document.getElementById('bookingHorasExtras').addEventListener('input', function (e) {
-        const extraHours = parseInt(e.target.value) || 0;
-        const priceInput = document.getElementById('bookingAdicionalHoras');
-        if (extraHours > 0) {
-            priceInput.disabled = false;
-        } else {
-            priceInput.disabled = true;
-            priceInput.value = 0;
-        }
-    });
-
-    // Handle Edit Group Toggle
+    // Editar grupo completo / solo este bungalow: recarga bungalows, ocupación y montos de las filas elegidas
     const toggleGroup = document.getElementById('bookingEditGroupToggle');
     if (toggleGroup) {
-        toggleGroup.addEventListener('change', (e) => {
-            const isGroup = e.target.checked;
-            const chkList = document.querySelectorAll('input[name="bungalowSelect"]');
-            chkList.forEach(chk => {
-                const val = parseInt(chk.value);
-                if (isGroup) {
-                    chk.checked = window.currentEditGroupBungalows && window.currentEditGroupBungalows.includes(val);
-                } else {
-                    chk.checked = (val === window.currentEditBungalow);
-                }
-            });
+        toggleGroup.addEventListener('change', () => {
+            const rows = getEditTargetRows();
+            if (rows.length > 0) loadBookingRowsIntoForm(rows, { keepSchedule: true });
             runDynamicCalculations();
         });
     }
@@ -310,10 +414,11 @@ function setupEventListeners() {
         const splitRow = document.getElementById('splitPaymentRow');
         if (e.target.value === 'Dividido') {
             splitRow.classList.remove('hidden');
-            // Pre-fill values
+            // Pre-fill values (mitad y mitad, sin perder centavos)
             const total = parseFloat(document.getElementById('bookingTotal').value) || 0;
-            document.getElementById('splitEfectivo').value = (total / 2).toFixed(2);
-            document.getElementById('splitYape').value = (total / 2).toFixed(2);
+            const [half1, half2] = splitInHalf(total);
+            document.getElementById('splitEfectivo').value = half1.toFixed(2);
+            document.getElementById('splitYape').value = half2.toFixed(2);
         } else {
             splitRow.classList.add('hidden');
         }
@@ -464,24 +569,6 @@ function setupEventListeners() {
         });
     });
 
-    // Restablecer el bloqueo de total manual si cambian fechas, horario o bungalows
-    const resetFields = ['bookingCheckIn', 'bookingCheckOut', 'bookingHorario'];
-    resetFields.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) {
-            el.addEventListener('change', () => {
-                isTotalManuallyEdited = false;
-            });
-        }
-    });
-
-    const bungalowSelects = document.querySelectorAll('input[name="bungalowSelect"]');
-    bungalowSelects.forEach(chk => {
-        chk.addEventListener('change', () => {
-            isTotalManuallyEdited = false;
-        });
-    });
-
     // Detectar edición manual del total
     const totalInputEl = document.getElementById('bookingTotal');
     if (totalInputEl) {
@@ -569,16 +656,123 @@ function openModal(id) {
 
 function closeModal(id) {
     document.getElementById(id).classList.remove('active');
-    document.body.classList.remove('no-scroll');
+    // Mantener bloqueado el scroll si queda otro modal abierto (ej. aviso de vino sobre la reserva)
+    if (!document.querySelector('.modal-backdrop.active')) {
+        document.body.classList.remove('no-scroll');
+    }
+}
+
+// ----------------------------------------------------
+// Inventario de vino: tabla "inventario" de Supabase (compartida entre asesores).
+// Si la tabla no existe se usa el respaldo local de este navegador, como antes.
+// ----------------------------------------------------
+const VINO_INVENTORY_KEY = 'vino_bungalows';
+const VINO_LOCAL_KEY = 'canchapro_inventory_vino_bungalows';
+const VINO_DEFAULT = 12;
+let vinoInventory = null;
+let vinoInventoryShared = false;
+let inventoryChannel = null;
+
+function readLocalVinoInventory() {
+    const value = parseInt(localStorage.getItem(VINO_LOCAL_KEY));
+    return isNaN(value) ? VINO_DEFAULT : value;
+}
+
+function getVinoInventory() {
+    return vinoInventory === null ? readLocalVinoInventory() : vinoInventory;
 }
 
 function updateVinoInventoryDisplay() {
     const el = document.getElementById('vinoInventoryCount');
-    if (el) {
-        let currentInv = parseInt(localStorage.getItem('canchapro_inventory_vino_bungalows'));
-        if (isNaN(currentInv)) currentInv = 12; // default
-        el.textContent = currentInv;
+    if (el) el.textContent = getVinoInventory();
+}
+
+async function fetchVinoInventory() {
+    if (dbMode === 'supabase' && supabaseClient) {
+        try {
+            const selectRow = () => supabaseClient.from('inventario')
+                .select('cantidad').eq('clave', VINO_INVENTORY_KEY).maybeSingle();
+            let { data, error } = await selectRow();
+            if (error) throw error;
+            if (!data) {
+                // Primera vez: se sube el conteo que tenía este navegador
+                const { error: insErr } = await supabaseClient.from('inventario').upsert(
+                    { clave: VINO_INVENTORY_KEY, cantidad: readLocalVinoInventory() },
+                    { onConflict: 'clave', ignoreDuplicates: true }
+                );
+                if (insErr) throw insErr;
+                ({ data, error } = await selectRow());
+                if (error) throw error;
+            }
+            vinoInventory = data ? (parseInt(data.cantidad) || 0) : 0;
+            vinoInventoryShared = true;
+            updateVinoInventoryDisplay();
+            return vinoInventory;
+        } catch (err) {
+            console.warn('Tabla "inventario" no disponible, usando el inventario local:', err.message || err);
+        }
     }
+    vinoInventoryShared = false;
+    vinoInventory = readLocalVinoInventory();
+    updateVinoInventoryDisplay();
+    return vinoInventory;
+}
+
+// Suma (delta > 0) o resta (delta < 0) vinos. Devuelve el nuevo stock, o null si no se pudo guardar.
+async function adjustVinoInventory(delta) {
+    if (!delta) return getVinoInventory();
+    if (vinoInventoryShared && dbMode === 'supabase' && supabaseClient) {
+        try {
+            // Función de la base de datos: suma/resta de forma atómica aunque dos asesores guarden a la vez
+            const { data, error } = await supabaseClient.rpc('ajustar_inventario', { p_clave: VINO_INVENTORY_KEY, p_delta: delta });
+            if (error) throw error;
+            vinoInventory = parseInt(data) || 0;
+            updateVinoInventoryDisplay();
+            return vinoInventory;
+        } catch (err) {
+            console.error('No se pudo actualizar el inventario de vino en la nube:', err);
+            alert('⚠️ No se pudo actualizar el inventario de vino en la nube: ' + (err.message || err) +
+                '\nRevisa que exista la función "ajustar_inventario" (ver instrucciones_supabase.md).');
+            return null;
+        }
+    }
+    const next = Math.max(0, readLocalVinoInventory() + delta);
+    localStorage.setItem(VINO_LOCAL_KEY, next);
+    vinoInventory = next;
+    updateVinoInventoryDisplay();
+    return next;
+}
+
+function setupInventoryRealtime() {
+    if (!supabaseClient || !vinoInventoryShared) return;
+    if (inventoryChannel) supabaseClient.removeChannel(inventoryChannel);
+    // Canal aparte: si la tabla no tiene tiempo real, no afecta al canal de reservas
+    inventoryChannel = supabaseClient.channel('realtime_inventario_bungalows')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'inventario' }, () => fetchVinoInventory())
+        .subscribe();
+}
+
+function syncExtraHoursPriceState() {
+    const extraHours = parseInt(document.getElementById('bookingHorasExtras').value) || 0;
+    const priceInput = document.getElementById('bookingAdicionalHoras');
+    priceInput.disabled = extraHours <= 0;
+    if (extraHours <= 0) priceInput.value = 0;
+}
+
+// Tipo de pago: si una reserva antigua tiene un valor que ya no está en la lista (ej. "Efectivo"),
+// se agrega como opción temporal para no cambiarlo al guardar.
+function setPaymentTypeValue(value) {
+    const select = document.getElementById('bookingPaymentType');
+    Array.from(select.options).filter(o => o.dataset && o.dataset.temp === '1').forEach(o => o.remove());
+    const finalValue = value || 'Depósito';
+    if (!Array.from(select.options).some(o => o.value === finalValue)) {
+        const opt = document.createElement('option');
+        opt.value = finalValue;
+        opt.textContent = finalValue;
+        opt.dataset.temp = '1';
+        select.appendChild(opt);
+    }
+    select.value = finalValue;
 }
 
 // Update limit for kids under 7 based on selected bungalows
@@ -628,8 +822,11 @@ function updatePersonasLimit() {
 // Open booking modal in CREATE mode
 function openBookingModal(dateStr = null) {
     isTotalManuallyEdited = false;
+    editState = null;
     const form = document.getElementById('formBooking');
     form.reset();
+    setPaymentTypeValue('Depósito');
+    syncExtraHoursPriceState();
     document.getElementById('bookingId').value = '';
     document.getElementById('modalTitle').textContent = 'Nueva Reserva de Bungalow';
     document.getElementById('btnDeleteBooking').classList.add('hidden');
@@ -723,114 +920,54 @@ function openBookingEditModal(booking) {
         openBlockModal(booking);
         return;
     }
-    document.getElementById('modalTitle').textContent = 'Editar Reserva';
-    document.getElementById('bookingId').value = booking.id;
-    document.getElementById('btnDeleteBooking').classList.remove('hidden');
+    // FullCalendar entrega una copia: se trabaja con la fila actual de la lista
+    const original = bookings.find(b => String(b.id) === String(booking.id)) || booking;
+    const group = getBookingGroup(original);
+    editState = { id: original.id, groupIds: group.map(b => b.id) };
 
-    const isBlock = false;
+    document.getElementById('formBooking').reset();
+    document.getElementById('modalTitle').textContent = 'Editar Reserva';
+    document.getElementById('bookingId').value = original.id;
+    document.getElementById('btnDeleteBooking').classList.remove('hidden');
 
     // Clear error
     const errorEl = document.getElementById('bookingError');
     errorEl.textContent = '';
     errorEl.style.display = 'none';
 
-    // Load inputs
-    document.getElementById('bookingName').value = booking.nombre_cliente || '';
-    document.getElementById('bookingDni').value = booking.dni_cliente || '';
-    const phoneInput = document.getElementById('bookingPhone');
-    if (phoneInput) phoneInput.value = booking.telefono_cliente || '';
-    // Buscar otros bungalows del mismo grupo (misma reserva original)
-    // Criterio: Mismo DNI, nombre, fecha ingreso, fecha salida, horario.
-    const groupedBookings = bookings.filter(b =>
-        b.dni_cliente === booking.dni_cliente &&
-        b.nombre_cliente === booking.nombre_cliente &&
-        b.fecha_ingreso === booking.fecha_ingreso &&
-        b.fecha_salida === booking.fecha_salida &&
-        b.horario === booking.horario &&
-        b.estado_reserva !== 'Bloqueo'
-    );
-
-    // Si por alguna razón está vacío (no debería), usamos el booking actual
-    const groupToLoad = groupedBookings.length > 0 ? groupedBookings : [booking];
-
-    document.getElementById('bookingBungalow').value = groupToLoad[0].bungalow_numero;
-
-    // Configure Group Edit Toggle
-    const groupBungalows = groupToLoad.map(b => b.bungalow_numero);
-    window.currentEditGroupBungalows = groupBungalows;
-    window.currentEditBungalow = booking.bungalow_numero;
-
+    // Reserva de varios bungalows: por defecto se edita el grupo completo
     const toggleContainer = document.getElementById('groupEditToggleContainer');
     const toggleCheck = document.getElementById('bookingEditGroupToggle');
-    const countSpan = document.getElementById('groupEditCount');
-    const chkList = document.querySelectorAll('input[name="bungalowSelect"]');
-
-    if (groupToLoad.length > 1) {
+    if (group.length > 1) {
         toggleContainer.style.display = 'block';
         toggleCheck.checked = true;
-        countSpan.textContent = groupToLoad.length;
-        chkList.forEach(chk => {
-            chk.checked = groupBungalows.includes(parseInt(chk.value));
-        });
+        document.getElementById('groupEditCount').textContent = group.length;
     } else {
         toggleContainer.style.display = 'none';
         toggleCheck.checked = false;
-        chkList.forEach(chk => {
-            chk.checked = (parseInt(chk.value) === booking.bungalow_numero);
-        });
     }
 
-    updateNinosLimit();
+    // Cliente, turno y fechas
+    document.getElementById('bookingName').value = original.nombre_cliente || '';
+    document.getElementById('bookingDni').value = original.dni_cliente || '';
+    const phoneInput = document.getElementById('bookingPhone');
+    if (phoneInput) phoneInput.value = original.telefono_cliente || '';
+    document.getElementById('bookingHorario').value = original.horario;
+    document.getElementById('bookingCheckIn').value = original.fecha_ingreso;
+    document.getElementById('bookingCheckOut').value = original.fecha_salida;
+    document.getElementById('bookingCheckOut').disabled = (original.horario === 'Full Day');
 
-    document.getElementById('bookingHorario').value = booking.horario;
-    document.getElementById('bookingCheckIn').value = booking.fecha_ingreso;
-    document.getElementById('bookingCheckOut').value = booking.fecha_salida;
-
-    // Usamos la info del bungalow principal (booking) para los inputs de personas
-    const totalAdults = booking.adultos || 4;
-    const standardGuests = Math.min(4, totalAdults);
-    const adicionales = Math.max(0, totalAdults - 4);
-
-    const personasInput = document.getElementById('bookingPersonas');
-    if (personasInput) {
-        // En lugar de usar el standard de 1 bungalow, calcular en base a la selección total
-        personasInput.value = groupBungalows.length * 4;
-    }
-    updatePersonasLimit();
-    document.getElementById('bookingAdicionales').value = adicionales;
-    document.getElementById('bookingNinoPequeno').value = booking.ninos_gratis || 0;
-    const ninosAdicEdit = document.getElementById('bookingNinosAdicionales');
-    if (ninosAdicEdit) ninosAdicEdit.value = booking.ninos_pagantes || 0;
-    document.getElementById('bookingHorasExtras').value = booking.horas_extras || 0;
-
-    const notesValue = booking.notas || booking.observaciones || '';
-
-    const wineMatch = notesValue.match(/🍷\s*\(x(\d+)\)/);
-    if (wineMatch) {
-        document.getElementById('bookingVinoCant').value = parseInt(wineMatch[1]);
-    } else {
-        document.getElementById('bookingVinoCant').value = notesValue.includes('🍷') ? 1 : 0;
-    }
+    // Servicios especiales y comentario (los emojis del comentario se conservan tal cual)
+    const services = parseServiceNotes(original.notas || original.observaciones || '');
+    document.getElementById('bookingVinoCant').value = services.vino;
     const tortaInput = document.getElementById('bookingTorta');
-    if (tortaInput) tortaInput.checked = notesValue.includes('🎂');
+    if (tortaInput) tortaInput.checked = services.torta;
     const cuatriInput = document.getElementById('bookingCuatrimoto');
-    if (cuatriInput) cuatriInput.checked = notesValue.includes('🏍️');
+    if (cuatriInput) cuatriInput.checked = services.cuatrimoto;
+    document.getElementById('bookingComment').value = services.comment;
 
-    let cleanedNotes = notesValue.replace(/🍷\s*\(x\d+\)/g, '').replace(/[🍷🎂🏍️]/g, '').trim();
-    if (cleanedNotes.startsWith('- ')) cleanedNotes = cleanedNotes.substring(2).trim();
-    document.getElementById('bookingComment').value = cleanedNotes;
-
-    // Handle divided payment
-    if (booking.tipo_pago === 'Dividido') {
-        document.getElementById('splitPaymentRow').classList.remove('hidden');
-        document.getElementById('splitEfectivo').value = booking.monto_efectivo || 0;
-        document.getElementById('splitYape').value = booking.monto_yape || 0;
-    } else {
-        document.getElementById('splitPaymentRow').classList.add('hidden');
-    }
-
-    // Handle source of contact
-    let medio = booking.medio_contacto || '';
+    // Medio de contacto
+    let medio = original.medio_contacto || '';
     if (medio === 'WhatsApp') {
         medio = 'Estado WSP';
     }
@@ -838,57 +975,95 @@ function openBookingEditModal(booking) {
     populateMediosDropdown(medio || DEFAULT_MEDIOS[0]);
     closeAddMedioPanel(false);
 
-    // Handle operator dynamically
-    populateAsesoresDropdown(booking.asesor_registro || '');
+    // Asesor y tipo de pago guardados
+    populateAsesoresDropdown(original.asesor_registro || '');
+    setPaymentTypeValue(original.tipo_pago);
 
-    // Disable check-out if Full Day
-    if (booking.horario === 'Full Day') {
-        document.getElementById('bookingCheckOut').disabled = true;
-    } else {
-        document.getElementById('bookingCheckOut').disabled = false;
-    }
+    // Secciones del formulario visibles
+    document.getElementById('groupClientInfo').style.display = 'block';
+    document.getElementById('rowClientDetails').style.display = 'flex';
+    document.getElementById('rowOccupancy').style.display = 'grid';
+    document.getElementById('rowExtras').style.display = 'flex';
+    document.getElementById('rowMedioPago').style.display = 'flex';
+    document.getElementById('bookingName').required = true;
+    document.getElementById('bookingDni').required = true;
 
-    // Trigger UI visibility changes based on isBlock
-    const groupClientInfo = document.getElementById('groupClientInfo');
-    const rowClientDetails = document.getElementById('rowClientDetails');
-    const rowOccupancy = document.getElementById('rowOccupancy');
-    const rowExtras = document.getElementById('rowExtras');
-    const rowMedioPago = document.getElementById('rowMedioPago');
-
-    if (isBlock) {
-        groupClientInfo.style.display = 'none';
-        rowClientDetails.style.display = 'none';
-        rowOccupancy.style.display = 'none';
-        rowExtras.style.display = 'none';
-        rowMedioPago.style.display = 'none';
-        document.getElementById('splitPaymentRow').classList.add('hidden');
-        document.getElementById('bookingName').required = false;
-        document.getElementById('bookingDni').required = false;
-    } else {
-        groupClientInfo.style.display = 'block';
-        rowClientDetails.style.display = 'flex';
-        rowOccupancy.style.display = 'grid';
-        rowExtras.style.display = 'flex';
-        rowMedioPago.style.display = 'flex';
-        document.getElementById('bookingName').required = true;
-        document.getElementById('bookingDni').required = true;
-    }
-
-    // Determinar si el total guardado es un total editado manualmente (descuento/acuerdo)
-    const calcBase = calculateBasePrice(booking.fecha_ingreso, booking.fecha_salida, booking.horario);
-    const nights = calculateNights(booking.fecha_ingreso, booking.fecha_salida, booking.horario);
-    const calcGuests = (adicionales * EXTRA_GUEST_FEE + (booking.ninos_pagantes || 0) * EXTRA_CHILD_FEE) * nights;
-    const calcExtras = booking.adicional_horas || 0;
-    const expectedCalculatedTotal = calcBase + calcGuests + calcExtras;
-
-    if (Math.abs(booking.monto_total - expectedCalculatedTotal) > 0.01) {
-        isTotalManuallyEdited = true;
-    } else {
-        isTotalManuallyEdited = false;
-    }
+    // Bungalows, ocupación, horas extra y montos guardados (total, adelanto, pago dividido)
+    loadBookingRowsIntoForm(group);
 
     runDynamicCalculations();
     openModal('modalBooking');
+}
+
+// Carga en el formulario bungalows, ocupación, horas extra y montos de las filas indicadas
+// (el grupo completo o un solo bungalow) y decide si el total guardado fue negociado a mano.
+function loadBookingRowsIntoForm(rows, { keepSchedule = false } = {}) {
+    const sorted = [...rows].sort((a, b) => a.bungalow_numero - b.bungalow_numero);
+    const primary = sorted[0];
+    const count = sorted.length;
+    const num = (value) => parseFloat(value) || 0;
+    const sum = (fn) => sorted.reduce((acc, row) => acc + (fn(row) || 0), 0);
+
+    // Bungalows seleccionados
+    const numbers = sorted.map(r => parseInt(r.bungalow_numero));
+    document.querySelectorAll('input[name="bungalowSelect"]').forEach(chk => {
+        chk.checked = numbers.includes(parseInt(chk.value));
+    });
+    document.getElementById('bookingBungalow').value = numbers[0] || '';
+
+    // Ocupación: hasta 4 personas por bungalow y el resto son adicionales.
+    // Se suma todo el grupo porque los adicionales se guardan solo en la fila principal.
+    const adultsOf = r => (r.adultos === null || r.adultos === undefined || r.adultos === '') ? 4 : (parseInt(r.adultos) || 0);
+    const adicionales = sum(r => Math.max(0, adultsOf(r) - 4));
+    const ninosPagantes = sum(r => parseInt(r.ninos_pagantes));
+    document.getElementById('bookingPersonas').value = sum(r => Math.min(4, adultsOf(r)));
+    document.getElementById('bookingAdicionales').value = adicionales;
+    document.getElementById('bookingNinoPequeno').value = sum(r => parseInt(r.ninos_gratis));
+    document.getElementById('bookingNinosAdicionales').value = ninosPagantes;
+    updateNinosLimit();
+    updatePersonasLimit();
+
+    // Horas extra: cada fila guarda el precio por hora (las anteriores a cambios-229 guardaban el monto)
+    const extraHours = parseInt(primary.horas_extras) || 0;
+    let extraHoursPrice = num(primary.adicional_horas);
+    if (isLegacyExtraHoursRow(primary)) {
+        const money = sum(r => num(r.adicional_horas));
+        extraHoursPrice = extraHours > 0 ? Math.round((money / (extraHours * count)) * 100) / 100 : 0;
+    }
+    document.getElementById('bookingHorasExtras').value = extraHours;
+    document.getElementById('bookingAdicionalHoras').value = extraHoursPrice;
+    syncExtraHoursPriceState();
+
+    // Montos guardados: cada fila tiene su parte del total de la reserva
+    const total = sum(r => num(r.monto_total));
+    const adelanto = sum(r => num(r.monto_adelanto));
+    document.getElementById('bookingTotal').value = total.toFixed(2);
+    document.getElementById('bookingAdelanto').value = adelanto.toFixed(2);
+    document.getElementById('bookingPendiente').value = Math.max(0, total - adelanto).toFixed(2);
+
+    const isSplit = document.getElementById('bookingPaymentType').value === 'Dividido';
+    document.getElementById('splitPaymentRow').classList.toggle('hidden', !isSplit);
+    if (isSplit && sorted.every(r => r.tipo_pago === 'Dividido')) {
+        document.getElementById('splitEfectivo').value = sum(r => num(r.monto_efectivo)).toFixed(2);
+        document.getElementById('splitYape').value = sum(r => num(r.monto_yape)).toFixed(2);
+    } else {
+        const [half1, half2] = splitInHalf(total);
+        document.getElementById('splitEfectivo').value = isSplit ? half1.toFixed(2) : '';
+        document.getElementById('splitYape').value = isSplit ? half2.toFixed(2) : '';
+    }
+
+    // Si el total guardado no coincide con el calculado, fue un precio negociado y se respeta.
+    // (Si ya se cambiaron fechas u horario en el formulario, el total vuelve a calcularse.)
+    const expected = computeBookingPricing({
+        checkIn: primary.fecha_ingreso, checkOut: primary.fecha_salida, horario: primary.horario,
+        numBungalows: count, adicionales, ninosAdicionales: ninosPagantes, extraHours, extraHoursPrice
+    });
+    const scheduleChanged = keepSchedule && (
+        document.getElementById('bookingCheckIn').value !== primary.fecha_ingreso ||
+        document.getElementById('bookingCheckOut').value !== primary.fecha_salida ||
+        document.getElementById('bookingHorario').value !== primary.horario
+    );
+    isTotalManuallyEdited = !scheduleChanged && Math.abs(total - expected.total) > 0.01;
 }
 
 // ----------------------------------------------------
@@ -971,10 +1146,27 @@ function calculateBasePrice(checkInStr, checkOutStr, horario) {
     }
 }
 
+// Precio de una reserva: todos los bungalows seleccionados juntos
+function computeBookingPricing({ checkIn, checkOut, horario, numBungalows = 1, adicionales = 0, ninosAdicionales = 0, extraHours = 0, extraHoursPrice = 0 }) {
+    const n = Math.max(1, numBungalows || 1);
+    const nights = calculateNights(checkIn, checkOut, horario);
+    // Precio base multiplicado por la cantidad de bungalows
+    const basePrice = calculateBasePrice(checkIn, checkOut, horario) * n;
+    // Capacidad estándar: 4 personas por bungalow. Adultos adicionales S/. 30 y niños adicionales S/. 25, por noche
+    const guestsFee = ((adicionales || 0) * EXTRA_GUEST_FEE + (ninosAdicionales || 0) * EXTRA_CHILD_FEE) * nights;
+    // Horas extra: horas × precio por hora × bungalows
+    const extrasTotal = (extraHours || 0) * (extraHoursPrice || 0) * n;
+    return { nights, basePrice, guestsFee, extrasTotal, total: basePrice + guestsFee + extrasTotal };
+}
+
+// Divide un monto en dos partes que suman exactamente el total (sin perder centavos)
+function splitInHalf(total) {
+    const first = Math.round((total / 2) * 100) / 100;
+    return [first, Math.round((total - first) * 100) / 100];
+}
+
 // Main Dynamic Calculation function
 function runDynamicCalculations() {
-    const isBlock = false;
-
     const breakdownBase = document.getElementById('breakdownBase');
     const breakdownGuests = document.getElementById('breakdownGuests');
     const breakdownExtras = document.getElementById('breakdownExtras');
@@ -983,56 +1175,28 @@ function runDynamicCalculations() {
     const totalInput = document.getElementById('bookingTotal');
     const adelantoInput = document.getElementById('bookingAdelanto');
 
-    if (isBlock) {
-        // Block is free
-        breakdownBase.textContent = 'S/. 0.00';
-        breakdownGuests.textContent = 'S/. 0.00';
-        breakdownExtras.textContent = 'S/. 0.00';
-        breakdownAdvance.textContent = 'S/. 0.00';
-        breakdownRemaining.textContent = 'S/. 0.00';
-        totalInput.value = 0;
-        adelantoInput.value = 0;
-        return;
-    }
-
     const checkIn = document.getElementById('bookingCheckIn').value;
     const checkOut = document.getElementById('bookingCheckOut').value;
     const horario = document.getElementById('bookingHorario').value;
 
-    const adicionales = parseInt(document.getElementById('bookingAdicionales').value) || 0;
-    const ninosAdicionales = parseInt(document.getElementById('bookingNinosAdicionales').value) || 0;
+    // Ayuda en el calendario del navegador: la salida mínima depende del turno
+    document.getElementById('bookingCheckOut').min = checkIn
+        ? (horario === 'Full Day' ? checkIn : addDaysToDateString(checkIn, 1))
+        : '';
 
-    const extraHours = parseInt(document.getElementById('bookingHorasExtras').value) || 0;
-    const extraHoursPrice = parseFloat(document.getElementById('bookingAdicionalHoras').value) || 0;
+    const pricing = computeBookingPricing({
+        checkIn, checkOut, horario,
+        numBungalows: document.querySelectorAll('input[name="bungalowSelect"]:checked').length,
+        adicionales: parseInt(document.getElementById('bookingAdicionales').value) || 0,
+        ninosAdicionales: parseInt(document.getElementById('bookingNinosAdicionales').value) || 0,
+        extraHours: parseInt(document.getElementById('bookingHorasExtras').value) || 0,
+        extraHoursPrice: parseFloat(document.getElementById('bookingAdicionalHoras').value) || 0
+    });
+    const { basePrice, guestsFee, extrasTotal } = pricing;
 
-    const cuatrimotosCount = 0;
-    const cuatrimotosMonto = 0;
-
-    // Obtener cantidad de bungalows seleccionados
-    const selectedBungalows = Array.from(document.querySelectorAll('input[name="bungalowSelect"]:checked')).map(c => parseInt(c.value));
-    const numBungalows = Math.max(1, selectedBungalows.length);
-
-    // 1. Calculate Nights/Days
-    const nights = calculateNights(checkIn, checkOut, horario);
-
-    // 2. Base Price (Multiplicado por cantidad de bungalows)
-    const basePrice = calculateBasePrice(checkIn, checkOut, horario) * numBungalows;
-
-    // 3. Guests Occupancy Math
-    // Standard capacity: 4 people.
-    // Additional adults are charged S/. 30 each per night.
-    // Additional children are charged S/. 25 each per night.
-    const guestsFee = (adicionales * EXTRA_GUEST_FEE + ninosAdicionales * EXTRA_CHILD_FEE) * nights;
-
-    // 4. Extras (Hours + Cuatrimotos)
-    const extrasTotal = (extraHours * extraHoursPrice * numBungalows) + cuatrimotosMonto;
-
-    // 5. Total
-    const calculatedTotal = basePrice + guestsFee + extrasTotal;
-
-    // Update form Total value ONLY if it's not manually overwritten or if it's a new calculate
+    // Update form Total value ONLY if it's not manually overwritten
     if (!isTotalManuallyEdited && document.activeElement !== totalInput) {
-        totalInput.value = calculatedTotal.toFixed(2);
+        totalInput.value = pricing.total.toFixed(2);
     }
 
     const finalTotal = parseFloat(totalInput.value) || 0;
@@ -1080,13 +1244,20 @@ function runDynamicCalculations() {
     breakdownRemaining.textContent = `S/. ${remaining.toFixed(2)}`;
     breakdownRemaining.style.color = remaining > 0 ? '#ef4444' : '#34d399'; // Green/Mint
 
-    // Auto-balance split payments if active
+    // Pago dividido: se respeta lo escrito si suma el total; si el total cambió, se ajusta el Yape
     if (document.getElementById('bookingPaymentType').value === 'Dividido') {
         const splitEfectivo = document.getElementById('splitEfectivo');
         const splitYape = document.getElementById('splitYape');
         if (document.activeElement !== splitEfectivo && document.activeElement !== splitYape) {
-            splitEfectivo.value = (finalTotal / 2).toFixed(2);
-            splitYape.value = (finalTotal / 2).toFixed(2);
+            const efectivo = parseFloat(splitEfectivo.value);
+            const yape = parseFloat(splitYape.value) || 0;
+            if (isNaN(efectivo) || efectivo < 0 || efectivo > finalTotal) {
+                const [half1, half2] = splitInHalf(finalTotal);
+                splitEfectivo.value = half1.toFixed(2);
+                splitYape.value = half2.toFixed(2);
+            } else if (Math.abs(efectivo + yape - finalTotal) > 0.005) {
+                splitYape.value = (finalTotal - efectivo).toFixed(2);
+            }
         }
     }
 
@@ -1098,11 +1269,12 @@ function runDynamicCalculations() {
 // Calculations Engine Helpers: Availability check
 // ----------------------------------------------------
 function updateBungalowAvailability() {
-    const bookingId = document.getElementById('bookingId').value;
     const checkIn = document.getElementById('bookingCheckIn').value;
     const checkOut = document.getElementById('bookingCheckOut').value;
     const horario = document.getElementById('bookingHorario').value;
     const extraHours = parseInt(document.getElementById('bookingHorasExtras').value) || 0;
+    // En edición se ignoran solo las filas que se van a modificar (todo el grupo o solo este bungalow)
+    const excludeIds = getEditTargetRows().map(b => b.id);
 
     const chkList = document.querySelectorAll('input[name="bungalowSelect"]');
     const hasDates = checkIn && checkOut && horario;
@@ -1111,26 +1283,20 @@ function updateBungalowAvailability() {
         const bungalowNo = parseInt(chk.value);
         const card = chk.closest('.bungalow-card');
         const statusBadge = card.querySelector('.bungalow-status');
+        const conflict = hasDates ? checkBookingCollision(excludeIds, bungalowNo, checkIn, checkOut, horario, extraHours) : null;
 
-        if (hasDates) {
-            const conflict = checkBookingCollision(bookingId, bungalowNo, checkIn, checkOut, horario, extraHours);
-            if (conflict) {
-                card.classList.add('disabled');
-                chk.disabled = true;
-                statusBadge.textContent = 'Ocupado';
-                statusBadge.className = 'bungalow-status occupied';
-
-                // If it was checked and it is now conflicting, uncheck it
-                if (chk.checked) {
-                    chk.checked = false;
-                    document.getElementById('bookingBungalow').value = '';
-                }
-            } else {
-                card.classList.remove('disabled');
-                chk.disabled = false;
-                statusBadge.textContent = 'Disponible';
-                statusBadge.className = 'bungalow-status available';
-            }
+        if (conflict && !chk.checked) {
+            card.classList.add('disabled');
+            chk.disabled = true;
+            statusBadge.textContent = 'Ocupado';
+            statusBadge.className = 'bungalow-status occupied';
+        } else if (conflict) {
+            // Ya estaba marcado: no se desmarca en silencio (se perdería un bungalow del grupo).
+            // Queda marcado como "Ocupado" y al guardar se muestra con quién choca.
+            card.classList.remove('disabled');
+            chk.disabled = false;
+            statusBadge.textContent = 'Ocupado';
+            statusBadge.className = 'bungalow-status occupied';
         } else {
             card.classList.remove('disabled');
             chk.disabled = false;
@@ -1138,11 +1304,6 @@ function updateBungalowAvailability() {
             statusBadge.className = 'bungalow-status available';
         }
     });
-
-    // Make sure Lucide icons are refreshed/rendered for the check icons inside custom checkbox boxes
-    if (window.lucide && typeof lucide.createIcons === 'function') {
-        lucide.createIcons();
-    }
 }
 
 // ----------------------------------------------------
@@ -1172,8 +1333,10 @@ async function initDatabase() {
                 // Fetch active advisors list
                 await fetchAdvisors();
                 await fetchMediosContacto();
+                await fetchVinoInventory();
 
                 setupRealtimeListener();
+                setupInventoryRealtime();
                 return;
             } else {
                 console.warn("Tabla 'reservas_bungalows' no accesible o error Supabase:", error.message);
@@ -1195,6 +1358,7 @@ async function initDatabase() {
     // Fetch active advisors list
     fetchAdvisors();
     fetchMediosContacto();
+    fetchVinoInventory();
 }
 
 async function checkSupabaseReachable(url) {
@@ -1248,7 +1412,8 @@ function setupRealtimeListener() {
 
 // Fetch all bookings
 async function fetchBookings() {
-    const oldBookingsStr = JSON.stringify(bookings);
+    const seq = ++fetchBookingsSeq;
+    let nextBookings;
 
     if (dbMode === 'supabase' && supabaseClient) {
         try {
@@ -1262,6 +1427,7 @@ async function fetchBookings() {
                     .from('reservas_bungalows')
                     .select('*')
                     .order('fecha_ingreso', { ascending: true })
+                    .order('id', { ascending: true }) // orden estable entre páginas
                     .range(from, from + step - 1);
 
                 if (error) throw error;
@@ -1273,17 +1439,22 @@ async function fetchBookings() {
                     hasMore = false;
                 }
             }
-            bookings = allData;
+            nextBookings = allData;
         } catch (err) {
-            console.error("Fallo al obtener de Supabase, usando respaldo local:", err);
-            loadLocalBookingsFallback();
+            // Falla temporal de red: se conservan las reservas que ya estaban en pantalla
+            console.error("Fallo al obtener reservas de Supabase, se mantienen los datos actuales:", err);
+            return;
         }
     } else {
-        loadLocalBookingsFallback();
+        nextBookings = readLocalBookings();
     }
 
-    const newBookingsStr = JSON.stringify(bookings);
-    if (oldBookingsStr === newBookingsStr) return;
+    // Si mientras tanto empezó otra descarga más reciente, esta respuesta ya está vieja
+    if (seq !== fetchBookingsSeq) return;
+
+    const changed = JSON.stringify(nextBookings) !== JSON.stringify(bookings);
+    bookings = nextBookings;
+    if (!changed) return;
 
     // Refresh views
     populateFilterAsesoresDropdown();
@@ -1296,9 +1467,14 @@ async function fetchBookings() {
     updateAvailabilityChecker();
 }
 
-function loadLocalBookingsFallback() {
-    const raw = localStorage.getItem('canchapro_reservas_bungalows');
-    bookings = raw ? JSON.parse(raw) : [];
+function readLocalBookings() {
+    try {
+        const parsed = JSON.parse(localStorage.getItem('canchapro_reservas_bungalows') || '[]');
+        return Array.isArray(parsed) ? parsed : [];
+    } catch (e) {
+        console.error('El respaldo local de reservas está dañado:', e);
+        return [];
+    }
 }
 
 function saveLocalBookingsFallback() {
@@ -1310,372 +1486,304 @@ function saveLocalBookingsFallback() {
 // ----------------------------------------------------
 async function handleSaveBooking(e) {
     e.preventDefault();
+    // Doble clic o Enter repetido: si ya se está guardando no se vuelve a enviar (evita reservas duplicadas)
+    if (isSavingBooking) return;
+    isSavingBooking = true;
+    const saveBtn = document.getElementById('btnSaveBooking');
+    const saveBtnText = saveBtn.textContent;
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Guardando...';
+    try {
+        await saveBookingFromForm();
+    } finally {
+        isSavingBooking = false;
+        saveBtn.disabled = false;
+        saveBtn.textContent = saveBtnText;
+    }
+}
+
+// Valida las fechas según el turno. Devuelve el mensaje de error o '' si están bien.
+function getBookingDateError(checkIn, checkOut, horario) {
+    if (!checkIn || !checkOut) return '⚠️ Ingresa la fecha de ingreso y la fecha de salida.';
+    if (horario === 'Full Day') return ''; // sale el mismo día
+    if (checkOut <= checkIn) return '⚠️ La fecha de salida debe ser posterior a la fecha de ingreso.';
+    if (horario === '9am a 12pm') {
+        const dow = new Date(checkIn + 'T00:00:00').getDay();
+        if (dow === 0 || dow === 5 || dow === 6) {
+            return '⚠️ El turno de 9:00 AM a 12:00 PM del día siguiente solo está disponible para ingresos de Lunes a Jueves.';
+        }
+        if (checkOut !== addDaysToDateString(checkIn, 1)) {
+            return '⚠️ El turno de 9:00 AM a 12:00 PM termina al día siguiente: la salida debe ser el día después del ingreso.';
+        }
+    }
+    return '';
+}
+
+// Empareja las filas existentes con los bungalows elegidos para actualizarlas en su lugar (conservan su id)
+// en vez de borrar todo y volver a crear: si la conexión falla a mitad, la reserva no se pierde.
+function planGroupUpdate(existingRows, payloads) {
+    const remaining = [...existingRows];
+    const updates = [];
+    const pending = [];
+    payloads.forEach(p => {
+        const idx = remaining.findIndex(r => parseInt(r.bungalow_numero) === parseInt(p.bungalow_numero));
+        if (idx >= 0) updates.push({ id: remaining.splice(idx, 1)[0].id, payload: p });
+        else pending.push(p);
+    });
+    const inserts = [];
+    pending.forEach(p => {
+        const row = remaining.shift(); // bungalow cambiado: se reutiliza una fila que quedó libre
+        if (row) updates.push({ id: row.id, payload: p });
+        else inserts.push(p);
+    });
+    return { updates, inserts, deletes: remaining.map(r => r.id) };
+}
+
+function newLocalId(index = 0) {
+    return `local_${Date.now()}_${index}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+// Aviso cuando se piden más vinos de los que hay. Resuelve true si el asesor decide continuar.
+function confirmVinoShortage(currentInv, requested) {
+    return new Promise((resolve) => {
+        const missing = requested - currentInv;
+        document.getElementById('vinoWarningText').innerHTML = `El inventario actual de vinos es <strong>${currentInv}</strong>, pero estás solicitando <strong>${requested}</strong>. Falta(n) <strong>${missing}</strong> vino(s).`;
+        openModal('modalVinoWarning');
+
+        const btnCancel = document.getElementById('btnCancelVinoWarning');
+        const btnProceed = document.getElementById('btnProceedVinoWarning');
+        const finish = (result) => {
+            btnCancel.removeEventListener('click', onCancel);
+            btnProceed.removeEventListener('click', onProceed);
+            closeModal('modalVinoWarning');
+            resolve(result);
+        };
+        const onCancel = () => finish(false);
+        const onProceed = () => finish(true);
+        btnCancel.addEventListener('click', onCancel);
+        btnProceed.addEventListener('click', onProceed);
+    });
+}
+
+async function saveBookingFromForm() {
     const errorEl = document.getElementById('bookingError');
+    const showError = (html) => {
+        errorEl.innerHTML = html;
+        errorEl.style.display = 'block';
+    };
     errorEl.textContent = '';
     errorEl.style.display = 'none';
 
     const id = document.getElementById('bookingId').value;
-    const isBlock = false;
-    const checkIn = document.getElementById('bookingCheckIn').value;
-    const checkOut = document.getElementById('bookingCheckOut').value;
     const horario = document.getElementById('bookingHorario').value;
+    const checkIn = document.getElementById('bookingCheckIn').value;
+    const checkOutInput = document.getElementById('bookingCheckOut');
+    if (horario === 'Full Day' && checkIn) checkOutInput.value = checkIn; // Full Day: sale el mismo día
+    const checkOut = checkOutInput.value;
+
+    // En edición: filas que se van a modificar (todo el grupo o solo este bungalow)
+    const targetRows = id ? getEditTargetRows() : [];
+    if (id && targetRows.length === 0) {
+        return showError('⚠️ Esta reserva ya no existe (otro asesor pudo haberla eliminado). Cierra el formulario y revisa el calendario.');
+    }
 
     // Obtener todos los bungalows seleccionados
     const selectedBungalows = Array.from(document.querySelectorAll('input[name="bungalowSelect"]:checked')).map(c => parseInt(c.value));
     if (selectedBungalows.length === 0) {
-        errorEl.textContent = '⚠️ Por favor, seleccione al menos un Bungalow.';
-        errorEl.style.display = 'block';
-        return;
+        return showError('⚠️ Por favor, seleccione al menos un Bungalow.');
     }
 
-    if (horario === '9am a 12pm') {
-        const d = new Date(checkIn + 'T00:00:00');
-        const dow = d.getDay();
-        if (dow === 0 || dow === 5 || dow === 6) {
-            errorEl.textContent = '⚠️ El turno de 9:00 AM a 12:00 PM del día siguiente solo está disponible para ingresos de Lunes a Jueves.';
-            errorEl.style.display = 'block';
-            return;
-        }
-    }
+    const dateError = getBookingDateError(checkIn, checkOut, horario);
+    if (dateError) return showError(dateError);
 
-    if (!isBlock) {
-        const nameValue = document.getElementById('bookingName').value.trim();
-        const dniValue = document.getElementById('bookingDni').value.trim();
-
-        if (!nameValue) {
-            errorEl.textContent = '⚠️ El Nombre es obligatorio.';
-            errorEl.style.display = 'block';
-            return;
-        }
-
-        if (!dniValue) {
-            errorEl.textContent = '⚠️ El DNI es obligatorio.';
-            errorEl.style.display = 'block';
-            return;
-        }
-    }
+    const nameValue = document.getElementById('bookingName').value.trim();
+    const dniValue = document.getElementById('bookingDni').value.trim();
+    if (!nameValue) return showError('⚠️ El Nombre es obligatorio.');
+    if (!dniValue) return showError('⚠️ El DNI es obligatorio.');
 
     const extraHours = parseInt(document.getElementById('bookingHorasExtras').value) || 0;
 
-    // Check collisions / overlaps for all selected bungalows
+    // Choques con otras reservas o bloqueos (se ignoran solo las filas que se están editando)
+    const excludeIds = targetRows.map(b => b.id);
     let conflictingBooking = null;
     for (const bNo of selectedBungalows) {
-        conflictingBooking = checkBookingCollision(id, bNo, checkIn, checkOut, horario, extraHours);
+        conflictingBooking = checkBookingCollision(excludeIds, bNo, checkIn, checkOut, horario, extraHours);
         if (conflictingBooking) break;
     }
-
     if (conflictingBooking) {
-        const dateIn = new Date(conflictingBooking.fecha_ingreso + 'T00:00:00');
-        const dateOut = new Date(conflictingBooking.fecha_salida + 'T00:00:00');
-        const fechaInFormatted = dateIn.toLocaleDateString('es-PE', { day: 'numeric', month: 'short' });
-        const fechaOutFormatted = dateOut.toLocaleDateString('es-PE', { day: 'numeric', month: 'short' });
-
         if (conflictingBooking.estado_reserva === 'Bloqueado') {
-            errorEl.innerHTML = `🔒 <strong>Horario bloqueado:</strong> El Bungalow ${conflictingBooking.bungalow_numero} no está disponible en este horario por mantenimiento/bloqueo (${formatBlockRange(conflictingBooking)}).`;
-        } else {
-            errorEl.innerHTML = `⚠️ <strong>Conflicto de Reserva:</strong> El Bungalow ${conflictingBooking.bungalow_numero} ya está ocupado por <strong>${conflictingBooking.nombre_cliente}</strong> (${conflictingBooking.horario}) del ${fechaInFormatted} al ${fechaOutFormatted}.`;
+            return showError(`🔒 <strong>Horario bloqueado:</strong> El Bungalow ${escapeHTML(conflictingBooking.bungalow_numero)} no está disponible en este horario por mantenimiento/bloqueo (${escapeHTML(formatBlockRange(conflictingBooking))}).`);
         }
-        errorEl.style.display = 'block';
-        return;
+        const formatShort = (dateStr) => new Date(dateStr + 'T00:00:00').toLocaleDateString('es-PE', { day: 'numeric', month: 'short' });
+        return showError(`⚠️ <strong>Conflicto de Reserva:</strong> El Bungalow ${escapeHTML(conflictingBooking.bungalow_numero)} ya está ocupado por <strong>${escapeHTML(conflictingBooking.nombre_cliente)}</strong> (${escapeHTML(conflictingBooking.horario)}) del ${formatShort(conflictingBooking.fecha_ingreso)} al ${formatShort(conflictingBooking.fecha_salida)}`);
     }
 
-    // Build data payloads
-    let source = document.getElementById('bookingSource').value;
-    if (!isBlock && (!source || source === ADD_MEDIO_VALUE)) {
-        errorEl.textContent = '⚠️ Selecciona un Medio de Contacto (o guarda el nuevo medio antes de continuar).';
-        errorEl.style.display = 'block';
-        return;
-    }
-    if (source === ADD_MEDIO_VALUE) source = '';
-
-    // Verificación de inventario de vinos
-    const cantVino = parseInt(document.getElementById('bookingVinoCant').value) || 0;
-    if (cantVino > 0) {
-        let currentInv = parseInt(localStorage.getItem('canchapro_inventory_vino_bungalows'));
-        if (isNaN(currentInv)) currentInv = 12;
-        if (cantVino > currentInv) {
-            const missing = cantVino - currentInv;
-            const proceed = await new Promise((resolve) => {
-                document.getElementById('vinoWarningText').innerHTML = `El inventario actual de vinos es <strong>${currentInv}</strong>, pero estás solicitando <strong>${cantVino}</strong>. Falta(n) <strong>${missing}</strong> vino(s).`;
-                openModal('modalVinoWarning');
-                
-                const btnCancel = document.getElementById('btnCancelVinoWarning');
-                const btnProceed = document.getElementById('btnProceedVinoWarning');
-                
-                const onCancel = () => {
-                    closeModal('modalVinoWarning');
-                    cleanup();
-                    resolve(false);
-                };
-                
-                const onProceed = () => {
-                    closeModal('modalVinoWarning');
-                    cleanup();
-                    resolve(true);
-                };
-                
-                const cleanup = () => {
-                    btnCancel.removeEventListener('click', onCancel);
-                    btnProceed.removeEventListener('click', onProceed);
-                };
-                
-                btnCancel.addEventListener('click', onCancel);
-                btnProceed.addEventListener('click', onProceed);
-            });
-            
-            if (!proceed) return;
-        }
+    const source = document.getElementById('bookingSource').value;
+    if (!source || source === ADD_MEDIO_VALUE) {
+        return showError('⚠️ Selecciona un Medio de Contacto (o guarda el nuevo medio antes de continuar).');
     }
 
-    let notes = document.getElementById('bookingNotes').value;
-
+    const paymentType = document.getElementById('bookingPaymentType').value;
     const totalCalculado = parseFloat(document.getElementById('bookingTotal').value) || 0;
     const adelantoTotal = parseFloat(document.getElementById('bookingAdelanto').value) || 0;
     const splitEfectivoTotal = parseFloat(document.getElementById('splitEfectivo').value) || 0;
     const splitYapeTotal = parseFloat(document.getElementById('splitYape').value) || 0;
+    if (paymentType === 'Dividido' && Math.abs(splitEfectivoTotal + splitYapeTotal - totalCalculado) > 0.05) {
+        return showError(`⚠️ En el pago dividido, Depósito + Yape (S/. ${(splitEfectivoTotal + splitYapeTotal).toFixed(2)}) debe ser igual al total (S/. ${totalCalculado.toFixed(2)}).`);
+    }
 
+    // Vino: solo se descuenta del inventario la diferencia con lo que ya tenía la reserva
+    const cantVino = parseInt(document.getElementById('bookingVinoCant').value) || 0;
+    const previousVino = targetRows.length > 0 ? parseServiceNotes(targetRows[0].notas || targetRows[0].observaciones).vino : 0;
+    const vinoDelta = cantVino - previousVino;
+    if (vinoDelta > 0) {
+        const currentInv = await fetchVinoInventory();
+        if (vinoDelta > currentInv && !(await confirmVinoShortage(currentInv, vinoDelta))) return;
+    }
+
+    const asesor = document.getElementById('bookingNotes').value;
     const adicionales = parseInt(document.getElementById('bookingAdicionales').value) || 0;
     const ninoPequeno = parseInt(document.getElementById('bookingNinoPequeno').value) || 0;
     const ninosAdicionales = parseInt(document.getElementById('bookingNinosAdicionales').value) || 0;
     const extraHoursPrice = parseFloat(document.getElementById('bookingAdicionalHoras').value) || 0;
-
+    const totalBaseGuests = parseInt(document.getElementById('bookingPersonas').value) || 4;
     const nights = calculateNights(checkIn, checkOut, horario);
-    const numBungalows = Math.max(1, selectedBungalows.length);
-    const extrasTotal = extraHours * extraHoursPrice * numBungalows;
+    const numBungalows = selectedBungalows.length;
+    const phoneInput = document.getElementById('bookingPhone');
+    const telefono = phoneInput ? phoneInput.value.trim() : (targetRows[0] ? (targetRows[0].telefono_cliente || '') : '');
+    const notas = buildServiceNotes({
+        vino: cantVino,
+        torta: !!(document.getElementById('bookingTorta') && document.getElementById('bookingTorta').checked),
+        cuatrimoto: !!(document.getElementById('bookingCuatrimoto') && document.getElementById('bookingCuatrimoto').checked),
+        comment: document.getElementById('bookingComment').value
+    });
+    // Las filas editadas conservan su fecha de registro y, si son anteriores a cambios-229,
+    // el formato antiguo de horas extra (monto total en la fila principal)
+    const originalCreatedAt = targetRows.length > 0 ? targetRows[0].created_at : null;
+    const legacyExtraHours = targetRows.length > 0 && isLegacyExtraHoursRow(targetRows[0]);
 
-    // Helper to generate the payload for a single bungalow
+    // Función para dividir preservando centavos (la fila principal se lleva el residuo)
+    function safeDivide(amount, count, idx) {
+        if (amount <= 0) return 0;
+        const base = Math.floor((amount * 100) / count) / 100;
+        if (idx === 0) {
+            const remainder = amount - (base * (count - 1));
+            return Number(remainder.toFixed(2));
+        }
+        return base;
+    }
+
+    // Helper to generate the payload for a single bungalow (la fila 0 es la principal del grupo)
     function getPayloadForBungalow(bNo, index) {
         const payload = {
             bungalow_numero: bNo,
             fecha_ingreso: checkIn,
             fecha_salida: checkOut,
             horario: horario,
-            estado_reserva: isBlock ? 'Bloqueado' : 'Confirmado',
-            notas: (function () {
-                let finalNotes = document.getElementById('bookingComment').value.trim();
-                let icons = [];
-                const cantVino = parseInt(document.getElementById('bookingVinoCant').value) || 0;
-                if (cantVino > 0) icons.push(`🍷 (x${cantVino})`);
-                if (document.getElementById('bookingTorta') && document.getElementById('bookingTorta').checked) icons.push('🎂');
-                if (document.getElementById('bookingCuatrimoto') && document.getElementById('bookingCuatrimoto').checked) icons.push('🏍️');
-                if (icons.length > 0) {
-                    finalNotes = icons.join(" ") + (finalNotes ? " - " + finalNotes : "");
-                }
-                return finalNotes;
-            })(),
-            asesor_registro: notes,
-            tipo_pago: document.getElementById('bookingPaymentType').value,
-            medio_contacto: source
+            estado_reserva: 'Confirmado',
+            notas: notas,
+            asesor_registro: asesor,
+            tipo_pago: paymentType,
+            medio_contacto: source,
+            nombre_cliente: nameValue,
+            dni_cliente: dniValue,
+            telefono_cliente: telefono,
+            // Cada bungalow lleva hasta 4 personas; la fila principal guarda además los adicionales
+            adultos: Math.min(4, Math.max(0, totalBaseGuests - index * 4)) + (index === 0 ? adicionales : 0),
+            ninos_gratis: (index < ninoPequeno) ? 1 : 0,
+            ninos_pagantes: (index === 0 ? ninosAdicionales : 0),
+            precio_base: calculateBasePrice(checkIn, checkOut, horario),
+            adicional_personas: (index === 0 ? (adicionales * EXTRA_GUEST_FEE + ninosAdicionales * EXTRA_CHILD_FEE) * nights : 0),
+            horas_extras: extraHours,
+            adicional_horas: legacyExtraHours
+                ? (index === 0 ? extraHours * extraHoursPrice * numBungalows : 0)
+                : extraHoursPrice,
+            alquiler_cuatrimoto: 0,
+            cuatrimoto_monto: 0
         };
 
-        if (isBlock) {
-            payload.nombre_cliente = 'Mantenimiento';
-            payload.dni_cliente = '';
-            payload.telefono_cliente = '';
-            payload.adultos = 0;
-            payload.ninos_gratis = 0;
-            payload.ninos_pagantes = 0;
-            payload.precio_base = 0;
-            payload.adicional_personas = 0;
-            payload.horas_extras = 0;
-            payload.adicional_horas = 0;
-            payload.alquiler_cuatrimoto = 0;
-            payload.cuatrimoto_monto = 0;
-            payload.monto_total = 0;
-            payload.monto_adelanto = 0;
+        // El total negociado (de todos los bungalows) se reparte entre las filas
+        const singleTotalCalculado = (totalCalculado > 0)
+            ? safeDivide(totalCalculado, numBungalows, index)
+            : (payload.precio_base + payload.adicional_personas + extraHours * extraHoursPrice);
+        payload.monto_total = singleTotalCalculado;
+        payload.monto_adelanto = totalCalculado > 0 ? safeDivide(adelantoTotal, numBungalows, index) : 0;
+
+        if (paymentType === 'Dividido') {
+            payload.monto_efectivo = totalCalculado > 0 ? safeDivide(splitEfectivoTotal, numBungalows, index) : 0;
+            payload.monto_yape = totalCalculado > 0 ? safeDivide(splitYapeTotal, numBungalows, index) : 0;
+        } else if (paymentType === 'Efectivo' || paymentType === 'Depósito') {
+            payload.monto_efectivo = singleTotalCalculado;
+            payload.monto_yape = 0;
+        } else if (paymentType === 'Yape') {
+            payload.monto_efectivo = 0;
+            payload.monto_yape = singleTotalCalculado;
+        } else {
             payload.monto_efectivo = 0;
             payload.monto_yape = 0;
-        } else {
-            payload.nombre_cliente = document.getElementById('bookingName').value.trim();
-            payload.dni_cliente = document.getElementById('bookingDni').value.trim();
-            const phoneInput = document.getElementById('bookingPhone');
-            payload.telefono_cliente = phoneInput ? phoneInput.value.trim() : '';
-
-            // Main reservation gets additional guests/children, standard ones get base capacity
-            const totalBaseGuests = parseInt(document.getElementById('bookingPersonas').value) || 4;
-            const baseGuestsForBungalow = Math.min(4, Math.max(0, totalBaseGuests - index * 4));
-
-            payload.adultos = baseGuestsForBungalow + (index === 0 ? adicionales : 0);
-            payload.ninos_gratis = (index < ninoPequeno) ? 1 : 0;
-            payload.ninos_pagantes = (index === 0 ? ninosAdicionales : 0);
-            payload.precio_base = calculateBasePrice(checkIn, checkOut, horario);
-            payload.adicional_personas = (index === 0 ? (adicionales * EXTRA_GUEST_FEE + ninosAdicionales * EXTRA_CHILD_FEE) * nights : 0);
-            payload.horas_extras = extraHours;
-            payload.adicional_horas = extraHoursPrice;
-            payload.alquiler_cuatrimoto = 0;
-            payload.cuatrimoto_monto = 0;
-
-            // Función para dividir preservando centavos
-            function safeDivide(amount, count, idx) {
-                if (amount <= 0) return 0;
-                const base = Math.floor((amount * 100) / count) / 100;
-                if (idx === 0) {
-                    const remainder = amount - (base * (count - 1));
-                    return Number(remainder.toFixed(2));
-                }
-                return base;
-            }
-
-            // Calculate the correct proportion for this bungalow based on the total negotiated price.
-            // totalCalculado represents the total price for all selected bungalows combined.
-            const singleTotalCalculado = (totalCalculado > 0)
-                ? safeDivide(totalCalculado, selectedBungalows.length, index)
-                : (payload.precio_base + payload.adicional_personas + payload.adicional_horas);
-
-            payload.monto_total = singleTotalCalculado;
-
-            if (totalCalculado > 0) {
-                payload.monto_adelanto = safeDivide(adelantoTotal, selectedBungalows.length, index);
-            } else {
-                payload.monto_adelanto = 0;
-            }
-
-            if (payload.tipo_pago === 'Dividido') {
-                if (totalCalculado > 0) {
-                    payload.monto_efectivo = safeDivide(splitEfectivoTotal, selectedBungalows.length, index);
-                    payload.monto_yape = safeDivide(splitYapeTotal, selectedBungalows.length, index);
-                } else {
-                    payload.monto_efectivo = 0;
-                    payload.monto_yape = 0;
-                }
-            } else if (payload.tipo_pago === 'Efectivo' || payload.tipo_pago === 'Depósito') {
-                payload.monto_efectivo = singleTotalCalculado;
-                payload.monto_yape = 0;
-            } else if (payload.tipo_pago === 'Yape') {
-                payload.monto_efectivo = 0;
-                payload.monto_yape = singleTotalCalculado;
-            } else {
-                payload.monto_efectivo = 0;
-                payload.monto_yape = 0;
-            }
         }
         return payload;
     }
 
+    const payloads = selectedBungalows.map((bNo, idx) => getPayloadForBungalow(bNo, idx));
+    const bungalowsTxt = selectedBungalows.join(', ');
+
     if (dbMode === 'supabase' && supabaseClient) {
+        let stepsDone = 0;
         try {
-            if (id) {
-                // Modo Edición Grupal:
-                const oldBooking = bookings.find(b => b.id === id);
-                if (oldBooking) {
-                    const groupBookings = bookings.filter(b =>
-                        b.dni_cliente === oldBooking.dni_cliente &&
-                        b.nombre_cliente === oldBooking.nombre_cliente &&
-                        b.fecha_ingreso === oldBooking.fecha_ingreso &&
-                        b.fecha_salida === oldBooking.fecha_salida &&
-                        b.horario === oldBooking.horario &&
-                        b.estado_reserva !== 'Bloqueo'
-                    );
-
-                    const isGroupEditToggle = document.getElementById('groupEditToggleContainer').style.display !== 'none'
-                        ? document.getElementById('bookingEditGroupToggle').checked
-                        : false;
-
-                    let groupIds = [];
-                    if (isGroupEditToggle || groupBookings.length === 1) {
-                        groupIds = groupBookings.map(b => b.id);
-                    } else {
-                        groupIds = [id]; // Modo individual: Solo eliminar la reserva principal seleccionada
-                    }
-
-                    // 1. Eliminar los registros antiguos del grupo
-                    if (groupIds.length > 0) {
-                        const { error: delErr } = await supabaseClient
-                            .from('reservas_bungalows')
-                            .delete()
-                            .in('id', groupIds);
-                        if (delErr) throw delErr;
-                    }
-                }
-
-                // 2. Insertar los nuevos seleccionados con la info actualizada
-                const payloads = selectedBungalows.map((bNo, idx) => getPayloadForBungalow(bNo, idx));
-
-                // Tratar de preservar el created_at original si existe
-                if (oldBooking && oldBooking.created_at) {
-                    payloads.forEach(p => p.created_at = oldBooking.created_at);
-                }
-
-                const { error: insErr } = await supabaseClient
-                    .from('reservas_bungalows')
-                    .insert(payloads);
-                if (insErr) throw insErr;
-
-                logSessionActivity(`Reserva grupal editada para: ${payloads[0].nombre_cliente}`);
+            if (!id) {
+                // Modo Creación: insertar todos los bungalows seleccionados
+                const { error } = await supabaseClient.from('reservas_bungalows').insert(payloads);
+                if (error) throw error;
             } else {
-                // Modo Creación: Insertar todos los bungalows seleccionados
-                const payloads = selectedBungalows.map((bNo, idx) => getPayloadForBungalow(bNo, idx));
-                const { error: insErr } = await supabaseClient
-                    .from('reservas_bungalows')
-                    .insert(payloads);
-                if (insErr) throw insErr;
-                logSessionActivity(`Nuevas reservas creadas para: ${payloads[0].nombre_cliente} en bungalows [${selectedBungalows.join(', ')}]`);
+                // Modo Edición: 1) bungalows nuevos, 2) actualizar los existentes, 3) quitar los desmarcados
+                const plan = planGroupUpdate(targetRows, payloads);
+                if (plan.inserts.length > 0) {
+                    const rowsToInsert = plan.inserts.map(p => originalCreatedAt ? { ...p, created_at: originalCreatedAt } : p);
+                    const { error } = await supabaseClient.from('reservas_bungalows').insert(rowsToInsert);
+                    if (error) throw error;
+                    stepsDone++;
+                }
+                for (const { id: rowId, payload } of plan.updates) {
+                    const { error } = await supabaseClient.from('reservas_bungalows').update(payload).eq('id', rowId);
+                    if (error) throw error;
+                    stepsDone++;
+                }
+                if (plan.deletes.length > 0) {
+                    const { error } = await supabaseClient.from('reservas_bungalows').delete().in('id', plan.deletes);
+                    if (error) throw error;
+                    stepsDone++;
+                }
             }
         } catch (err) {
             console.error("Error al guardar en Supabase:", err);
-            errorEl.textContent = 'Error al sincronizar con el servidor: ' + err.message;
-            errorEl.style.display = 'block';
+            showError('Error al sincronizar con el servidor: ' + escapeHTML(err.message || String(err)) +
+                (stepsDone > 0 ? '<br>⚠️ Una parte de los cambios sí se guardó: revisa esta reserva en el calendario antes de volver a intentarlo.' : ''));
+            if (stepsDone > 0) await fetchBookings();
             return;
         }
     } else {
         // Local Save Fallback
-        if (id) {
-            // Modo Edición Grupal:
-            const oldBooking = bookings.find(b => b.id === id);
-            if (oldBooking) {
-                const isGroupEditToggle = document.getElementById('groupEditToggleContainer').style.display !== 'none'
-                    ? document.getElementById('bookingEditGroupToggle').checked
-                    : false;
-
-                if (isGroupEditToggle) {
-                    bookings = bookings.filter(b => !(
-                        b.dni_cliente === oldBooking.dni_cliente &&
-                        b.nombre_cliente === oldBooking.nombre_cliente &&
-                        b.fecha_ingreso === oldBooking.fecha_ingreso &&
-                        b.fecha_salida === oldBooking.fecha_salida &&
-                        b.horario === oldBooking.horario &&
-                        b.estado_reserva !== 'Bloqueo'
-                    ));
-                } else {
-                    bookings = bookings.filter(b => b.id !== id);
-                }
-            }
-
-            // Insertar los nuevos seleccionados
-            for (let i = 0; i < selectedBungalows.length; i++) {
-                const extraPayload = getPayloadForBungalow(selectedBungalows[i], i);
-                extraPayload.id = 'local_' + Date.now() + '_' + i;
-                if (oldBooking && oldBooking.created_at) {
-                    extraPayload.created_at = oldBooking.created_at;
-                } else {
-                    extraPayload.created_at = new Date().toISOString();
-                }
-                bookings.push(extraPayload);
-            }
-            logSessionActivity(`Reserva grupal local ${id} editada.`);
+        if (!id) {
+            payloads.forEach((p, i) => bookings.push({ ...p, id: newLocalId(i), created_at: new Date().toISOString() }));
         } else {
-            // Modo Creación:
-            selectedBungalows.forEach((bNo, idx) => {
-                const payload = getPayloadForBungalow(bNo, idx);
-                payload.id = 'local_' + Date.now() + '_' + idx;
-                payload.created_at = new Date().toISOString();
-                bookings.push(payload);
+            const plan = planGroupUpdate(targetRows, payloads);
+            plan.updates.forEach(({ id: rowId, payload }) => {
+                const idx = bookings.findIndex(b => String(b.id) === String(rowId));
+                if (idx >= 0) bookings[idx] = { ...bookings[idx], ...payload };
             });
-            logSessionActivity(`Nuevas reservas locales creadas para: ${selectedBungalows.join(', ')}`);
+            plan.inserts.forEach((p, i) => bookings.push({ ...p, id: newLocalId(i), created_at: originalCreatedAt || new Date().toISOString() }));
+            bookings = bookings.filter(b => !plan.deletes.some(delId => String(delId) === String(b.id)));
         }
         saveLocalBookingsFallback();
     }
 
-    if (!id) {
-        const cantVino = parseInt(document.getElementById('bookingVinoCant').value) || 0;
-        if (cantVino > 0) {
-            let currentInv = parseInt(localStorage.getItem('canchapro_inventory_vino_bungalows'));
-            if (isNaN(currentInv)) currentInv = 12;
-            currentInv = Math.max(0, currentInv - cantVino);
-            localStorage.setItem('canchapro_inventory_vino_bungalows', currentInv);
-            if (typeof updateVinoInventoryDisplay === 'function') updateVinoInventoryDisplay();
-        }
-    }
+    logSessionActivity(id
+        ? `Reserva editada: ${nameValue} (${checkIn} al ${checkOut}) en bungalows [${bungalowsTxt}]`
+        : `Nuevas reservas creadas para: ${nameValue} (${checkIn} al ${checkOut}) en bungalows [${bungalowsTxt}]`);
+
+    // Inventario: se descuentan los vinos nuevos o se devuelven los que se quitaron
+    if (vinoDelta !== 0) await adjustVinoInventory(-vinoDelta);
 
     closeModal('modalBooking');
     await fetchBookings();
@@ -1683,31 +1791,54 @@ async function handleSaveBooking(e) {
 
 async function handleDeleteBooking() {
     const id = document.getElementById('bookingId').value;
-    if (!id) return;
+    if (!id || isSavingBooking) return;
 
-    if (!confirm('¿Estás seguro de que deseas eliminar esta reserva de bungalow?')) return;
-
-    if (dbMode === 'supabase' && supabaseClient) {
-        try {
-            const { error } = await supabaseClient
-                .from('reservas_bungalows')
-                .delete()
-                .eq('id', id);
-            if (error) throw error;
-            logSessionActivity(`Reserva ${id} eliminada de la base de datos.`);
-        } catch (err) {
-            console.error("Error al eliminar de Supabase:", err);
-            alert("No se pudo eliminar de la base de datos: " + err.message);
-            return;
-        }
-    } else {
-        bookings = bookings.filter(b => b.id !== id);
-        saveLocalBookingsFallback();
-        logSessionActivity(`Reserva local ${id} eliminada.`);
+    // Con "Editar Grupo Completo" marcado se elimina todo el grupo; si no, solo este bungalow
+    const rows = getEditTargetRows();
+    if (rows.length === 0) {
+        alert('Esta reserva ya no existe (otro asesor pudo haberla eliminado).');
+        closeModal('modalBooking');
+        await fetchBookings();
+        return;
     }
+    const first = rows[0];
+    const bungalowsTxt = rows.map(r => r.bungalow_numero).join(', ');
+    const question = rows.length > 1
+        ? `¿Eliminar la reserva de ${first.nombre_cliente} en los ${rows.length} bungalows del grupo (${bungalowsTxt})?`
+        : `¿Estás seguro de que deseas eliminar la reserva de ${first.nombre_cliente} en el Bungalow ${first.bungalow_numero}?`;
+    if (!confirm(question)) return;
 
-    closeModal('modalBooking');
-    await fetchBookings();
+    // El vino vuelve al inventario solo si se elimina la reserva completa y el asesor lo confirma
+    const siblingsLeft = getBookingGroup(first).filter(b => !rows.some(r => String(r.id) === String(b.id)));
+    const vinoCount = siblingsLeft.length === 0 ? parseServiceNotes(first.notas || first.observaciones).vino : 0;
+    const returnVino = vinoCount > 0 &&
+        confirm(`La reserva tenía ${vinoCount} vino(s). ¿Devolverlos al inventario?\n(Cancelar si ya se entregaron)`);
+
+    isSavingBooking = true;
+    const deleteBtn = document.getElementById('btnDeleteBooking');
+    deleteBtn.disabled = true;
+    try {
+        const ids = rows.map(r => r.id);
+        if (dbMode === 'supabase' && supabaseClient) {
+            const { error } = await supabaseClient.from('reservas_bungalows').delete().in('id', ids);
+            if (error) {
+                console.error("Error al eliminar de Supabase:", error);
+                alert("No se pudo eliminar de la base de datos: " + error.message);
+                return;
+            }
+        } else {
+            bookings = bookings.filter(b => !ids.some(delId => String(delId) === String(b.id)));
+            saveLocalBookingsFallback();
+        }
+        logSessionActivity(`Reserva eliminada: ${first.nombre_cliente} (${first.fecha_ingreso} al ${first.fecha_salida}) en bungalows [${bungalowsTxt}]`);
+        if (returnVino) await adjustVinoInventory(vinoCount);
+
+        closeModal('modalBooking');
+        await fetchBookings();
+    } finally {
+        isSavingBooking = false;
+        deleteBtn.disabled = false;
+    }
 }
 
 // Global helper to get the precise start and end datetimes for a booking, including extra hours
@@ -1740,37 +1871,21 @@ function getBookingInterval(checkInStr, checkOutStr, horarioStr, extraHours = 0)
 }
 
 // Collision Check logic
-function checkBookingCollision(id, bungalow, checkIn, checkOut, horario, extraHours = 0) {
+// excludeIds: ids de las filas que se están editando (no cuentan como choque). Puede ser null para reservas nuevas.
+function checkBookingCollision(excludeIds, bungalow, checkIn, checkOut, horario, extraHours = 0) {
+    const excluded = (Array.isArray(excludeIds) ? excludeIds : (excludeIds ? [excludeIds] : [])).map(String);
     const newInterval = getBookingInterval(checkIn, checkOut, horario, extraHours);
 
-    let oldBookingGroup = [];
-    if (id) {
-        const oldB = bookings.find(x => x.id === id);
-        if (oldB) {
-            oldBookingGroup = bookings.filter(x =>
-                x.dni_cliente === oldB.dni_cliente &&
-                x.nombre_cliente === oldB.nombre_cliente &&
-                x.fecha_ingreso === oldB.fecha_ingreso &&
-                x.fecha_salida === oldB.fecha_salida &&
-                x.horario === oldB.horario &&
-                x.estado_reserva !== 'Bloqueo'
-            ).map(x => x.id);
-        }
-    }
-
     return bookings.find(b => {
-        // Exclude the current booking itself and its entire group if editing
-        if (id && oldBookingGroup.includes(b.id)) return false;
-        if (b.id === id) return false;
+        if (excluded.includes(String(b.id))) return false;
 
         // Only check same bungalow
-        if (b.bungalow_numero !== bungalow) return false;
+        if (parseInt(b.bungalow_numero) !== parseInt(bungalow)) return false;
 
         const oldInterval = getRecordInterval(b);
 
         // Date overlap check: (StartA < EndB) and (EndA > StartB)
-        const overlaps = (newInterval.start < oldInterval.end) && (newInterval.end > oldInterval.start);
-        return overlaps;
+        return (newInterval.start < oldInterval.end) && (newInterval.end > oldInterval.start);
     });
 }
 
@@ -1850,6 +1965,19 @@ function openBlockModal(block = null) {
 
 async function handleSaveBlock(e) {
     e.preventDefault();
+    if (isSavingBooking) return; // evita bloqueos duplicados por doble clic
+    isSavingBooking = true;
+    const saveBtn = document.getElementById('btnSaveBlock');
+    saveBtn.disabled = true;
+    try {
+        await saveBlockFromForm();
+    } finally {
+        isSavingBooking = false;
+        saveBtn.disabled = false;
+    }
+}
+
+async function saveBlockFromForm() {
     const errorEl = document.getElementById('blockError');
     const showErr = (html) => { errorEl.innerHTML = html; errorEl.style.display = 'block'; };
     errorEl.style.display = 'none';
@@ -2007,37 +2135,19 @@ function initCalendar() {
                 };
             }
 
-            let startHour = '3:00 PM';
-            let endHour = '12:00 PM';
-            if (b.horario === 'Full Day' || b.horario === 'Horario Extendido') {
-                startHour = '9:00 AM';
-                endHour = '6:00 PM';
-            } else if (b.horario === '9am a 12pm') {
-                startHour = '9:00 AM';
-                endHour = '12:00 PM';
-            }
-            if (b.horario !== 'Full Day' && b.horario !== 'Horario Extendido' && b.horario !== '9am a 12pm' && (b.horas_extras || 0) > 0) {
-                let hh = 12 + b.horas_extras;
-                let ampm = (hh % 24) >= 12 ? 'PM' : 'AM';
-                let displayHr = (hh % 24) % 12;
-                displayHr = displayHr ? displayHr : 12;
-                endHour = `${displayHr}:00 ${ampm}`;
-            }
+            // Horas de ingreso/salida (las horas extra se suman en cualquier turno)
+            const hours = getScheduleHours(b.horario, b.horas_extras);
+            const startHour = hours.start;
+            const endHour = hours.end;
 
             let emoji = '☀️🌙';
             if (b.horario === 'Full Day') emoji = '☀️';
             else if (b.horario === 'Horario Extendido') emoji = '✨';
             else if (b.horario === '9am a 12pm') emoji = '🌅';
-            else if (b.horario === '9am a 12pm') emoji = '🌅';
 
-            let extrasIconsHtml = '';
-            if (b.notas) {
-                const matchedIcons = b.notas.match(/[🍷🎂🏍️]/g);
-                if (matchedIcons) {
-                    extrasIconsHtml = `<span style="font-size: 1.1em; letter-spacing: 2px; margin-left: 5px;">${matchedIcons.join('')}</span>`;
-                    emoji = emoji + ' ' + matchedIcons.join('');
-                }
-            }
+            // Servicios especiales (vino, torta, cuatrimoto) guardados al inicio de las notas
+            const serviceIcons = getServiceIcons(b.notas);
+            if (serviceIcons) emoji = emoji + ' ' + serviceIcons;
 
             if (currentBungalowTab !== 'all') {
                 // Vista de Bungalow Individual: Mostrar toda la información aprovechando el espacio vertical
@@ -2063,28 +2173,11 @@ function initCalendar() {
                 const isBlocked = b.estado_reserva === 'Bloqueado';
 
                 // Calcular horas de entrada y salida
-                let startHour = '3:00 PM';
-                let endHour = '12:00 PM';
-                if (b.horario === 'Full Day' || b.horario === 'Horario Extendido') {
-                    startHour = '9:00 AM';
-                    endHour = '6:00 PM';
-                } else if (b.horario === '9am a 12pm') {
-                    startHour = '9:00 AM';
-                    endHour = '12:00 PM';
-                }
-                if (b.horario !== 'Full Day' && b.horario !== 'Horario Extendido' && b.horario !== '9am a 12pm' && (b.horas_extras || 0) > 0) {
-                    let hh = 12 + b.horas_extras;
-                    let ampm = (hh % 24) >= 12 ? 'PM' : 'AM';
-                    let displayHr = (hh % 24) % 12;
-                    displayHr = displayHr ? displayHr : 12;
-                    endHour = `${displayHr}:00 ${ampm}`;
-                }
-
-                const timeStr = `${startHour} a ${endHour}`;
+                const hours = getScheduleHours(b.horario, b.horas_extras);
+                const timeStr = `${hours.start} a ${hours.end}`;
                 let emoji = '☀️🌙';
                 if (b.horario === 'Full Day') emoji = '☀️';
                 else if (b.horario === 'Horario Extendido') emoji = '✨';
-                else if (b.horario === '9am a 12pm') emoji = '🌅';
                 else if (b.horario === '9am a 12pm') emoji = '🌅';
 
                 let title = "";
@@ -2153,8 +2246,9 @@ function initCalendar() {
         select: function (info) {
             // Multi-day selection triggers booking modal creation
             const startStr = info.startStr;
-            // FullCalendar select's endStr is exclusive. We subtract 1 day to get inclusive check-out
-            const endInclusive = new Date(info.endStr);
+            // FullCalendar select's end is exclusive. We subtract 1 day to get inclusive check-out.
+            // (Se usa info.end, que está en hora local; new Date('YYYY-MM-DD') se interpreta en UTC y en Perú da un día menos)
+            const endInclusive = new Date(info.end);
             endInclusive.setDate(endInclusive.getDate() - 1);
             const endStr = getLocalDateString(endInclusive);
 
@@ -2267,10 +2361,10 @@ function updateDailySummaryList() {
         } else {
             card.innerHTML = `
                 <div class="summary-item-header">
-                    <span class="summary-item-time">${b.horario}</span>
+                    <span class="summary-item-time">${escapeHTML(b.horario)}</span>
                     <span class="summary-item-court bungalow-badge-${b.bungalow_numero}">Bungalow ${b.bungalow_numero}</span>
                 </div>
-                <div class="summary-item-client">${b.nombre_cliente}</div>
+                <div class="summary-item-client">${escapeHTML(b.nombre_cliente)}</div>
                 <div class="summary-item-details">
                     <span class="summary-detail-tag">
                         <i data-lucide="calendar"></i> ${checkInFormatted} al ${checkOutFormatted}
@@ -2280,7 +2374,7 @@ function updateDailySummaryList() {
                     </span>
                 </div>
                 <div class="summary-item-header" style="margin-top: 6px; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 8px;">
-                    <span style="font-size: 11px; color: var(--text-muted);">Asesor: ${b.asesor_registro}</span>
+                    <span style="font-size: 11px; color: var(--text-muted);">Asesor: ${escapeHTML(b.asesor_registro)}</span>
                 </div>
             `;
         }
@@ -2567,27 +2661,25 @@ function initAvailabilityChecker() {
 
     checkDateOut.addEventListener('change', updateAvailabilityChecker);
 
+    // "Hoy" y "Mañana" se calculan al hacer clic (la página puede quedar abierta pasada la medianoche)
     if (btnQuickToday) {
         btnQuickToday.addEventListener('click', () => {
-            checkDateIn.value = todayStr;
+            const currentToday = getLocalDateString(new Date());
+            checkDateIn.value = currentToday;
             checkHorario.value = 'Día y Noche';
             checkDateOut.disabled = false;
-            checkDateOut.value = tomorrowStr;
+            checkDateOut.value = addDaysToDateString(currentToday, 1);
             updateAvailabilityChecker();
         });
     }
 
     if (btnQuickTomorrow) {
         btnQuickTomorrow.addEventListener('click', () => {
-            const nextDay = new Date(today);
-            nextDay.setDate(nextDay.getDate() + 1);
-            const nextNextDay = new Date(today);
-            nextNextDay.setDate(nextNextDay.getDate() + 2);
-
-            checkDateIn.value = getLocalDateString(nextDay);
+            const currentToday = getLocalDateString(new Date());
+            checkDateIn.value = addDaysToDateString(currentToday, 1);
             checkHorario.value = 'Día y Noche';
             checkDateOut.disabled = false;
-            checkDateOut.value = getLocalDateString(nextNextDay);
+            checkDateOut.value = addDaysToDateString(currentToday, 2);
             updateAvailabilityChecker();
         });
     }
@@ -2726,13 +2818,11 @@ function updateAvailabilityChecker() {
         return;
     }
 
-    if (horario === '9am a 12pm') {
-        const d = new Date(inStr + 'T00:00:00');
-        const dow = d.getDay();
-        if (dow === 0 || dow === 5 || dow === 6) {
-            resultsEl.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: #ef4444; padding: 10px; font-weight: bold;">⚠️ El turno de 9am a 12pm sgte solo está disponible para ingresos de Lunes a Jueves.</div>';
-            return;
-        }
+    // Mismas reglas de fechas que al guardar (salida posterior al ingreso, 9am-12pm solo L-J, etc.)
+    const dateError = getBookingDateError(inStr, horario === 'Full Day' ? inStr : outStr, horario);
+    if (dateError) {
+        resultsEl.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: #ef4444; padding: 10px; font-weight: bold;">${escapeHTML(dateError)}</div>`;
+        return;
     }
 
     const price = calculateBasePrice(inStr, outStr, horario);
@@ -2778,7 +2868,7 @@ function updateAvailabilityChecker() {
                 </div>
                 <div class="checker-card-body">
                     <strong>${escapeHTML(clientName)}</strong><br>
-                    <small style="color: var(--text-muted); font-size: 10px;">${collision.horario}</small>
+                    <small style="color: var(--text-muted); font-size: 10px;">${escapeHTML(collision.horario)}</small>
                 </div>
                 <div class="checker-card-action">
                     <span style="font-size: 10px; color: var(--text-secondary); font-weight: 600;">Ver reserva &rarr;</span>
@@ -2812,56 +2902,42 @@ window.quickBookFromChecker = function (bNum, inStr, outStr, horario) {
     runDynamicCalculations();
 };
 
-function escapeHTML(str) {
-    if (!str) return '';
-    return str
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
+// Parte del monto de una reserva que corresponde a un día:
+// Día y Noche y 9am-12pm se cobran por noche (el día de salida no es otra noche),
+// Horario Extendido por día (cuentan ingreso y salida) y Full Day es un solo día.
+function getDailyIncomeShare(b, dateStr) {
+    const total = parseFloat(b.monto_total) || 0;
+    if (!b.fecha_ingreso || !b.fecha_salida) return 0;
+    if (b.horario === 'Full Day') return dateStr === b.fecha_ingreso ? total : 0;
+    if (b.horario === 'Horario Extendido') {
+        if (dateStr < b.fecha_ingreso || dateStr > b.fecha_salida) return 0;
+        return total / (calculateNights(b.fecha_ingreso, b.fecha_salida, b.horario) + 1);
+    }
+    if (dateStr < b.fecha_ingreso || dateStr >= b.fecha_salida) return 0;
+    return total / (calculateNights(b.fecha_ingreso, b.fecha_salida, b.horario) || 1);
 }
 
 // Update Dashboard Sidebar stats
 function updateDashboardStats() {
-    const today = new Date();
-    const todayStr = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
+    const todayStr = getLocalDateString(new Date());
+    const activeBookings = bookings.filter(b => b.estado_reserva !== 'Bloqueado' && b.fecha_ingreso && b.fecha_salida);
 
-    // 1. Bungalows occupied today
-    const occupiedToday = bookings.filter(b => {
-        const start = new Date(b.fecha_ingreso + 'T00:00:00');
-        const end = new Date(b.fecha_salida + 'T00:00:00');
-        const current = new Date(todayStr + 'T00:00:00');
-        return (current >= start && current <= end && b.estado_reserva !== 'Bloqueado');
-    });
-    // Deduplicate by bungalow number
-    const uniqueOccupied = new Set(occupiedToday.map(b => b.bungalow_numero));
+    // 1. Bungalows ocupados hoy (incluye los que salen hoy al mediodía)
+    const uniqueOccupied = new Set(activeBookings
+        .filter(b => b.fecha_ingreso <= todayStr && todayStr <= b.fecha_salida)
+        .map(b => b.bungalow_numero));
     document.getElementById('statTodayOccupied').textContent = `${uniqueOccupied.size} / 6`;
 
-    // 2. Today's expected income (sum of base price + guest fees + extras of bookings active today, pro-rated by total stay length)
-    let totalTodayIncome = 0;
-    bookings.forEach(b => {
-        if (b.estado_reserva === 'Bloqueado') return;
-        const start = new Date(b.fecha_ingreso + 'T00:00:00');
-        const end = new Date(b.fecha_salida + 'T00:00:00');
-        const current = new Date(todayStr + 'T00:00:00');
-
-        if (current >= start && current <= end) {
-            const nights = calculateNights(b.fecha_ingreso, b.fecha_salida, b.horario);
-            // Pro-rate total amount by days
-            totalTodayIncome += b.monto_total / (nights || 1);
-        }
-    });
+    // 2. Ingresos de hoy: monto de cada reserva repartido entre sus noches (o días) cobrados
+    const totalTodayIncome = activeBookings.reduce((acc, b) => acc + getDailyIncomeShare(b, todayStr), 0);
     document.getElementById('statTodayIncome').textContent = `S/. ${totalTodayIncome.toFixed(2)}`;
 
-    // 3. Total bookings this month
-    const thisMonth = today.getMonth(); // 0-11
-    const thisYear = today.getFullYear();
-    const monthBookings = bookings.filter(b => {
-        const start = new Date(b.fecha_ingreso + 'T00:00:00');
-        return (start.getMonth() === thisMonth && start.getFullYear() === thisYear);
-    });
-    document.getElementById('statMonthReservations').textContent = monthBookings.length;
+    // 3. Reservas del mes: sin bloqueos, y una reserva de varios bungalows cuenta una sola vez
+    const monthPrefix = todayStr.slice(0, 7);
+    const monthGroups = new Set(activeBookings
+        .filter(b => b.fecha_ingreso.startsWith(monthPrefix))
+        .map(getBookingGroupKey));
+    document.getElementById('statMonthReservations').textContent = monthGroups.size;
 }
 
 // ----------------------------------------------------
@@ -2929,25 +3005,10 @@ function copyReservationDetails() {
     const yearOut = String(dateOutObj.getFullYear()).slice(-2);
     const formattedOut = `${weekdayOut} ${dayOut}/${monthOut}/${yearOut}`;
 
-    let checkInTime = "";
-    let checkOutTime = "";
-    if (horario === "Día y Noche") {
-        checkInTime = "3:00 pm";
-        const baseHour = 12; // 12:00 pm
-        const totalHour = (baseHour + horasExtras) % 24;
-        const period = totalHour >= 12 ? "pm" : "am";
-        let displayHour = totalHour % 12;
-        if (displayHour === 0) displayHour = 12;
-        checkOutTime = `${displayHour}:00 ${period}`;
-    } else if (horario === "Full Day") {
-        checkInTime = "9:00 am";
-        const baseHour = 18; // 6:00 pm
-        const totalHour = (baseHour + horasExtras) % 24;
-        const period = totalHour >= 12 ? "pm" : "am";
-        let displayHour = totalHour % 12;
-        if (displayHour === 0) displayHour = 12;
-        checkOutTime = `${displayHour}:00 ${period}`;
-    }
+    // Horas de ingreso y salida de cualquier turno (incluye horas extra)
+    const scheduleHours = getScheduleHours(horario, horasExtras, true);
+    const checkInTime = scheduleHours.start;
+    const checkOutTime = scheduleHours.end;
 
     const advisor = document.getElementById('bookingNotes') ? document.getElementById('bookingNotes').value : '';
 
@@ -3017,6 +3078,96 @@ function capitalizeName(name) {
         .join(' ');
 }
 
+// Reparto de lo cobrado en una fila según el tipo de pago.
+// En "Depósito" y "Dividido" el depósito se guarda en monto_efectivo (el campo conserva su nombre antiguo).
+function getPaymentBreakdown(b) {
+    const total = parseFloat(b.monto_total) || 0;
+    const efectivoField = parseFloat(b.monto_efectivo) || 0;
+    let yape = parseFloat(b.monto_yape) || 0;
+    let deposito = 0;
+    let efectivo = 0;
+    if (b.tipo_pago === 'Depósito') deposito = efectivoField || total;
+    else if (b.tipo_pago === 'Dividido') deposito = efectivoField;
+    else if (b.tipo_pago === 'Efectivo') efectivo = efectivoField || total;
+    else efectivo = efectivoField;
+    if (b.tipo_pago === 'Yape' && yape === 0) yape = total;
+    return { deposito, efectivo, yape };
+}
+
+// Agrupa las filas de una misma reserva (una por bungalow) en una sola, sumando sus montos.
+// Garantiza que si se alquilan 5 bungalows por S/. 500, el monto total sea S/. 500 (NO 500 x 5).
+function consolidateBookingRows(items) {
+    const grouped = {};
+    items.forEach(b => {
+        const key = getBookingGroupKey(b);
+        if (!grouped[key]) {
+            grouped[key] = {
+                ...b,
+                rows: [],
+                bungalows_arr: [],
+                raw_monto_total: 0,
+                raw_monto_adelanto: 0,
+                raw_deposito: 0,
+                raw_efectivo: 0,
+                raw_yape: 0,
+                monto_adic_personas: 0,
+                monto_adic_horas: 0
+            };
+        }
+        const g = grouped[key];
+        const pay = getPaymentBreakdown(b);
+        g.rows.push(b);
+        g.bungalows_arr.push(b.bungalow_numero);
+        g.raw_monto_total += parseFloat(b.monto_total) || 0;
+        g.raw_monto_adelanto += parseFloat(b.monto_adelanto) || 0;
+        g.raw_deposito += pay.deposito;
+        g.raw_efectivo += pay.efectivo;
+        g.raw_yape += pay.yape;
+        g.monto_adic_personas += parseFloat(b.adicional_personas) || 0;
+        g.monto_adic_horas += getExtraHoursAmount(b);
+    });
+
+    return Object.values(grouped).map(g => {
+        const first = g.rows[0];
+        const N = g.rows.length;
+        let total = g.raw_monto_total;
+        let adelanto = g.raw_monto_adelanto;
+        let deposito = g.raw_deposito;
+        let efectivo = g.raw_efectivo;
+        let yape = g.raw_yape;
+
+        // Detección de seguridad para registros antiguos guardados sin dividir: cada fila con el total
+        // completo (ej. 500 en cada una en lugar de 100). Solo aplica a filas anteriores al reparto del
+        // total (SPLIT_TOTALS_SINCE), todas iguales y de al menos ~N veces su precio base; si no,
+        // una reserva normal de varios bungalows se reportaría como si fuera de uno solo.
+        const singleMonto = parseFloat(first.monto_total) || 0;
+        const singleBase = parseFloat(first.precio_base) || 0;
+        const isOldRecord = g.rows.every(r => r.created_at && String(r.created_at) < SPLIT_TOTALS_SINCE);
+        const allSame = g.rows.every(r => Math.abs((parseFloat(r.monto_total) || 0) - singleMonto) < 0.05);
+        if (N > 1 && isOldRecord && allSame && singleBase > 0 && singleMonto >= singleBase * N * 0.8) {
+            const pay = getPaymentBreakdown(first);
+            total = singleMonto;
+            adelanto = parseFloat(first.monto_adelanto) || 0;
+            deposito = pay.deposito;
+            efectivo = pay.efectivo;
+            yape = pay.yape;
+        }
+
+        return {
+            ...g,
+            first_record: first,
+            bungalow_numero: [...g.bungalows_arr].sort((a, b) => a - b).join(', '),
+            monto_total: total,
+            monto_adelanto: adelanto,
+            monto_deposito: deposito,
+            monto_efectivo_real: efectivo,
+            // Columna "Depósito" de las hojas mensuales (incluye el efectivo de registros antiguos)
+            monto_efectivo: deposito + efectivo,
+            monto_yape: yape
+        };
+    });
+}
+
 async function exportAllDataToExcel() {
     if (!bookings || bookings.length === 0) {
         alert("No hay reservas registradas para exportar.");
@@ -3035,74 +3186,8 @@ async function exportAllDataToExcel() {
         return;
     }
 
-    // Helper para consolidar reservas que pertenecen a un mismo cliente / fechas / horario
-    // Garantiza que si se alquilan 5 bungalows por S/. 500, el monto total sea S/. 500 (NO 500 x 5)
-    function consolidateBookings(items) {
-        const grouped = {};
-        items.forEach(b => {
-            const key = `${(b.dni_cliente || 'nodni').trim()}_${(b.nombre_cliente || 'noname').trim()}_${b.fecha_ingreso}_${b.fecha_salida}_${b.horario}_${b.estado_reserva}`;
-            let efectivo = parseFloat(b.monto_efectivo) || 0;
-            let yape = parseFloat(b.monto_yape) || 0;
-            const tot = parseFloat(b.monto_total) || 0;
-
-            if ((b.tipo_pago === 'Efectivo' || b.tipo_pago === 'Depósito') && efectivo === 0) efectivo = tot;
-            if (b.tipo_pago === 'Yape' && yape === 0) yape = tot;
-
-            if (!grouped[key]) {
-                grouped[key] = {
-                    ...b,
-                    first_record: b,
-                    bungalows_arr: [b.bungalow_numero],
-                    raw_monto_total: tot,
-                    raw_monto_adelanto: parseFloat(b.monto_adelanto) || 0,
-                    raw_monto_efectivo: efectivo,
-                    raw_monto_yape: yape,
-                    monto_adic_personas: parseFloat(b.adicional_personas) || 0,
-                    monto_adic_horas: parseFloat(b.adicional_horas) || 0
-                };
-            } else {
-                grouped[key].bungalows_arr.push(b.bungalow_numero);
-                grouped[key].raw_monto_total += tot;
-                grouped[key].raw_monto_adelanto += (parseFloat(b.monto_adelanto) || 0);
-                grouped[key].raw_monto_efectivo += efectivo;
-                grouped[key].raw_monto_yape += yape;
-                grouped[key].monto_adic_personas += (parseFloat(b.adicional_personas) || 0);
-                grouped[key].monto_adic_horas += (parseFloat(b.adicional_horas) || 0);
-            }
-        });
-
-        return Object.values(grouped).map(g => {
-            const N = g.bungalows_arr.length;
-            let finalTotal = g.raw_monto_total;
-            let finalAdelanto = g.raw_monto_adelanto;
-            let finalEfectivo = g.raw_monto_efectivo;
-            let finalYape = g.raw_monto_yape;
-
-            // Detección de seguridad para registros antiguos guardados sin dividir:
-            // Si cada fila tenía guardado el total completo (ej. 500) en lugar de dividirse (100)
-            if (N > 1 && g.first_record) {
-                const singleMonto = parseFloat(g.first_record.monto_total) || 0;
-                const singleBase = parseFloat(g.first_record.precio_base) || 0;
-                if (singleBase > 0 && singleMonto >= (singleBase * 0.8)) {
-                    if (Math.abs(g.raw_monto_total - (singleMonto * N)) < 0.05) {
-                        finalTotal = singleMonto;
-                        finalAdelanto = parseFloat(g.first_record.monto_adelanto) || 0;
-                        finalEfectivo = (g.first_record.tipo_pago === 'Efectivo' || g.first_record.tipo_pago === 'Depósito') ? singleMonto : (parseFloat(g.first_record.monto_efectivo) || 0);
-                        finalYape = g.first_record.tipo_pago === 'Yape' ? singleMonto : (parseFloat(g.first_record.monto_yape) || 0);
-                    }
-                }
-            }
-
-            return {
-                ...g,
-                bungalow_numero: g.bungalows_arr.sort((a, b) => a - b).join(', '),
-                monto_total: finalTotal,
-                monto_adelanto: finalAdelanto,
-                monto_efectivo: finalEfectivo,
-                monto_yape: finalYape
-            };
-        });
-    }
+    // Una fila por reserva (si se alquilan 5 bungalows por S/. 500, el monto es S/. 500, NO 500 x 5)
+    const consolidateBookings = consolidateBookingRows;
 
     const workbook = new ExcelJS.Workbook();
 
@@ -3324,7 +3409,9 @@ async function exportAllDataToExcel() {
         const amt = parseFloat(b.monto_total) || 0;
         monthRevenue += amt;
 
-        monthEfectivo += (parseFloat(b.monto_efectivo) || 0);
+        // Depósitos (incluye la parte depósito de los pagos divididos), efectivo (registros antiguos) y Yape
+        monthDeposito += (parseFloat(b.monto_deposito) || 0);
+        monthEfectivo += (parseFloat(b.monto_efectivo_real) || 0);
         monthYape += (parseFloat(b.monto_yape) || 0);
 
         if (b.horario === 'Full Day') {
@@ -3608,9 +3695,9 @@ async function exportAllDataToExcel() {
         { header: 'Yape (S/.)', key: 'monto_yape', width: 18 },                // Col O (15)
         { header: 'Extra Personas (S/.)', key: 'monto_adic_personas', width: 20 }, // Col P (16)
         { header: 'Extra Horas (S/.)', key: 'monto_adic_horas', width: 20 },    // Col Q (17)
-        { header: 'Estado', key: 'estado', width: 14 },                        // Col S (19)
-        { header: 'Observaciones', key: 'observaciones', width: 32 },          // Col T (20)
-        { header: 'Fecha Registro', key: 'registro', width: 22 }               // Col U (21)
+        { header: 'Estado', key: 'estado', width: 14 },                        // Col R (18)
+        { header: 'Observaciones', key: 'observaciones', width: 32 },          // Col S (19)
+        { header: 'Fecha Registro', key: 'registro', width: 22 }               // Col T (20)
     ];
 
     for (const [monthLabel, bookingsInMonth] of Object.entries(groups)) {
@@ -3697,15 +3784,15 @@ async function exportAllDataToExcel() {
             labelCell.alignment = { vertical: 'middle', horizontal: 'center' };
             labelCell.border = { top: { style: 'medium', color: { argb: 'FF0F766E' } }, bottom: { style: 'medium', color: { argb: 'FF0F766E' } }, left: { style: 'thin', color: { argb: 'FF0F766E' } }, right: { style: 'thin', color: { argb: 'FF0F766E' } } };
 
+            // Solo columnas de dinero (la R es "Estado": sumarla dejaba "S/. 0.00" en esa columna)
             const formulaCols = [
                 { col: 11, colLetter: 'K' }, // Monto Total
                 { col: 12, colLetter: 'L' }, // Adelanto
                 { col: 13, colLetter: 'M' }, // Saldo Pendiente
-                { col: 14, colLetter: 'N' }, // Efectivo
+                { col: 14, colLetter: 'N' }, // Depósito
                 { col: 15, colLetter: 'O' }, // Yape
-                { col: 16, colLetter: 'P' }, // Depósito
-                { col: 17, colLetter: 'Q' }, // Extra Personas
-                { col: 18, colLetter: 'R' }  // Extra Horas
+                { col: 16, colLetter: 'P' }, // Extra Personas
+                { col: 17, colLetter: 'Q' }  // Extra Horas
             ];
 
             formulaCols.forEach(({ col, colLetter }) => {
@@ -3718,8 +3805,8 @@ async function exportAllDataToExcel() {
                 cell.border = { top: { style: 'medium', color: { argb: 'FF0F766E' } }, bottom: { style: 'medium', color: { argb: 'FF0F766E' } }, left: { style: 'thin', color: { argb: 'FFE2E8F0' } }, right: { style: 'thin', color: { argb: 'FFE2E8F0' } } };
             });
 
-            // Celdas restantes (Estado, Observaciones, Fecha Registro)
-            for (let c = 19; c <= 21; c++) {
+            // Celdas restantes (Estado, Observaciones, Fecha Registro = columnas R, S y T)
+            for (let c = 18; c <= 20; c++) {
                 const cell = worksheet.getCell(rowNumber, c);
                 cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F766E' } };
                 cell.border = { top: { style: 'medium', color: { argb: 'FF0F766E' } }, bottom: { style: 'medium', color: { argb: 'FF0F766E' } } };
@@ -3871,24 +3958,26 @@ function loadStatsDashboard(period = 'month') {
     });
 
     // 2. Calculations
+    // Cada fila es un bungalow: una reserva de varios bungalows cuenta UNA vez en los contadores generales
     let totalRevenue = 0;
     let depositoTotal = 0;
     let otrosTotal = 0;
-    let totalDayNightCount = 0;
-    let totalDayNightRevenue = 0;
-    let totalFullDayCount = 0;
-    let totalFullDayRevenue = 0;
     let totalExtrasRevenue = 0;
+    const allGroups = new Set();
+    const categoryTotals = {
+        dayNight: { groups: new Set(), revenue: 0 },
+        fullDay: { groups: new Set(), revenue: 0 },
+        extended: { groups: new Set(), revenue: 0 } // Horario Extendido y 9am a 12pm
+    };
 
     // Per bungalow stats map
-    const bungalowStats = {
-        1: { count: 0, revenue: 0, daysOccupied: 0, dayNightCount: 0, dayNightRevenue: 0, fullDayCount: 0, fullDayRevenue: 0, extras: 0 },
-        2: { count: 0, revenue: 0, daysOccupied: 0, dayNightCount: 0, dayNightRevenue: 0, fullDayCount: 0, fullDayRevenue: 0, extras: 0 },
-        3: { count: 0, revenue: 0, daysOccupied: 0, dayNightCount: 0, dayNightRevenue: 0, fullDayCount: 0, fullDayRevenue: 0, extras: 0 },
-        4: { count: 0, revenue: 0, daysOccupied: 0, dayNightCount: 0, dayNightRevenue: 0, fullDayCount: 0, fullDayRevenue: 0, extras: 0 },
-        5: { count: 0, revenue: 0, daysOccupied: 0, dayNightCount: 0, dayNightRevenue: 0, fullDayCount: 0, fullDayRevenue: 0, extras: 0 },
-        6: { count: 0, revenue: 0, daysOccupied: 0, dayNightCount: 0, dayNightRevenue: 0, fullDayCount: 0, fullDayRevenue: 0, extras: 0 }
-    };
+    const bungalowStats = {};
+    for (let i = 1; i <= 6; i++) {
+        bungalowStats[i] = {
+            count: 0, revenue: 0, daysOccupied: 0, extras: 0,
+            dayNightCount: 0, dayNightRevenue: 0, fullDayCount: 0, fullDayRevenue: 0, extendedCount: 0, extendedRevenue: 0
+        };
+    }
 
     // Client counts map
     const clientsMap = {};
@@ -3897,81 +3986,64 @@ function loadStatsDashboard(period = 'month') {
     const asesoresMap = {};
 
     monthBookings.forEach(b => {
-        totalRevenue += b.monto_total;
+        const amount = parseFloat(b.monto_total) || 0;
+        const groupKey = getBookingGroupKey(b);
+        allGroups.add(groupKey);
+        totalRevenue += amount;
 
-        // Split payment calculations
+        // Medio de pago (en "Dividido" la parte del depósito está en monto_efectivo)
         if (b.tipo_pago === 'Depósito') {
-            depositoTotal += b.monto_total;
+            depositoTotal += amount;
         } else if (b.tipo_pago === 'Yape' || b.tipo_pago === 'Efectivo') {
-            otrosTotal += b.monto_total;
+            otrosTotal += amount;
         } else if (b.tipo_pago === 'Dividido') {
-            depositoTotal += b.monto_efectivo || 0;
-            otrosTotal += b.monto_yape || 0;
+            depositoTotal += parseFloat(b.monto_efectivo) || 0;
+            otrosTotal += parseFloat(b.monto_yape) || 0;
         }
 
-        // Schedule & extras split
-        const isFullDay = b.horario === 'Full Day';
-        const extrasAmount = (b.adicional_personas || 0) + (b.adicional_horas || 0);
-
-        if (isFullDay) {
-            totalFullDayCount++;
-            totalFullDayRevenue += b.monto_total;
-        } else {
-            totalDayNightCount++;
-            totalDayNightRevenue += b.monto_total;
-        }
+        // Turno y adicionales (personas adicionales + horas extra)
+        const category = b.horario === 'Full Day' ? 'fullDay'
+            : (b.horario === 'Horario Extendido' || b.horario === '9am a 12pm') ? 'extended' : 'dayNight';
+        const extrasAmount = (parseFloat(b.adicional_personas) || 0) + getExtraHoursAmount(b);
+        categoryTotals[category].groups.add(groupKey);
+        categoryTotals[category].revenue += amount;
         totalExtrasRevenue += extrasAmount;
 
-        // Bungalow specific stats
-        const bNo = b.bungalow_numero;
-        if (bungalowStats[bNo]) {
-            bungalowStats[bNo].count++;
-            bungalowStats[bNo].revenue += b.monto_total;
-            bungalowStats[bNo].extras += extrasAmount;
-
-            if (isFullDay) {
-                bungalowStats[bNo].fullDayCount++;
-                bungalowStats[bNo].fullDayRevenue += b.monto_total;
-            } else {
-                bungalowStats[bNo].dayNightCount++;
-                bungalowStats[bNo].dayNightRevenue += b.monto_total;
-            }
-
-            const nights = calculateNights(b.fecha_ingreso, b.fecha_salida, b.horario);
-            bungalowStats[bNo].daysOccupied += nights;
+        // Por bungalow (aquí cuenta cada fila: es la reserva de ese bungalow)
+        const stats = bungalowStats[b.bungalow_numero];
+        if (stats) {
+            stats.count++;
+            stats.revenue += amount;
+            stats.extras += extrasAmount;
+            stats[category + 'Count']++;
+            stats[category + 'Revenue'] += amount;
+            stats.daysOccupied += calculateNights(b.fecha_ingreso, b.fecha_salida, b.horario);
         }
 
-        // Clients directory compiling
-        const clientKey = b.dni_cliente ? b.dni_cliente.trim() : b.nombre_cliente.trim();
+        // Directorio de clientes (cada reserva cuenta una vez aunque tenga varios bungalows)
+        const clientKey = (b.dni_cliente || '').trim() || (b.nombre_cliente || '').trim();
         if (clientKey) {
             if (!clientsMap[clientKey]) {
                 clientsMap[clientKey] = {
                     nombre: b.nombre_cliente,
                     dni: b.dni_cliente || 'N/A',
                     phone: b.telefono_cliente || 'N/A',
-                    count: 0
+                    groups: new Set()
                 };
             }
-            clientsMap[clientKey].count++;
+            clientsMap[clientKey].groups.add(groupKey);
         }
 
         // Populate Asesores stats
-        let asesorNombre = b.asesor_registro ? b.asesor_registro.trim() : 'Sin Asesor';
+        let asesorNombre = b.asesor_registro ? b.asesor_registro.trim() : '';
         if (asesorNombre === '') asesorNombre = 'Sin Asesor';
         if (!asesoresMap[asesorNombre]) {
-            asesoresMap[asesorNombre] = {
-                count: 0,
-                revenue: 0,
-                bungalows: {} // { 1: count, 2: count }
-            };
+            asesoresMap[asesorNombre] = { groups: new Set(), revenue: 0, bungalows: {} };
         }
-        asesoresMap[asesorNombre].count++;
-        asesoresMap[asesorNombre].revenue += b.monto_total || 0;
-
-        if (!asesoresMap[asesorNombre].bungalows[b.bungalow_numero]) {
-            asesoresMap[asesorNombre].bungalows[b.bungalow_numero] = 0;
-        }
-        asesoresMap[asesorNombre].bungalows[b.bungalow_numero]++;
+        const asesorStats = asesoresMap[asesorNombre];
+        asesorStats.groups.add(groupKey);
+        asesorStats.revenue += amount;
+        asesorStats.bungalows[b.bungalow_numero] = (asesorStats.bungalows[b.bungalow_numero] || 0) + 1;
     });
 
     // Calculate date range string based on period
@@ -3997,15 +4069,17 @@ function loadStatsDashboard(period = 'month') {
 
     // Populate Top overview cards
     document.getElementById('statsIncomeMonth').textContent = `S/. ${totalRevenue.toFixed(2)}`;
-    document.getElementById('statsCountMonth').textContent = `${monthBookings.length} reservas registradas (${rangeText})`;
+    document.getElementById('statsCountMonth').textContent = `${allGroups.size} reservas registradas (${rangeText})`;
     document.getElementById('statsDepositoMonth').textContent = `S/. ${depositoTotal.toFixed(2)}`;
     document.getElementById('statsOtrosMonth').textContent = `S/. ${otrosTotal.toFixed(2)}`;
 
-    // Set new DOM elements
-    document.getElementById('statsDayNightCount').textContent = totalDayNightCount;
-    document.getElementById('statsDayNightRevenue').textContent = `S/. ${totalDayNightRevenue.toFixed(2)}`;
-    document.getElementById('statsFullDayCount').textContent = totalFullDayCount;
-    document.getElementById('statsFullDayRevenue').textContent = `S/. ${totalFullDayRevenue.toFixed(2)}`;
+    // Reservas e ingresos por turno
+    document.getElementById('statsDayNightCount').textContent = categoryTotals.dayNight.groups.size;
+    document.getElementById('statsDayNightRevenue').textContent = `S/. ${categoryTotals.dayNight.revenue.toFixed(2)}`;
+    document.getElementById('statsFullDayCount').textContent = categoryTotals.fullDay.groups.size;
+    document.getElementById('statsFullDayRevenue').textContent = `S/. ${categoryTotals.fullDay.revenue.toFixed(2)}`;
+    document.getElementById('statsExtendedCount').textContent = categoryTotals.extended.groups.size;
+    document.getElementById('statsExtendedRevenue').textContent = `S/. ${categoryTotals.extended.revenue.toFixed(2)}`;
     document.getElementById('statsExtrasMonth').textContent = `S/. ${totalExtrasRevenue.toFixed(2)}`;
 
     // Populate Report Table
@@ -4021,6 +4095,7 @@ function loadStatsDashboard(period = 'month') {
             <td style="padding: 12px 16px;">${stats.count} reservas</td>
             <td style="padding: 12px 16px; color: #a78bfa;">${stats.dayNightCount} res. (S/. ${stats.dayNightRevenue.toFixed(2)})</td>
             <td style="padding: 12px 16px; color: #fbbf24;">${stats.fullDayCount} res. (S/. ${stats.fullDayRevenue.toFixed(2)})</td>
+            <td style="padding: 12px 16px; color: #e879f9;">${stats.extendedCount} res. (S/. ${stats.extendedRevenue.toFixed(2)})</td>
             <td style="padding: 12px 16px; color: #22d3ee;">S/. ${stats.extras.toFixed(2)}</td>
             <td style="padding: 12px 16px; font-weight: 700; color: #34d399;">S/. ${stats.revenue.toFixed(2)}</td>
         `;
@@ -4052,7 +4127,7 @@ function loadStatsDashboard(period = 'month') {
     const tableClientsBody = document.querySelector('#tableStatsClients tbody');
     tableClientsBody.innerHTML = '';
 
-    const clientsList = Object.values(clientsMap).sort((a, b) => b.count - a.count);
+    const clientsList = Object.values(clientsMap).sort((a, b) => b.groups.size - a.groups.size);
     if (clientsList.length === 0) {
         tableClientsBody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 20px;">No hay directorio compilado este mes.</td></tr>';
     } else {
@@ -4060,10 +4135,10 @@ function loadStatsDashboard(period = 'month') {
             const tr = document.createElement('tr');
             tr.style.borderBottom = '1px solid var(--border-color)';
             tr.innerHTML = `
-                <td style="padding: 12px 16px; font-weight: 600; color: white;">${c.nombre}</td>
-                <td style="padding: 12px 16px;">${c.dni}</td>
-                <td style="padding: 12px 16px;">${c.phone}</td>
-                <td style="padding: 12px 16px; font-weight: 700; color: #fbbf24;">${c.count} reserva(s)</td>
+                <td style="padding: 12px 16px; font-weight: 600; color: white;">${escapeHTML(c.nombre)}</td>
+                <td style="padding: 12px 16px;">${escapeHTML(c.dni)}</td>
+                <td style="padding: 12px 16px;">${escapeHTML(c.phone)}</td>
+                <td style="padding: 12px 16px; font-weight: 700; color: #fbbf24;">${c.groups.size} reserva(s)</td>
             `;
             tableClientsBody.appendChild(tr);
         });
@@ -4092,9 +4167,9 @@ function loadStatsDashboard(period = 'month') {
                 tr.style.borderBottom = '1px solid var(--border-color)';
                 tr.innerHTML = `
                     <td style="padding: 12px 16px; font-weight: 600; color: white;">
-                        ${a.nombre === 'Sin Asesor' ? '<span style="color:var(--text-muted); font-style:italic;">Sin Asesor</span>' : a.nombre}
+                        ${a.nombre === 'Sin Asesor' ? '<span style="color:var(--text-muted); font-style:italic;">Sin Asesor</span>' : escapeHTML(a.nombre)}
                     </td>
-                    <td style="padding: 12px 16px;">${a.count}</td>
+                    <td style="padding: 12px 16px;">${a.groups.size}</td>
                     <td style="padding: 12px 16px; font-weight: 700; color: #10b981;">S/. ${a.revenue.toFixed(2)}</td>
                     <td style="padding: 12px 16px; font-size: 13px; color: var(--text-secondary);">${topBungalows || '-'}</td>
                 `;
@@ -4371,10 +4446,10 @@ function formatLogTimestamp(isoStr) {
     return timePart;
 }
 
-// Escape HTML helper if not defined
+// Escapa texto antes de insertarlo como HTML (nombres, motivos, etc. escritos por los asesores)
 function escapeHTML(str) {
-    if (!str) return '';
-    return str.replace(/[&<>'"]/g,
+    if (str === null || str === undefined) return '';
+    return String(str).replace(/[&<>'"]/g,
         tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
     );
 }
@@ -4921,7 +4996,9 @@ function toggleSidebarHandler() {
     const sidebarBackdrop = document.getElementById('sidebarBackdrop');
     if (window.innerWidth <= 1024) {
         if (sidebar) {
-            const isOpen = sidebar.classList.toggle('open') || sidebar.classList.toggle('active');
+            // Antes: toggle('open') || toggle('active') dejaba el fondo oscuro activo al cerrar
+            const isOpen = sidebar.classList.toggle('open');
+            sidebar.classList.remove('active');
             if (sidebarBackdrop) sidebarBackdrop.classList.toggle('active', isOpen);
         }
     } else {

@@ -24,12 +24,37 @@
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="bungalows.css">
     <script>
-        window.addEventListener('error', function (e) {
-            alert('⛔ ERROR JS EN LA PÁGINA ⛔\nArchivo: ' + e.filename + '\nLínea: ' + e.lineno + '\nMensaje: ' + e.message);
-        });
-        window.addEventListener('unhandledrejection', function (e) {
-            alert('⛔ PROMESA RECHAZADA ⛔\n' + e.reason);
-        });
+        // Muestra los errores de JS en un aviso que no bloquea la pantalla (antes eran alert()).
+        (function () {
+            function showPageError(text) {
+                console.error(text);
+                if (!document.body) return;
+                var box = document.getElementById('pageErrorToast');
+                if (!box) {
+                    box = document.createElement('div');
+                    box.id = 'pageErrorToast';
+                    box.setAttribute('role', 'alert');
+                    box.title = 'Clic para cerrar';
+                    box.style.cssText = 'position:fixed;left:16px;right:16px;bottom:16px;z-index:99999;max-width:560px;margin:0 auto;' +
+                        'background:#7f1d1d;color:#fff;padding:12px 16px;border-radius:10px;font:13px/1.4 sans-serif;' +
+                        'box-shadow:0 8px 24px rgba(0,0,0,.25);white-space:pre-line;cursor:pointer;';
+                    box.addEventListener('click', function () { box.remove(); });
+                    document.body.appendChild(box);
+                }
+                box.textContent = text;
+                clearTimeout(box._timer);
+                box._timer = setTimeout(function () { box.remove(); }, 10000);
+            }
+            window.addEventListener('error', function (e) {
+                // Sin archivo = extensiones del navegador o scripts de otros dominios ("Script error.")
+                if (!e.filename) return;
+                showPageError('⛔ Error en la página\nArchivo: ' + e.filename + ' (línea ' + e.lineno + ')\n' + e.message);
+            });
+            window.addEventListener('unhandledrejection', function (e) {
+                var reason = e.reason && e.reason.message ? e.reason.message : String(e.reason);
+                showPageError('⛔ Error no controlado: ' + reason);
+            });
+        })();
     </script>
 </head>
 
@@ -362,7 +387,7 @@
                 <div class="calendar-scroll-wrapper">
                     <div id="calendar"></div>
                 </div>
-            </div>
+            </div> 
         </main>
     </div>
 
@@ -375,7 +400,7 @@
             </div>
             <div class="modal-body">
                 <form id="formBooking" novalidate>
-                    <input type="hidden" id="bookingId">
+                     <input type="hidden" id="bookingId">
 
                     <!-- Edición Grupal Toggle -->
                     <div id="groupEditToggleContainer" class="form-group"
@@ -1051,6 +1076,16 @@
                         </div>
                         <div
                             style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px;">
+                            <span style="font-size: 12px; color: var(--text-muted); text-transform: uppercase;">Extendido /
+                                9am-12pm</span>
+                            <div id="statsExtendedCount"
+                                style="font-size: 24px; font-weight: 700; color: #e879f9; margin-top: 6px;">0
+                            </div>
+                            <span id="statsExtendedRevenue" style="font-size: 12px; color: var(--text-secondary);">S/.
+                                0.00</span>
+                        </div>
+                        <div
+                            style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px;">
                             <span id="labelExtras"
                                 style="font-size: 12px; color: var(--text-muted); text-transform: uppercase;">Extras /
                                 Adicionales</span>
@@ -1072,6 +1107,7 @@
                                     <th style="padding: 12px 16px; color: var(--text-secondary);">Total Reservas</th>
                                     <th style="padding: 12px 16px; color: var(--text-secondary);">Día y Noche</th>
                                     <th style="padding: 12px 16px; color: var(--text-secondary);">Full Day</th>
+                                    <th style="padding: 12px 16px; color: var(--text-secondary);">Extendido / 9am-12pm</th>
                                     <th style="padding: 12px 16px; color: var(--text-secondary);">Extras / Adicionales
                                     </th>
                                     <th style="padding: 12px 16px; color: var(--text-secondary);">Ingreso Estimado</th>
@@ -1203,6 +1239,8 @@
 
     <!-- Script triggers and main logic -->
     <script src="bungalows.js"></script>
+    <!-- Ajusta el calendario al abrir/cerrar el menú lateral (igual que en Canchas y Polideportivo) -->
+    <script src="canchas-ui.js"></script>
 </body>
 
 </html>
