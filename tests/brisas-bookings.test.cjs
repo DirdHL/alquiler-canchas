@@ -187,7 +187,8 @@ test('weekend football prices respect 3 PM and 6 PM boundaries on every football
                 ['18:00', '19:00', big ? 60 : 50],
                 ['14:30', '15:30', big ? 37.5 : 32.5],
                 ['17:30', '18:30', big ? 55 : 45]
-            ]) {
+            ]) 
+            {
                 const income = h.calculateBookingIncome({ date, court, sport: 'Fútbol', startTime, endTime, pelota: false, chaleco: false });
                 assert.equal(income.total, expected, `${date} ${court} ${startTime}–${endTime}`);
                 assert.equal(income.equipmentIncluded, endTime > '15:00');
