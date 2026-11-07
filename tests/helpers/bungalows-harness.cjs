@@ -283,7 +283,8 @@ this.api = {
     setupEventListeners, openBookingModal, openBookingEditModal, handleSaveBooking, handleDeleteBooking,
     runDynamicCalculations, getBookingDateError, getDailyIncomeShare, updateDashboardStats,
     consolidateBookingRows, getExtraHoursAmount, parseServiceNotes, toggleSidebarHandler,
-    fetchBookings, getVinoInventory, planGroupUpdate, getScheduleHours
+    fetchBookings, getVinoInventory, planGroupUpdate, getScheduleHours,
+    calculateBasePrice, computeBookingPricing
 };`, context, { filename: 'bungalows.js' });
 
     const api = context.api;

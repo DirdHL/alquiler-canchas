@@ -365,3 +365,35 @@ test('en móvil el botón Menú abre y cierra el sidebar sin dejar el fondo oscu
     assert.equal(h.el('sidebar').classList.contains('active'), false);
     assert.equal(h.el('sidebarBackdrop').classList.contains('active'), false);
 });
+
+test('Navidad (24-27 dic) y Año Nuevo (31 dic-3 ene) cuestan S/. 250 por bungalow y S/. 1500 la casa completa', () => {
+    const h = bungalowsHarness();
+    const base = (inStr, outStr, horario = 'Día y Noche') => h.api.calculateBasePrice(inStr, outStr, horario);
+
+    // Cada día del rango (inclusive) vale S/. 250, sin importar si es semana o fin de semana
+    for (const d of ['2026-12-24', '2026-12-25', '2026-12-26', '2026-12-27', '2026-12-31', '2027-01-01', '2027-01-02', '2027-01-03']) {
+        assert.equal(base(d, d, 'Full Day'), 250, `Full Day ${d}`);
+    }
+    assert.equal(base('2026-12-24', '2026-12-27'), 750, '3 noches de Navidad');
+    assert.equal(base('2026-12-31', '2027-01-03'), 750, '3 noches de Año Nuevo');
+    assert.equal(base('2026-12-24', '2026-12-27', 'Horario Extendido'), 1000, '4 días de Navidad');
+
+    // Fuera del rango vuelve la tarifa normal: 23 dic (miércoles) y 28 dic (lunes)
+    assert.equal(base('2026-12-23', '2026-12-23', 'Full Day'), 160);
+    assert.equal(base('2026-12-28', '2026-12-28', 'Full Day'), 160);
+    assert.equal(base('2026-12-23', '2026-12-25'), 160 + 250, 'una noche normal + una de Navidad');
+    assert.equal(base('2026-12-27', '2026-12-29'), 250 + 160, 'una noche de Navidad + una normal');
+    assert.equal(base('2027-01-04', '2027-01-04', 'Full Day'), 160);
+
+    // Casa completa (6 bungalows) una noche
+    const casa = h.api.computeBookingPricing({ checkIn: '2026-12-31', checkOut: '2027-01-01', horario: 'Día y Noche', numBungalows: 6 });
+    assert.equal(casa.total, 1500);
+});
+
+test('el formulario calcula S/. 1500 al reservar la casa completa el 24 de diciembre', () => {
+    const h = bungalowsHarness();
+    fillNewBooking(h, { bungalows: [1, 2, 3, 4, 5, 6], date: '2026-12-24' });
+    h.change('bookingCheckOut', '2026-12-25');
+    h.change('bookingHorario', 'Día y Noche');
+    assert.equal(h.el('bookingTotal').value, '1500.00');
+});

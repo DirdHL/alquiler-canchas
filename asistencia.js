@@ -3573,6 +3573,7 @@ function setupAccessibleModals() {
             else modal.classList.remove('active');
             return;
         }
+        
         if (event.key !== 'Tab') return;
         const elements = focusableElements(modal);
         if (!elements.length) {
@@ -3618,7 +3619,7 @@ document.addEventListener('DOMContentLoaded', () => {
     [filterEmployee, filterMonth, filterWeek, filterType].forEach(el => {
         if (el) el.addEventListener('change', renderAttendanceTable);
     });
-
+         
     // 4. Setup Modals & Handlers
     setupAddWorkerWizard();
     setupEditWorkerSchedule();

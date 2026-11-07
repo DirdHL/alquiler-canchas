@@ -37,6 +37,21 @@ const PRICE_WEEKEND = 180.00; // Tarifa diaria Vie-Dom (Día y Noche / Full Day 
 const EXTRA_GUEST_FEE = 30.00; // Costo por persona adicional (actualizado a S/. 30)
 const EXTRA_CHILD_FEE = 25.00; // Costo por niño adicional (S/. 25)
 
+// Fechas con tarifa especial por bungalow (rangos inclusivos, YYYY-MM-DD).
+// Reemplazan la tarifa de semana / fin de semana en esos días. Casa completa = 6 × precio.
+const SPECIAL_RATES = [
+    { from: '2026-12-24', to: '2026-12-27', price: 250.00 }, // Navidad (casa completa S/. 1500)
+    { from: '2026-12-31', to: '2027-01-03', price: 250.00 }  // Año Nuevo (casa completa S/. 1500)
+];
+
+// Tarifa diaria de un bungalow para una fecha (Date)
+function getDailyRate(date, isWeekend) {
+    const dateStr = getLocalDateString(date);
+    const special = SPECIAL_RATES.find(r => dateStr >= r.from && dateStr <= r.to);
+    if (special) return special.price;
+    return isWeekend ? PRICE_WEEKEND : PRICE_WEEKDAY;
+}
+
 // Desde cambios-229 (2026-10-06) "adicional_horas" guarda el PRECIO por hora en cada fila.
 // Antes guardaba el MONTO total de las horas extra, solo en la fila principal del grupo.
 const EXTRA_HOURS_PRICE_SINCE = '2026-10-06';
@@ -1087,7 +1102,7 @@ function calculateBasePrice(checkInStr, checkOutStr, horario) {
     if (horario === 'Full Day') {
         const dayOfWeek = start.getDay(); // 0 = Sunday, 5 = Friday, 6 = Saturday
         const isWeekend = (dayOfWeek === 0 || dayOfWeek === 5 || dayOfWeek === 6);
-        return isWeekend ? PRICE_WEEKEND : PRICE_WEEKDAY;
+        return getDailyRate(start, isWeekend);
     } else if (horario === '9am a 12pm') {
         const dayOfWeek = start.getDay();
         if (dayOfWeek === 0 || dayOfWeek === 5 || dayOfWeek === 6) {
@@ -1114,14 +1129,14 @@ function calculateBasePrice(checkInStr, checkOutStr, horario) {
                 }
             }
 
-            totalBase += isWeekend ? PRICE_WEEKEND : PRICE_WEEKDAY;
+            totalBase += getDailyRate(current, isWeekend);
             current.setDate(current.getDate() + 1);
         }
 
         if (totalBase === 0) {
             const dayOfWeek = start.getDay();
             const isWeekend = (dayOfWeek === 0 || dayOfWeek === 5 || dayOfWeek === 6);
-            totalBase = isWeekend ? PRICE_WEEKEND : PRICE_WEEKDAY;
+            totalBase = getDailyRate(start, isWeekend);
         }
         return totalBase;
     } else {
@@ -1133,14 +1148,14 @@ function calculateBasePrice(checkInStr, checkOutStr, horario) {
         while (current < end) {
             const dayOfWeek = current.getDay();
             const isWeekend = (dayOfWeek === 0 || dayOfWeek === 5 || dayOfWeek === 6);
-            totalBase += isWeekend ? PRICE_WEEKEND : PRICE_WEEKDAY;
+            totalBase += getDailyRate(current, isWeekend);
             current.setDate(current.getDate() + 1);
         }
 
         if (totalBase === 0) {
             const dayOfWeek = start.getDay();
             const isWeekend = (dayOfWeek === 0 || dayOfWeek === 5 || dayOfWeek === 6);
-            totalBase = isWeekend ? PRICE_WEEKEND : PRICE_WEEKDAY;
+            totalBase = getDailyRate(start, isWeekend);
         }
         return totalBase;
     }
