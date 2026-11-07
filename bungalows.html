@@ -475,8 +475,15 @@
 
                     <!-- Bungalow Selection Checklist -->
                     <div class="form-group" style="margin-bottom: 20px;">
-                        <label style="display: block; margin-bottom: 8px; font-weight: 600;">Número de Bungalows
-                            *</label>
+                        <div class="bungalows-select-header">
+                            <label style="display: block; margin-bottom: 0; font-weight: 600;">Número de Bungalows
+                                *</label>
+                            <button type="button" id="btnCasaCompleta" class="btn-casa-completa" aria-pressed="false"
+                                title="Reservar los 6 bungalows">
+                                <i data-lucide="home"></i>
+                                <span>Casa completa</span>
+                            </button>
+                        </div>
                         <div class="bungalows-grid">
                             <div class="bungalow-card" data-bungalow="1">
                                 <input type="checkbox" id="chkBungalow1" name="bungalowSelect" value="1">
@@ -705,7 +712,7 @@
                     <div
                         style="background: rgba(245, 158, 11, 0.05); border: 1px solid rgba(245, 158, 11, 0.2); padding: 15px; border-radius: var(--radius-md); margin-top: 16px; display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; font-size: 13px;">
                         <div>
-                            <span class="text-secondary" style="display: block;">Precio Base:</span>
+                            <span id="breakdownBaseLabel" class="text-secondary" style="display: block;">Precio Base:</span>
                             <span id="breakdownBase" style="font-weight: 700; font-size: 15px;">S/. 0.00</span>
                         </div>
                         <div>

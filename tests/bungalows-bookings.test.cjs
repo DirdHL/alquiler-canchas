@@ -397,3 +397,66 @@ test('el formulario calcula S/. 1500 al reservar la casa completa el 24 de dicie
     h.change('bookingHorario', 'Día y Noche');
     assert.equal(h.el('bookingTotal').value, '1500.00');
 });
+
+test('casa completa (6 bungalows): S/. 800 de lunes a jueves y S/. 900 de viernes a domingo', () => {
+    const h = bungalowsHarness();
+    const house = (checkIn, checkOut, horario = 'Día y Noche', numBungalows = 6) =>
+        h.api.computeBookingPricing({ checkIn, checkOut, horario, numBungalows }).basePrice;
+
+    assert.equal(house('2026-11-09', '2026-11-10'), 800, 'lunes');
+    assert.equal(house('2026-11-12', '2026-11-13'), 800, 'jueves');
+    assert.equal(house('2026-11-13', '2026-11-14'), 900, 'viernes');
+    assert.equal(house('2026-11-15', '2026-11-16'), 900, 'domingo');
+    assert.equal(house('2026-11-12', '2026-11-14'), 800 + 900, 'jueves + viernes');
+    assert.equal(house('2026-11-14', '2026-11-14', 'Full Day'), 900, 'Full Day sábado');
+    assert.equal(house('2026-11-24', '2026-11-25', 'Horario Extendido'), 800 + 800, 'Horario Extendido mar-mié');
+    assert.equal(house('2026-12-25', '2026-12-26'), 1500, 'Navidad sigue en S/. 1500');
+
+    // Con menos de 6 bungalows se cobra por bungalow
+    assert.equal(house('2026-11-09', '2026-11-10', 'Día y Noche', 5), 5 * 160);
+    assert.equal(house('2026-11-13', '2026-11-14', 'Día y Noche', 2), 2 * 180);
+});
+
+test('el botón Casa completa marca los 6 bungalows, calcula S/. 800 y al guardar reparte el monto entre las filas', async () => {
+    const h = withLocalRows([]);
+    fillNewBooking(h, { bungalows: [], date: '2026-11-09' });
+    h.change('bookingCheckOut', '2026-11-10');
+
+    h.el('btnCasaCompleta').click();
+    assert.deepEqual(h.checkedBungalows(), [1, 2, 3, 4, 5, 6]);
+    assert.equal(h.el('bookingTotal').value, '800.00');
+    assert.equal(h.el('breakdownBaseLabel').textContent, 'Precio Casa Completa:');
+    assert.equal(h.el('btnCasaCompleta').classList.contains('active'), true);
+
+    await h.submit();
+    const rows = savedRows(h);
+    assert.equal(rows.length, 6);
+    assert.deepEqual(rows.map(r => r.precio_base), [133.33, 133.33, 133.33, 133.33, 133.33, 133.33]);
+    assert.equal(Math.round(rows.reduce((s, r) => s + r.monto_total, 0) * 100) / 100, 800);
+
+    // Al editar, el total de S/. 800 coincide con el calculado (no se toma como precio negociado)
+    h.api.openBookingEditModal(h.api.bookings[0]);
+    assert.equal(h.el('bookingTotal').value, '800.00');
+    assert.equal(h.api.isTotalManuallyEdited, false);
+});
+
+test('el botón Casa completa desmarca todo si ya estaban los 6 y avisa si algún bungalow está ocupado', () => {
+    const h = withLocalRows([row('ocupado', 3)]);
+    fillNewBooking(h, { bungalows: [], date: '2026-11-09' });
+    h.change('bookingCheckOut', '2026-11-10');
+
+    h.el('btnCasaCompleta').click();
+    assert.deepEqual(h.checkedBungalows(), []);
+    assert.match(h.el('bookingError').innerHTML, /no está disponible.*bungalow 3 está ocupado/);
+    assert.equal(h.el('btnCasaCompleta').classList.contains('unavailable'), true);
+
+    // Otra fecha sin choques: marca los 6 y un segundo clic los desmarca
+    h.change('bookingCheckIn', '2026-11-13');
+    h.change('bookingCheckOut', '2026-11-14');
+    h.el('btnCasaCompleta').click();
+    assert.deepEqual(h.checkedBungalows(), [1, 2, 3, 4, 5, 6]);
+    assert.equal(h.el('bookingTotal').value, '900.00');
+    h.el('btnCasaCompleta').click();
+    assert.deepEqual(h.checkedBungalows(), []);
+    assert.equal(h.el('btnCasaCompleta').classList.contains('active'), false);
+});

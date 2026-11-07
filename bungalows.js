@@ -37,19 +37,29 @@ const PRICE_WEEKEND = 180.00; // Tarifa diaria Vie-Dom (Día y Noche / Full Day 
 const EXTRA_GUEST_FEE = 30.00; // Costo por persona adicional (actualizado a S/. 30)
 const EXTRA_CHILD_FEE = 25.00; // Costo por niño adicional (S/. 25)
 
-// Fechas con tarifa especial por bungalow (rangos inclusivos, YYYY-MM-DD).
-// Reemplazan la tarifa de semana / fin de semana en esos días. Casa completa = 6 × precio.
+// Casa completa: cuando se alquilan los 6 bungalows juntos se cobra un precio por la casa
+const TOTAL_BUNGALOWS = 6;
+const HOUSE_PRICE_WEEKDAY = 800.00; // Casa completa Lun-Jue (por día/noche)
+const HOUSE_PRICE_WEEKEND = 900.00; // Casa completa Vie-Dom (por día/noche)
+
+// Fechas con tarifa especial (rangos inclusivos, YYYY-MM-DD).
+// Reemplazan la tarifa de semana / fin de semana en esos días.
 const SPECIAL_RATES = [
-    { from: '2026-12-24', to: '2026-12-27', price: 250.00 }, // Navidad (casa completa S/. 1500)
-    { from: '2026-12-31', to: '2027-01-03', price: 250.00 }  // Año Nuevo (casa completa S/. 1500)
+    { from: '2026-12-24', to: '2026-12-27', price: 250.00, housePrice: 1500.00 }, // Navidad
+    { from: '2026-12-31', to: '2027-01-03', price: 250.00, housePrice: 1500.00 }  // Año Nuevo
 ];
 
-// Tarifa diaria de un bungalow para una fecha (Date)
-function getDailyRate(date, isWeekend) {
+// Tarifa diaria para una fecha (Date): de un bungalow o, con wholeHouse, de la casa completa
+function getDailyRate(date, isWeekend, wholeHouse = false) {
     const dateStr = getLocalDateString(date);
     const special = SPECIAL_RATES.find(r => dateStr >= r.from && dateStr <= r.to);
-    if (special) return special.price;
+    if (special) return wholeHouse ? special.housePrice : special.price;
+    if (wholeHouse) return isWeekend ? HOUSE_PRICE_WEEKEND : HOUSE_PRICE_WEEKDAY;
     return isWeekend ? PRICE_WEEKEND : PRICE_WEEKDAY;
+}
+
+function isWholeHouse(numBungalows) {
+    return (numBungalows || 0) >= TOTAL_BUNGALOWS;
 }
 
 // Desde cambios-229 (2026-10-06) "adicional_horas" guarda el PRECIO por hora en cada fila.
@@ -542,24 +552,12 @@ function setupEventListeners() {
     // Custom Bungalow Checkbox Grid Selection & Sincronización (Selección Múltiple)
     const chkList = document.querySelectorAll('input[name="bungalowSelect"]');
     chkList.forEach(chk => {
-        chk.addEventListener('change', function () {
-            const errorEl = document.getElementById('bookingError');
-            if (errorEl) {
-                errorEl.textContent = '';
-                errorEl.style.display = 'none';
-            }
-            
-            // Obtener todos los seleccionados
-            const selected = Array.from(document.querySelectorAll('input[name="bungalowSelect"]:checked')).map(c => c.value);
-            // Sincronizar el select oculto con el primer valor seleccionado (o vacío si ninguno)
-            document.getElementById('bookingBungalow').value = selected.length > 0 ? selected[0] : '';
-            // Actualizar límite de niños y de personas estándar
-            updateNinosLimit();
-            updatePersonasLimit();
-            // Forzar recálculo financiero
-            runDynamicCalculations();
-        });
+        chk.addEventListener('change', onBungalowSelectionChange);
     });
+
+    // Botón "Casa completa": marca (o desmarca) los 6 bungalows de una vez
+    const btnCasaCompleta = document.getElementById('btnCasaCompleta');
+    if (btnCasaCompleta) btnCasaCompleta.addEventListener('click', toggleWholeHouse);
 
     // Modal Stats Tab triggers
     const statsTabButtons = document.querySelectorAll('.stats-tabs .tab-btn');
@@ -1095,20 +1093,21 @@ function calculateNights(checkInStr, checkOutStr, horario) {
     return diffDays || 1;
 }
 
-function calculateBasePrice(checkInStr, checkOutStr, horario) {
+// Precio base de un bungalow o, con wholeHouse, de la casa completa (6 bungalows)
+function calculateBasePrice(checkInStr, checkOutStr, horario, wholeHouse = false) {
     if (!checkInStr || !checkOutStr) return 0;
     const start = new Date(checkInStr + 'T00:00:00');
 
     if (horario === 'Full Day') {
         const dayOfWeek = start.getDay(); // 0 = Sunday, 5 = Friday, 6 = Saturday
         const isWeekend = (dayOfWeek === 0 || dayOfWeek === 5 || dayOfWeek === 6);
-        return getDailyRate(start, isWeekend);
+        return getDailyRate(start, isWeekend, wholeHouse);
     } else if (horario === '9am a 12pm') {
         const dayOfWeek = start.getDay();
         if (dayOfWeek === 0 || dayOfWeek === 5 || dayOfWeek === 6) {
             return 0; // Not allowed on weekends
         }
-        return 250;
+        return 250 * (wholeHouse ? TOTAL_BUNGALOWS : 1);
     } else if (horario === 'Horario Extendido') {
         // Horario Extendido: Desde las 9:00 AM del ingreso hasta las 6:00 PM de la salida
         // Abarca todos los días enteros del rango (de fecha_ingreso hasta fecha_salida inclusive)
@@ -1129,14 +1128,14 @@ function calculateBasePrice(checkInStr, checkOutStr, horario) {
                 }
             }
 
-            totalBase += getDailyRate(current, isWeekend);
+            totalBase += getDailyRate(current, isWeekend, wholeHouse);
             current.setDate(current.getDate() + 1);
         }
 
         if (totalBase === 0) {
             const dayOfWeek = start.getDay();
             const isWeekend = (dayOfWeek === 0 || dayOfWeek === 5 || dayOfWeek === 6);
-            totalBase = getDailyRate(start, isWeekend);
+            totalBase = getDailyRate(start, isWeekend, wholeHouse);
         }
         return totalBase;
     } else {
@@ -1148,14 +1147,14 @@ function calculateBasePrice(checkInStr, checkOutStr, horario) {
         while (current < end) {
             const dayOfWeek = current.getDay();
             const isWeekend = (dayOfWeek === 0 || dayOfWeek === 5 || dayOfWeek === 6);
-            totalBase += getDailyRate(current, isWeekend);
+            totalBase += getDailyRate(current, isWeekend, wholeHouse);
             current.setDate(current.getDate() + 1);
         }
 
         if (totalBase === 0) {
             const dayOfWeek = start.getDay();
             const isWeekend = (dayOfWeek === 0 || dayOfWeek === 5 || dayOfWeek === 6);
-            totalBase = getDailyRate(start, isWeekend);
+            totalBase = getDailyRate(start, isWeekend, wholeHouse);
         }
         return totalBase;
     }
@@ -1165,13 +1164,17 @@ function calculateBasePrice(checkInStr, checkOutStr, horario) {
 function computeBookingPricing({ checkIn, checkOut, horario, numBungalows = 1, adicionales = 0, ninosAdicionales = 0, extraHours = 0, extraHoursPrice = 0 }) {
     const n = Math.max(1, numBungalows || 1);
     const nights = calculateNights(checkIn, checkOut, horario);
-    // Precio base multiplicado por la cantidad de bungalows
-    const basePrice = calculateBasePrice(checkIn, checkOut, horario) * n;
+    // Precio base: los 6 bungalows juntos pagan la tarifa de casa completa;
+    // si no, la tarifa de un bungalow multiplicada por la cantidad de bungalows
+    const wholeHouse = isWholeHouse(n);
+    const basePrice = wholeHouse
+        ? calculateBasePrice(checkIn, checkOut, horario, true)
+        : calculateBasePrice(checkIn, checkOut, horario) * n;
     // Capacidad estándar: 4 personas por bungalow. Adultos adicionales S/. 30 y niños adicionales S/. 25, por noche
     const guestsFee = ((adicionales || 0) * EXTRA_GUEST_FEE + (ninosAdicionales || 0) * EXTRA_CHILD_FEE) * nights;
     // Horas extra: horas × precio por hora × bungalows
     const extrasTotal = (extraHours || 0) * (extraHoursPrice || 0) * n;
-    return { nights, basePrice, guestsFee, extrasTotal, total: basePrice + guestsFee + extrasTotal };
+    return { nights, basePrice, guestsFee, extrasTotal, total: basePrice + guestsFee + extrasTotal, wholeHouse };
 }
 
 // Divide un monto en dos partes que suman exactamente el total (sin perder centavos)
@@ -1252,6 +1255,9 @@ function runDynamicCalculations() {
 
     // Render Display Elements
     breakdownBase.textContent = `S/. ${basePrice.toFixed(2)}`;
+    const breakdownBaseLabel = document.getElementById('breakdownBaseLabel');
+    if (breakdownBaseLabel) breakdownBaseLabel.textContent = pricing.wholeHouse ? 'Precio Casa Completa:' : 'Precio Base:';
+    syncWholeHouseButton();
     breakdownGuests.textContent = `S/. ${guestsFee.toFixed(2)}`;
     breakdownExtras.textContent = `S/. ${extrasTotal.toFixed(2)}`;
     breakdownAdvance.textContent = `S/. ${adelanto.toFixed(2)}`;
@@ -1319,6 +1325,68 @@ function updateBungalowAvailability() {
             statusBadge.className = 'bungalow-status available';
         }
     });
+    syncWholeHouseButton();
+}
+
+// Al marcar o desmarcar bungalows: sincroniza el select oculto, los límites y el total
+function onBungalowSelectionChange() {
+    const errorEl = document.getElementById('bookingError');
+    if (errorEl) {
+        errorEl.textContent = '';
+        errorEl.style.display = 'none';
+    }
+
+    // Obtener todos los seleccionados
+    const selected = Array.from(document.querySelectorAll('input[name="bungalowSelect"]:checked')).map(c => c.value);
+    // Sincronizar el select oculto con el primer valor seleccionado (o vacío si ninguno)
+    document.getElementById('bookingBungalow').value = selected.length > 0 ? selected[0] : '';
+    // Actualizar límite de niños y de personas estándar
+    updateNinosLimit();
+    updatePersonasLimit();
+    // Forzar recálculo financiero
+    runDynamicCalculations();
+}
+
+// Botón "Casa completa": si ya están los 6 marcados los desmarca; si no, marca los 6
+// (solo si ninguno está ocupado en esas fechas)
+function toggleWholeHouse() {
+    const chkList = Array.from(document.querySelectorAll('input[name="bungalowSelect"]'));
+    if (chkList.length === 0) return;
+
+    if (chkList.every(c => c.checked)) {
+        chkList.forEach(c => { c.checked = false; });
+    } else {
+        const occupied = chkList.filter(c => c.disabled).map(c => c.value);
+        if (occupied.length > 0) {
+            const errorEl = document.getElementById('bookingError');
+            if (errorEl) {
+                errorEl.innerHTML = `La casa completa no está disponible en estas fechas: ` +
+                    `${occupied.length > 1 ? 'los bungalows' : 'el bungalow'} ${occupied.join(', ')} ` +
+                    `${occupied.length > 1 ? 'están ocupados' : 'está ocupado'}.`;
+                errorEl.style.display = 'block';
+            }
+            return;
+        }
+        chkList.forEach(c => { c.checked = true; });
+    }
+
+    isTotalManuallyEdited = false; // Cambió la selección: el total vuelve a calcularse
+    onBungalowSelectionChange();
+}
+
+// Resalta el botón cuando están los 6 marcados y lo atenúa si algún bungalow está ocupado
+function syncWholeHouseButton() {
+    const btn = document.getElementById('btnCasaCompleta');
+    if (!btn) return;
+    const chkList = Array.from(document.querySelectorAll('input[name="bungalowSelect"]'));
+    const allChecked = chkList.length > 0 && chkList.every(c => c.checked);
+    const unavailable = !allChecked && chkList.some(c => c.disabled);
+    btn.classList.toggle('active', allChecked);
+    btn.classList.toggle('unavailable', unavailable);
+    btn.setAttribute('aria-pressed', allChecked ? 'true' : 'false');
+    btn.title = allChecked
+        ? 'Quitar casa completa'
+        : (unavailable ? 'Algún bungalow está ocupado en estas fechas' : 'Reservar los 6 bungalows');
 }
 
 // ----------------------------------------------------
@@ -1676,6 +1744,10 @@ async function saveBookingFromForm() {
     // el formato antiguo de horas extra (monto total en la fila principal)
     const originalCreatedAt = targetRows.length > 0 ? targetRows[0].created_at : null;
     const legacyExtraHours = targetRows.length > 0 && isLegacyExtraHoursRow(targetRows[0]);
+    // Precio base de cada fila (en casa completa, el precio de la casa repartido entre los bungalows)
+    const basePerBungalow = isWholeHouse(numBungalows)
+        ? Math.round((calculateBasePrice(checkIn, checkOut, horario, true) / numBungalows) * 100) / 100
+        : calculateBasePrice(checkIn, checkOut, horario);
 
     // Función para dividir preservando centavos (la fila principal se lleva el residuo)
     function safeDivide(amount, count, idx) {
@@ -1707,7 +1779,7 @@ async function saveBookingFromForm() {
             adultos: Math.min(4, Math.max(0, totalBaseGuests - index * 4)) + (index === 0 ? adicionales : 0),
             ninos_gratis: (index < ninoPequeno) ? 1 : 0,
             ninos_pagantes: (index === 0 ? ninosAdicionales : 0),
-            precio_base: calculateBasePrice(checkIn, checkOut, horario),
+            precio_base: basePerBungalow,
             adicional_personas: (index === 0 ? (adicionales * EXTRA_GUEST_FEE + ninosAdicionales * EXTRA_CHILD_FEE) * nights : 0),
             horas_extras: extraHours,
             adicional_horas: legacyExtraHours

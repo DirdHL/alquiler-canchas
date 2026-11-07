@@ -1443,6 +1443,55 @@ body {
     position: relative;
 }
 
+/* Encabezado de la selección con el botón "Casa completa" */
+.bungalows-select-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.btn-casa-completa {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: inherit;
+    color: var(--primary);
+    background: #ffffff;
+    border: 1px solid var(--primary);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: var(--transition-smooth);
+}
+
+.btn-casa-completa svg {
+    width: 14px;
+    height: 14px;
+}
+
+.btn-casa-completa:hover {
+    background: rgba(28, 61, 37, 0.06);
+}
+
+.btn-casa-completa.active {
+    color: #ffffff;
+    background: var(--primary);
+}
+
+.btn-casa-completa.active:hover {
+    background: var(--primary-hover);
+}
+
+.btn-casa-completa.unavailable {
+    color: var(--text-muted);
+    border-color: var(--border-color);
+    background: #f4efdf;
+}
+
 .bungalow-card input[type="checkbox"] {
     position: absolute;
     opacity: 0;
